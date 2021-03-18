@@ -1,0 +1,16 @@
+resolver: lts-16.31
+
+packages:
+- .
+
+ghc-options:
+  "$everything": -split-sections
+
+extra-deps:
+- git: https://github.com/AndrasKovacs/flatparse.git
+  commit: c9ccbff72524a4445530275f6a21f61e02fd97c2
+- git: https://github.com/AndrasKovacs/dynamic-array.git
+  commit: 0171e73e4d6ed7f3e51ae8ec1adcf7e9f56be5b9
+- git: https://github.com/AndrasKovacs/primdata.git
+  commit: 32c3ab9aa9cfaccab57733069404e843c27414a5
+- inspection-testing-0.4.3.0

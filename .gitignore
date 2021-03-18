@@ -1,0 +1,10 @@
+*.hi
+*.o
+./dist
+.stack-work/
+*#
+TAGS
+*.lock
+*.dump-simpl
+*.dump-cmm
+*.dump-stg

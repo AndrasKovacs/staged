@@ -1,0 +1,75 @@
+
+name:        staged-fp
+version:     0.1.0.0
+license:     MIT
+category:    Language
+description: "Experimental compiler with staging"
+author:      "András Kovács"
+maintainer:  "puttamalac@gmail.com"
+copyright:   "2021 András Kovács"
+
+dependencies:
+- base >= 4.7 && < 5
+
+default-extensions:
+  - BangPatterns
+  - BlockArguments
+  - ConstraintKinds
+  - DataKinds
+  - DerivingVia
+  - ExplicitNamespaces
+  - GADTs
+  - KindSignatures
+  - LambdaCase
+  - MagicHash
+  - OverloadedStrings
+  - PatternSynonyms
+  - PolyKinds
+  - RankNTypes
+  - Strict
+  - TemplateHaskell
+  - TupleSections
+  - UnboxedTuples
+
+ghc-options:
+  - -Wall
+  - -Wno-name-shadowing
+  - -Wno-unused-binds
+  - -Wno-unused-matches
+  - -Wno-missing-signatures
+  - -Wno-unused-do-bind
+  - -fplugin-opt=Test.Inspection.Plugin:skip-O0
+  - -O
+  - -fmax-worker-args=12
+  # - -ddump-simpl
+  # - -dsuppress-all
+  # - -dno-suppress-type-signatures
+  # - -ddump-stg
+  # - -ddump-to-file
+
+library:
+  source-dirs:
+    - src
+  dependencies:
+    - bytestring
+    - containers
+    - primdata
+    - dynamic-array
+    - flatparse
+    - hashable
+    - inspection-testing
+    - template-haskell
+    - unordered-containers
+
+executables:
+  app:
+    source-dirs:
+      - app
+    main:
+      Main.hs
+    ghc-options:
+      - -fllvm
+      - -O2
+      - -rtsopts
+    dependencies:
+      - staged-fp

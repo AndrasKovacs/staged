@@ -1,0 +1,4 @@
+
+Ollef:
+  (unordered metacontext + cached meta dependencies for scoping + topo-sorting metas when needed)
+  is better than having ordered metas + order maintenance all the time

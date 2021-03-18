@@ -1,0 +1,380 @@
+
+
+{-
+
+- Arity analysis (linear, constant)
+- online partial evaluation (need arity for non-exploding unfolding)
+-    GHC: call arity: arity of *call-sites* of functions
+
+       -- call arity of f is 2
+       let f : Bool → Nat → Nat
+           f b = if b then λ x. x else λ x. x + 10   -- naive compilation: f return closures, f x y
+
+       (f True 10, f False 20)
+
+       -- hence: eta-expand f
+       let f = λ b x. (if b then λ x. x else λ x. x + 10) x
+
+       -- case-commute (weak η rule)
+       let f = λ b x. if b then x else x + 10     -- OK (we don't create closures on calling f)
+
+What if we don't use closures anywhere. (Disfunctional programming: functional programming without closures)
+
+
+Two-level type theory.
+
+Level 0 :
+   - strictly positive function space (first-order function space)
+
+   - Two universes:   Uₛ ≤ Uₗ
+      - Uₛ is closed under inductive types and product types (no function type)
+      - Uₗ has
+           _→_ : Uₛ → Uₗ → Uₗ  (λ, β, η)
+
+           ℕ → ℕ → ℕ : Uₗ
+           (ℕ → ℕ) → ℕ → ℕ
+
+   (this corresponds to: lambda lifting is possible, but closure building is not!)
+           -- there is no unknown function call
+
+   fixpoints and cases
+
+Level 1 : normal type theory
+
+   ^(A → B) ~ (^A → ^B)           (this iso does not hold for "closed" functions)
+                                  (funptr in C) (actually need a modality for closedness)
+                                  (example: using closed modality, but not staging:
+				        b <- read <$> getLine
+					let closedFun = if b then λ x. x else λ x. x + 10  )
+
+
+map : {A B : ^Uₛ} → (^[A] → ^[B]) → ^(List [A]) → ^(List [B])
+map {A}{B} f as = <letrec go as = case as of
+                    []   → []
+		    a:as → [f <a>] : go as
+		   in go [as] >
+
+map : {A B : ^Uₛ} → (A → B) → List A → List B
+map {A}{B} f as = letrec go as = case as of
+                    []   → []
+		    a:as → f a : go as
+		  in go as
+
+-- What if I use map under any number of binders?
+
+
+f : Nat → Nat → List Nat → (List Nat, List Nat)
+f = λ a b as.
+
+   let g : List Nat → List Nat               -- do I need to create a closure?
+       g = map (λ x. x + a + b)
+
+   in (g as, g as)
+
+
+f : Nat → Nat → List Nat → (List Nat, List Nat)
+f = λ a b as.
+
+   let g : List Nat → List Nat
+       g as = letrec go as = case as of
+	        []    → []
+		a':as → (a' + a + b) : go as
+              in go as
+
+   in (g as, g as)
+
+
+go : Nat → Nat → List Nat → List Nat
+go a b as = case as of
+  []    → []
+  a':as → a' + a + b : go a b as
+
+g : Nat → Nat → List Nat → List Nat
+g a b as = go a b as
+
+f : Nat → Nat → List Nat → (List Nat, List Nat)
+f = λ a b as. (g a b as, g a b as)
+
+-- What's possible and what's not?
+--------------------------------------------------------------------------------
+
+-- Can't do : putting function in inductive constructions (defunctionalization by hand)
+
+-- I need a closure (Nat → Nat), I want to have (Maybe (Nat → Nat))
+
+Just (λ x. x + 10)
+Just (λ x. x * a * 20)   -- a is outer scope
+
+data Fun = C1 | C2 Nat
+
+apply : Fun → Nat → Nat
+apply C1     x = x + 10
+apply (C2 a) x = x * a * 20
+
+-- What is expressible:
+
+-- Functor, Applicative, Monad, Traversable, Foldable     (Functor (f : ^Uₛ → ^Uₛ))   ("small" type constructor)
+
+-- List is Level 0 type constructor
+data List (A : Uₛ) : Uₛ where
+  nil  : List A
+  cons : A → List A → List A
+
+data List : ^Uₛ → ^Uₛ where
+  nil  : {A : ^Uₛ} → ^[List A]
+  cons : {A : ^Uₛ} → ^[A] → ^[List A] → ^[List A]
+
+fmap  : {A B : ^Uₛ} → (A → B) → F A → F B           OK
+pure  : {A : ^Uₛ} → F A
+fzip  : {A B : ^Uₛ} → F A → F B → F (A, B)          OK
+
+          -- liftN for everyN
+	  -- lift2 : {A B C : ^Uₛ} → (A → B → C) → F A → F B → F C
+	  -- lift2 f fa fb =  fmap (λ <(a, b)>. f a b) (fzip fa fb)
+
+bind : {A B : ^Uₛ} → F A → (A → F B) → F B          OK
+
+   -- join : F (F A) → F A  also works
+
+
+-- Monad M : monad with first-order representation
+-- Maybe, Either, ExceptT, List  -- all first-order
+-- Reader, State                 -- not first-order.
+
+
+-- Elimination from positive types in Level 0?
+------------------------------------------------------------
+
+-- Choice 1: can eliminate from Uₛ to Uₗ?
+
+-- Assume we can eliminate from Uₛ to Uₗ:
+
+f : Bool → Nat → Nat
+f = λ b. case b of
+   True  → λ x. x
+   False → λ x. x + 10
+
+-- f b 10               -- not necessarily a known call of arity 2
+
+-- This is not actually an issue: case commutation rule to Level 0
+
+f : Bool → Nat → Nat
+f = λ b n. (case b of
+   True  → λ x. x
+   False → λ x. x + 10) n
+
+f : Bool → Nat → Nat         -- I get f with arity 2
+f = λ b n. case b of
+   True  → n
+   False → n + 10
+
+-- case commutation with fixpoints:
+
+   t : Tm (Γ, go : A → B, a : A) B         -- A is small, B can be large
+   ───────────────────────────────
+      fix go.a.t : Tm Γ (A → B)
+
+   -- tail-recursive sum function
+
+
+sum : List Nat → List Nat
+sum ns = (fix go.ns. case ns of
+            []   → λ acc. acc
+	    n:ns → λ acc. go ns (n + acc)) ns 0
+
+sum : List Nat → List Nat
+sum ns = (fix go.ns. λ acc. case ns of
+            []   → acc
+	    n:ns → go ns (n + acc)) ns 0
+
+-- compiled:
+go : List Nat → Nat → List Nat
+go []     acc = acc
+go (n:ns) acc = go ns (acc + n)
+
+sum : List Nat → List Nat
+sum ns = go ns 0
+
+
+-- Means: I can define foldl with foldr!
+--   foldr can eliminate to large types
+--   foldl can only eliminate to small types
+
+foldr : {A : ^Uₛ}{B : ^Uₗ} → (A → B → B) → B → List A → B
+foldr f b = fix go.as. case as of
+               []   → [b]
+       	       a:as → [f <a> <go as>]
+
+foldl : {A : ^Uₛ}{B : ^Uₗ} → (B → A → B) → B → List A → B
+foldl f b as =
+   fix go.as. λ (acc : B). case as of                  -- fix is a construction at Level 0
+       -- returns (B → B) function
+
+-- {A B : ^Uₛ} → (B → A → B) → B → List A → B
+-- foldl can be defined from foldr
+
+
+--------------------------------------------------------------------------------
+
+-- Monadic translation complication:
+--    f : A → B → C       in source
+--    f : A → M (B → M C) in core
+
+--    f is λ a b. ...    (no side effect between passing args)
+--    f : A → B → M C
+--        (A, B) → M C
+
+foo : Nat → Nat
+foo = (+10) . (+20) . ...
+foo = λ x. (x + 20) + 10 etc.
+
+-- Large Monad/Functor
+--------------------------------------------------------------------------------
+
+Reader : ^Uₛ → (^Uₗ → ^Uₗ)
+Reader R A = R → A
+
+Monad : (^Uₗ → ^Uₗ) → U₁
+  pure : {A : ^Uₗ} → A → M A
+  bind : M A → (A → M B) → M B
+
+pure : {A : ^Uₗ} → A → R → A
+pure a r = a
+
+bind : {A : ^Uₗ} → (R → A) → (A → R → B) → R → B
+bind f g r = g (f r) r
+
+-- what's fun:
+-- in GHC you ca harm perf by using Reader!
+foo : Bool → Reader Nat Nat
+foo b = case b of
+  True  → pure 10
+  False → bind ask (λ n. pure (n + 10))
+
+-- naive translation
+foo : Bool → Nat → Nat
+foo b = case b of
+  True  → λ _. 10
+  False → λ n. n + 10
+
+-- commuted
+foo : Bool → Nat → Nat
+foo b n = case b of
+  True  → 10
+  False → n + 10
+
+
+-- issues with Reader?
+
+f : ^(Reader R A) → Nat
+f = ...
+
+f : ^(R → A) → Nat
+f = ...
+
+f : (^R → ^A) → Nat
+f = ...
+
+-- should ^ compute for newtypes in Level 1?
+--    ^(Reader R A) ~ (^R → ^A)
+
+-- State : ^Uₛ → ^Uₛ → ^Uₗ
+-- State S A = S → (A, S)
+
+
+-- Slightly related topic: CPS conversion for "binding time improvement"
+--------------------------------------------------------------------------------
+-- Maybe A
+
+-- ^(Maybe A) ~ ((M : ^Uₛ) → (^A → ^M) → ^M → ^M)
+
+-- Church encoding does *not* work at Level 0:
+
+--  Maybe A ~ ((M : Uₛ) → (A → M) → M → M)
+
+-- foldr/build fusion
+-- fold fusion
+
+-- fold fusion = staged CPS
+
+-- cps   : Maybe A → ((M : Uₛ) → (A → M) → M → M)
+-- uncps : ((M : Uₛ) → (A → M) → M → M) → Maybe A
+
+-- cps   : ^(Maybe A) → ((M : Uₛ) → (A → M) → M → M)
+-- uncps : ((M : Uₛ) → (A → M) → M → M) → ^(Maybe A)
+
+-- + magic : I have the *definitional rule* in Level 1 tha cps . uncps = id, and uncps . cps = id
+     -- ("identity extension" property)
+     -- uncps : ((M : Uₛ) → (A → M) → M → M) → Maybe A
+     -- uncps f = f _ Just Nothing
+
+     -- cps : Maybe A → ((M : Uₛ) → (A → M) → M → M)
+     -- cps Nothing  M j n = n
+     -- cps (Just a) M j n = j a
+
+-- In GHC it took call arity analysis to have foldl in foldr/build fusion (sum, etc)
+
+--
+
+--------------------------------------------------------------------------------
+
+-}
+
+
+
+-- List fusion plz
+
+let U0 = U 0 in
+let U1 = U 1 in
+
+λ (List  : U0 → U0)
+  (nil   : {A} → List A)
+  (cons  : {A} → A → List A → List A)
+  (foldr : {A B} → (A → B → B) → B → List A → B).
+
+let Nat : U0 = (N : U0) → (N → N) → N → N in
+let zero : Nat = λ N s z. z in
+let suc : Nat → Nat = λ a N s z. s (a N s z) in
+
+let Bool : U0 = (B : U0) → B → B → B in
+let false : Bool = λ B t f. f in
+let true : Bool = λ B t f. t in
+
+let Bool2 : U1 = (B : ^U0) → B → B → B in
+let false2 : Bool2 = λ B t f. f in
+let true2 : Bool2 = λ B t f. t in
+
+let List2 : ^U0 → U1 = λ A. (L : ^U0) → (A → L → L) → L → L in
+let nil2  : {A : ^U0} → List2 A = λ L c n. n in
+let cons2 : {A : ^U0} → A → List2 A → List2 A = λ a as L c n. c a (as L c n) in
+
+let map2 : {A B : ^U0} → (A → B) → List2 A → List2 B
+  = λ f as L c n. as L (λ a bs. c (f a) bs) n in
+
+let up : {A : ^U0} → List A → List2 A
+  = λ as L c n. foldr c n as in
+
+let down : {A : ^U0} → List2 A → List A
+  = λ as. as _ cons nil in
+
+let filter2 : {A : ^U0} → (A → Bool2) → List2 A → List2 A
+  = λ f as L c n. as _ (λ a as. f a _ as (c a as)) n in
+
+let foo : List Nat → List Nat
+  = λ ns. down (
+    map2 (λ x. x) (map2 suc (map2 suc (cons2 zero (up ns))))) in
+
+let map3 : {A B : ^U0} → (A → B) → List A → List B
+  = λ f as. down (map2 f (up as)) in
+
+let foo : List Nat → List Nat
+  = λ as. map3 suc (map3 suc as) in
+
+-- let foo : List Nat → List Nat
+--   = λ ns. down (filter2 (λ _. false2) (up ns)) in
+
+-- let baz : {A : ^U0} → List2 A → List2 A = λ ns. foo (foo ns) in
+
+-- let foo : List Nat → List Nat = λ ns. foo (foo ns) in
+
+U0

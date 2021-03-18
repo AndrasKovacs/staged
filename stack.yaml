@@ -8,7 +8,7 @@ ghc-options:
 
 extra-deps:
 - git: https://github.com/AndrasKovacs/flatparse.git
-  commit: c9ccbff72524a4445530275f6a21f61e02fd97c2
+  commit: 6b64b3ccbadba7089e72da90510093cb608bf8dc
 - git: https://github.com/AndrasKovacs/dynamic-array.git
   commit: 0171e73e4d6ed7f3e51ae8ec1adcf7e9f56be5b9
 - git: https://github.com/AndrasKovacs/primdata.git

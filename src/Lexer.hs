@@ -12,6 +12,8 @@ import qualified Data.Set as S
 import Data.Char
 import Data.String
 
+-- import Debug.Trace
+
 --------------------------------------------------------------------------------
 
 -- | An expected item which is displayed in error messages.
@@ -25,7 +27,8 @@ instance IsString Expected where fromString = Lit
 -- | A parsing error, without source position.
 data Error'
   = Precise Expected     -- ^ A precisely known error, like leaving out "in" from "let".
-  | IndentError Int      -- ^ An indentation error. Contains expected column number.
+  | ExactIndent Int      -- ^ Expected indentation exactly the given `Int`.
+  | IndentMore  Int      -- ^ Expected indentation at least the given `Int`.
   | Imprecise [Expected] -- ^ An imprecise error, when we expect a number of different things,
                          --   but parse something else.
   deriving Show
@@ -42,10 +45,12 @@ data Error = Error !Pos !Error'
 --   items, and instead try to point to a concrete issue to fix.
 merge :: Error -> Error -> Error
 merge err@(Error p e) err'@(Error p' e') = case (e, e') of
-  (Precise _, _)                -> err   -- pick the inner concrete error
-  (_, Precise _)                -> err'  -- pick the outer concrete error
-  (IndentError _, _)            -> err
-  (_, IndentError _)            -> err'
+  (ExactIndent _, _)            -> err
+  (_, ExactIndent _)            -> err'
+  (IndentMore _, _)             -> err
+  (_, IndentMore _)             -> err'
+  (Precise _, _)                -> err
+  (_, Precise _)                -> err'
   (Imprecise ss, Imprecise ss') -> Error p (Imprecise (ss ++ ss'))
    -- note: we never recover from errors, so all merged errors will in fact have exactly the same
    -- Pos. So we can simply throw away one of the two here.
@@ -60,7 +65,7 @@ prettyError b (Error pos e) =
 
   let ls       = FP.lines b
       [(l, c)] = posLineCols b [pos]
-      line     = if null ls then "" else ls !! l
+      line     = if l < length ls then ls !! l else ""
       linum    = show l
       lpad     = map (const ' ') linum
 
@@ -69,7 +74,8 @@ prettyError b (Error pos e) =
 
       err (Precise exp)     = "expected " ++ expected exp
       err (Imprecise exps)  = "expected " ++ (imprec $ S.toList $ S.fromList exps)
-      err (IndentError col) = "expected token indented to column " ++ show col ++ " or more"
+      err (IndentMore col)  = "expected token indented to column " ++ show col ++ " or more"
+      err (ExactIndent col) = "expected token indented to column " ++ show col
 
       imprec :: [Expected] -> String
       imprec []     = error "impossible"
@@ -164,18 +170,37 @@ cutLvl = do
   lvl <- ask
   currentLvl <- get
   if currentLvl < lvl
-    then err $ IndentError lvl
+    then err $ IndentMore lvl
     else pure currentLvl
 {-# inline cutLvl #-}
+
+-- -- | Throw error if two levels aren't the same.
+-- cutLvlEq :: Int -> Int -> Parser ()
+-- cutLvlEq l l' | l == l' = pure ()
+-- cutLvlEq l l' = err (ExactIndent l)
+
+guardExactLvl :: Int -> Parser ()
+guardExactLvl l = do
+  l' <- get
+  if l == l' then pure () else empty
+
+-- | Throw error if the current level is not the expected one.
+cutExactLvl :: Int -> Parser ()
+cutExactLvl l = do
+  l' <- get
+  if l == l' then pure () else err (ExactIndent l)
 
 -- | We check indentation first, then read the token, then read trailing whitespace.
 token :: Parser a -> Parser a
 token p = guardLvl *> p <* ws
 {-# inline token #-}
 
-indentAt :: Int -> Parser a -> Parser a
-indentAt = local . const
-{-# inline indentAt #-}
+moreIndented :: Parser a -> (a -> Parser b) -> Parser b
+moreIndented pa k = do
+  lvl <- get
+  a <- pa
+  local (\_ -> lvl + 1) (k a)
+{-# inline moreIndented #-}
 
 -- | Read a starting character of an identifier.
 identStartChar :: Parser Char
@@ -210,12 +235,15 @@ symbol str = [| token $(FP.string str) |]
 
 -- | Parser a non-keyword string, throw precise error on failure.
 cutSymbol :: String -> Q Exp
-cutSymbol str = [| $(symbol str) `cut'` Lit str |]
+cutSymbol str =
+  [| cutLvl >> ($(FP.string str) `cut'` Lit str) >> ws |]
 
 -- | Parse a keyword string.
 keyword :: String -> Q Exp
-keyword str = [| token ($(FP.string str) `notFollowedBy` identChar) |]
+keyword str =
+  [| token ($(FP.string str) `notFollowedBy` identChar) |]
 
 -- | Parse a keyword string, throw precise error on failure.
 cutKeyword :: String -> Q Exp
-cutKeyword str = [| $(keyword str) `cut'` Lit str |]
+cutKeyword str =
+  [| cutLvl >> (($(FP.string str) `notFollowedBy` identChar) `cut'` Lit str) >> ws |]

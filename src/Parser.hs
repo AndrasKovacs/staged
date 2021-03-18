@@ -1,47 +1,35 @@
 
-module Parser where
+module Parser (parse) where
 
 import Prelude hiding (pi)
 import Data.Foldable
 import FlatParse.Stateful hiding (Parser, runParser, string, char, cut)
+import qualified Data.ByteString as B
 
 import Lexer
 import Presyntax
 import Common
 
-import Debug.Trace
+-- import Debug.Trace
+
 --------------------------------------------------------------------------------
 
 semi        = $(symbol ";")
 colon       = $(symbol ":")
-parL        = $(symbol "(")
-parR        = $(symbol ")")
 braceL      = $(symbol "{")
-braceR      = $(symbol "}")
-bracketL    = $(symbol "[")
 bracketR    = $(symbol "]")
 comma       = $(symbol ",")
 dot         = $(symbol ".")
 eq          = $(symbol "=")
 arrow       = token $(switch [| case _ of "->" -> pure (); "→" -> pure () |])
 tilde       = $(symbol "~")
-angleL      = $(symbol "<")
-angleR      = $(symbol ">")
-
 cutSemi     = $(cutSymbol ";")
 cutColon    = $(cutSymbol ":")
-cutParL     = $(cutSymbol "(")
 cutParR     = $(cutSymbol ")")
-cutBraceL   = $(cutSymbol "{")
 cutBraceR   = $(cutSymbol "}")
-cutBracketL = $(cutSymbol "[")
 cutBracketR = $(cutSymbol "]")
-cutComma    = $(cutSymbol ",")
 cutDot      = $(cutSymbol ".")
 cutEq       = $(cutSymbol "=")
-cutArrow    = arrow `cut'` Msg "\"->\" or \"→\""
-cutTilde    = $(cutSymbol "~")
-cutAngleL   = $(cutSymbol "<")
 cutAngleR   = $(cutSymbol ">")
 
 --------------------------------------------------------------------------------
@@ -53,8 +41,10 @@ isKeyword span = inSpan span do
      "λ"    -> pure ()
      "fix"  -> pure ()
      "case" -> pure ()
+     "of"   -> pure ()
      "VTy"  -> pure ()
      "CTy"  -> pure ()
+     "data" -> pure ()
      "MTy"  -> pure () |])
   eof
 
@@ -79,13 +69,14 @@ recOrRec l =
            ":" -> ws >> restOfRec l x
            "=" -> ws >> restOfRecCon l x
            "," -> ws >> restOfTuple l (Var x)
+           "]" -> do {r <- getPos; ws; pure (Tuple (Span l r) [Var x])}
            |]) `cut` [":", "=", ","])
       (do
          t <- tm
          guardLvl >> $(switch [| case _ of
            "," -> ws >> restOfTuple l t
            "]" -> ws >> pure t
-           _   -> undefined |])))
+           |])) `cut` [",", "]"])
 
 restOfRec :: Pos -> Span -> Parser Tm
 restOfRec l x = do
@@ -135,8 +126,10 @@ atom = do
     "_"    -> ws >> pure (Hole l)
     "let"  -> skipToVar l \_ -> empty
     "λ"    -> skipToVar l \_ -> empty
+    "of"   -> skipToVar l \_ -> empty
     "fix"  -> skipToVar l \_ -> empty
     "case" -> skipToVar l \_ -> empty
+    "data" -> skipToVar l \_ -> empty
     "VTy"  -> skipToVar l \r -> pure $ Ty (Span l r) UVal
     "CTy"  -> skipToVar l \r -> pure $ Ty (Span l r) UComp
     "MTy"  -> skipToVar l \r -> pure $ Ty (Span l r) UMeta
@@ -267,7 +260,6 @@ lam pos = guardLvl >> $(switch [| case _ of
     Lam pos x (NoName Expl) Nothing <$> lam'
     |])
 
-
 --------------------------------------------------------------------------------
 
 pLet :: Pos -> Parser Tm
@@ -280,7 +272,25 @@ pLet l = do
   u <- tm
   pure $ Let l x a t u
 
---------------------------------------------------------------------------------
+clause :: Parser (Span, [Bind], Tm)
+clause = do
+  con <- cutIdent
+  bs  <- many bind
+  cutDot
+  rhs <- tm
+  pure $ (con, bs, rhs)
+
+pCase :: Pos -> Parser Tm
+pCase l = do
+  t <- tm
+  $(cutKeyword "of")
+  r <- getPos
+  optioned clause
+   (\cl -> Case l t r . (cl:) <$> many (semi *> clause))
+   (pure $ Case l t r [])
+
+fix :: Pos -> Parser Tm
+fix l = Fix l <$> cutBind <*> cutBind <*> (cutDot *> tm)
 
 skipToApp :: Pos -> (Pos -> Parser Tm) -> Parser Tm
 skipToApp l p = branch identChar
@@ -292,10 +302,55 @@ tm :: Parser Tm
 tm = do
   l <- getPos
   guardLvl >> $(switch [| case _ of
-    "λ"   -> skipToApp l \_ -> lam l
-    "\\"  -> ws >> lam l
-    "let" -> skipToApp l \_ -> pLet l
-    _     -> ws >> pi |])
+    "λ"    -> skipToApp l \_ -> lam l
+    "\\"   -> ws >> lam l
+    "let"  -> skipToApp l \_ -> pLet l
+    "case" -> skipToApp l \_ -> pCase l
+    "fix"  -> skipToApp l \_ -> fix l
+    _      -> ws >> pi |])
 
-src :: Parser Tm
-src = ws *> tm <* eof
+--------------------------------------------------------------------------------
+
+topDef :: Span -> Parser TopLevel
+topDef x = local (const 1) do
+  a <- optional (colon *> tm)
+  cutEq
+  rhs <- tm
+  local (const 0) (Definition x a rhs <$> top)
+
+dataDecl :: Parser TopLevel
+dataDecl = do
+  pos <- getPos
+  moreIndented (modify (+4) >> $(cutKeyword "data")) \_ -> do
+    tyConLvl <- get
+    (x, a)   <- moreIndented (cutIdent <* cutColon) \x -> (x,) <$> tm
+    cons     <- many do
+      guardExactLvl tyConLvl
+      moreIndented (ident <* cutColon) \x -> ((x,) <$> tm)
+    local (const 0) (DataDecl pos x a cons <$> top)
+
+top :: Parser TopLevel
+top = do
+  branch eof (pure Nil) do
+  cutExactLvl 0
+  optioned ident topDef dataDecl
+
+--------------------------------------------------------------------------------
+
+src :: Parser TopLevel
+src = ws *> top
+
+--------------------------------------------------------------------------------
+
+parse :: B.ByteString -> Result Error TopLevel
+parse = runParser src
+
+--------------------------------------------------------------------------------
+
+p1 = unlines [
+  "data List : VTy → VTy",
+  "     Nil  : {A} → List A",
+  "     Cons : {A} → A → List A → List A",
+  "",
+  "data Foo : VTy"
+  ]

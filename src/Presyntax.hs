@@ -6,8 +6,9 @@ import Common
 
 data TopLevel
   = Nil
-  | DataDecl Span Tm [(Span, Tm)] TopLevel
+  | DataDecl Pos Span Tm [(Span, Tm)] TopLevel
   | Definition Span (Maybe Tm) Tm TopLevel
+  deriving Show
 
 data Bind
   = Bind Span
@@ -32,8 +33,8 @@ data Tm
   | EmptyRec Span                 -- overloads both tt and Top
   | Tuple Span [Tm]
   | Field Tm Span
-  | Fix Pos Span Span Tm
-  | Case Pos Tm Pos [(Span, [Span], Tm)]
+  | Fix Pos Bind Bind Tm
+  | Case Pos Tm Pos [(Span, [Bind], Tm)]
   | Hole Pos
   deriving Show
 

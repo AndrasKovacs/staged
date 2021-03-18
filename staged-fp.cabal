@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: dd88808248607741fc22f8d8d0336b5872a31e06d361103e25f4420a6b7536a7
+-- hash: 133003bbbd9f1bcd0bdeafbb8aa9b8d40e1e5db717c0ec7b197c6f129f9ae665
 
 name:           staged-fp
 version:        0.1.0.0
@@ -27,6 +27,7 @@ library
       LvlSet
       Parser
       Presyntax
+      Pretty
       Syntax
   other-modules:
       Paths_staged_fp

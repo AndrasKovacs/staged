@@ -14,23 +14,23 @@ import Common
 
 --------------------------------------------------------------------------------
 
-semi        = $(symbol ";")
-colon       = $(symbol ":")
-braceL      = $(symbol "{")
-bracketR    = $(symbol "]")
-comma       = $(symbol ",")
-dot         = $(symbol ".")
-eq          = $(symbol "=")
-arrow       = token $(switch [| case _ of "->" -> pure (); "→" -> pure () |])
-tilde       = $(symbol "~")
-cutSemi     = $(cutSymbol ";")
-cutColon    = $(cutSymbol ":")
-cutParR     = $(cutSymbol ")")
-cutBraceR   = $(cutSymbol "}")
-cutBracketR = $(cutSymbol "]")
-cutDot      = $(cutSymbol ".")
-cutEq       = $(cutSymbol "=")
-cutAngleR   = $(cutSymbol ">")
+semi      = $(symbol ";")
+colon     = $(symbol ":")
+braceL    = $(symbol "{")
+bracketR  = $(symbol "]")
+comma     = $(symbol ",")
+dot       = $(symbol ".")
+eq        = $(symbol "=")
+arrow     = token $(switch [| case _ of "->" -> pure (); "→" -> pure () |])
+tilde     = $(symbol "~")
+semi'     = $(symbol' ";")
+colon'    = $(symbol' ":")
+parR'     = $(symbol' ")")
+braceR'   = $(symbol' "}")
+bracketR' = $(symbol' "]")
+dot'      = $(symbol' ".")
+eq'       = $(symbol' "=")
+angleR'   = $(symbol' ">")
 
 --------------------------------------------------------------------------------
 
@@ -48,13 +48,17 @@ isKeyword span = inSpan span do
      "MTy"  -> pure () |])
   eof
 
-ident :: Parser Span
-ident = token $
-  spanned (identStartChar >> manyIdents) \_ x ->
-  x <$ fails (isKeyword x)
+identBase :: Parser Span
+identBase = spanned (identStartChar >> manyIdents) \_ x -> do
+  fails (isKeyword x)
+  ws
+  pure x
 
-cutIdent :: Parser Span
-cutIdent = ident `cut` [Msg "identifier"]
+ident :: Parser Span
+ident = lvl >> identBase
+
+ident' :: Parser Span
+ident' = lvl' >> identBase `cut'` Msg "identifier"
 
 -- Atomic expressions
 --------------------------------------------------------------------------------
@@ -65,42 +69,42 @@ recOrRec l =
     (\r -> pure (EmptyRec (Span l r)))
     (optioned ident
       (\x -> do
-         guardLvl >> $(switch [| case _ of
+         lvl >> $(switch [| case _ of
            ":" -> ws >> restOfRec l x
            "=" -> ws >> restOfRecCon l x
            "," -> ws >> restOfTuple l (Var x)
            "]" -> do {r <- getPos; ws; pure (Tuple (Span l r) [Var x])}
            |]) `cut` [":", "=", ","])
       (do
-         t <- tm
-         guardLvl >> $(switch [| case _ of
+         t <- tm'
+         lvl >> $(switch [| case _ of
            "," -> ws >> restOfTuple l t
            "]" -> ws >> pure t
            |])) `cut` [",", "]"])
 
 restOfRec :: Pos -> Span -> Parser Tm
 restOfRec l x = do
-  a <- tm
-  let field = (,) <$> (ident <* cutColon) <*> tm
+  a <- tm'
+  let field = (,) <$> (ident <* colon') <*> tm'
   fs <- many (comma *> field)
   r <- getPos
-  cutBracketR
+  bracketR'
   pure $ Rec (Span l r) ((x, a):fs)
 
 restOfTuple :: Pos -> Tm ->  Parser Tm
 restOfTuple l t = do
-  ts <- (:) <$> tm <*> many (comma *> tm)
+  ts <- (:) <$> tm' <*> many (comma *> tm')
   r  <- getPos
-  cutBracketR
+  bracketR'
   pure $ Tuple (Span l r) ts
 
 restOfRecCon :: Pos -> Span ->  Parser Tm
 restOfRecCon l x = do
-  t <- tm
-  let assign = (,) <$> (ident <* cutEq) <*> tm
+  t <- tm'
+  let assign = (,) <$> (ident <* eq') <*> tm'
   ts <- many (comma *> assign)
   r  <- getPos
-  cutBracketR
+  bracketR'
   pure $ RecCon (Span l r) ((x, t):ts)
 
 skipToVar :: Pos -> (Pos -> Parser Tm) -> Parser Tm
@@ -111,18 +115,18 @@ skipToVar l k = branch identChar
 
 up :: Pos -> Parser Tm
 up l = do
-  t <- tm
+  t <- tm'
   r <- getPos
-  cutAngleR
+  angleR'
   pure $ Up (Span l r) t
 
-atom :: Parser Tm
-atom = do
+atomBase :: Parser Tm
+atomBase = do
   l <- getPos
-  guardLvl >> $(switch [| case _ of
+  $(switch [| case _ of
     "["    -> ws *> recOrRec l
     "<"    -> ws *> up l
-    "("    -> ws *> tm <* cutParR
+    "("    -> ws *> tm' <* parR'
     "_"    -> ws >> pure (Hole l)
     "let"  -> skipToVar l \_ -> empty
     "λ"    -> skipToVar l \_ -> empty
@@ -135,16 +139,19 @@ atom = do
     "MTy"  -> skipToVar l \r -> pure $ Ty (Span l r) UMeta
     _      -> do {identChar; manyIdents; r <- getPos; ws; pure (Var (Span l r))} |])
 
-cutAtom :: Parser Tm
-cutAtom = atom `cut` [Msg "atomic expression"]
+atom :: Parser Tm
+atom = lvl >> atomBase
+
+atom' :: Parser Tm
+atom' = lvl' >> atomBase `cut` [Msg "atomic expression"]
 
 --------------------------------------------------------------------------------
 
 goProj :: Parser Tm -> Parser Tm
-goProj p = chainl Field p (dot *> cutIdent)
+goProj p = chainl Field p (dot *> ident')
 
 proj :: Parser Tm
-proj = goProj cutAtom
+proj = goProj atom'
 
 --------------------------------------------------------------------------------
 
@@ -152,12 +159,12 @@ goApp :: Tm -> Parser Tm
 goApp t = branch braceL
   (do optioned (ident <* eq)
         (\x -> do
-          u <- tm
-          cutBraceR
+          u <- tm'
+          braceR'
           goApp (App t u (Named x)))
         (do
-          u <- tm
-          cutBraceR
+          u <- tm'
+          braceR'
           goApp (App t u (NoName Impl))))
   (do optioned atom
         (\u -> do
@@ -173,35 +180,35 @@ app =
 
 --------------------------------------------------------------------------------
 
-pi :: Parser Tm
-pi = do
+pi' :: Parser Tm
+pi' = do
   l <- getPos
-  guardLvl >> $(switch [| case _ of
+  lvl' >> $(switch [| case _ of
 
     "{" -> ws >> do
       some ident >>= \(x:xs) -> do
       holepos <- getPos
-      a <- optioned (colon *> tm) pure (pure (Hole holepos))
-      cutBraceR
+      a <- optioned (colon *> tm') pure (pure (Hole holepos))
+      braceR'
       optional_ arrow
-      b <- pi
+      b <- pi'
       let !res = foldr' (\x@(Span x1 x2) -> Pi x1 (Bind x) Impl a) b xs
       pure $! Pi l (Bind x) Impl a res
 
     "(" -> ws >> do
       optioned (some ident <* colon)
         (\(x:xs) -> do
-            a <- tm <* cutParR
+            a <- tm' <* parR'
             optional_ arrow
-            b <- pi
+            b <- pi'
             let !res = foldr' (\x@(Span x1 x2) -> Pi x1 (Bind x) Expl a) b xs
             pure $! Pi l (Bind x) Expl a res)
-        (do t <- tm <* cutParR
-            branch arrow (Pi l DontBind Expl t <$> pi) (pure t))
+        (do t <- tm' <* parR'
+            branch arrow (Pi l DontBind Expl t <$> pi') (pure t))
 
     _   -> ws >> do
       t <- app
-      branch arrow (Pi l DontBind Expl t <$> pi) (pure t)
+      branch arrow (Pi l DontBind Expl t <$> pi') (pure t)
     |])
 
 --------------------------------------------------------------------------------
@@ -209,88 +216,89 @@ pi = do
 bind :: Parser Bind
 bind = branch $(symbol "_") (pure DontBind) (Bind <$> ident)
 
-cutBind :: Parser Bind
-cutBind = bind `cut'` Msg "binder"
+bind' :: Parser Bind
+bind' = lvl' >> bind `cut'` Msg "binder"
 
-lam' :: Parser Tm
-lam' = do
+goLam :: Parser Tm
+goLam = do
   pos <- getPos
-  guardLvl >> $(switch [| case _ of
+  lvl' >> $(switch [| case _ of
 
     "{" -> ws >>
       branch $(symbol "_")
-        (Lam pos DontBind (NoName Impl) <$> optional (colon *> tm) <*> (cutBraceR *> lam'))
-        (do x <- cutIdent
+        (Lam pos DontBind (NoName Impl) <$> optional (colon *> tm') <*> (braceR' *> goLam))
+        (do x <- ident'
             branch eq
-              (do y <- cutIdent
-                  Lam pos (Bind y) (Named x) Nothing <$> (cutBraceR *> lam'))
-              (Lam pos (Bind x) (NoName Impl) <$> optional (colon *> tm) <*> (cutBraceR *> lam')))
+              (do y <- ident'
+                  Lam pos (Bind y) (Named x) Nothing <$> (braceR' *> goLam))
+              (Lam pos (Bind x) (NoName Impl) <$> optional (colon *> tm') <*> (braceR' *> goLam)))
 
     "(" -> ws >> do
-      x <- cutIdent
-      a <- cutColon *> tm <* cutParR
-      Lam pos (Bind x) (NoName Expl) (Just a) <$> lam'
+      x <- ident'
+      a <- colon' *> tm' <* parR'
+      Lam pos (Bind x) (NoName Expl) (Just a) <$> goLam
 
-    "." -> ws >> tm
+    "." -> ws >> tm'
+    "_" -> ws >> Lam pos DontBind (NoName Expl) Nothing <$> goLam
 
     _ -> ws >> do
-      x <- cutBind
-      Lam pos x (NoName Expl) Nothing <$> lam'
+      x <- lvl' >> identBase `cut` [Msg "binder", "."]
+      Lam pos (Bind x) (NoName Expl) Nothing <$> goLam
       |])
 
-lam :: Pos -> Parser Tm
-lam pos = guardLvl >> $(switch [| case _ of
+lam' :: Pos -> Parser Tm
+lam' pos = lvl' >> $(switch [| case _ of
 
   "{" -> ws >>
     branch $(symbol "_")
-      (Lam pos DontBind (NoName Impl) <$> optional (colon *> tm) <*> (cutBraceR *> lam'))
-      (do x <- cutIdent
+      (Lam pos DontBind (NoName Impl) <$> optional (colon *> tm') <*> (braceR' *> goLam))
+      (do x <- ident'
           branch eq
-            (do y <- cutIdent
-                Lam pos (Bind y) (Named x) Nothing <$> (cutBraceR *> lam'))
-            (Lam pos (Bind x) (NoName Impl) <$> optional (colon *> tm) <*> (cutBraceR *> lam')))
+            (do y <- ident'
+                Lam pos (Bind y) (Named x) Nothing <$> (braceR' *> goLam))
+            (Lam pos (Bind x) (NoName Impl) <$> optional (colon *> tm') <*> (braceR' *> goLam)))
 
   "(" -> ws >> do
-    x <- cutIdent
-    a <- cutColon *> tm <* cutParR
-    Lam pos (Bind x) (NoName Expl) (Just a) <$> lam'
+    x <- ident'
+    a <- colon' *> tm' <* parR'
+    Lam pos (Bind x) (NoName Expl) (Just a) <$> goLam
 
   _ -> ws >> do
-    x <- cutBind
-    Lam pos x (NoName Expl) Nothing <$> lam'
+    x <- bind'
+    Lam pos x (NoName Expl) Nothing <$> goLam
     |])
 
 --------------------------------------------------------------------------------
 
-pLet :: Pos -> Parser Tm
-pLet l = do
-  x <- cutIdent
-  a <- optional (colon *> tm)
-  cutEq
-  t <- tm
-  cutSemi
-  u <- tm
+pLet' :: Pos -> Parser Tm
+pLet' l = do
+  x <- ident'
+  a <- optional (colon *> tm')
+  eq'
+  t <- tm'
+  semi'
+  u <- tm'
   pure $ Let l x a t u
 
 clause :: Parser (Span, [Bind], Tm)
 clause = do
-  con <- cutIdent
+  con <- ident
   bs  <- many bind
-  cutDot
-  rhs <- tm
+  dot'
+  rhs <- tm'
   pure $ (con, bs, rhs)
 
-pCase :: Pos -> Parser Tm
-pCase l = do
-  t <- tm
-  $(cutKeyword "of")
+pCase' :: Pos -> Parser Tm
+pCase' l = do
+  t <- tm'
+  $(keyword' "of")
   r <- getPos
   optioned clause
    (\cl -> Case l t r . (cl:) <$> many (semi *> clause))
    (pure $ Case l t r [])
 
-fix :: Pos -> Parser Tm
-fix l = Fix l <$> cutBind <*> cutBind <*> (cutDot *> tm)
+fix' :: Pos -> Parser Tm
+fix' l = Fix l <$> bind' <*> bind' <*> (dot' *> tm')
 
 skipToApp :: Pos -> (Pos -> Parser Tm) -> Parser Tm
 skipToApp l p = branch identChar
@@ -298,42 +306,46 @@ skipToApp l p = branch identChar
   (do {r <- getPos; ws; p r})
 {-# inline skipToApp #-}
 
-tm :: Parser Tm
-tm = do
+tmBase :: Parser Tm
+tmBase = do
   l <- getPos
-  guardLvl >> $(switch [| case _ of
-    "λ"    -> skipToApp l \_ -> lam l
-    "\\"   -> ws >> lam l
-    "let"  -> skipToApp l \_ -> pLet l
-    "case" -> skipToApp l \_ -> pCase l
-    "fix"  -> skipToApp l \_ -> fix l
-    _      -> ws >> pi |])
+  $(switch [| case _ of
+    "λ"    -> skipToApp l \_ -> lam' l
+    "\\"   -> ws >> lam' l
+    "let"  -> skipToApp l \_ -> pLet' l
+    "case" -> skipToApp l \_ -> pCase' l
+    "fix"  -> skipToApp l \_ -> fix' l
+    _      -> ws >> pi' |])
+{-# inline tmBase #-}
+
+tm' :: Parser Tm
+tm' = lvl' >> tmBase `cut` [Msg "lambda expression", "let", "case", "fix"]
 
 --------------------------------------------------------------------------------
 
 topDef :: Span -> Parser TopLevel
 topDef x = local (const 1) do
-  a <- optional (colon *> tm)
-  cutEq
-  rhs <- tm
+  a <- optional (colon *> tm')
+  eq'
+  rhs <- tm'
   local (const 0) (Definition x a rhs <$> top)
 
 dataDecl :: Parser TopLevel
 dataDecl = do
   pos <- getPos
-  moreIndented (modify (+4) >> $(cutKeyword "data")) \_ -> do
+  moreIndented (modify (+4) >> $(keyword "data")) \_ -> do
     tyConLvl <- get
-    (x, a)   <- moreIndented (cutIdent <* cutColon) \x -> (x,) <$> tm
+    (x, a)   <- moreIndented (ident' <* colon') \x -> (x,) <$> tm'
     cons     <- many do
-      guardExactLvl tyConLvl
-      moreIndented (ident <* cutColon) \x -> ((x,) <$> tm)
+      exactLvl tyConLvl
+      moreIndented (ident <* colon') \x -> ((x,) <$> tm')
     local (const 0) (DataDecl pos x a cons <$> top)
 
 top :: Parser TopLevel
-top = do
-  branch eof (pure Nil) do
-  cutExactLvl 0
-  optioned ident topDef dataDecl
+top =  (exactLvl 0 >> (ident >>= topDef))
+   <|> (exactLvl 0 >> dataDecl)
+   <|> (Nil <$ eof)
+
 
 --------------------------------------------------------------------------------
 

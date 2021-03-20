@@ -12,54 +12,42 @@ import qualified Data.Set as S
 import Data.Char
 import Data.String
 
--- import Debug.Trace
-
 --------------------------------------------------------------------------------
 
--- | An expected item which is displayed in error messages.
 data Expected
-  = Lit String  -- ^ An expected literal string.
-  | Msg String  -- ^ A description of what's expected.
+  = Lit String
+  | Msg String
   deriving (Eq, Show, Ord)
 
 instance IsString Expected where fromString = Lit
 
--- | A parsing error, without source position.
 data Error'
-  = Precise Expected     -- ^ A precisely known error, like leaving out "in" from "let".
-  | ExactIndent Int      -- ^ Expected indentation exactly the given `Int`.
-  | IndentMore  Int      -- ^ Expected indentation at least the given `Int`.
-  | Imprecise [Expected] -- ^ An imprecise error, when we expect a number of different things,
-                         --   but parse something else.
+  = Precise Expected
+  | ExactIndent Int
+  | IndentMore  Int
+  | Imprecise [Expected]
+
   deriving Show
 
--- | A source-annotated error.
 data Error = Error !Pos !Error'
   deriving Show
 
--- | Merge two errors. Imprecise errors are merged by appending lists of expected items.  If we have
---   a precise and an imprecise error, we throw away the imprecise one. If we have two precise
---   errors, we choose the left one, which is by convention the one throw by an inner parser.
---
---   The point of prioritizing inner and precise errors is to suppress the deluge of "expected"
---   items, and instead try to point to a concrete issue to fix.
 merge :: Error -> Error -> Error
-merge err@(Error p e) err'@(Error p' e') = case (e, e') of
-  (ExactIndent _, _)            -> err
-  (_, ExactIndent _)            -> err'
-  (IndentMore _, _)             -> err
-  (_, IndentMore _)             -> err'
-  (Precise _, _)                -> err
-  (_, Precise _)                -> err'
-  (Imprecise ss, Imprecise ss') -> Error p (Imprecise (ss ++ ss'))
-   -- note: we never recover from errors, so all merged errors will in fact have exactly the same
-   -- Pos. So we can simply throw away one of the two here.
-{-# noinline merge #-} -- merge is "cold" code, so we shouldn't inline it.
+merge err@(Error p e) err'@(Error p' e')
+  | p < p'    = err'
+  | p' < p    = err
+  | otherwise = case (e, e') of
+     (ExactIndent _ , _             ) -> err
+     (_             , ExactIndent _ ) -> err'
+     (IndentMore _  , _             ) -> err
+     (_             , IndentMore _  ) -> err'
+     (Precise _     , _             ) -> err
+     (_             , Precise _     ) -> err'
+     (Imprecise ss  , Imprecise ss' ) -> Error p (Imprecise (ss ++ ss'))
+{-# noinline merge #-}
 
 type Parser = FP.Parser Int Error
 
--- | Pretty print an error. The `B.ByteString` input is the source file. The offending line from the
---   source is displayed in the output.
 prettyError :: B.ByteString -> Error -> String
 prettyError b (Error pos e) =
 
@@ -119,7 +107,7 @@ testParser p str = case packUTF8 str of
   b -> case runParser p b of
     Err e    -> putStrLn $ prettyError b e
     OK a _ _ -> print a
-    Fail     -> putStrLn "uncaught parse error"
+    Fail     -> putStrLn "parse error"
 
 -- | Consume whitespace. We track the number of whitespace characters read since the start of the
 --   current line. We don't need to track column numbers precisely! Relevant indentation consists of
@@ -152,48 +140,49 @@ multilineComment = go (1 :: Int) where
     "\n" -> put 0       >> go n
     "-}" -> modify (+2) >> go (n - 1)
     "{-" -> modify (+2) >> go (n + 1)
-    _    -> branch anyWord8 (modify (+1) >> go n) (pure ()) |])
+    _    -> branch anyChar (modify (+1) >> go n) (pure ()) |])
 
 -- | Query the current indentation level, fail if it's smaller than the current expected level.
-guardLvl :: Parser Int
-guardLvl = do
+lvl :: Parser Int
+lvl = do
   lvl <- ask
   currentLvl <- get
   if currentLvl < lvl
     then empty
     else pure currentLvl
-{-# inline guardLvl #-}
+{-# inline lvl #-}
 
--- | Same as `guardLvl` except we throw an error on mismatch.
-cutLvl :: Parser Int
-cutLvl = do
+-- | Same as `lvl` except we throw an error on mismatch.
+lvl' :: Parser Int
+lvl' = do
   lvl <- ask
   currentLvl <- get
   if currentLvl < lvl
     then err $ IndentMore lvl
     else pure currentLvl
-{-# inline cutLvl #-}
+{-# inline lvl' #-}
 
--- -- | Throw error if two levels aren't the same.
--- cutLvlEq :: Int -> Int -> Parser ()
--- cutLvlEq l l' | l == l' = pure ()
--- cutLvlEq l l' = err (ExactIndent l)
-
-guardExactLvl :: Int -> Parser ()
-guardExactLvl l = do
+-- | Fail if the current level is not the expected one.
+exactLvl :: Int -> Parser ()
+exactLvl l = do
   l' <- get
   if l == l' then pure () else empty
 
 -- | Throw error if the current level is not the expected one.
-cutExactLvl :: Int -> Parser ()
-cutExactLvl l = do
+exactLvl' :: Int -> Parser ()
+exactLvl' l = do
   l' <- get
   if l == l' then pure () else err (ExactIndent l)
 
 -- | We check indentation first, then read the token, then read trailing whitespace.
 token :: Parser a -> Parser a
-token p = guardLvl *> p <* ws
+token p = lvl *> p <* ws
 {-# inline token #-}
+
+-- | `token`, but indentation failure is an error.
+token' :: Parser a -> Parser a
+token' p = lvl' *> p <* ws
+{-# inline token' #-}
 
 moreIndented :: Parser a -> (a -> Parser b) -> Parser b
 moreIndented pa k = do
@@ -234,9 +223,9 @@ symbol :: String -> Q Exp
 symbol str = [| token $(FP.string str) |]
 
 -- | Parser a non-keyword string, throw precise error on failure.
-cutSymbol :: String -> Q Exp
-cutSymbol str =
-  [| cutLvl >> ($(FP.string str) `cut'` Lit str) >> ws |]
+symbol' :: String -> Q Exp
+symbol' str =
+  [| token' ($(FP.string str) `cut'` Lit str) |]
 
 -- | Parse a keyword string.
 keyword :: String -> Q Exp
@@ -244,6 +233,6 @@ keyword str =
   [| token ($(FP.string str) `notFollowedBy` identChar) |]
 
 -- | Parse a keyword string, throw precise error on failure.
-cutKeyword :: String -> Q Exp
-cutKeyword str =
-  [| cutLvl >> (($(FP.string str) `notFollowedBy` identChar) `cut'` Lit str) >> ws |]
+keyword' :: String -> Q Exp
+keyword' str =
+  [| token' (($(FP.string str) `notFollowedBy` identChar) `cut'` Lit str) |]

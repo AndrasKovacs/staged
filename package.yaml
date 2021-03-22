@@ -28,6 +28,7 @@ default-extensions:
   - RankNTypes
   - Strict
   - TemplateHaskell
+  - ViewPatterns
   - TupleSections
   - UnboxedTuples
 
@@ -42,10 +43,11 @@ ghc-options:
   - -O
   - -fmax-worker-args=12
   # - -ddump-simpl
+  # - -ddump-to-file
   # - -dsuppress-all
   # - -dno-suppress-type-signatures
   # - -ddump-stg
-  # - -ddump-to-file
+
 
 library:
   source-dirs:

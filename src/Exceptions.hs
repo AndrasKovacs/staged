@@ -8,7 +8,7 @@ import GHC.Exts
 import qualified Control.Exception as Ex
 import IO
 
--- import Common
+import Common
 -- import Syntax
 -- import qualified Presyntax as P
 
@@ -58,12 +58,12 @@ data Ex =
 --   -- Elaboration errors
 --   | ElabError Locals P.Tm ElabError
 
--- -- | Don't let any non-standard `Ex` exception escape. This should be used on
--- --   the top of the main function of the program.
--- fenceEx :: Dbg => IO a -> IO a
--- fenceEx act = act `Exceptions.catch#` \case
---   SomeException e -> Ex.throw e
---   _               -> impossible
+-- | Don't let any non-standard `Ex` exception escape. This should be used on
+--   the top of the main function of the program.
+fenceEx :: Dbg => IO a -> IO a
+fenceEx act = act `Exceptions.catch#` \case
+  SomeException e -> Ex.throw e
+  _               -> impossible
 
 -- --------------------------------------------------------------------------------
 

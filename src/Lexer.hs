@@ -167,12 +167,14 @@ exactLvl :: Int -> Parser ()
 exactLvl l = do
   l' <- get
   if l == l' then pure () else empty
+{-# inline exactLvl #-}
 
 -- | Throw error if the current level is not the expected one.
 exactLvl' :: Int -> Parser ()
 exactLvl' l = do
   l' <- get
   if l == l' then pure () else err (ExactIndent l)
+{-# inline exactLvl' #-}
 
 -- | We check indentation first, then read the token, then read trailing whitespace.
 token :: Parser a -> Parser a

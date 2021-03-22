@@ -25,7 +25,7 @@ data Tm
   | Lam Pos Bind ArgInfo (Maybe Tm) Tm
   | App Tm Tm ArgInfo
   | Ty Span U
-  | Lift Span Tm
+  | Lift Pos Tm
   | Up   Span Tm
   | Down Pos Tm
   | Rec    Span [(Span, Tm)]
@@ -48,7 +48,7 @@ span t = Span (left t) (right t) where
     Lam l _ _ _ _       -> l
     App t u _           -> left t
     Ty (Span l _) _     -> l
-    Lift (Span l _) _   -> l
+    Lift l _            -> l
     Up (Span l _) _     -> l
     Down l _            -> l
     Rec (Span l _) _    -> l
@@ -68,7 +68,7 @@ span t = Span (left t) (right t) where
     Lam _ _ _ _ t       -> right t
     App _ t _           -> right t
     Ty (Span _ r) _     -> r
-    Lift (Span _ r) _   -> r
+    Lift _ t            -> right t
     Up (Span _ r) _     -> r
     Down _ t            -> right t
     Rec (Span _ r) _    -> r

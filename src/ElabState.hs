@@ -5,73 +5,77 @@ module ElabState where
 import IO
 import qualified Data.Array.Dynamic.L as D
 import qualified Data.Array.LM        as A
-import qualified Data.ByteString      as B
 
 import Common
 import qualified Syntax as S
 import qualified Values as V
 
 
--- -- Top scope
--- --------------------------------------------------------------------------------
+-- Top scope
+--------------------------------------------------------------------------------
 
--- data TopEntry
---   = TEDef ~V.WVal V.Ty S.Tm (Maybe S.Ty) B.ByteString
---   | TEPostulate V.Ty S.Ty B.ByteString
+data TopEntry
+  -- ^ Rhs value, rhs type, rhs value, rhs type, name, source position
+  = TEDef1 ~V.Val1 V.Ty S.Tm1 (Maybe S.Ty) Name Pos
+  | TEDef0 ~V.Val0 V.Ty S.Tm0 (Maybe S.Ty) Name Pos
+  -- ^ Type, type, link to data constructors, name, pos
+  | TETyCon V.Ty S.Ty [Lvl] Name Pos
+  -- ^ Type, type, link to type constructor, name, pos, stage
+  | TEDataCon V.Ty S.Ty Lvl Name Pos Stage
 
--- -- TODO: we'll implement top resizing and allocation later
--- topSize :: Int
--- topSize = 50000
+-- TODO: we'll implement top resizing and allocation later
+topSize :: Int
+topSize = 50000
 
--- top :: A.Array TopEntry
--- top = runIO (A.new topSize (error "top: undefined entry"))
--- {-# noinline top #-}
+top :: A.Array TopEntry
+top = runIO (A.new topSize (error "top: undefined entry"))
+{-# noinline top #-}
 
--- readTop :: Lvl -> IO TopEntry
--- readTop (Lvl x) | 0 <= x && x < topSize = A.read top x
---                 | otherwise             = error "index out of bounds"
--- {-# inline readTop #-}
+readTop :: Lvl -> IO TopEntry
+readTop (Lvl x) | 0 <= x && x < topSize = A.read top x
+                | otherwise             = error "index out of bounds"
+{-# inline readTop #-}
 
--- -- Metacontext
--- --------------------------------------------------------------------------------
+-- Metacontext
+--------------------------------------------------------------------------------
 
--- data MetaEntry
---   = MEUnsolved V.Ty S.U
---   | MESolved V.Val V.Ty S.U
+data MetaEntry
+  = MEUnsolved V.Ty U
+  | MESolved V.Val V.Ty U
 
--- metaCxt :: D.Array MetaEntry
--- metaCxt = runIO D.empty
--- {-# noinline metaCxt #-}
+metaCxt :: D.Array MetaEntry
+metaCxt = runIO D.empty
+{-# noinline metaCxt #-}
 
--- readMeta :: MetaVar -> IO MetaEntry
--- readMeta (MetaVar i) = D.read metaCxt i
--- {-# inline readMeta #-}
+readMeta :: MetaVar -> IO MetaEntry
+readMeta (MetaVar i) = D.read metaCxt i
+{-# inline readMeta #-}
 
--- newMeta :: V.Ty -> S.U -> IO MetaVar
--- newMeta a u = do
---   s <- D.size metaCxt
---   D.push metaCxt (MEUnsolved a u)
---   pure (MetaVar s)
--- {-# inline newMeta #-}
+newMeta :: V.Ty -> U -> IO MetaVar
+newMeta a u = do
+  s <- D.size metaCxt
+  D.push metaCxt (MEUnsolved a u)
+  pure (MetaVar s)
+{-# inline newMeta #-}
 
--- -- Universe metacontext
--- --------------------------------------------------------------------------------
+-- Universe metacontext
+--------------------------------------------------------------------------------
 
--- data UMetaEntry
---   = UMEUnsolved
---   | UMESolved S.U
+data UMetaEntry
+  = UMEUnsolved
+  | UMESolved U
 
--- uCxt :: D.Array UMetaEntry
--- uCxt = runIO D.empty
--- {-# noinline uCxt #-}
+uCxt :: D.Array UMetaEntry
+uCxt = runIO D.empty
+{-# noinline uCxt #-}
 
--- readUMeta :: UMetaVar -> IO UMetaEntry
--- readUMeta (UMetaVar i) = D.read uCxt i
--- {-# inline readUMeta #-}
+readUMeta :: UMetaVar -> IO UMetaEntry
+readUMeta (UMetaVar i) = D.read uCxt i
+{-# inline readUMeta #-}
 
--- newUMeta :: IO UMetaVar
--- newUMeta = do
---   s <- D.size uCxt
---   D.push uCxt UMEUnsolved
---   pure (UMetaVar s)
--- {-# inline newUMeta #-}
+newUMeta :: IO UMetaVar
+newUMeta = do
+  s <- D.size uCxt
+  D.push uCxt UMEUnsolved
+  pure (UMetaVar s)
+{-# inline newUMeta #-}

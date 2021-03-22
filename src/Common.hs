@@ -45,10 +45,16 @@ data ArgInfo
   | Named {-# unpack #-} Span
   deriving Show
 
+data Stage
+  = Runtime
+  | Static
+  deriving Show
+
 data U
-  = UVal    -- value types
-  | UComp   -- computation types
-  | UMeta   -- meta types
+  = UVal          -- value types
+  | UComp         -- computation types
+  | UMeta         -- meta types
+  | UVar UMetaVar
   deriving Show
 
 newtype Ix = Ix Int

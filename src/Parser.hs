@@ -32,6 +32,7 @@ dot'      = $(symbol' ".")
 eq'       = $(symbol' "=")
 angleR'   = $(symbol' ">")
 
+
 --------------------------------------------------------------------------------
 
 isKeyword :: Span -> Parser ()
@@ -157,7 +158,7 @@ proj = goProj atom'
 
 goApp :: Tm -> Parser Tm
 goApp t = branch braceL
-  (do optioned (ident <* eq)
+  (do optioned (ident <* eq')
         (\x -> do
           u <- tm'
           braceR'
@@ -172,11 +173,13 @@ goApp t = branch braceL
           goApp (App t u (NoName Expl)))
         (pure t))
 
-app :: Parser Tm
-app =
-  optioned (getPos <* tilde)
-    (\pos -> goApp =<< (Down pos <$> proj))
-    (goApp =<< proj)
+app' :: Parser Tm
+app' = do
+  pos <- getPos
+  lvl' >> $(switch [| case _ of
+    "~" -> do {ws; p <- proj; goApp (Down pos p)}
+    "^" -> do {ws; p <- proj; goApp (Lift pos p)}
+    _   -> do {goApp =<< proj} |])
 
 --------------------------------------------------------------------------------
 
@@ -185,7 +188,7 @@ pi' = do
   l <- getPos
   lvl' >> $(switch [| case _ of
 
-    "{" -> ws >> do
+    "{" -> ws >>
       some ident >>= \(x:xs) -> do
       holepos <- getPos
       a <- optioned (colon *> tm') pure (pure (Hole holepos))
@@ -207,17 +210,18 @@ pi' = do
             branch arrow (Pi l DontBind Expl t <$> pi') (pure t))
 
     _   -> ws >> do
-      t <- app
+      t <- app'
       branch arrow (Pi l DontBind Expl t <$> pi') (pure t)
     |])
 
 --------------------------------------------------------------------------------
 
 bind :: Parser Bind
-bind = branch $(symbol "_") (pure DontBind) (Bind <$> ident)
+bind = branch $(symbol "_") (pure DontBind) (Bind <$> identBase)
 
 bind' :: Parser Bind
-bind' = lvl' >> bind `cut'` Msg "binder"
+bind' = branch $(symbol' "_") (pure DontBind) (Bind <$> identBase)
+        `cut'` Msg "binder"
 
 goLam :: Parser Tm
 goLam = do
@@ -263,9 +267,10 @@ lam' pos = lvl' >> $(switch [| case _ of
     a <- colon' *> tm' <* parR'
     Lam pos (Bind x) (NoName Expl) (Just a) <$> goLam
 
+  "_" -> ws >> Lam pos DontBind (NoName Expl) Nothing <$> goLam
   _ -> ws >> do
-    x <- bind'
-    Lam pos x (NoName Expl) Nothing <$> goLam
+    x <- lvl' >> identBase `cut` [Msg "binder", "."]
+    Lam pos (Bind x) (NoName Expl) Nothing <$> goLam
     |])
 
 --------------------------------------------------------------------------------

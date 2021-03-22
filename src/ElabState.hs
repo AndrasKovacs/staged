@@ -16,12 +16,11 @@ import qualified Values as V
 
 data TopEntry
   -- ^ Rhs value, rhs type, rhs value, rhs type, name, source position
-  = TEDef1 ~V.Val1 V.Ty S.Tm1 (Maybe S.Ty) Name Pos
-  | TEDef0 ~V.Val0 V.Ty S.Tm0 (Maybe S.Ty) Name Pos
+  = TEDef ~V.Val V.Ty U S.Tm (Maybe S.Ty) Name Pos
   -- ^ Type, type, link to data constructors, name, pos
   | TETyCon V.Ty S.Ty [Lvl] Name Pos
-  -- ^ Type, type, link to type constructor, name, pos, stage
-  | TEDataCon V.Ty S.Ty Lvl Name Pos Stage
+  -- ^ Type, type, link to type constructor, name, pos
+  | TEDataCon V.Ty S.Ty Lvl Name Pos
 
 -- TODO: we'll implement top resizing and allocation later
 topSize :: Int

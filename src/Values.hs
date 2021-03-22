@@ -1,48 +1,61 @@
-{-# options_ghc -funbox-strict-fields #-}
 
 module Values where
 
 import Common
 import qualified Syntax as S
 
-
-
 data Close a = Close Env a
-
-data Env = Nil | Snoc Env ~Val1
+data Env = Nil | Snoc Env ~Val
 
 data Spine
   = SNil
-  | SApp Spine Val1 Icit
+  | SApp Spine Val Icit
 
 data UnfoldHead
   = UHMeta MetaVar
   | UHTop Lvl
 
-type Ty = Val1
+type Ty = Val
 
 data RigidHead
   = RHVar Lvl
-  | RHDataCon1 Lvl Int
+  | RHDataCon Lvl Int
   | RHTyCon Lvl
 
-data Val1
+data Val
+  -- meta
   = Rigid RigidHead Spine
   | Flex MetaVar Spine
-  | Pi Name Icit Ty (Close S.Tm1)
-  | Lam1 Name Icit Ty (Close S.Tm1)
-  | Lift Val1
-  | Up Val0
-  | Rec [(Name, Ty)]
+  | Unfold UnfoldHead Spine ~Val
+  | Pi Name Icit Ty {-# unpack #-} (Close S.Tm)
+  | Fun Val Val
+  | Up Val
+  | Lift Val
+  | Rec [(Name, Val)]
+  | Ty U
 
-data Val0
-  = Var0 Lvl
-  | Top0 Lvl
-  | Let0 Name Ty Val0 (Close S.Tm0)
-  | Lam0 Name Ty (Close S.Tm0)
-  | App Val0 Val0
-  | DataCon0 Lvl Int
-  | RecCon [(Name, Val0)]
-  | Field Val0 Name Int
-  | Case Val0 (Close [(Lvl, [Name], S.Tm0)])
-  | Down Val1
+  -- mixed
+  | Lam Name Icit Ty {-# unpack #-} (Close S.Tm)
+
+  -- object
+  | Top Lvl
+  | App Val Val Icit
+  | Let Name Ty Val {-# unpack #-} (Close S.Tm)
+  | Down Val
+  | DataCon Lvl Int
+  | RecCon [(Name, Val)]
+  | Case Val {-# unpack #-} (Close [(Lvl, [Name], S.Tm)])
+  | Field Val Name Int
+
+
+-- data Val
+--   = Var0 Lvl
+--   | Top0 Lvl
+--   | Let0 Name Ty Val (Close S.Tm0)
+--   | Lam0 Name Ty (Close S.Tm0)
+--   | App Val Val
+--   | DataCon0 Lvl Int
+--   | RecCon [(Name, Val)]
+--   | Field Val Name Int
+--   | Case Val (Close [(Lvl, [Name], S.Tm0)])
+--   | Down Val

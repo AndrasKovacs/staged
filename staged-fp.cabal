@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 6eab6ef5ab8182a4ceb4a9ee4a4c2e96de09998e58ec348485323294c68f1f97
+-- hash: 9d14c70be5ba8a01cb0f5c782c1efd2e235eb9d4d32b86024913c2a8ad37aff4
 
 name:           staged-fp
 version:        0.1.0.0
@@ -20,6 +20,7 @@ build-type:     Simple
 library
   exposed-modules:
       Common
+      Cxt
       ElabState
       Evaluation
       Exceptions
@@ -36,7 +37,7 @@ library
   hs-source-dirs:
       src
   default-extensions: BangPatterns BlockArguments ConstraintKinds DataKinds DerivingVia ExplicitNamespaces GADTs KindSignatures LambdaCase MagicHash OverloadedStrings PatternSynonyms PolyKinds RankNTypes Strict TemplateHaskell ViewPatterns TupleSections UnboxedTuples
-  ghc-options: -Wall -Wno-name-shadowing -Wno-unused-binds -Wno-unused-matches -Wno-missing-signatures -Wno-unused-do-bind -fplugin-opt=Test.Inspection.Plugin:skip-O0 -O -fmax-worker-args=12
+  ghc-options: -Wall -Wno-name-shadowing -Wno-unused-binds -Wno-unused-matches -Wno-missing-signatures -Wno-unused-do-bind -fplugin-opt=Test.Inspection.Plugin:skip-O0 -O -fmax-worker-args=12 -ddump-simpl -ddump-to-file -dsuppress-all -dno-suppress-type-signatures -ddump-stg
   build-depends:
       base >=4.7 && <5
     , bytestring
@@ -57,7 +58,7 @@ executable app
   hs-source-dirs:
       app
   default-extensions: BangPatterns BlockArguments ConstraintKinds DataKinds DerivingVia ExplicitNamespaces GADTs KindSignatures LambdaCase MagicHash OverloadedStrings PatternSynonyms PolyKinds RankNTypes Strict TemplateHaskell ViewPatterns TupleSections UnboxedTuples
-  ghc-options: -Wall -Wno-name-shadowing -Wno-unused-binds -Wno-unused-matches -Wno-missing-signatures -Wno-unused-do-bind -fplugin-opt=Test.Inspection.Plugin:skip-O0 -O -fmax-worker-args=12 -fllvm -O2 -rtsopts
+  ghc-options: -Wall -Wno-name-shadowing -Wno-unused-binds -Wno-unused-matches -Wno-missing-signatures -Wno-unused-do-bind -fplugin-opt=Test.Inspection.Plugin:skip-O0 -O -fmax-worker-args=12 -ddump-simpl -ddump-to-file -dsuppress-all -dno-suppress-type-signatures -ddump-stg -fllvm -O2 -rtsopts
   build-depends:
       base >=4.7 && <5
     , staged-fp

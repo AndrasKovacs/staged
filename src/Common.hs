@@ -45,11 +45,6 @@ data ArgInfo
   | Named {-# unpack #-} Span
   deriving Show
 
-data Stage
-  = Runtime
-  | Static
-  deriving Show
-
 data U
   = UVal          -- value types
   | UComp         -- computation types
@@ -82,5 +77,7 @@ instance Hashable RawName where
   hashWithSalt salt (RawName str) = fnv164 str salt
   {-# inline hashWithSalt #-}
 
-data Name = NName {-# unpack #-} RawName
+data Name
+  = NName {-# unpack #-} RawName
+  | NEmpty
   deriving (Eq, Show)

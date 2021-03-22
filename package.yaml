@@ -42,11 +42,11 @@ ghc-options:
   - -fplugin-opt=Test.Inspection.Plugin:skip-O0
   - -O
   - -fmax-worker-args=12
-  # - -ddump-simpl
-  # - -ddump-to-file
-  # - -dsuppress-all
-  # - -dno-suppress-type-signatures
-  # - -ddump-stg
+  - -ddump-simpl
+  - -ddump-to-file
+  - -dsuppress-all
+  - -dno-suppress-type-signatures
+  - -ddump-stg
 
 
 library:

@@ -1,15 +1,11 @@
-{-# options_ghc -Wno-unused-imports #-}
 
-module Evaluation where
+module Evaluation (ca1, ca1', ca0', up, down, eval0, eval1) where
 
-import IO
-
-import Common
+import           IO
+import           Common
 import qualified Syntax as S
 import qualified ElabState as ES
-import Values
-
--- import Control.Monad
+import           Values
 
 --------------------------------------------------------------------------------
 
@@ -18,252 +14,125 @@ var (Snoc _ v)   0 = v
 var (Snoc env _) x = var env (x - 1)
 var _ _            = impossible
 
+meta :: MetaVar -> Val
+meta x = runIO $ ES.readMeta x >>= \case
+  ES.MEUnsolved{}    -> pure $ Flex x SNil
+  ES.MESolved v  _ _ -> pure $ Unfold (UHMeta x) SNil v
+{-# inline meta #-}
+
 top :: Lvl -> Val
 top x = runIO $ ES.readTop x >>= \case
-  ES.TEDef v _ _ _ _ _ -> pure $ Unfold (UHTop x) SNil v
-  _                    -> impossible
+  ES.TEDef v _ _ _ _ _ _ -> pure $ Unfold (UHTop x) SNil v
+  _                      -> impossible
 {-# inline top #-}
+
+-- | Strict closure application.
+ca1' :: Close S.Tm -> Val -> Val
+ca1' (Close env t) u = eval1 (Snoc env u) t
+{-# inline ca1' #-}
+
+-- | Lazy closure application.
+ca1 :: Close S.Tm -> Val -> Val
+ca1 (Close env t) ~u = eval1 (Snoc env u) t
+{-# inline ca1 #-}
+
+-- | Strict closure application.
+ca0' :: Close S.Tm -> Val -> Val
+ca0' (Close env t) u = eval0 (Snoc env u) t
+{-# inline ca0' #-}
+
+app :: Val -> Val -> Icit -> Val
+app t u i = case t of
+  Lam x i a t     -> ca1' t u
+  Rigid h sp      -> Rigid h (SApp sp u i)
+  Flex h sp       -> Flex h (SApp sp u i)
+  Unfold h sp t   -> Unfold h (SApp sp u i) (app t u i)
+  _               -> impossible
+
+down :: Val -> Val
+down = \case Up t -> t; t -> Down t;
+{-# inline down #-}
+
+up :: Val -> Val
+up = \case Down t -> t; t -> Up t;
+{-# inline up #-}
+
+appSp :: Val -> Spine -> Val
+appSp v = \case
+  SNil        -> v
+  SApp sp u i -> app (appSp v sp) u i
+
+-- | Force flex
+forceF :: Val -> Val
+forceF = \case
+  Flex x sp -> runIO $ ES.readMeta x >>= \case
+                 ES.MESolved v _ _ -> pure $! forceF (appSp v sp)
+                 _                 -> pure $! Flex x sp
+  v         -> v
+
+-- | Force flex and unfolding
+forceFU :: Val -> Val
+forceFU = \case
+  Flex x sp     -> runIO $ ES.readMeta x >>= \case
+                     ES.MESolved v _ _ -> pure $! forceFU (appSp v sp)
+                     _                 -> pure $! Flex x sp
+  Unfold h sp t -> forceFU t
+  v             -> v
+
+evalRecCon :: Env -> [(Name, S.Tm)] -> [(Name, Val)]
+evalRecCon env [] = []
+evalRecCon env ((x, t):ts) =
+  let t'  = eval0 env t
+      ts' = evalRecCon env ts
+  in (x, t'):ts'
+
+eval0 :: Env -> S.Tm -> Val
+eval0 env t = let
+  go  = eval0 env; {-# inline go #-}
+  go1 = eval1 env; {-# inline go1 #-}
+  in case t of
+    S.Var x       -> var env x
+    S.Top x       -> Top x
+    S.Let x a t u -> Let x (go1 a) (go t) (Close env u)
+    S.DataCon x i -> DataCon x i
+    S.Lam x i a t -> Lam x i (go1 a) (Close env t)
+    S.App t u i   -> App (go t) (go u) i
+    S.RecCon ts   -> RecCon (evalRecCon env ts)
+    S.Field t x n -> Field (go t) x n
+    S.Case t ts   -> Case (go t) (Close env ts)
+    S.Down t      -> down (go1 t)
+    _             -> impossible
+
+evalRec :: Env -> [(Name, S.Tm)] -> [(Name, Val)]
+evalRec env [] = []
+evalRec env ((x, t):ts) =
+  let t'  = eval1 env t
+      ts' = evalRec env ts
+  in (x, t'):ts'
+
+inserted :: Val -> Env -> S.Locals -> Val
+inserted t env          S.Empty             = t
+inserted t (Snoc env u) (S.Define ls _ _ _) = inserted t env ls
+inserted t (Snoc env u) (S.Bind ls x a   )  = app (inserted t env ls) u Expl
+inserted _ _   _                            = impossible
 
 eval1 :: Env -> S.Tm -> Val
 eval1 env t = let
   go = eval1 env; {-# inline go #-}
   in case t of
-    S.Var x -> var env x
-    S.Top x -> top x
-    S.Let x a un t u -> _
-
--- down :: Val1 -> Val0
--- down = undefined
-
--- eval0 :: Env -> S.Tm -> Val0
--- eval0 env t = let
---   go = eval0 env; {-# inline go #-}
---   in case t of
---     S.LocalVar x -> down (localVar env x)
---     S.TopDef x   -> TopDef x
-
-
-
-
--- --------------------------------------------------------------------------------
-
--- -- Evaluate an object term
--- eval0 :: Env -> S.Tm -> Val
--- eval0 env t = let
---   go = eval0 env; {-# inline go #-}
---   in case t of
---     S.LocalVar x -> localVar env x
---     S.TopDef x   ->
-
-
--- --------------------------------------------------------------------------------
-
-
--- -- Evaluate a term in MTy
--- eval :: Env -> S.Tm -> Val
--- eval env t = let
---   go = eval env; {-# inline go #-}
---   in case t of
---     S.LocalVar x    -> localVar env x
---     S.TopDef x      -> topDef x
---     S.Pi x i a b    -> Pi x i (go a) (Close env b)
---     S.Lam x i a t   -> Lam x i (go a) (Close env t)
---     S.App t u i     -> inlineApp (go t) (go u) i
---     S.Ty un         -> Ty un
---     S.Lift t        -> Lift (go t)
---     S.Up t          -> _
---     -- S.Down t        -> inlineDown (go t)
---     -- S.Rec fields    -> Rec (map (\(x, t) -> (x, go t)) fields)
---     -- S.RecCon fields -> RecCon (map (\(x, t) -> (x, go t)) fields)
---     -- S.Field t x n   -> inlineField (go t) x n
---     -- S.Fix x y t     -> Rigid (RHFix x y (Close env t)) SNil
---     -- S.Case t ts     -> inlineEvalCase env (go t) ts
---     -- S.DataCon x i   -> Rigid (RHDataCon x i) SNil
---     -- S.TyCon x       -> Rigid (RHTyCon x) SNil
-
--- -- Variables
--- --------------------------------------------------------------------------------
-
-
-
--- meta :: MetaVar -> Val
--- meta x = runIO $ readMeta x >>= \case
---   MEUnsolved{}    -> pure $ Flex x SNil
---   MESolved v  _ _ -> pure $ Unfold (UHMeta x) SNil v
--- {-# inline meta #-}
-
-
-
-
--- -- Functions
--- --------------------------------------------------------------------------------
-
--- infixl 2 $$
---   -- | Strict closure application.
--- ($$) :: Closure -> Val -> Val
--- ($$) (Close env t) u = eval (Snoc env u) t
--- {-# inline ($$) #-}
-
--- infixl 2 $$$
---   -- | Lazy closure application.
--- ($$$) :: Closure -> Val -> Val
--- ($$$) (Close env t) ~u = eval (Snoc env u) t
--- {-# inline ($$$) #-}
-
--- app :: Val -> Val -> Icit -> Val
--- app t u i = case t of
---   Lam x i a t     -> t $$ u
---   Rigid h sp      -> Rigid h (SApp sp u i)
---   Flex h sp       -> Flex h (SApp sp u i)
---   Unfold h sp t   -> Unfold h (SApp sp u i) (app t u i)
---   _               -> impossible
-
--- inlineApp :: Val -> Val -> Icit -> Val
--- inlineApp t u i = case t of
---   Lam x i a t   -> t $$ u
---   Rigid h sp    -> Rigid h (SApp sp u i)
---   Flex h sp     -> Flex h (SApp sp u i)
---   Unfold h sp t -> Unfold h (SApp sp u i) (app t u i)
---   _             -> impossible
--- {-# inline inlineApp #-}
-
--- -- Field projection
--- --------------------------------------------------------------------------------
-
--- -- field :: Val -> Name -> Int -> Val
--- -- field t x n = case t of
--- --   RecCon fields -> snd (fields !! n)
--- --   Rigid h sp    -> Rigid h (SField sp x n)
--- --   Flex h sp     -> Flex h (SField sp x n)
--- --   Unfold h sp t -> Unfold h (SField sp x n) (field t x n)
--- --   _             -> impossible
-
--- -- inlineField :: Val -> Name -> Int -> Val
--- -- inlineField t x n = case t of
--- --   RecCon fields -> snd (fields !! n)
--- --   Rigid h sp    -> Rigid h (SField sp x n)
--- --   Flex h sp     -> Flex h (SField sp x n)
--- --   Unfold h sp t -> Unfold h (SField sp x n) (field t x n)
--- --   _             -> impossible
--- -- {-# inline inlineField #-}
-
--- -- -- Lifting
--- -- --------------------------------------------------------------------------------
-
--- -- down :: Val -> Val
--- -- down = \case
--- --   Up t          -> t
--- --   Rigid h sp    -> Rigid h (SDown sp)
--- --   Flex h sp     -> Flex h (SDown sp)
--- --   Unfold h sp t -> Unfold h (SDown sp) (down t)
--- --   _             -> impossible
-
--- -- inlineDown :: Val -> Val
--- -- inlineDown = \case
--- --   Up t          -> t
--- --   Rigid h sp    -> Rigid h (SDown sp)
--- --   Flex h sp     -> Flex h (SDown sp)
--- --   Unfold h sp t -> Unfold h (SDown sp) (down t)
--- --   _             -> impossible
--- -- {-# inline inlineDown #-}
-
--- -- up :: Val -> Val
--- -- up = \case
--- --   Rigid h (SDown sp)    -> Rigid h sp
--- --   Flex h (SDown sp)     -> Flex h sp
--- --   Unfold h (SDown sp) t -> Unfold h sp (up t)
--- --   t                     -> Up t
-
--- -- inlineUp :: Val -> Val
--- -- inlineUp = \case
--- --   Rigid h (SDown sp)    -> Rigid h sp
--- --   Flex h (SDown sp)     -> Flex h sp
--- --   Unfold h (SDown sp) t -> Unfold h sp (up t)
--- --   t                     -> Up t
--- -- {-# inline inlineUp #-}
-
-
--- -- -- forcing
--- -- --------------------------------------------------------------------------------
-
--- -- -- forceFlexHead :: MetaVar -> Spine -> Val
--- -- -- forceFlexHead x sp = runIO $ readMeta x >>= \case
--- -- --   MESolved v _ _ -> pure $! Unfold (UHMeta x) sp (forceF (spine v sp))
--- -- --   _              -> pure $! Flex x sp
-
--- -- -- -- | Force only flex.
--- -- -- forceF :: Val -> Val
--- -- -- forceF = \case
--- -- --   Flex x sp -> forceFlexHead x sp
--- -- --   t         -> t
--- -- -- {-# inline forceF #-}
-
--- -- -- -- | Force flex and unfolding
--- -- -- forceFU :: Val -> Val
--- -- -- forceFU = \case
--- -- --   Flex x sp -> forceFlex
-
-
--- -- -- spine application
--- -- --------------------------------------------------------------------------------
-
--- -- spine :: Val -> Spine -> Val
--- -- spine ~v = \case
--- --   SNil            -> v
--- --   SApp sp t i     -> inlineApp (spine v sp) t i
--- --   SField sp x n   -> inlineField (spine v sp) x n
--- --   SCase sp env ts -> inlineEvalCase env (spine v sp) ts
--- --   SDown sp        -> inlineDown (spine v sp)
-
--- -- -- cases
--- -- --------------------------------------------------------------------------------
-
--- -- appendSpine :: Env -> Spine -> Env
--- -- appendSpine env = \case
--- --   SNil        -> env
--- --   SApp sp t _ -> Snoc (appendSpine env sp) t
--- --   _           -> impossible
-
--- -- evalCase :: Env -> Val -> [(Lvl, [Name], S.Tm)] -> Val
--- -- evalCase env v ts = case v of
--- --   Rigid (RHDataCon _ i) sp -> case ts !! i of
--- --     (_, _, rhs) -> eval (appendSpine env sp) rhs
--- --   Rigid h sp    -> Rigid h (SCase sp env ts)
--- --   Flex h sp     -> Flex h (SCase sp env ts)
--- --   Unfold h sp t -> Unfold h (SCase sp env ts) (evalCase env t ts)
--- --   _             -> impossible
-
--- -- inlineEvalCase :: Env -> Val -> [(Lvl, [Name], S.Tm)] -> Val
--- -- inlineEvalCase env v ts = case v of
--- --   Rigid (RHDataCon _ i) sp -> case ts !! coerce i of
--- --     (_, _, rhs) -> eval (appendSpine env sp) rhs
--- --   Rigid h sp    -> Rigid h (SCase sp env ts)
--- --   Flex h sp     -> Flex h (SCase sp env ts)
--- --   Unfold h sp t -> Unfold h (SCase sp env ts) (evalCase env t ts)
--- --   _             -> impossible
--- -- {-# inline inlineEvalCase #-}
-
--- -- -- eval
--- -- --------------------------------------------------------------------------------
-
--- -- eval :: Env -> S.Tm -> Val
--- -- eval env t = let
--- --   go = eval env; {-# inline go #-}
--- --   in case t of
--- --     S.LocalVar x    -> localVar env x
--- --     S.TopDef x      -> topDef x
--- --     S.Pi x i a b    -> Pi x i (go a) (Close env b)
--- --     S.Fun a b       -> Fun (go a) (go b)
--- --     S.Lam x i a t   -> Lam x i (go a) (Close env t)
--- --     S.App t u i     -> inlineApp (go t) (go u) i
--- --     S.Ty un         -> Ty un
--- --     S.Lift t        -> Lift (go t)
--- --     S.Up t          -> inlineUp (go t)
--- --     S.Down t        -> inlineDown (go t)
--- --     S.Rec fields    -> Rec (map (\(x, t) -> (x, go t)) fields)
--- --     S.RecCon fields -> RecCon (map (\(x, t) -> (x, go t)) fields)
--- --     S.Field t x n   -> inlineField (go t) x n
--- --     S.Fix x y t     -> Rigid (RHFix x y (Close env t)) SNil
--- --     S.Case t ts     -> inlineEvalCase env (go t) ts
--- --     S.DataCon x i   -> Rigid (RHDataCon x i) SNil
--- --     S.TyCon x       -> Rigid (RHTyCon x) SNil
+    S.Var x         -> var env x
+    S.Top x         -> top x
+    S.Meta x        -> meta x
+    S.Inserted x ls -> inserted (meta x) env ls
+    S.Let x a t u   -> eval1 (Snoc env (go t)) u
+    S.DataCon x i   -> Rigid (RHDataCon x i) SNil
+    S.Lam x i a t   -> Lam x i (go a) (Close env t)
+    S.App t u i     -> app (go t) (go u) i
+    S.Fun a b       -> Fun (go a) (go b)
+    S.Pi x i a b    -> Pi x i (go a) (Close env t)
+    S.Ty u          -> Ty u
+    S.Up t          -> up (eval0 env t)
+    S.Lift a        -> Lift (go a)
+    S.Rec fs        -> Rec (evalRec env fs)
+    S.TyCon x       -> Rigid (RHTyCon x) SNil
+    _               -> impossible

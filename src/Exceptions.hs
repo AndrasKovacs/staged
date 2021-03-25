@@ -1,7 +1,7 @@
 
 module Exceptions (
   Ex(..), throwIO, throw, catch
-  -- , fenceEx, ElabError(..),
+  , fenceEx, ElabError(..),
   ) where
 
 import GHC.Exts
@@ -9,10 +9,8 @@ import qualified Control.Exception as Ex
 import IO
 
 import Common
--- import Syntax
--- import qualified Presyntax as P
-
-
+import qualified Syntax    as S
+import qualified Presyntax as P
 
 --------------------------------------------------------------------------------
 
@@ -34,45 +32,40 @@ catch ma f = ma `Exceptions.catch#` \case
   e               -> f e
 {-# inline catch #-}
 
--- | This is a dirty hack which ensures that our monomorphized `catch` can also
---   catch every standard `Control.Exception` exception potentially thrown by
---   external library code or standard throwing operations such as incomplete
---   matches or zero division. The trick is that the first variant in `Ex` has
---   the same representation as the `Control.Exception` definition, and casing
---   also works because of pointer tagged constructors.  Why do we use this
---   hack? The reason is performance: we use exceptions internally for control
---   flow purposes, and avoiding the standard `Typeable` safety mechanism
---   reduces overheads significantly.
+-- | This is a dirty hack which ensures that our monomorphized `catch` can also catch every standard
+--   `Control.Exception` exception potentially thrown by external library code or standard throwing
+--   operations such as incomplete matches or zero division. The trick is that the first variant in
+--   `Ex` has the same representation as the `Control.Exception` definition, and casing also works
+--   because of the pointer tagging representationo. Why do we use this hack? The reason is
+--   performance: we use exceptions internally for control flow purposes, and avoiding the standard
+--   `Typeable` safety mechanism reduces overheads significantly.
 data Ex =
     forall e. Ex.Exception e => SomeException e -- ^ Standard exceptions.
 
---   -- Conversion checking exceptions
---   | ConvSame
---   | ConvDiff
---   | ConvMeta MetaVar
---   | ConvMax UMax
+  -- unification errors
+  | CantUnify
 
---   -- Unification exception
---   | CantUnify
+  -- renaming errors
+  | OccursCheck MetaVar
+  | OutOfScope Lvl
 
---   -- Elaboration errors
---   | ElabError Locals P.Tm ElabError
+  -- elaboration errors
+  | ElabError S.Locals P.Tm ElabError
 
--- | Don't let any non-standard `Ex` exception escape. This should be used on
---   the top of the main function of the program.
+-- | Don't let any non-standard `Ex` exception escape. This should be used on the top of the main
+--   function of the program.
 fenceEx :: Dbg => IO a -> IO a
 fenceEx act = act `Exceptions.catch#` \case
   SomeException e -> Ex.throw e
   _               -> impossible
 
--- --------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
--- data ElabError
---   = UnifyError Tm Tm
---   | NameNotInScope {-# unpack #-} RawName
---   | NoSuchField {-# unpack #-} RawName
---   | NoSuchArgument {-# unpack #-} RawName
---   | IcitMismatch Icit Icit
---   | NoNamedLambdaInference
---   | ExpectedSg Tm
---   deriving Show
+data ElabError
+  = UnifyError S.Tm1 S.Tm1
+  | NameNotInScope {-# unpack #-} RawName
+  | NoSuchField {-# unpack #-} RawName
+  | NoSuchArgument {-# unpack #-} RawName
+  | IcitMismatch Icit Icit
+  | NoNamedLambdaInference
+  deriving Show

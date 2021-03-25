@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 9d14c70be5ba8a01cb0f5c782c1efd2e235eb9d4d32b86024913c2a8ad37aff4
+-- hash: ef249d36e076fdb00b74e3581eddb0c7644d0c3e97ceab6a703590dac3fdc265
 
 name:           staged-fp
 version:        0.1.0.0
@@ -21,7 +21,9 @@ library
   exposed-modules:
       Common
       Cxt
+      Elaboration
       ElabState
+      EvalInCxt
       Evaluation
       Exceptions
       FNV164
@@ -31,13 +33,14 @@ library
       Presyntax
       Pretty
       Syntax
+      Unification
       Values
   other-modules:
       Paths_staged_fp
   hs-source-dirs:
       src
-  default-extensions: BangPatterns BlockArguments ConstraintKinds DataKinds DerivingVia ExplicitNamespaces GADTs KindSignatures LambdaCase MagicHash OverloadedStrings PatternSynonyms PolyKinds RankNTypes Strict TemplateHaskell ViewPatterns TupleSections UnboxedTuples
-  ghc-options: -Wall -Wno-name-shadowing -Wno-unused-binds -Wno-unused-matches -Wno-missing-signatures -Wno-unused-do-bind -fplugin-opt=Test.Inspection.Plugin:skip-O0 -O -fmax-worker-args=12 -ddump-simpl -ddump-to-file -dsuppress-all -dno-suppress-type-signatures -ddump-stg
+  default-extensions: BangPatterns BlockArguments ConstraintKinds DataKinds DerivingVia DeriveFunctor DeriveFoldable DeriveTraversable ExplicitNamespaces GADTs KindSignatures LambdaCase MagicHash OverloadedStrings PatternSynonyms PolyKinds RankNTypes Strict TemplateHaskell ViewPatterns TupleSections UnboxedTuples
+  ghc-options: -Wall -Wno-name-shadowing -Wno-unused-binds -Wno-unused-matches -Wno-missing-signatures -Wno-unused-do-bind -fplugin-opt=Test.Inspection.Plugin:skip-O0 -O -fmax-worker-args=12
   build-depends:
       base >=4.7 && <5
     , bytestring
@@ -57,8 +60,8 @@ executable app
       Paths_staged_fp
   hs-source-dirs:
       app
-  default-extensions: BangPatterns BlockArguments ConstraintKinds DataKinds DerivingVia ExplicitNamespaces GADTs KindSignatures LambdaCase MagicHash OverloadedStrings PatternSynonyms PolyKinds RankNTypes Strict TemplateHaskell ViewPatterns TupleSections UnboxedTuples
-  ghc-options: -Wall -Wno-name-shadowing -Wno-unused-binds -Wno-unused-matches -Wno-missing-signatures -Wno-unused-do-bind -fplugin-opt=Test.Inspection.Plugin:skip-O0 -O -fmax-worker-args=12 -ddump-simpl -ddump-to-file -dsuppress-all -dno-suppress-type-signatures -ddump-stg -fllvm -O2 -rtsopts
+  default-extensions: BangPatterns BlockArguments ConstraintKinds DataKinds DerivingVia DeriveFunctor DeriveFoldable DeriveTraversable ExplicitNamespaces GADTs KindSignatures LambdaCase MagicHash OverloadedStrings PatternSynonyms PolyKinds RankNTypes Strict TemplateHaskell ViewPatterns TupleSections UnboxedTuples
+  ghc-options: -Wall -Wno-name-shadowing -Wno-unused-binds -Wno-unused-matches -Wno-missing-signatures -Wno-unused-do-bind -fplugin-opt=Test.Inspection.Plugin:skip-O0 -O -fmax-worker-args=12 -fllvm -O2 -rtsopts
   build-depends:
       base >=4.7 && <5
     , staged-fp

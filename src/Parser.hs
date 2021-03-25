@@ -6,6 +6,7 @@ import Data.Foldable
 import FlatParse.Stateful hiding (Parser, runParser, string, char, cut)
 import qualified Data.ByteString as B
 
+
 import Lexer
 import Presyntax
 import Common
@@ -123,6 +124,7 @@ up l = do
 
 atomBase :: Parser Tm
 atomBase = do
+  -- !lvl <- ask
   l <- getPos
   $(switch [| case _ of
     "["    -> ws *> recOrRec l
@@ -153,6 +155,7 @@ goProj p = chainl Field p (dot *> ident')
 
 proj :: Parser Tm
 proj = goProj atom'
+
 
 --------------------------------------------------------------------------------
 
@@ -228,7 +231,7 @@ goLam = do
   pos <- getPos
   lvl' >> $(switch [| case _ of
 
-    "{" -> ws >>
+    "{" -> ws >> do
       branch $(symbol "_")
         (Lam pos DontBind (NoName Impl) <$> optional (colon *> tm') <*> (braceR' *> goLam))
         (do x <- ident'
@@ -246,6 +249,7 @@ goLam = do
     "_" -> ws >> Lam pos DontBind (NoName Expl) Nothing <$> goLam
 
     _ -> ws >> do
+      -- !_ <- ask
       x <- lvl' >> identBase `cut` [Msg "binder", "."]
       Lam pos (Bind x) (NoName Expl) Nothing <$> goLam
       |])
@@ -346,11 +350,11 @@ dataDecl = do
       moreIndented (ident <* colon') \x -> ((x,) <$> tm')
     local (const 0) (DataDecl pos x a cons <$> top)
 
+
 top :: Parser TopLevel
 top =  (exactLvl 0 >> (ident >>= topDef))
    <|> (exactLvl 0 >> dataDecl)
    <|> (Nil <$ eof)
-
 
 --------------------------------------------------------------------------------
 

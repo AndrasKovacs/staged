@@ -5,57 +5,46 @@ import Common
 import qualified Syntax as S
 
 data Close a = Close Env a
-data Env = Nil | Snoc Env ~Val
+data Env = Nil | Snoc1 Env ~Val1 | Snoc0 Env Lvl
 
 data Spine
   = SNil
-  | SApp Spine Val Icit
+  | SApp Spine Val1 Icit
 
 data UnfoldHead
   = UHMeta MetaVar
   | UHTop Lvl
 
-type Ty = Val
+type Ty = Val1
 
 data RigidHead
   = RHVar Lvl
   | RHDataCon Lvl Int
   | RHTyCon Lvl
 
-data Val
-  -- meta
+data Val1
   = Rigid RigidHead Spine
   | Flex MetaVar Spine
-  | Unfold UnfoldHead Spine ~Val
-  | Pi Name Icit Ty {-# unpack #-} (Close S.Tm)
-  | Fun Val Val
-  | Up Val
-  | Lift Val
-  | Rec [(Name, Val)]
+  | Unfold UnfoldHead Spine ~Val1
+  | Pi Name Icit Ty {-# unpack #-} (Close S.Tm1)
+  | Lam1 Name Icit Ty {-# unpack #-} (Close S.Tm1)
+  | Fun Ty Ty
+  | Up Val0
+  | Lift Ty
+  | Rec (Fields Ty)
   | Ty U
 
-  -- mixed
-  | Lam Name Icit Ty {-# unpack #-} (Close S.Tm)
+data Val0
+  = Var0 Lvl
+  | Top0 Lvl
+  | App0 Val0 Val0
+  | Let0 Name Ty Val0 {-# unpack #-} (Close S.Tm0)
+  | Lam0 Name Ty {-# unpack #-} (Close S.Tm0)
+  | Down Val1
+  | DataCon0 Lvl Int
+  | RecCon (Fields Val0)
+  | Case Val0 {-# unpack #-} (Close (Cases S.Tm0))
+  | Field Val0 Name Int
 
-  -- object
-  | Top Lvl
-  | App Val Val Icit
-  | Let Name Ty Val {-# unpack #-} (Close S.Tm)
-  | Down Val
-  | DataCon Lvl Int
-  | RecCon [(Name, Val)]
-  | Case Val {-# unpack #-} (Close [(Lvl, [Name], S.Tm)])
-  | Field Val Name Int
-
-
--- data Val
---   = Var0 Lvl
---   | Top0 Lvl
---   | Let0 Name Ty Val (Close S.Tm0)
---   | Lam0 Name Ty (Close S.Tm0)
---   | App Val Val
---   | DataCon0 Lvl Int
---   | RecCon [(Name, Val)]
---   | Field Val Name Int
---   | Case Val (Close [(Lvl, [Name], S.Tm0)])
---   | Down Val
+pattern Var1 :: Lvl -> Val1
+pattern Var1 x = Rigid (RHVar x) SNil

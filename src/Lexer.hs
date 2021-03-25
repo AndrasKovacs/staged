@@ -46,7 +46,7 @@ merge err@(Error p e) err'@(Error p' e')
      (Imprecise ss  , Imprecise ss' ) -> Error p (Imprecise (ss ++ ss'))
 {-# noinline merge #-}
 
-type Parser = FP.Parser Int Error
+type Parser = FP.Parser Error
 
 prettyError :: B.ByteString -> Error -> String
 prettyError b (Error pos e) =

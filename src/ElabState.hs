@@ -15,12 +15,19 @@ import qualified Values as V
 --------------------------------------------------------------------------------
 
 data TopEntry
-  -- ^ Rhs value, rhs type, rhs value, rhs type, name, source position
-  = TEDef ~V.Val V.Ty U S.Tm (Maybe S.Ty) Name Pos
-  -- ^ Type, type, link to data constructors, name, pos
-  | TETyCon V.Ty S.Ty [Lvl] Name Pos
-  -- ^ Type, type, link to type constructor, name, pos
-  | TEDataCon V.Ty S.Ty Lvl Name Pos
+
+  -- ^ Rhs, type, rhs val, type val, name, source pos
+  = TEDef0 S.Tm0 S.Ty ~V.Val0 V.Ty Name Pos
+
+  -- ^ Rhs, type, rhs val, type val, name, source pos
+  | TEDef1 S.Tm1 S.Ty ~V.Val1 V.Ty Name Pos
+
+  -- ^ Type, type val, data constructors, name, source pos
+  | TETyCon S.Ty V.Ty [Lvl] Name Pos
+
+  -- ^ Type, Type value, parent tycon, name, source pos
+  | TEDataCon S.Ty V.Ty Lvl Name Pos
+
 
 -- TODO: we'll implement top resizing and allocation later
 topSize :: Int
@@ -39,8 +46,8 @@ readTop (Lvl x) | 0 <= x && x < topSize = A.read top x
 --------------------------------------------------------------------------------
 
 data MetaEntry
-  = MEUnsolved V.Ty U
-  | MESolved V.Val V.Ty U
+  = MEUnsolved V.Ty
+  | MESolved V.Val1 V.Ty
 
 metaCxt :: D.Array MetaEntry
 metaCxt = runIO D.empty
@@ -50,31 +57,37 @@ readMeta :: MetaVar -> IO MetaEntry
 readMeta (MetaVar i) = D.read metaCxt i
 {-# inline readMeta #-}
 
-newMeta :: V.Ty -> U -> IO MetaVar
-newMeta a u = do
+newMeta :: V.Ty -> IO MetaVar
+newMeta a = do
   s <- D.size metaCxt
-  D.push metaCxt (MEUnsolved a u)
+  D.push metaCxt (MEUnsolved a)
   pure (MetaVar s)
 {-# inline newMeta #-}
 
--- Universe metacontext
---------------------------------------------------------------------------------
+unsolvedMetaTy :: MetaVar -> IO V.Ty
+unsolvedMetaTy m = readMeta m >>= \case
+  MEUnsolved a -> pure a
+  _            -> impossible
+{-# inline unsolvedMetaTy #-}
 
-data UMetaEntry
-  = UMEUnsolved
-  | UMESolved U
+-- -- Universe metacontext
+-- --------------------------------------------------------------------------------
 
-uCxt :: D.Array UMetaEntry
-uCxt = runIO D.empty
-{-# noinline uCxt #-}
+-- data UMetaEntry
+--   = UMEUnsolved
+--   | UMESolved U
 
-readUMeta :: UMetaVar -> IO UMetaEntry
-readUMeta (UMetaVar i) = D.read uCxt i
-{-# inline readUMeta #-}
+-- uCxt :: D.Array UMetaEntry
+-- uCxt = runIO D.empty
+-- {-# noinline uCxt #-}
 
-newUMeta :: IO UMetaVar
-newUMeta = do
-  s <- D.size uCxt
-  D.push uCxt UMEUnsolved
-  pure (UMetaVar s)
-{-# inline newUMeta #-}
+-- readUMeta :: UMetaVar -> IO UMetaEntry
+-- readUMeta (UMetaVar i) = D.read uCxt i
+-- {-# inline readUMeta #-}
+
+-- newUMeta :: IO UMetaVar
+-- newUMeta = do
+--   s <- D.size uCxt
+--   D.push uCxt UMEUnsolved
+--   pure (UMetaVar s)
+-- {-# inline newUMeta #-}

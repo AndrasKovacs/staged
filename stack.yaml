@@ -7,8 +7,13 @@ ghc-options:
   "$everything": -split-sections
 
 extra-deps:
-- git: https://github.com/AndrasKovacs/flatparse.git
-  commit: 1c31fb42d11432a8519f38a5062f9945c1b36bac
+# - flatparse-0.2.0.0
+
+# - git: https://github.com/AndrasKovacs/flatparse.git
+#   commit: d8aab8f422388272024d4c25668c7c486fbed2fb
+
+- /home/kutta/home/Dropbox/src/flatparse/
+
 - git: https://github.com/AndrasKovacs/dynamic-array.git
   commit: 0171e73e4d6ed7f3e51ae8ec1adcf7e9f56be5b9
 - git: https://github.com/AndrasKovacs/primdata.git

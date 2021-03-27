@@ -5,46 +5,54 @@ import Common
 import qualified Syntax as S
 
 data Close a = Close Env a
-data Env = Nil | Snoc1 Env ~Val1 | Snoc0 Env Lvl
+data Env = Nil | Snoc Env ~Val
 
 data Spine
-  = SNil
-  | SApp Spine Val1 Icit
+  = Id
+  | App1 Spine Val Icit
+  | Field1 Spine Name Int
+
+data BlockedOn
+  = Unsolved MetaVar           -- unsolved (lvl1) meta
+  | Eval Env S.Tm UMetaVar     -- unknown eval       (at unknown lvl)
+  | WeakLift UMetaVar Ty       -- unknown type lift  (lvl 1)
+  | WeakUp UMetaVar Val        -- unknown term lift  (lvl 1)
 
 data UnfoldHead
-  = UHMeta MetaVar
-  | UHTop Lvl
+  = Solved MetaVar  -- solved (lvl1) meta
+  | Top1 Lvl        -- top lvl1 definition
 
-type Ty = Val1
+type Ty = Val
 
-data RigidHead
-  = RHVar Lvl
-  | RHDataCon Lvl Int
-  | RHTyCon Lvl
+data Val
+  -- suspended computation
+  = Unfold UnfoldHead Spine ~Val
+  | Blocked BlockedOn Spine
 
-data Val1
-  = Rigid RigidHead Spine
-  | Flex MetaVar Spine
-  | Unfold UnfoldHead Spine ~Val1
-  | Pi Name Icit Ty {-# unpack #-} (Close S.Tm1)
-  | Lam1 Name Icit Ty {-# unpack #-} (Close S.Tm1)
-  | Fun Ty Ty
-  | Up Val0
-  | Lift Ty
+  -- structural
+  | Var Lvl
+  | Top Lvl
+  | Let Name Ty Val {-# unpack #-} (Close S.Tm)
+
+  -- known lifts
+  | Lift Val
+  | Up Val
+  | Down Val
+
+  -- ADTs
+  | TyCon Lvl
+  | DataCon Lvl Int
+  | Case Val {-# unpack #-} (Close (Cases S.Tm))
+
+  -- functions
+  | Pi  Name Icit Ty {-# unpack #-} (Close S.Ty)
+  | App Val Val Icit
+  | Lam Name Icit Ty {-# unpack #-} (Close S.Tm)
+
+  -- records
   | Rec (Fields Ty)
-  | Ty U
+  | RecCon (Fields Val)
+  | Field Val Name Int
 
-data Val0
-  = Var0 Lvl
-  | Top0 Lvl
-  | App0 Val0 Val0
-  | Let0 Name Ty Val0 {-# unpack #-} (Close S.Tm0)
-  | Lam0 Name Ty {-# unpack #-} (Close S.Tm0)
-  | Down Val1
-  | DataCon0 Lvl Int
-  | RecCon (Fields Val0)
-  | Case Val0 {-# unpack #-} (Close (Cases S.Tm0))
-  | Field Val0 Name Int
-
-pattern Var1 :: Lvl -> Val1
-pattern Var1 x = Rigid (RHVar x) SNil
+  -- universes
+  | U U

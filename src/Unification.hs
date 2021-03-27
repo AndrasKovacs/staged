@@ -30,6 +30,7 @@ TODO:
 
 -}
 
+{-
 --------------------------------------------------------------------------------
 
 closeType :: S.Locals -> S.Ty -> S.Ty
@@ -252,3 +253,4 @@ unify1 l st v v' = let
     (t        , Flex x' sp')           -> solveMeta l st x' sp' t
 
     _ -> throwIO CantUnify
+-}

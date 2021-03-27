@@ -16,18 +16,14 @@ import qualified Values as V
 
 data TopEntry
 
-  -- ^ Rhs, type, rhs val, type val, name, source pos
-  = TEDef0 S.Tm0 S.Ty ~V.Val0 V.Ty Name Pos
+  -- ^ Type, type val, rhs, rhs val, universe, name, source pos
+  = TEDef S.Ty V.Ty S.Tm V.Val U Name Pos
 
-  -- ^ Rhs, type, rhs val, type val, name, source pos
-  | TEDef1 S.Tm1 S.Ty ~V.Val1 V.Ty Name Pos
+  -- ^ Type, Type val, constructors, name, source pos
+  | TETyCon S.Ty V.Ty U [Lvl] Name Pos
 
-  -- ^ Type, type val, data constructors, name, source pos
-  | TETyCon S.Ty V.Ty [Lvl] Name Pos
-
-  -- ^ Type, Type value, parent tycon, name, source pos
-  | TEDataCon S.Ty V.Ty Lvl Name Pos
-
+  -- ^ Type, type val, universe, parent type constructor, name, source pos
+  | TEDataCon S.Ty V.Ty U Lvl Name Pos
 
 -- TODO: we'll implement top resizing and allocation later
 topSize :: Int
@@ -46,8 +42,8 @@ readTop (Lvl x) | 0 <= x && x < topSize = A.read top x
 --------------------------------------------------------------------------------
 
 data MetaEntry
-  = MEUnsolved V.Ty
-  | MESolved V.Val1 V.Ty
+  = Unsolved V.Ty U
+  | Solved V.Val V.Ty U
 
 metaCxt :: D.Array MetaEntry
 metaCxt = runIO D.empty
@@ -57,37 +53,56 @@ readMeta :: MetaVar -> IO MetaEntry
 readMeta (MetaVar i) = D.read metaCxt i
 {-# inline readMeta #-}
 
-newMeta :: V.Ty -> IO MetaVar
-newMeta a = do
+newMeta :: V.Ty -> U -> IO MetaVar
+newMeta a au = do
   s <- D.size metaCxt
-  D.push metaCxt (MEUnsolved a)
+  D.push metaCxt (Unsolved a au)
   pure (MetaVar s)
 {-# inline newMeta #-}
 
-unsolvedMetaTy :: MetaVar -> IO V.Ty
+unsolvedMetaTy :: MetaVar -> IO (V.Ty, U)
 unsolvedMetaTy m = readMeta m >>= \case
-  MEUnsolved a -> pure a
-  _            -> impossible
+  Unsolved a au -> pure (a, au)
+  _             -> impossible
 {-# inline unsolvedMetaTy #-}
 
--- -- Universe metacontext
--- --------------------------------------------------------------------------------
 
--- data UMetaEntry
---   = UMEUnsolved
---   | UMESolved U
+-- CV metacontext
+--------------------------------------------------------------------------------
 
--- uCxt :: D.Array UMetaEntry
--- uCxt = runIO D.empty
--- {-# noinline uCxt #-}
+data CVMetaEntry = CVUnsolved | CVSolved CV
 
--- readUMeta :: UMetaVar -> IO UMetaEntry
--- readUMeta (UMetaVar i) = D.read uCxt i
--- {-# inline readUMeta #-}
+cvCxt :: D.Array CVMetaEntry
+cvCxt = runIO D.empty
+{-# noinline cvCxt #-}
 
--- newUMeta :: IO UMetaVar
--- newUMeta = do
---   s <- D.size uCxt
---   D.push uCxt UMEUnsolved
---   pure (UMetaVar s)
--- {-# inline newUMeta #-}
+readCVMeta :: CVMetaVar -> IO CVMetaEntry
+readCVMeta (CVMetaVar i) = D.read cvCxt i
+{-# inline readCVMeta #-}
+
+newCVMeta :: IO CVMetaVar
+newCVMeta = do
+  s <- D.size cvCxt
+  D.push cvCxt CVUnsolved
+  pure (CVMetaVar s)
+{-# inline newCVMeta #-}
+
+-- Universe metacontext
+--------------------------------------------------------------------------------
+
+data UMetaEntry = UUnsolved | USolved U
+
+uCxt :: D.Array UMetaEntry
+uCxt = runIO D.empty
+{-# noinline uCxt #-}
+
+readUMeta :: UMetaVar -> IO UMetaEntry
+readUMeta (UMetaVar i) = D.read uCxt i
+{-# inline readUMeta #-}
+
+newUMeta :: IO UMetaVar
+newUMeta = do
+  s <- D.size uCxt
+  D.push uCxt UUnsolved
+  pure (UMetaVar s)
+{-# inline newUMeta #-}

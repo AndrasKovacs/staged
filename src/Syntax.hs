@@ -3,43 +3,45 @@ module Syntax where
 
 import Common
 
---------------------------------------------------------------------------------
+type Ty = Tm
 
-type Ty = Tm1
+data Tm
+  -- structural
+  = Var Ix
+  | Top Lvl
+  | Let Name Ty Tm Tm
 
-data Tm0
-  = Var0 Ix
-  | Top0 Lvl
-  | Let0 Name Ty Tm0 Tm0
-  | DataCon0 Lvl Int
-  | Lam0 Name Ty Tm0
-  | App0 Tm0 Tm0
-  | RecCon (Fields Tm0)
-  | Field Tm0 Name Int
-  | Case Tm0 (Cases Tm0)
-  | Down Tm1
-  deriving Show
-
-data Tm1
-  = Var1 Ix
-  | Top1 Lvl
-  | Let1 Name Ty Tm1 Tm1
-  | DataCon1 Lvl Int
-  | Lam1 Name Icit Ty Tm1
-  | App1 Tm1 Tm1 Icit
+  -- Pi
   | Pi Name Icit Ty Ty
-  | Fun Ty Ty
+  | Lam Name Icit Ty Tm
+  | App Tm Tm Icit
+
+  -- U
+  | U U
+
+  -- Records
   | Rec (Fields Ty)
-  | Meta MetaVar
-  | Inserted MetaVar Locals
+  | RecCon (Fields Tm)
+  | Field Tm Name Int
+
+  -- ADTs
   | TyCon Lvl
-  | Lift Ty
-  | Ty U
-  | Up Tm0
+  | DataCon Lvl Int
+  | Case Tm (Cases Tm)
+  | Fix Name Name       -- TODO
+
+  -- lifts
+  | Lift U Ty
+  | Up U Tm
+  | Down Tm     -- (non-weak, goes from 1 to 0)
+
+  -- meta
+  | Inserted MetaVar Locals
+  | Meta MetaVar
   deriving Show
 
 data Locals
   = Empty
-  | Define Locals Name Tm1 Ty
-  | Bind Locals Name Ty
+  | Define Locals Name Ty U Tm
+  | Bind Locals Name Ty U
   deriving Show

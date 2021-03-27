@@ -20,6 +20,8 @@ import EvalInCxt
 import Exceptions
 import Unification
 
+
+{-
 --------------------------------------------------------------------------------
 
 spanToRawName :: Cxt -> Span -> RawName
@@ -57,3 +59,4 @@ infer0 = undefined
 
 infer1 :: Cxt -> P.Tm -> IO Infer
 infer1 = undefined
+-}

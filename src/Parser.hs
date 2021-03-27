@@ -137,9 +137,9 @@ atomBase = do
     "fix"  -> skipToVar l \_ -> empty
     "case" -> skipToVar l \_ -> empty
     "data" -> skipToVar l \_ -> empty
-    "VTy"  -> skipToVar l \r -> pure $ Ty (Span l r) UVal
-    "CTy"  -> skipToVar l \r -> pure $ Ty (Span l r) UComp
-    "MTy"  -> skipToVar l \r -> pure $ Ty (Span l r) UMeta
+    "VTy"  -> skipToVar l \r -> pure $ Ty (Span l r) (U0 V)
+    "CTy"  -> skipToVar l \r -> pure $ Ty (Span l r) (U0 C)
+    "MTy"  -> skipToVar l \r -> pure $ Ty (Span l r) U1
     _      -> do {identChar; manyIdents; r <- getPos; ws; pure (Var (Span l r))} |])
 
 atom :: Parser Tm

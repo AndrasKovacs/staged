@@ -159,10 +159,16 @@ data ArgInfo
   | Named {-# unpack #-} Span
   deriving Show
 
+data CV
+  = C
+  | V
+  | CVVar CVMetaVar
+  deriving (Eq, Show)
+
 data U
-  = UVal
-  | UComp
-  | UMeta
+  = U0 CV
+  | U1
+  | UVar UMetaVar
   deriving (Eq, Show)
 
 newtype Ix = Ix Int
@@ -175,6 +181,9 @@ newtype MetaVar = MetaVar Int
   deriving (Eq, Ord, Show, Num) via Int
 
 newtype UMetaVar = UMetaVar Int
+  deriving (Eq, Ord, Show, Num) via Int
+
+newtype CVMetaVar = CVMetaVar Int
   deriving (Eq, Ord, Show, Num) via Int
 
 lvlToIx :: Lvl -> Lvl -> Ix

@@ -3,45 +3,46 @@ module Syntax where
 
 import Common
 
-type Ty = Tm
+type Ty  = Tm S1
+type Tm0 = Tm S0
+type Tm1 = Tm S1
 
-data Tm
-  -- structural
-  = Var Ix
-  | Top Lvl
-  | Let Name Ty Tm Tm
+data Tm :: Stage -> Type where
+  Var      :: Ix -> Tm s
+  Top      :: Lvl -> Tm s
+  Let      :: Name -> Ty -> Tm s -> Tm s -> Tm s
 
-  -- Pi
-  | Pi Name Icit Ty Ty
-  | Lam Name Icit Ty Tm
-  | App Tm Tm Icit
+  Pi       :: Name -> Icit -> Ty -> Ty -> Ty
+  Lam1     :: Name -> Icit -> Ty -> Tm1 -> Tm1
+  App1     :: Tm1 -> Tm1 -> Icit -> Tm1
 
-  -- U
-  | U U
+  Fun      :: Ty -> Ty -> Ty
+  Lam0     :: Name -> Ty -> Tm0 -> Tm0
+  App0     :: Tm0 -> Tm0 -> Tm0
 
-  -- Records
-  | Rec (Fields Ty)
-  | RecCon (Fields Tm)
-  | Field Tm Name Int
+  U        :: U s -> Ty
 
-  -- ADTs
-  | TyCon Lvl
-  | DataCon Lvl Int
-  | Case Tm (Cases Tm)
-  | Fix Name Name       -- TODO
+  Rec      :: Fields Ty -> Ty
+  RecCon   :: Fields (Tm s) -> Tm s
+  Field    :: Tm s -> Name -> Int -> Tm s
 
-  -- lifts
-  | Lift U Ty
-  | Up U Tm
-  | Down Tm     -- (non-weak, goes from 1 to 0)
+  TyCon    :: Lvl -> Ty
+  DataCon  :: Lvl -> Int -> Tm s
+  Case     :: Tm0 -> Cases Tm0 -> Tm0
+  Fix      :: Name -> Name -> Tm0 -> Tm0
 
-  -- meta
-  | Inserted MetaVar Locals
-  | Meta MetaVar
-  deriving Show
+  Lift     :: Ty -> Ty
+  Up       :: Tm0 -> Tm1
+  Down     :: Tm1 -> Tm0
 
-data Locals
-  = Empty
-  | Define Locals Name Ty U Tm
-  | Bind Locals Name Ty U
-  deriving Show
+  Inserted :: MetaVar -> Locals -> Tm1
+  Meta     :: MetaVar -> Tm1
+
+deriving instance Show (Tm s)
+
+data Locals where
+  Empty  :: Locals
+  Define :: Locals -> Name -> Ty -> Tm1 -> Locals
+  Bind   :: Locals -> Name -> Ty -> U s -> Locals
+
+deriving instance Show Locals

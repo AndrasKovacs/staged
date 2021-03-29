@@ -1,9 +1,7 @@
 
--- module Evaluation (
---   ($$), ($$$), up, down, eval0, eval1, forceF1, forceF0,
---   forceFU1, forceFU0, app, inlineApp, quote0, quote1, diveCase) where
-
-module Evaluation where
+module Evaluation (
+  ($$), ($$$), dive, diveN, up, down, eval0, eval1, forceCV, eval,
+  forceF, forceFU, quote, app1Sp, app1, nfNil, field1) where
 
 import           IO
 import           Common
@@ -13,131 +11,137 @@ import           Values
 
 --------------------------------------------------------------------------------
 
-var :: Env -> Ix -> Val
-var (Snoc _ t)   0 = t
-var (Snoc env _) x = var env (x - 1)
-var _            _ = impossible
+var0 :: Env -> Ix -> Lvl
+var0 (Snoc0 _ l)   0 = l
+var0 (Snoc1 env _) x = var0 env (x - 1)
+var0 (Snoc0 env _) x = var0 env (x - 1)
+var0 _             _ = impossible
 
-metaIO :: MetaVar -> IO Val
+var1 :: Env -> Ix -> Val1
+var1 (Snoc1 _ v)   0 = v
+var1 (Snoc1 env _) x = var1 env (x - 1)
+var1 (Snoc0 env _) x = var1 env (x - 1)
+var1 _             _ = impossible
+
+metaIO :: MetaVar -> IO Val1
 metaIO x = ES.readMeta x >>= \case
-  ES.Unsolved{}   -> pure $ Blocked (Unsolved x) Id
-  ES.Solved v _ _ -> pure $ Unfold (Solved x) Id v
+  ES.Unsolved{}  -> pure $ Flex x SId
+  ES.Solved v _  -> pure $ Unfold (Solved x) SId v
 {-# inline metaIO #-}
 
-meta :: MetaVar -> Val
+meta :: MetaVar -> Val1
 meta x = runIO $ metaIO x
 {-# inline meta #-}
 
-top1 :: Lvl -> Val
+top1 :: Lvl -> Val1
 top1 x = runIO $ ES.readTop x >>= \case
-  ES.TEDef _ _ _ v _ _ _ -> pure $ Unfold (Top1 x) Id v
-  _                      -> impossible
+  ES.TEDef _ _ _ v U1 _ _ -> pure $ Unfold (Top1 x) SId v
+  _                       -> impossible
 {-# inline top1 #-}
+
+down :: Val1 -> Val0
+down = \case Up t -> t; t -> Down t
+{-# inline down #-}
+
+up :: Val0 -> Val1
+up = \case Down t -> t; t -> Up t
+{-# inline up #-}
 
 infixl 2 $$
 -- | Strict closure application.
-($$) :: Close S.Tm -> Val -> Val
-($$) (Close env t) u = eval1 (Snoc env u) t
+($$) :: Close S.Tm1 -> Val1 -> Val1
+($$) (Close env t) u = eval1 (Snoc1 env u) t
 {-# inline ($$) #-}
 
 infixl 2 $$$
 -- | Lazy closure application.
-($$$) :: Close S.Tm -> Val -> Val
-($$$) (Close env t) ~u = eval1 (Snoc env u) t
+($$$) :: Close S.Tm1 -> Val1 -> Val1
+($$$) (Close env t) ~u = eval1 (Snoc1 env u) t
 {-# inline ($$$) #-}
 
-app1 :: Val -> Val -> Icit -> Val
+dive :: Close S.Tm0 -> Lvl -> Val0
+dive (Close env t) l = eval0 (Snoc0 env l) t
+{-# inline dive #-}
+
+diveN :: Close S.Tm0 -> Lvl -> Int -> Val0
+diveN (Close env t) l n = eval0 (go env l n) t where
+  go acc l 0 = acc
+  go acc l n = go (Snoc0 acc l) (l + 1) (n - 1)
+
+app1 :: Val1 -> Val1 -> Icit -> Val1
 app1 t u i = case t of
-  Lam x i a t   -> t $$ u
-  Blocked h sp  -> Blocked h (App1 sp u i)
-  Unfold h sp t -> Unfold h (App1 sp u i) (app1 t u i)
-  t             -> App t u i
-
-app1Sp :: Val -> Spine -> Val
-app1Sp t sp = case sp of
-  Id            -> t
-  App1 sp u i   -> app1 (app1Sp t sp) u i
-  Field1 sp x n -> field1 (app1Sp t sp) x n
-
-eval :: Env -> S.Tm -> U -> Val
-eval env t un = case un of
-  U0 _   -> eval0 env t
-  U1     -> eval1 env t
-  UVar x -> Blocked (Eval env t x) Id
-
-up :: Val -> Val
-up (Down t) = t
-up t        = Up t
-
-down :: Val -> Val
-down (Up t) = t
-down t      = Down t
+  Lam1 x i a t   -> t $$ u
+  Flex h sp   -> Flex h (SApp1 sp u i)
+  Unfold h sp t  -> Unfold h (SApp1 sp u i) (app1 t u i)
+  t              -> App1 t u i
 
 ixFields :: Fields a -> Int -> a
 ixFields (FCons x a fs) 0 = a
 ixFields (FCons _ _ fs) n = ixFields fs (n - 1)
 ixFields _              _ = impossible
 
-field1 :: Val -> Name -> Int -> Val
+field1 :: Val1 -> Name -> Int -> Val1
 field1 t x n = case t of
   RecCon ts     -> ixFields ts n
-  Blocked h sp  -> Blocked h (Field1 sp x n)
-  Unfold h sp t -> Unfold h (Field1 sp x n) (field1 t x n)
+  Flex h sp  -> Flex h (SField1 sp x n)
+  Unfold h sp t -> Unfold h (SField1 sp x n) (field1 t x n)
   t             -> Field t x n
 
-weakLift :: U -> Val -> Val
-weakLift (U0 _)   a = Lift a
-weakLift U1       a = a
-weakLift (UVar x) a = Blocked (WeakLift a x) Id
-
-weakUp :: U -> Val -> Val
-weakUp (U0 _)   t = up t
-weakUp U1       t = t
-weakUp (UVar x) t = Blocked (WeakUp t x) Id
-
-inserted :: Val -> Env -> S.Locals -> Val
+inserted :: Val1 -> Env -> S.Locals -> Val1
 inserted t env ls = case (env, ls) of
-  (!env,       S.Empty            ) -> t
-  (Snoc env u, S.Define ls _ _ _ _) -> inserted t env ls
-  (Snoc env u, S.Bind ls x a au   ) -> app1 (inserted t env ls) (weakUp au u) Expl
+  (!env,        S.Empty           ) -> t
+  (Snoc1 env u, S.Define ls _ _ _ ) -> inserted t env ls
+  (Snoc0 env u, S.Bind ls _ _ U0{}) -> app1 (inserted t env ls) (Up (Var u)) Expl
+  (Snoc1 env u, S.Bind ls _ _ U1  ) -> app1 (inserted t env ls) u Expl
   _                                 -> impossible
 
-eval0 :: Env -> S.Tm -> Val
+eval0 :: Env -> S.Tm0 -> Val0
 eval0 env = \case
-  S.Var x          -> var env x
-  S.Top x          -> Top x
-  S.Let x a t u    -> Let x (eval1 env a) (eval0 env t) (Close env u)
-  S.Lam x Expl a t -> Lam x Expl (eval1 env a) (Close env t)
-  S.App t u Expl   -> App (eval0 env t) (eval1 env u) Expl
-  S.RecCon fs      -> RecCon (eval0 env <$> fs)
-  S.Field t x n    -> Field (eval0 env t) x n
-  S.DataCon x n    -> DataCon x n
-  S.Case t cs      -> Case (eval0 env t) (Close env cs)
-  S.Down t         -> down (eval1 env t)
-  _                -> impossible
+  S.Var x       -> Var (var0 env x)
+  S.Top x       -> Top0 x
+  S.Let x a t u -> Let x (eval1 env a) (eval0 env t) (Close env u)
+  S.Lam0 x a t  -> Lam0 x (eval1 env a) (Close env t)
+  S.App0 t u    -> App0 (eval0 env t) (eval0 env u)
+  S.RecCon fs   -> RecCon (eval0 env <$> fs)
+  S.Field t x n -> Field (eval0 env t) x n
+  S.DataCon x n -> DataCon x n
+  S.Case t cs   -> Case (eval0 env t) (Close env cs)
+  S.Fix x y t   -> Fix x y (Close env t)
+  S.Down t      -> down (eval1 env t)
 
-eval1 :: Env -> S.Tm -> Val
+eval1 :: Env -> S.Tm1 -> Val1
 eval1 env = \case
-  S.Var x         -> var env x
+  S.Var x         -> var1 env x
   S.Top x         -> top1 x
-  S.Let x a t u   -> eval1 (Snoc env (eval1 env t)) u
+  S.Let x a t u   -> eval1 (Snoc1 env (eval1 env t)) u
   S.Pi x i a b    -> Pi x i (eval1 env a) (Close env b)
-  S.Lam x i a t   -> Lam x i (eval1 env a) (Close env t)
-  S.App t u i     -> app1 (eval1 env t) (eval1 env u) i
-  S.U un          -> U un
+  S.Lam1 x i a t  -> Lam1 x i (eval1 env a) (Close env t)
+  S.App1 t u i    -> app1 (eval1 env t) (eval1 env u) i
+  S.Fun a b       -> Fun (eval1 env a) (eval1 env b)
+  S.U u           -> U u
   S.Rec as        -> Rec (eval1 env <$> as)
   S.RecCon ts     -> RecCon (eval1 env <$> ts)
   S.Field t x n   -> field1 (eval1 env t) x n
   S.TyCon x       -> TyCon x
   S.DataCon x n   -> DataCon x n
-  S.Case t cs     -> impossible
-  S.Lift un a     -> weakLift un (eval1 env a)
-  S.Up un t       -> weakUp un (eval1 env t)
+  S.Lift a        -> Lift (eval1 env a)
+  S.Up t          -> up (eval0 env t)
   S.Inserted x ls -> runIO do {t <- metaIO x; pure $! inserted t env ls}
   S.Meta x        -> meta x
-  _               -> impossible
+
+eval :: Env -> S.Tm s -> U s -> Val s
+eval env t = \case
+  U0 _ -> eval0 env t
+  U1   -> eval1 env t
+{-# inline eval #-}
 
 --------------------------------------------------------------------------------
+
+app1Sp :: Val1 -> Spine -> Val1
+app1Sp t = \case
+  SId            -> t
+  SApp1 sp u i   -> app1 (app1Sp t sp) u i
+  SField1 sp x n -> field1 (app1Sp t sp) x n
 
 forceCV :: CV -> CV
 forceCV = \case
@@ -146,95 +150,101 @@ forceCV = \case
                _              -> pure $! CVVar x
   cv -> cv
 
-forceU :: U -> U
-forceU = \case
-  UVar x -> runIO $ ES.readUMeta x >>= \case
-              ES.USolved un -> pure $! forceU $! un
-              _             -> pure $! UVar x
-  un     -> un
-
--- | Force Blocked only.
-forceB :: Val -> Val
-forceB = \case
-  Blocked h sp -> forceB' h sp
+-- | Force Flex only.
+forceF :: Val s -> Val s
+forceF = \case
+  Flex x sp -> runIO $ ES.readMeta x >>= \case
+                    ES.Solved v _ -> pure $! forceF $! app1Sp v sp
+                    _             -> pure $! Flex x sp
+  Up t         -> case forceF t of
+                    Down t -> forceF t
+                    t      -> Up t
+  Down t       -> case forceF t of
+                    Up t   -> forceF t
+                    t      -> Down t
   v            -> v
 
-forceB' :: BlockedOn -> Spine -> Val
-forceB' h sp = case h of
-  Unsolved x -> runIO $ ES.readMeta x >>= \case
-    ES.Solved v _ _ -> pure $! forceB (app1Sp v sp)
-    _               -> pure $! Blocked (Unsolved x) sp
-  Eval env t x -> runIO $ ES.readUMeta x >>= \case
-    ES.USolved un -> pure $! forceB $! eval env t un
-    _             -> pure $! Blocked (Eval env t x) sp
-  WeakLift x a -> runIO $ ES.readUMeta x >>= \case
-    ES.USolved un -> pure $! forceB $! weakLift un a
-    _             -> pure $! Blocked (WeakLift x a) sp
-  WeakUp x t -> runIO $ ES.readUMeta x >>= \case
-    ES.USolved un -> pure $! forceB $! weakUp un $! forceB t
-    _             -> pure $! Blocked (WeakUp x t) sp
+-- | Force Flex and Unfold.
+forceFU :: Val s -> Val s
+forceFU = \case
+  Flex x sp -> runIO $ ES.readMeta x >>= \case
+                    ES.Solved v _ -> pure $! forceFU $! app1Sp v sp
+                    _             -> pure $! Flex x sp
+  Unfold _ _ t -> forceFU t
+  Up t         -> case forceFU t of
+                    Down t -> forceFU t
+                    t      -> Up t
+  Down t       -> case forceFU t of
+                    Up t   -> forceFU t
+                    t      -> Down t
+  v            -> v
 
--- | Force Blocked and Unfold.
-forceBU :: Val -> Val
-forceBU = \case
-  Blocked h sp  -> forceBU' h sp
-  Unfold h sp t -> forceBU t
-  v             -> v
-
-forceBU' :: BlockedOn -> Spine -> Val
-forceBU' h sp = case h of
-  Unsolved x -> runIO $ ES.readMeta x >>= \case
-    ES.Solved v _ _ -> pure $! forceBU (app1Sp v sp)
-    _               -> pure $! Blocked (Unsolved x) sp
-  Eval env t x -> runIO $ ES.readUMeta x >>= \case
-    ES.USolved un -> pure $! forceBU $! eval env t un
-    _             -> pure $! Blocked (Eval env t x) sp
-  WeakLift x a -> runIO $ ES.readUMeta x >>= \case
-    ES.USolved un -> pure $! forceBU $! weakLift un a
-    _             -> pure $! Blocked (WeakLift x a) sp
-  WeakUp x t -> runIO $ ES.readUMeta x >>= \case
-    ES.USolved un -> pure $! forceBU $! weakUp un $! forceBU t
-    _             -> pure $! Blocked (WeakUp x t) sp
-
--- Quoting
---------------------------------------------------------------------------------
-
-quoteSp :: Lvl -> Unfolding -> S.Tm -> Spine -> S.Tm
+quoteSp :: Lvl -> Unfolding -> S.Tm1 -> Spine -> S.Tm1
 quoteSp l st h = \case
-  Id            -> h
-  App1 sp u i   -> S.App (quoteSp l st h sp) (quote1 l st u) i
-  Field1 sp x n -> S.Field (quoteSp l st h sp) x n
+  SId            -> h
+  SApp1 sp u i   -> S.App1 (quoteSp l st h sp) (quote l st u) i
+  SField1 sp x n -> S.Field (quoteSp l st h sp) x n
 
-quote1 :: Lvl -> Unfolding -> Val -> S.Tm
-quote1 l st t = let
-  go0     = quote0  l st; {-# inline go0 #-}
-  go1     = quote1  l st; {-# inline go1 #-}
+quote :: forall s. Lvl -> Unfolding -> Val s -> S.Tm s
+quote l st t = let
+
+  go :: forall s. Val s -> S.Tm s
+  go = quote l st; {-# inline go #-}
+
   goSp    = quoteSp l st; {-# inline goSp #-}
-  force t = case st of DoUnfold -> forceBU t
-                       _        -> forceB t
+  force t = case st of DoUnfold -> forceFU t
+                       _        -> forceF t
+  {-# inline force #-}
 
-  goB :: BlockedOn -> S.Tm
-  goB = \case
-    Unsolved x   -> S.Meta x
-    WeakLift x a -> S.Lift (UVar x) (go1 a)
-    WeakUp x t   -> S.Up (UVar x) (go
+  goUH :: UnfoldHead -> S.Tm1
+  goUH = \case Solved x -> S.Meta x; Top1 x -> S.Top x
+  {-# inline goUH #-}
 
--- data BlockedOn
---   = Unsolved MetaVar           -- unsolved (lvl1) meta
---   | Eval Env S.Tm UMetaVar     -- unknown eval       (at unknown lvl)
---   | WeakLift Ty UMetaVar       -- unknown type lift  (lvl 1)
---   | WeakUp Val UMetaVar        -- unknown term lift  (lvl 1)
+  goClose0 :: Close S.Tm0 -> S.Tm0
+  goClose0 t = quote (l + 1) st (dive t l)
+  {-# inline goClose0 #-}
 
+  goClose1 :: Close S.Tm1 -> S.Tm1
+  goClose1 t = quote (l + 1) st (t $$ Var l)
+  {-# inline goClose1 #-}
 
-  -- in case force t of
-  --   Blocked h sp  -> goSp _ sp
-  --   Unfold h sp t -> goSp _ sp
+  goCases :: Close (Cases S.Tm0) -> Cases S.Tm0
+  goCases (Close env cs) = go' cs where
+    go' :: Cases S.Tm0 -> Cases S.Tm0
+    go' CNil =
+      CNil
+    go' (CCons c xs t cs) =
+      let n = length xs
+      in CCons c xs (quote (l + Lvl n) st (diveN (Close env t) l n)) (go' cs)
 
+  goFix :: Close S.Tm0 -> S.Tm0
+  goFix (Close env t) =
+    quote (l + 2) st (eval0 (env `Snoc0` l `Snoc0` (l + 1)) t)
+  {-# inline goFix #-}
 
+  in case force t of
+    Unfold h sp _ -> goSp (goUH h) sp
+    Flex x sp  -> goSp (S.Meta x) sp
+    Var x         -> S.Var (lvlToIx l x)
+    Top0 x        -> S.Top x
+    Let x a t u   -> S.Let x (go a) (go t) (goClose0 u)
+    Lift t        -> S.Lift (go t)
+    Up t          -> S.Up (go t)
+    Down t        -> S.Down (go t)
+    TyCon x       -> S.TyCon x
+    DataCon x n   -> S.DataCon x n
+    Case t ts     -> S.Case (go t) (goCases ts)
+    Fix x y t     -> S.Fix x y (goFix t)
+    Pi x i a b    -> S.Pi x i (go a) (goClose1 b)
+    Lam1 x i a t  -> S.Lam1 x i (go a) (goClose1 t)
+    App1 t u i    -> S.App1 (go t) (go u) i
+    Fun a b       -> S.Fun (go a) (go b)
+    Lam0 x a t    -> S.Lam0 x (go a) (goClose0 t)
+    App0 t u      -> S.App0 (go t) (go u)
+    Rec fs        -> S.Rec (go <$> fs)
+    RecCon ts     -> S.RecCon (go <$> ts)
+    Field t x n   -> S.Field (go t) x n
+    U u           -> S.U u
 
-
-
-
-
-quote1 :: Lvl -> Unfolding -> Val -> S.Tm
-quote1 = undefined
+nfNil :: U s -> S.Tm s -> S.Tm s
+nfNil u t = quote 0 DoUnfold (eval Nil t u)

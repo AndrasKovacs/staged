@@ -24,7 +24,7 @@ data Tm
   | Pi Pos Bind Icit Tm Tm
   | Lam Pos Bind ArgInfo (Maybe Tm) Tm
   | App Tm Tm ArgInfo
-  | Ty Span U
+  | forall s. Ty Span (U s)
   | Lift Pos Tm
   | Up   Span Tm
   | Down Pos Tm
@@ -36,7 +36,7 @@ data Tm
   | Fix Pos Bind Bind Tm
   | Case Pos Tm Pos [(Span, [Bind], Tm)]
   | Hole Pos
-  deriving Show
+deriving instance Show Tm
 
 span :: Tm -> Span
 span t = Span (left t) (right t) where

@@ -58,14 +58,15 @@ fenceEx :: Dbg => IO a -> IO a
 fenceEx act = act `Exceptions.catch#` \case
   SomeException e -> Ex.throw e
   _               -> impossible
+{-# inline fenceEx #-}
 
 --------------------------------------------------------------------------------
 
 data ElabError
-  = UnifyError S.Tm S.Tm
+  = forall s. UnifyError (S.Tm s) (S.Tm s)
   | NameNotInScope {-# unpack #-} RawName
   | NoSuchField {-# unpack #-} RawName
   | NoSuchArgument {-# unpack #-} RawName
   | IcitMismatch Icit Icit
   | NoNamedLambdaInference
-  deriving Show
+deriving instance Show ElabError

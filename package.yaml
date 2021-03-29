@@ -12,15 +12,18 @@ dependencies:
 - base >= 4.7 && < 5
 
 default-extensions:
+  - AllowAmbiguousTypes
   - BangPatterns
   - BlockArguments
   - ConstraintKinds
   - DataKinds
-  - DerivingVia
-  - DeriveFunctor
   - DeriveFoldable
+  - DeriveFunctor
   - DeriveTraversable
+  - DerivingVia
   - ExplicitNamespaces
+  - FlexibleContexts
+  - FlexibleInstances
   - GADTs
   - KindSignatures
   - LambdaCase
@@ -29,11 +32,15 @@ default-extensions:
   - PatternSynonyms
   - PolyKinds
   - RankNTypes
+  - ScopedTypeVariables
+  - StandaloneDeriving
   - Strict
   - TemplateHaskell
-  - ViewPatterns
   - TupleSections
+  - TypeApplications
+  - TypeFamilies
   - UnboxedTuples
+  - ViewPatterns
 
 ghc-options:
   - -Wall
@@ -42,14 +49,15 @@ ghc-options:
   - -Wno-unused-matches
   - -Wno-missing-signatures
   - -Wno-unused-do-bind
+  - -Wno-unticked-promoted-constructors
   - -fplugin-opt=Test.Inspection.Plugin:skip-O0
   - -O
   - -fmax-worker-args=12
-  - -ddump-simpl
-  - -ddump-to-file
-  - -dsuppress-all
-  - -dno-suppress-type-signatures
-  - -ddump-stg
+  # - -ddump-simpl
+  # - -ddump-to-file
+  # - -dsuppress-all
+  # - -dno-suppress-type-signatures
+  # - -ddump-stg
 
 
 library:

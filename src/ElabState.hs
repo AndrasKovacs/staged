@@ -17,13 +17,13 @@ import qualified Values as V
 data TopEntry
 
   -- ^ Type, type val, rhs, rhs val, universe, name, source pos
-  = TEDef S.Ty V.Ty S.Tm V.Val U Name Pos
+  = forall s. TEDef S.Ty V.Ty (S.Tm s) (V.Val s) (U s) Name Pos
 
   -- ^ Type, Type val, constructors, name, source pos
-  | TETyCon S.Ty V.Ty U [Lvl] Name Pos
+  | TETyCon S.Ty V.Ty [Lvl] Name Pos
 
   -- ^ Type, type val, universe, parent type constructor, name, source pos
-  | TEDataCon S.Ty V.Ty U Lvl Name Pos
+  | forall s. TEDataCon S.Ty V.Ty (U s) Lvl Name Pos
 
 -- TODO: we'll implement top resizing and allocation later
 topSize :: Int
@@ -42,8 +42,8 @@ readTop (Lvl x) | 0 <= x && x < topSize = A.read top x
 --------------------------------------------------------------------------------
 
 data MetaEntry
-  = Unsolved V.Ty U
-  | Solved V.Val V.Ty U
+  = Unsolved V.Ty
+  | Solved V.Val1 V.Ty
 
 metaCxt :: D.Array MetaEntry
 metaCxt = runIO D.empty
@@ -53,17 +53,17 @@ readMeta :: MetaVar -> IO MetaEntry
 readMeta (MetaVar i) = D.read metaCxt i
 {-# inline readMeta #-}
 
-newMeta :: V.Ty -> U -> IO MetaVar
-newMeta a au = do
+newMeta :: V.Ty -> IO MetaVar
+newMeta a = do
   s <- D.size metaCxt
-  D.push metaCxt (Unsolved a au)
+  D.push metaCxt (Unsolved a)
   pure (MetaVar s)
 {-# inline newMeta #-}
 
-unsolvedMetaTy :: MetaVar -> IO (V.Ty, U)
+unsolvedMetaTy :: MetaVar -> IO V.Ty
 unsolvedMetaTy m = readMeta m >>= \case
-  Unsolved a au -> pure (a, au)
-  _             -> impossible
+  Unsolved a -> pure a
+  _          -> impossible
 {-# inline unsolvedMetaTy #-}
 
 
@@ -86,23 +86,3 @@ newCVMeta = do
   D.push cvCxt CVUnsolved
   pure (CVMetaVar s)
 {-# inline newCVMeta #-}
-
--- Universe metacontext
---------------------------------------------------------------------------------
-
-data UMetaEntry = UUnsolved | USolved U
-
-uCxt :: D.Array UMetaEntry
-uCxt = runIO D.empty
-{-# noinline uCxt #-}
-
-readUMeta :: UMetaVar -> IO UMetaEntry
-readUMeta (UMetaVar i) = D.read uCxt i
-{-# inline readUMeta #-}
-
-newUMeta :: IO UMetaVar
-newUMeta = do
-  s <- D.size uCxt
-  D.push uCxt UUnsolved
-  pure (UMetaVar s)
-{-# inline newUMeta #-}

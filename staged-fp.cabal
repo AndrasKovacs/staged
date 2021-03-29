@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: deffa727ae8c3c63c236d40937749dd3bccba44ac5432f89632eb213f77d4d66
+-- hash: ede5760d97c56fbdc56b701898521671564e96b67d5e16de32195420c6e76001
 
 name:           staged-fp
 version:        0.1.0.0
@@ -39,8 +39,8 @@ library
       Paths_staged_fp
   hs-source-dirs:
       src
-  default-extensions: BangPatterns BlockArguments ConstraintKinds DataKinds DerivingVia DeriveFunctor DeriveFoldable DeriveTraversable ExplicitNamespaces GADTs KindSignatures LambdaCase MagicHash OverloadedStrings PatternSynonyms PolyKinds RankNTypes Strict TemplateHaskell ViewPatterns TupleSections UnboxedTuples
-  ghc-options: -Wall -Wno-name-shadowing -Wno-unused-binds -Wno-unused-matches -Wno-missing-signatures -Wno-unused-do-bind -fplugin-opt=Test.Inspection.Plugin:skip-O0 -O -fmax-worker-args=12 -ddump-simpl -ddump-to-file -dsuppress-all -dno-suppress-type-signatures -ddump-stg
+  default-extensions: AllowAmbiguousTypes BangPatterns BlockArguments ConstraintKinds DataKinds DeriveFoldable DeriveFunctor DeriveTraversable DerivingVia ExplicitNamespaces FlexibleContexts FlexibleInstances GADTs KindSignatures LambdaCase MagicHash OverloadedStrings PatternSynonyms PolyKinds RankNTypes ScopedTypeVariables StandaloneDeriving Strict TemplateHaskell TupleSections TypeApplications TypeFamilies UnboxedTuples ViewPatterns
+  ghc-options: -Wall -Wno-name-shadowing -Wno-unused-binds -Wno-unused-matches -Wno-missing-signatures -Wno-unused-do-bind -Wno-unticked-promoted-constructors -fplugin-opt=Test.Inspection.Plugin:skip-O0 -O -fmax-worker-args=12
   build-depends:
       base >=4.7 && <5
     , bytestring
@@ -60,8 +60,8 @@ executable app
       Paths_staged_fp
   hs-source-dirs:
       app
-  default-extensions: BangPatterns BlockArguments ConstraintKinds DataKinds DerivingVia DeriveFunctor DeriveFoldable DeriveTraversable ExplicitNamespaces GADTs KindSignatures LambdaCase MagicHash OverloadedStrings PatternSynonyms PolyKinds RankNTypes Strict TemplateHaskell ViewPatterns TupleSections UnboxedTuples
-  ghc-options: -Wall -Wno-name-shadowing -Wno-unused-binds -Wno-unused-matches -Wno-missing-signatures -Wno-unused-do-bind -fplugin-opt=Test.Inspection.Plugin:skip-O0 -O -fmax-worker-args=12 -ddump-simpl -ddump-to-file -dsuppress-all -dno-suppress-type-signatures -ddump-stg -fllvm -O2 -rtsopts
+  default-extensions: AllowAmbiguousTypes BangPatterns BlockArguments ConstraintKinds DataKinds DeriveFoldable DeriveFunctor DeriveTraversable DerivingVia ExplicitNamespaces FlexibleContexts FlexibleInstances GADTs KindSignatures LambdaCase MagicHash OverloadedStrings PatternSynonyms PolyKinds RankNTypes ScopedTypeVariables StandaloneDeriving Strict TemplateHaskell TupleSections TypeApplications TypeFamilies UnboxedTuples ViewPatterns
+  ghc-options: -Wall -Wno-name-shadowing -Wno-unused-binds -Wno-unused-matches -Wno-missing-signatures -Wno-unused-do-bind -Wno-unticked-promoted-constructors -fplugin-opt=Test.Inspection.Plugin:skip-O0 -O -fmax-worker-args=12 -fllvm -O2 -rtsopts
   build-depends:
       base >=4.7 && <5
     , staged-fp

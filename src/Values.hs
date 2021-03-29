@@ -5,54 +5,54 @@ import Common
 import qualified Syntax as S
 
 data Close a = Close Env a
-data Env = Nil | Snoc Env ~Val
+data Env = Nil | Snoc1 Env ~Val1 | Snoc0 Env Lvl
+
+bind :: Env -> Lvl -> U s -> Env
+bind env l U0{} = Snoc0 env l
+bind env l U1   = Snoc1 env (Var l)
+{-# inline bind #-}
+
+type Val1 = Val S1
+type Val0 = Val S0
+type Ty   = Val1
 
 data Spine
-  = Id
-  | App1 Spine Val Icit
-  | Field1 Spine Name Int
-
-data BlockedOn
-  = Unsolved MetaVar           -- unsolved (lvl1) meta
-  | Eval Env S.Tm UMetaVar     -- unknown eval       (at unknown lvl)
-  | WeakLift UMetaVar Ty       -- unknown type lift  (lvl 1)
-  | WeakUp UMetaVar Val        -- unknown term lift  (lvl 1)
+  = SId
+  | SApp1 Spine Val1 Icit
+  | SField1 Spine Name Int
 
 data UnfoldHead
-  = Solved MetaVar  -- solved (lvl1) meta
-  | Top1 Lvl        -- top lvl1 definition
+  = Top1 Lvl
+  | Solved MetaVar
 
-type Ty = Val
+data Val :: Stage -> Type where
 
-data Val
-  -- suspended computation
-  = Unfold UnfoldHead Spine ~Val
-  | Blocked BlockedOn Spine
+  Unfold   :: UnfoldHead -> Spine -> ~Val1 -> Val1
+  Flex     :: MetaVar    -> Spine -> Val1
 
-  -- structural
-  | Var Lvl
-  | Top Lvl
-  | Let Name Ty Val {-# unpack #-} (Close S.Tm)
+  Var      :: Lvl -> Val s
+  Top0     :: Lvl -> Val0
+  Let      :: Name -> Ty -> Val0 -> {-# unpack #-} (Close S.Tm0) -> Val0
 
-  -- known lifts
-  | Lift Val
-  | Up Val
-  | Down Val
+  Lift     :: Ty -> Ty
+  Up       :: Val0 -> Val1
+  Down     :: Val1 -> Val0
 
-  -- ADTs
-  | TyCon Lvl
-  | DataCon Lvl Int
-  | Case Val {-# unpack #-} (Close (Cases S.Tm))
+  TyCon    :: Lvl -> Ty
+  DataCon  :: Lvl -> Int -> Val s
+  Case     :: Val0 -> {-# unpack #-} (Close (Cases S.Tm0)) -> Val0
+  Fix      :: Name -> Name -> {-# unpack #-} (Close S.Tm0) -> Val0
 
-  -- functions
-  | Pi  Name Icit Ty {-# unpack #-} (Close S.Ty)
-  | App Val Val Icit
-  | Lam Name Icit Ty {-# unpack #-} (Close S.Tm)
+  Pi       :: Name -> Icit -> Ty -> {-# unpack #-} (Close S.Ty) -> Val1
+  Lam1     :: Name -> Icit -> Ty -> {-# unpack #-} (Close S.Tm1) -> Val1
+  App1     :: Val1 -> Val1 -> Icit -> Val1
 
-  -- records
-  | Rec (Fields Ty)
-  | RecCon (Fields Val)
-  | Field Val Name Int
+  Fun      :: Ty -> Ty -> Ty
+  Lam0     :: Name -> Ty -> {-# unpack #-} (Close S.Tm0) -> Val0
+  App0     :: Val0 -> Val0 -> Val0
 
-  -- universes
-  | U U
+  Rec      :: Fields Ty -> Ty
+  RecCon   :: Fields (Val s) -> Val s
+  Field    :: Val s -> Name -> Int -> Val s
+
+  U        :: U s -> Ty

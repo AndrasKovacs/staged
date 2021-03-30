@@ -68,5 +68,8 @@ data ElabError
   | NoSuchField {-# unpack #-} RawName
   | NoSuchArgument {-# unpack #-} RawName
   | IcitMismatch Icit Icit
+  | NoImplicitLam0
+  | ExpectedV
+  | FieldNameMismatch
   | NoNamedLambdaInference
 deriving instance Show ElabError

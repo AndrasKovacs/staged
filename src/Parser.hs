@@ -22,6 +22,7 @@ bracketR  = $(symbol "]")
 comma     = $(symbol ",")
 dot       = $(symbol ".")
 eq        = $(symbol "=")
+assign    = $(symbol ":=")
 arrow     = token $(switch [| case _ of "->" -> pure (); "→" -> pure () |])
 tilde     = $(symbol "~")
 semi'     = $(symbol' ";")
@@ -31,6 +32,7 @@ braceR'   = $(symbol' "}")
 bracketR' = $(symbol' "]")
 dot'      = $(symbol' ".")
 eq'       = $(symbol' "=")
+assign'   = $(symbol' ":=")
 angleR'   = $(symbol' ">")
 
 
@@ -282,12 +284,18 @@ lam' pos = lvl' >> $(switch [| case _ of
 pLet' :: Pos -> Parser Tm
 pLet' l = do
   x <- ident'
-  a <- optional (colon *> tm')
-  eq'
-  t <- tm'
-  semi'
-  u <- tm'
-  pure $ Let l x a t u
+  a <- optional (colon `notFollowedBy` eq *> tm')
+  $(switch [| case _ of
+    "=" -> ws >> do
+      t <- tm'
+      semi'
+      u <- tm'
+      pure $ Let1 l x a t u
+    ":=" -> ws >> do
+      t <- tm'
+      semi'
+      u <- tm'
+      pure $ Let0 l x a t u |]) `cut` ["=", ":="]
 
 clause :: Parser (Span, [Bind], Tm)
 clause = do
@@ -334,10 +342,15 @@ tm' = lvl' >> tmBase `cut` [Msg "lambda expression", "let", "case", "fix"]
 
 topDef :: Span -> Parser TopLevel
 topDef x = local (const 1) do
-  a <- optional (colon *> tm')
-  eq'
-  rhs <- tm'
-  local (const 0) (Definition x a rhs <$> top)
+  a <- optional (colon `notFollowedBy` eq *> tm')
+  $(switch [| case _ of
+    "=" -> ws >> do
+      rhs <- tm'
+      local (const 0) (Definition1 x a rhs <$> top)
+    ":=" -> ws >> do
+      rhs <- tm'
+      local (const 0) (Definition0 x a rhs <$> top)|])
+    `cut` ["=", ":="]
 
 dataDecl :: Parser TopLevel
 dataDecl = do
@@ -349,7 +362,6 @@ dataDecl = do
       exactLvl tyConLvl
       moreIndented (ident <* colon') \x -> ((x,) <$> tm')
     local (const 0) (DataDecl pos x a cons <$> top)
-
 
 top :: Parser TopLevel
 top =  (exactLvl 0 >> (ident >>= topDef))

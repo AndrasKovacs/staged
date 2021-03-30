@@ -7,7 +7,8 @@ import Common
 data TopLevel
   = Nil
   | DataDecl Pos Span Tm [(Span, Tm)] TopLevel
-  | Definition Span (Maybe Tm) Tm TopLevel
+  | Definition0 Span (Maybe Tm) Tm TopLevel
+  | Definition1 Span (Maybe Tm) Tm TopLevel
   deriving Show
 
 data Bind
@@ -20,7 +21,8 @@ instance Show Bind where
 
 data Tm
   = Var Span
-  | Let Pos Span (Maybe Tm) Tm Tm
+  | Let0 Pos Span (Maybe Tm) Tm Tm
+  | Let1 Pos Span (Maybe Tm) Tm Tm
   | Pi Pos Bind Icit Tm Tm
   | Lam Pos Bind ArgInfo (Maybe Tm) Tm
   | App Tm Tm ArgInfo
@@ -43,7 +45,8 @@ span t = Span (left t) (right t) where
   left :: Tm -> Pos
   left = \case
     Var (Span l _)      -> l
-    Let l _ _ _ _       -> l
+    Let0 l _ _ _ _      -> l
+    Let1 l _ _ _ _      -> l
     Pi l _ _ _ _        -> l
     Lam l _ _ _ _       -> l
     App t u _           -> left t
@@ -63,7 +66,8 @@ span t = Span (left t) (right t) where
   right :: Tm -> Pos
   right = \case
     Var (Span _ r)      -> r
-    Let _ _ _ _ t       -> right t
+    Let0 _ _ _ _ t      -> right t
+    Let1 _ _ _ _ t      -> right t
     Pi _ _ _ _ t        -> right t
     Lam _ _ _ _ t       -> right t
     App _ t _           -> right t

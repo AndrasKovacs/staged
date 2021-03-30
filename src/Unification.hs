@@ -41,10 +41,10 @@ TODO:
 
 closeType :: S.Locals -> S.Ty -> S.Ty
 closeType ls topA = case ls of
-  S.Empty            -> topA
-  S.Define ls x a t  -> closeType ls (S.Let x a t topA)
-  S.Bind ls x a U0{} -> closeType ls (S.Pi x Expl (S.Lift a) topA)
-  S.Bind ls x a U1   -> closeType ls (S.Pi x Expl a topA)
+  S.Empty               -> topA
+  S.Define ls x a t     -> closeType ls (S.Let x a t topA)
+  S.Bind ls x a (U0 cv) -> closeType ls (S.Pi x Expl (S.Lift cv a) topA)
+  S.Bind ls x a U1      -> closeType ls (S.Pi x Expl a topA)
 
 freshMeta :: Cxt -> S.Ty -> IO S.Tm1
 freshMeta cxt a = do
@@ -52,6 +52,9 @@ freshMeta cxt a = do
   m <- ES.newMeta va
   pure $! S.Inserted m (_locals cxt)
 
+freshCV :: IO CV
+freshCV = CVVar <$> ES.newCVMeta
+{-# inline freshCV #-}
 
 -- Solutions
 --------------------------------------------------------------------------------
@@ -158,7 +161,7 @@ rename m st pren t = let
     Fun a b       -> S.Fun <$> go a <*!> go b
     Lam1 x i a t  -> S.Lam1 x i <$> go a <*!> goClose1 t
     Up t          -> S.Up <$> go t
-    Lift a        -> S.Lift <$> go a
+    Lift cv a     -> S.Lift cv <$> go a
     Rec fs        -> S.Rec <$> mapM go fs
     U u           -> pure $ S.U u
     TyCon x       -> pure $ S.TyCon x
@@ -197,6 +200,18 @@ unifySp l st sp sp' = case (sp, sp') of
   (SField1 t _ n, SField1 t' _ n') | n == n' -> unifySp l st t t'
   _ -> throwIO CantUnify
 
+unifyEq :: Eq a => a -> a -> IO ()
+unifyEq a a' = unless (a == a') (throwIO CantUnify)
+{-# inline unifyEq #-}
+
+unifyCV :: CV -> CV -> IO ()
+unifyCV C         C          = pure ()
+unifyCV V         V          = pure ()
+unifyCV (CVVar x) (CVVar x') = unifyEq x x'
+unifyCV (CVVar x) cv'        = D.write ES.cvCxt (coerce x)  (ES.CVSolved cv')
+unifyCV cv        (CVVar x') = D.write ES.cvCxt (coerce x') (ES.CVSolved cv)
+unifyCV _         _          = throwIO CantUnify
+
 unify :: forall s. Lvl -> ConvState -> Val s -> Val s -> IO ()
 unify l st t t' = let
 
@@ -223,27 +238,15 @@ unify l st t t' = let
   goClose0 t t' = unify (l + 1) st (dive t l) (dive t' l)
   {-# inline goClose0 #-}
 
-  eq :: Eq a => a -> a -> IO ()
-  eq a a' = unless (a == a') (throwIO CantUnify)
-  {-# inline eq #-}
-
-  goCV :: CV -> CV -> IO ()
-  goCV C         C          = pure ()
-  goCV V         V          = pure ()
-  goCV (CVVar x) (CVVar x') = eq x x'
-  goCV (CVVar x) cv'        = D.write ES.cvCxt (coerce x)  (ES.CVSolved cv')
-  goCV cv        (CVVar x') = D.write ES.cvCxt (coerce x') (ES.CVSolved cv)
-  goCV _         _          = throwIO CantUnify
-
   goU :: forall s s'. U s -> U s' -> IO ()
-  goU (U0 cv) (U0 cv') = goCV cv cv'
+  goU (U0 cv) (U0 cv') = unifyCV cv cv'
   goU U1      U1       = pure ()
   goU _       _        = throwIO CantUnify
 
   goUH :: UnfoldHead -> UnfoldHead -> IO ()
   goUH h h' = case (h, h') of
-    (Solved x, Solved x') -> eq x x'
-    (Top1 x  , Top1 x')   -> eq x x'
+    (Solved x, Solved x') -> unifyEq x x'
+    (Top1 x  , Top1 x')   -> unifyEq x x'
     _                     -> throwIO CantUnify
   {-# inline goUH #-}
 
@@ -275,14 +278,14 @@ unify l st t t' = let
       _       -> impossible
 
     -- canonical/rigid
-    (Var x       , Var x'          ) -> eq x x'
-    (Top0 x      , Top0 x'         ) -> eq x x'
+    (Var x       , Var x'          ) -> unifyEq x x'
+    (Top0 x      , Top0 x'         ) -> unifyEq x x'
     (Let _ a t u , Let _ a' t' u'  ) -> go a a' >> go t t' >> goClose0 u u'
-    (Lift a      , Lift a'         ) -> go a a'
+    (Lift cv a   , Lift cv' a'     ) -> unifyCV cv cv' >> go a a'
     (Up t        , Up t'           ) -> go t t'
     (Down t      , Down t'         ) -> go t t'
-    (TyCon x     , TyCon x'        ) -> eq x x'
-    (DataCon x n , DataCon x' n'   ) -> eq n n'
+    (TyCon x     , TyCon x'        ) -> unifyEq x x'
+    (DataCon x n , DataCon x' n'   ) -> unifyEq n n'
     (Case t cs   , Case t' cs'     ) -> go t t' >> undefined
     (Fix _ _ t   , Fix _ _ t'      ) -> goFix t t'
     (Pi x i a b  , Pi x' i' a' b'  ) -> go a a' >> goClose1 b b'
@@ -292,7 +295,7 @@ unify l st t t' = let
     (App0 t u    , App0 t' u'      ) -> go t t' >> go u u'
     (Rec as      , Rec as'         ) -> goFields as as'
     (RecCon ts   , RecCon ts'      ) -> goFields ts ts'
-    (Field t x n , Field t' x' n'  ) -> go t t' >> eq n n'
+    (Field t x n , Field t' x' n'  ) -> go t t' >> unifyEq n n'
     (U u         , U u'            ) -> goU u u'
 
     -- eta
@@ -303,7 +306,7 @@ unify l st t t' = let
     -- todo: record eta, split RecCon0 and RecCon1
 
     -- flex
-    (Flex x sp, Flex x' sp') -> eq x x' >> goSp sp sp' -- TODO: flex-flex
+    (Flex x sp, Flex x' sp') -> unifyEq x x' >> goSp sp sp' -- TODO: flex-flex
     (Flex x sp, t'         ) -> solveMeta l st x sp t'
     (t        , Flex x' sp') -> solveMeta l st x' sp' t
 

@@ -124,7 +124,7 @@ eval1 env = \case
   S.Field t x n   -> field1 (eval1 env t) x n
   S.TyCon x       -> TyCon x
   S.DataCon x n   -> DataCon x n
-  S.Lift a        -> Lift (eval1 env a)
+  S.Lift cv a     -> Lift cv (eval1 env a)
   S.Up t          -> up (eval0 env t)
   S.Inserted x ls -> runIO do {t <- metaIO x; pure $! inserted t env ls}
   S.Meta x        -> meta x
@@ -228,7 +228,7 @@ quote l st t = let
     Var x         -> S.Var (lvlToIx l x)
     Top0 x        -> S.Top x
     Let x a t u   -> S.Let x (go a) (go t) (goClose0 u)
-    Lift t        -> S.Lift (go t)
+    Lift cv t     -> S.Lift cv (go t)
     Up t          -> S.Up (go t)
     Down t        -> S.Down (go t)
     TyCon x       -> S.TyCon x

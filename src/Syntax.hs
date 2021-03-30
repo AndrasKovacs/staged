@@ -31,7 +31,7 @@ data Tm :: Stage -> Type where
   Case     :: Tm0 -> Cases Tm0 -> Tm0
   Fix      :: Name -> Name -> Tm0 -> Tm0
 
-  Lift     :: Ty -> Ty
+  Lift     :: CV -> Ty -> Ty
   Up       :: Tm0 -> Tm1
   Down     :: Tm1 -> Tm0
 
@@ -46,3 +46,13 @@ data Locals where
   Bind   :: Locals -> Name -> Ty -> U s -> Locals
 
 deriving instance Show Locals
+
+up :: Tm0 -> Tm1
+up (Down t) = t
+up t        = Up t
+{-# inline up #-}
+
+down :: Tm1 -> Tm0
+down (Up t) = t
+down t      = Down t
+{-# inline down #-}

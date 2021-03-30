@@ -1,7 +1,7 @@
 
 module EvalInCxt (
     eval, eval0, eval1
-  , Eval.forceF, Eval.forceFU
+  , Eval.forceF, Eval.forceFU, Eval.forceCV
   , Eval.app1, (Eval.$$), (Eval.$$$)
   , quote
   ) where

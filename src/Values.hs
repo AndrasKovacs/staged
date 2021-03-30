@@ -34,7 +34,7 @@ data Val :: Stage -> Type where
   Top0     :: Lvl -> Val0
   Let      :: Name -> Ty -> Val0 -> {-# unpack #-} (Close S.Tm0) -> Val0
 
-  Lift     :: Ty -> Ty
+  Lift     :: CV -> Ty -> Ty
   Up       :: Val0 -> Val1
   Down     :: Val1 -> Val0
 

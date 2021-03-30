@@ -196,7 +196,7 @@ instance Show Icit where
 data ArgInfo
   = NoName Icit
   | Named {-# unpack #-} Span
-  deriving Show
+  deriving (Show)
 
 data CV = C | V | CVVar CVMetaVar
   deriving (Eq, Show)

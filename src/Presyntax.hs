@@ -26,7 +26,7 @@ data Tm
   | Pi Pos Bind Icit Tm Tm
   | Lam Pos Bind ArgInfo (Maybe Tm) Tm
   | App Tm Tm ArgInfo
-  | forall s. Ty Span (U s)
+  | Ty Span U
   | Lift Pos Tm
   | Up   Span Tm
   | Down Pos Tm

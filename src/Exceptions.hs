@@ -63,9 +63,10 @@ fenceEx act = act `Exceptions.catch#` \case
 --------------------------------------------------------------------------------
 
 data ElabError
-  = forall s. UnifyError (S.Tm s) (S.Tm s)
+  = UnifyError0 S.Tm0 S.Tm0
+  | UnifyError1 S.Tm1 S.Tm1
   | NameNotInScope {-# unpack #-} RawName
-  | NoSuchField {-# unpack #-} RawName
+  | NoSuchField    {-# unpack #-} RawName
   | NoSuchArgument {-# unpack #-} RawName
   | IcitMismatch Icit Icit
   | NoImplicitLam0

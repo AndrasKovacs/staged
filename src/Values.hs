@@ -7,14 +7,7 @@ import qualified Syntax as S
 data Close a = Close Env a
 data Env = Nil | Snoc1 Env ~Val1 | Snoc0 Env Lvl
 
-bind :: Env -> Lvl -> U s -> Env
-bind env l U0{} = Snoc0 env l
-bind env l U1   = Snoc1 env (Var l)
-{-# inline bind #-}
-
-type Val1 = Val S1
-type Val0 = Val S0
-type Ty   = Val1
+type Ty = Val1
 
 data Spine
   = SId
@@ -25,34 +18,32 @@ data UnfoldHead
   = Top1 Lvl
   | Solved MetaVar
 
-data Val :: Stage -> Type where
+data Val0
+  = Var0 Lvl
+  | Top0 Lvl
+  | Let0 Name Ty Val0 {-# unpack #-} (Close S.Tm0)
+  | App0 Val0 Val0
+  | Case Val0 {-# unpack #-} (Close (Cases S.Tm0))
+  | DataCon0 Lvl Int
+  | Fix Name Name {-# unpack #-} (Close S.Tm0)
+  | Down Val1
+  | Field0 Val0 Name Int
+  | RecCon0 (Fields Val0)
+  | Lam0 Name Ty {-# unpack #-} (Close S.Tm0)
 
-  Unfold   :: UnfoldHead -> Spine -> ~Val1 -> Val1
-  Flex     :: MetaVar    -> Spine -> Val1
-
-  Var      :: Lvl -> Val s
-  Top0     :: Lvl -> Val0
-  Let      :: Name -> Ty -> Val0 -> {-# unpack #-} (Close S.Tm0) -> Val0
-
-  Lift     :: CV -> Ty -> Ty
-  Up       :: Val0 -> Val1
-  Down     :: Val1 -> Val0
-
-  TyCon    :: Lvl -> Ty
-  DataCon  :: Lvl -> Int -> Val s
-  Case     :: Val0 -> {-# unpack #-} (Close (Cases S.Tm0)) -> Val0
-  Fix      :: Name -> Name -> {-# unpack #-} (Close S.Tm0) -> Val0
-
-  Pi       :: Name -> Icit -> Ty -> {-# unpack #-} (Close S.Ty) -> Val1
-  Lam1     :: Name -> Icit -> Ty -> {-# unpack #-} (Close S.Tm1) -> Val1
-  App1     :: Val1 -> Val1 -> Icit -> Val1
-
-  Fun      :: Ty -> Ty -> Ty
-  Lam0     :: Name -> Ty -> {-# unpack #-} (Close S.Tm0) -> Val0
-  App0     :: Val0 -> Val0 -> Val0
-
-  Rec      :: Fields Ty -> Ty
-  RecCon   :: Fields (Val s) -> Val s
-  Field    :: Val s -> Name -> Int -> Val s
-
-  U        :: U s -> Ty
+data Val1
+  = Unfold UnfoldHead Spine ~Val1
+  | Flex MetaVar Spine
+  | Pi Name Icit Ty {-# unpack #-} (Close S.Tm1)
+  | Lam1 Name Icit Ty {-# unpack #-} (Close S.Tm1)
+  | App1 Val1 Val1 Icit
+  | Fun Ty Ty
+  | Var1 Lvl
+  | Lift CV Ty
+  | Up Val0
+  | Rec (Fields Ty)
+  | RecCon1 (Fields Val1)
+  | Field1 Val1 Name Int
+  | U U
+  | TyCon Lvl
+  | DataCon1 Lvl Int

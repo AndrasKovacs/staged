@@ -10,20 +10,23 @@ import Common
 import qualified Syntax as S
 import qualified Values as V
 
-
 -- Top scope
 --------------------------------------------------------------------------------
 
 data TopEntry
 
-  -- ^ Type, type val, rhs, rhs val, universe, name, source pos
-  = forall s. TEDef S.Ty V.Ty (S.Tm s) (V.Val s) (U s) Name Pos
+  -- ^ Type, type val, rhs, rhs val, CV, name, source pos
+  = TEDef0 S.Ty V.Ty S.Tm0 V.Val0 CV Name Pos
+
+  -- ^ Type, type val, rhs, rhs val, name, source pos
+  | TEDef1 S.Ty V.Ty S.Tm1 V.Val1 Name Pos
 
   -- ^ Type, Type val, constructors, name, source pos
   | TETyCon S.Ty V.Ty [Lvl] Name Pos
 
   -- ^ Type, type val, universe, parent type constructor, name, source pos
-  | forall s. TEDataCon S.Ty V.Ty (U s) Lvl Name Pos
+  | TEDataCon S.Ty V.Ty U Lvl Name Pos
+
 
 -- TODO: we'll implement top resizing and allocation later
 topSize :: Int
@@ -42,7 +45,7 @@ readTop (Lvl x) | 0 <= x && x < topSize = A.read top x
 --------------------------------------------------------------------------------
 
 data MetaEntry
-  = Unsolved V.Ty
+  = Unsolved ~V.Ty -- ^ Closed type val
   | Solved V.Val1 V.Ty
 
 metaCxt :: D.Array MetaEntry
@@ -53,8 +56,9 @@ readMeta :: MetaVar -> IO MetaEntry
 readMeta (MetaVar i) = D.read metaCxt i
 {-# inline readMeta #-}
 
+-- | Args: closed type value.
 newMeta :: V.Ty -> IO MetaVar
-newMeta a = do
+newMeta ~a = do
   s <- D.size metaCxt
   D.push metaCxt (Unsolved a)
   pure (MetaVar s)

@@ -20,7 +20,6 @@ import FNV164
 import FlatParse.Stateful
 import Data.Coerce
 
-
 --------------------------------------------------------------------------------
 
 data Fields a
@@ -94,43 +93,6 @@ instance Show a => Show (Cases a) where
     go CNil = []
     go (CCons x xs rhs cs) = (x, xs, rhs) : go cs
 
-
--- Singletons
---------------------------------------------------------------------------------
-
-data family Pi (a :: k)
-
-data Some (k :: Type) :: Type where
-  Some :: Pi (a :: k) -> Some k
-
-class SingKind (k :: Type) where
-  fromSing :: Pi (a :: k) -> k
-  toSing   :: k -> Some k
-
-instance (Eq k, SingKind k) => Eq (Pi (s :: k)) where
-  x == y = fromSing x == fromSing y
-  {-# inline (==) #-}
-
-instance (Show k, SingKind k) => Show (Pi (s :: k)) where
-  showsPrec n x = showsPrec n (fromSing x)
-  {-# inline showsPrec #-}
-
---------------------------------------------------------------------------------
-
-data Stage = S0 | S1 deriving (Eq, Show)
-
-data instance Pi (a :: Stage) where
-  SS0 :: Pi 'S0
-  SS1 :: Pi 'S1
-
-instance SingKind Stage where
-  fromSing SS0 = S0
-  fromSing SS1 = S1
-  {-# inline fromSing #-}
-  toSing   S0  = Some SS0
-  toSing   S1  = Some SS1
-  {-# inline toSing #-}
-
 --------------------------------------------------------------------------------
 
 type Dbg = () :: Constraint
@@ -201,12 +163,8 @@ data ArgInfo
 data CV = C | V | CVVar CVMetaVar
   deriving (Eq, Show)
 
-data U :: Stage -> Type where
-  U0 :: CV -> U S0
-  U1 :: U S1
-
-deriving instance Eq (U s)
-deriving instance Show (U s)
+data U = U0 CV | U1
+  deriving (Eq, Show)
 
 newtype Ix = Ix Int
   deriving (Eq, Ord, Show, Num) via Int

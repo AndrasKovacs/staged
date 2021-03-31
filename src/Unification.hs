@@ -41,14 +41,14 @@ TODO:
 
 closeType :: S.Locals -> S.Ty -> S.Ty
 closeType ls topA = case ls of
-  S.Empty               -> topA
-  S.Define ls x a t     -> closeType ls (S.Let x a t topA)
-  S.Bind ls x a (U0 cv) -> closeType ls (S.Pi x Expl (S.Lift cv a) topA)
-  S.Bind ls x a U1      -> closeType ls (S.Pi x Expl a topA)
+  S.Empty           -> topA
+  S.Define ls x a t -> closeType ls (S.Let1 x a t topA)
+  S.Bind0 ls x a cv -> closeType ls (S.Pi x Expl (S.Lift cv a) topA)
+  S.Bind1 ls x a    -> closeType ls (S.Pi x Expl a topA)
 
 freshMeta :: Cxt -> S.Ty -> IO S.Tm1
-freshMeta cxt a = do
-  let va = eval1 Nil (closeType (_locals cxt) a)
+freshMeta cxt ~a = do
+  let ~va = eval1 Nil (closeType (_locals cxt) a)
   m <- ES.newMeta va
   pure $! S.Inserted m (_locals cxt)
 
@@ -78,8 +78,8 @@ invert gamma sp = do
         throw CantUnify
       go (SApp1 sp t i) =
         let (!dom, !ren) = go sp in
-        case forceFU t of
-          Var (Lvl x) | IM.notMember x ren ->
+        case forceFU1 t of
+          Var1 (Lvl x) | IM.notMember x ren ->
             ((,) $$! (dom + 1) $$! (IM.insert x dom ren))
           _ ->
             throw CantUnify
@@ -89,84 +89,91 @@ invert gamma sp = do
 
 renameSp :: MetaVar -> ConvState -> PartialRenaming -> S.Tm1 -> Spine -> IO S.Tm1
 renameSp m st pren t sp = let
-  go   t  = rename m st pren t;     {-# inline go #-}
+  go1   t = rename1 m st pren t;     {-# inline go1 #-}
   goSp sp = renameSp m st pren t sp; {-# inline goSp #-}
   in case sp of
     SId           -> pure $! t
-    SApp1 t u i   -> S.App1 <$!> goSp t <*!> go u <*!> pure i
-    SField1 t x n -> S.Field  <$!> goSp t <*!> pure x <*!> pure n
+    SApp1 t u i   -> S.App1 <$!> goSp t <*!> go1 u <*!> pure i
+    SField1 t x n -> S.Field1  <$!> goSp t <*!> pure x <*!> pure n
 
-rename :: forall s. MetaVar -> ConvState -> PartialRenaming -> Val s -> IO (S.Tm s)
-rename m st pren t = let
+rename0 :: MetaVar -> ConvState -> PartialRenaming -> Val0 -> IO S.Tm0
+rename0 m st pren t = let
+  go0 = rename0 m st pren; {-# inline go0 #-}
+  go1 = rename1 m st pren; {-# inline go1 #-}
 
-  go :: forall s. Val s -> IO (S.Tm s)
-  go t = rename m st pren t
-  {-# inline go #-}
-
-  goClose1 :: Close S.Tm1 -> IO S.Tm1
-  goClose1 t =
-    rename m st (lift pren) (t $$ Var (cod pren));
-  {-# inline goClose1 #-}
-
-  goClose0 :: Close S.Tm0 -> IO S.Tm0
-  goClose0 t = rename m st (lift pren) (dive t (cod pren))
+  goClose0 t = rename0 m st (lift pren) (dive t (cod pren))
   {-# inline goClose0 #-}
 
-  force :: forall s. Val s -> Val s
   force t = case st of
-    CSFull -> forceFU t
-    _      -> forceF t
+    CSFull -> forceFU0 t
+    _      -> forceF0 t
   {-# inline force #-}
 
-  goUH :: UnfoldHead -> S.Tm1
-  goUH = \case Top1 x -> S.Top x; Solved x -> S.Meta x
-  {-# inline goUH #-}
-
-  goFix :: Close S.Tm0 -> IO S.Tm0
   goFix (Close env t) =
-    rename m st (lift (lift pren))
+    rename0 m st (lift (lift pren))
            (eval0 (env `Snoc0` cod pren `Snoc0` (cod pren + 1)) t)
   {-# inline goFix #-}
 
-  goCases :: Close (Cases S.Tm0) -> IO (Cases S.Tm0)
   goCases (Close env cs) = goCs cs where
     goCs CNil =
       pure CNil
     goCs (CCons x xs t cs) =
-      CCons x xs <$> go (diveN (Close env t) (dom pren) (length xs)) <*!> goCs cs
+      CCons x xs <$> go0 (diveN (Close env t) (dom pren) (length xs)) <*!> goCs cs
 
   in case force t of
-    Var  x        -> case IM.lookup (coerce x) (ren pren) of
+    Var0  x       -> case IM.lookup (coerce x) (ren pren) of
                        Nothing -> throwIO CantUnify
-                       Just x' -> pure $! S.Var (lvlToIx (dom pren) x')
-    Top0 x        -> pure $! S.Top x
-    App0 t u      -> S.App0 <$> go t <*!> go u
-    Let x a t u   -> S.Let x <$> go a <*!> go t <*!> goClose0 u
-    Lam0 x a t    -> S.Lam0 x <$> go a <*!> goClose0 t
-    Down t        -> S.Down <$> go t
-    DataCon x i   -> pure $! S.DataCon x i
-    RecCon fs     -> S.RecCon <$> mapM go fs
-    Case t cs     -> S.Case <$> go t <*!> goCases cs
-    Field t x n   -> S.Field <$> go t <*!> pure x <*!> pure n
+                       Just x' -> pure $! S.Var0 (lvlToIx (dom pren) x')
+    Top0 x        -> pure $! S.Top0 x
+    App0 t u      -> S.App0 <$> go0 t <*!> go0 u
+    Let0 x a t u  -> S.Let0 x <$> go1 a <*!> go0 t <*!> goClose0 u
+    Lam0 x a t    -> S.Lam0 x <$> go1 a <*!> goClose0 t
+    Down t        -> S.Down <$> go1 t
+    DataCon0 x i  -> pure $! S.DataCon0 x i
+    RecCon0 fs    -> S.RecCon0 <$> mapM go0 fs
+    Case t cs     -> S.Case <$> go0 t <*!> goCases cs
+    Field0 t x n  -> S.Field0 <$> go0 t <*!> pure x <*!> pure n
+    Fix x y t     -> S.Fix x y <$!> goFix t
+
+rename1 :: MetaVar -> ConvState -> PartialRenaming -> Val1 -> IO S.Tm1
+rename1 m st pren t = let
+  go0 = rename0 m st pren; {-# inline go0 #-}
+  go1 = rename1 m st pren; {-# inline go1 #-}
+
+  goClose1 t = rename1 m st (lift pren) (t $$ Var1 (cod pren));
+  {-# inline goClose1 #-}
+
+  force t = case st of
+    CSFull -> forceFU1 t
+    _      -> forceF1 t
+  {-# inline force #-}
+
+  goUH = \case Top1 x -> S.Top1 x; Solved x -> S.Meta x
+  {-# inline goUH #-}
+
+  in case force t of
+    Var1  x       -> case IM.lookup (coerce x) (ren pren) of
+                       Nothing -> throwIO CantUnify
+                       Just x' -> pure $! S.Var1 (lvlToIx (dom pren) x')
+    DataCon1 x i  -> pure $! S.DataCon1 x i
+    RecCon1 fs    -> S.RecCon1 <$> mapM go1 fs
+    Field1 t x n  -> S.Field1 <$> go1 t <*!> pure x <*!> pure n
     Flex x sp     -> if x == m then throwIO (OccursCheck x)
                                else renameSp m CSFlex pren (S.Meta x) sp
-
     Unfold h sp t -> case st of
                        CSRigid -> renameSp m CSFlex pren (goUH h) sp
-                                  `catch` \_ -> rename m CSFull pren t
+                                  `catch` \_ -> rename1 m CSFull pren t
                        CSFlex  -> throwIO CantUnify
                        _       -> impossible
-
-    Pi x i a b    -> S.Pi x i <$> go a <*!> goClose1 b
-    Fun a b       -> S.Fun <$> go a <*!> go b
-    Lam1 x i a t  -> S.Lam1 x i <$> go a <*!> goClose1 t
-    Up t          -> S.Up <$> go t
-    Lift cv a     -> S.Lift cv <$> go a
-    Rec fs        -> S.Rec <$> mapM go fs
+    Pi x i a b    -> S.Pi x i <$> go1 a <*!> goClose1 b
+    Fun a b       -> S.Fun <$> go1 a <*!> go1 b
+    Lam1 x i a t  -> S.Lam1 x i <$> go1 a <*!> goClose1 t
+    Up t          -> S.Up <$> go0 t
+    Lift cv a     -> S.Lift cv <$> go1 a
+    Rec fs        -> S.Rec <$> mapM go1 fs
     U u           -> pure $ S.U u
     TyCon x       -> pure $ S.TyCon x
-    Fix x y t     -> S.Fix x y <$!> goFix t
-    App1 t u i    -> S.App1 <$> go t <*!> go u <*!> pure i
+    App1 t u i    -> S.App1 <$> go1 t <*!> go1 u <*!> pure i
 
 
 -- | Wrap a term in Lvl number of lambdas, getting the domain types
@@ -175,17 +182,17 @@ lams :: Lvl -> Ty -> S.Tm1 -> S.Tm1
 lams l a t = go l 0 a t where
   go :: Lvl -> Lvl -> Ty -> S.Tm1 -> S.Tm1
   go l l' a t | l == l' = t
-  go l l' a t = case forceFU a of
+  go l l' a t = case forceFU1 a of
     Pi x i a b ->
-      S.Lam1 x i (quote l' DontUnfold a) (go l (l' + 1) (b $$ Var l') t)
+      S.Lam1 x i (quote1 l' DontUnfold a) (go l (l' + 1) (b $$ Var1 l') t)
     _ -> impossible
 
 solveMeta :: Lvl -> ConvState -> MetaVar -> Spine -> Val1 -> IO ()
 solveMeta l st m sp rhs = do
-  ma <- ES.unsolvedMetaTy m
+  ~ma <- ES.unsolvedMetaTy m
   when (st == CSFlex) $ throwIO CantUnify
   pren <- invert l sp
-  rhs  <- rename m CSRigid pren rhs
+  rhs  <- rename1 m CSRigid pren rhs
   let sol = eval1 Nil (lams (dom pren) ma rhs)
   D.write ES.metaCxt (coerce m) (ES.Solved sol ma)
 
@@ -195,113 +202,124 @@ solveMeta l st m sp rhs = do
 
 unifySp :: Lvl -> ConvState -> Spine -> Spine -> IO ()
 unifySp l st sp sp' = case (sp, sp') of
-  (SId          , SId            ) -> pure ()
-  (SApp1 t u i  , SApp1 t' u' i' ) -> unifySp l st t t' >> unify l st u u'
+  (SId          , SId            )           -> pure ()
+  (SApp1 t u i  , SApp1 t' u' i' )           -> unifySp l st t t' >> unify1 l st u u'
   (SField1 t _ n, SField1 t' _ n') | n == n' -> unifySp l st t t'
-  _ -> throwIO CantUnify
+  _                                          -> throwIO CantUnify
 
 unifyEq :: Eq a => a -> a -> IO ()
 unifyEq a a' = unless (a == a') (throwIO CantUnify)
 {-# inline unifyEq #-}
 
+unifyU :: U -> U -> IO ()
+unifyU u u' = case (u, u') of
+  (U0 cv, U0 cv') -> unifyCV cv cv'
+  (U1   , U1    ) -> pure ()
+  (_    , _     ) -> throwIO CantUnify
+
 unifyCV :: CV -> CV -> IO ()
-unifyCV C         C          = pure ()
-unifyCV V         V          = pure ()
-unifyCV (CVVar x) (CVVar x') = unifyEq x x'
-unifyCV (CVVar x) cv'        = D.write ES.cvCxt (coerce x)  (ES.CVSolved cv')
-unifyCV cv        (CVVar x') = D.write ES.cvCxt (coerce x') (ES.CVSolved cv)
-unifyCV _         _          = throwIO CantUnify
+unifyCV cv cv' = case (cv, cv') of
+  (C       , C        ) -> pure ()
+  (V       , V        ) -> pure ()
+  (CVVar x , CVVar x' ) -> unifyEq x x'
+  (CVVar x , cv'      ) -> D.write ES.cvCxt (coerce x)  (ES.CVSolved cv')
+  (cv      , CVVar x' ) -> D.write ES.cvCxt (coerce x') (ES.CVSolved cv)
+  (_       , _        ) -> throwIO CantUnify
 
-unify :: forall s. Lvl -> ConvState -> Val s -> Val s -> IO ()
-unify l st t t' = let
-
-  go :: forall s. Val s -> Val s -> IO ()
-  go = unify l st
-  {-# inline go #-}
-
-  goSp :: Spine -> Spine -> IO ()
-  goSp = unifySp l st;
-  {-# inline goSp #-}
-
-  force :: forall s. Val s -> Val s
-  force t = case st of CSFull -> forceFU t
-                       _      -> forceF  t
+unify0 :: Lvl -> ConvState -> Val0 -> Val0 -> IO ()
+unify0 l st t t' = let
+  go0  = unify0 l st;   {-# inline go0 #-}
+  go1  = unify1 l st;   {-# inline go1 #-}
+  force t = case st of CSFull -> forceFU0 t
+                       _      -> forceF0  t
   {-# inline force #-}
 
-  goClose1 :: Close S.Tm1 -> Close S.Tm1 -> IO ()
-  goClose1 t t' =
-    let v = Var l
-    in unify (l + 1) st (t $$ v) (t' $$ v)
-  {-# inline goClose1 #-}
-
-  goClose0 :: Close S.Tm0 -> Close S.Tm0 -> IO ()
-  goClose0 t t' = unify (l + 1) st (dive t l) (dive t' l)
+  goClose0 t t' = unify0 (l + 1) st (dive t l) (dive t' l)
   {-# inline goClose0 #-}
 
-  goU :: forall s s'. U s -> U s' -> IO ()
-  goU (U0 cv) (U0 cv') = unifyCV cv cv'
-  goU U1      U1       = pure ()
-  goU _       _        = throwIO CantUnify
+  goFields FNil           FNil                        = pure ()
+  goFields (FCons x a fs) (FCons x' a' fs') | x == x' = go0 a a' >> goFields fs fs'
+  goFields _              _                           = throwIO CantUnify
 
-  goUH :: UnfoldHead -> UnfoldHead -> IO ()
+  goFix (Close env t) (Close env' t') =
+    unify0 (l + 2) st (eval0 (env  `Snoc0` l `Snoc0` (l + 1)) t )
+                      (eval0 (env' `Snoc0` l `Snoc0` (l + 1)) t')
+  {-# inline goFix #-}
+
+  in case (,) $$! force t $$! force t' of
+    (Var0 x       , Var0 x'         ) -> unifyEq x x'
+    (Top0 x       , Top0 x'         ) -> unifyEq x x'
+    (Let0 _ a t u , Let0 _ a' t' u' ) -> go1 a a' >> go0 t t' >> goClose0 u u'
+    (Down t       , Down t'         ) -> go1 t t'
+    (DataCon0 x n , DataCon0 x' n'  ) -> unifyEq n n'
+    (Case t cs    , Case t' cs'     ) -> go0 t t' >> undefined
+    (Fix _ _ t    , Fix _ _ t'      ) -> goFix t t'
+    (Lam0 _ a t   , Lam0 _ a' t'    ) -> goClose0 t t'
+    (App0 t u     , App0 t' u'      ) -> go0 t t' >> go0 u u'
+    (RecCon0 ts   , RecCon0 ts'     ) -> goFields ts ts'
+    (Field0 t x n , Field0 t' x' n' ) -> go0 t t' >> unifyEq n n'
+    _                                 -> throwIO CantUnify
+
+unify1 :: Lvl -> ConvState -> Val1 -> Val1 -> IO ()
+unify1 l st t t' = let
+  go0  = unify0 l st;   {-# inline go0 #-}
+  go1  = unify1 l st;   {-# inline go1 #-}
+  goSp = unifySp l st; {-# inline goSp #-}
+
+  force t = case st of CSFull -> forceFU1 t
+                       _      -> forceF1  t
+  {-# inline force #-}
+
   goUH h h' = case (h, h') of
     (Solved x, Solved x') -> unifyEq x x'
     (Top1 x  , Top1 x')   -> unifyEq x x'
     _                     -> throwIO CantUnify
   {-# inline goUH #-}
 
-  goFields :: forall s. Fields (Val s) -> Fields (Val s) -> IO ()
   goFields FNil           FNil                        = pure ()
-  goFields (FCons x a fs) (FCons x' a' fs') | x == x' = go a a' >> goFields fs fs'
+  goFields (FCons x a fs) (FCons x' a' fs') | x == x' = go1 a a' >> goFields fs fs'
   goFields _              _                           = throwIO CantUnify
 
-  goFix :: Close S.Tm0 -> Close S.Tm0 -> IO ()
-  goFix (Close env t) (Close env' t') =
-    unify (l + 2) st (eval0 (env  `Snoc0` l `Snoc0` (l + 1)) t )
-                     (eval0 (env' `Snoc0` l `Snoc0` (l + 1)) t')
-  {-# inline goFix #-}
+  goClose1 :: Close S.Tm1 -> Close S.Tm1 -> IO ()
+  goClose1 t t' =
+    let v = Var1 l
+    in unify1 (l + 1) st (t $$ v) (t' $$ v)
+  {-# inline goClose1 #-}
 
   in case (,) $$! force t $$! force t' of
 
     -- unfolding
     (Unfold h sp t, Unfold h' sp' t') -> case st of
-      CSRigid -> (goUH h h' >> goSp sp sp') `catch` \_ -> unify l CSFull t t'
+      CSRigid -> (goUH h h' >> goSp sp sp') `catch` \_ -> unify1 l CSFull t t'
       CSFlex  -> throwIO CantUnify
       _       -> impossible
     (Unfold h sp t, t') -> case st of
-      CSRigid -> go t t'
+      CSRigid -> go1 t t'
       CSFlex  -> throwIO CantUnify
       _       -> impossible
     (t, Unfold h' sp' t') -> case st of
-      CSRigid -> go t t'
+      CSRigid -> go1 t t'
       CSFlex  -> throwIO CantUnify
       _       -> impossible
 
     -- canonical/rigid
-    (Var x       , Var x'          ) -> unifyEq x x'
-    (Top0 x      , Top0 x'         ) -> unifyEq x x'
-    (Let _ a t u , Let _ a' t' u'  ) -> go a a' >> go t t' >> goClose0 u u'
-    (Lift cv a   , Lift cv' a'     ) -> unifyCV cv cv' >> go a a'
-    (Up t        , Up t'           ) -> go t t'
-    (Down t      , Down t'         ) -> go t t'
-    (TyCon x     , TyCon x'        ) -> unifyEq x x'
-    (DataCon x n , DataCon x' n'   ) -> unifyEq n n'
-    (Case t cs   , Case t' cs'     ) -> go t t' >> undefined
-    (Fix _ _ t   , Fix _ _ t'      ) -> goFix t t'
-    (Pi x i a b  , Pi x' i' a' b'  ) -> go a a' >> goClose1 b b'
-    (App1 t u _  , App1 t' u' _    ) -> go t t' >> go u u'
-    (Fun a b     , Fun a' b'       ) -> go a a' >> go b b'
-    (Lam0 _ a t  , Lam0 _ a' t'    ) -> goClose0 t t'
-    (App0 t u    , App0 t' u'      ) -> go t t' >> go u u'
-    (Rec as      , Rec as'         ) -> goFields as as'
-    (RecCon ts   , RecCon ts'      ) -> goFields ts ts'
-    (Field t x n , Field t' x' n'  ) -> go t t' >> unifyEq n n'
-    (U u         , U u'            ) -> goU u u'
+    (Var1 x       , Var1 x'         ) -> unifyEq x x'
+    (Lift cv a    , Lift cv' a'     ) -> unifyCV cv cv' >> go1 a a'
+    (Up t         , Up t'           ) -> go0 t t'
+    (TyCon x      , TyCon x'        ) -> unifyEq x x'
+    (DataCon1 x n , DataCon1 x' n'  ) -> unifyEq n n'
+    (Pi x i a b   , Pi x' i' a' b'  ) -> go1 a a' >> goClose1 b b'
+    (App1 t u _   , App1 t' u' _    ) -> go1 t t' >> go1 u u'
+    (Fun a b      , Fun a' b'       ) -> go1 a a' >> go1 b b'
+    (Rec as       , Rec as'         ) -> goFields as as'
+    (RecCon1 ts   , RecCon1 ts'     ) -> goFields ts ts'
+    (Field1 t x n , Field1 t' x' n' ) -> go1 t t' >> unifyEq n n'
+    (U u          , U u'            ) -> unifyU u u'
 
     -- eta
     (Lam1 _ _ _ t, Lam1 _ _ _ t') -> goClose1 t t'
-    (Lam1 _ i _ t, t'           ) -> unify (l + 1) st (t $$ Var l) (app1 t' (Var l) i)
-    (t           , Lam1 _ i _ t') -> unify (l + 1) st (app1 t (Var l) i) (t' $$ Var l)
+    (Lam1 _ i _ t, t'           ) -> unify1 (l + 1) st (t $$ Var1 l) (app1 t' (Var1 l) i)
+    (t           , Lam1 _ i _ t') -> unify1 (l + 1) st (app1 t (Var1 l) i) (t' $$ Var1 l)
 
     -- todo: record eta, split RecCon0 and RecCon1
 

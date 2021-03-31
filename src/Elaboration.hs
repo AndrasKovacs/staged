@@ -16,10 +16,13 @@ import qualified Evaluation          as Eval
 import Common
 import Cxt
 import ElabState
-import EvalInCxt
+import InCxt
 import Exceptions
 import Unification
 
+
+
+{-
 
 --------------------------------------------------------------------------------
 
@@ -192,4 +195,5 @@ infer0 = undefined
 
 infer1 :: Cxt -> P.Tm -> IO Infer
 infer1 = undefined
+-}
 -}

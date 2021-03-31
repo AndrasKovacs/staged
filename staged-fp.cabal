@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: ede5760d97c56fbdc56b701898521671564e96b67d5e16de32195420c6e76001
+-- hash: 062584f98d257f049c0ff1b625e54f27eb616cf8b102ac83b89bea999df1b9ee
 
 name:           staged-fp
 version:        0.1.0.0
@@ -21,12 +21,14 @@ library
   exposed-modules:
       Common
       Cxt
+      Cxt.Extension
+      Cxt.Types
       Elaboration
       ElabState
-      EvalInCxt
       Evaluation
       Exceptions
       FNV164
+      InCxt
       Lexer
       LvlSet
       Parser
@@ -40,7 +42,7 @@ library
   hs-source-dirs:
       src
   default-extensions: AllowAmbiguousTypes BangPatterns BlockArguments ConstraintKinds DataKinds DeriveFoldable DeriveFunctor DeriveTraversable DerivingVia ExplicitNamespaces FlexibleContexts FlexibleInstances GADTs KindSignatures LambdaCase MagicHash OverloadedStrings PatternSynonyms PolyKinds RankNTypes ScopedTypeVariables StandaloneDeriving Strict TemplateHaskell TupleSections TypeApplications TypeFamilies UnboxedTuples ViewPatterns
-  ghc-options: -Wall -Wno-name-shadowing -Wno-unused-binds -Wno-unused-matches -Wno-missing-signatures -Wno-unused-do-bind -Wno-unticked-promoted-constructors -fplugin-opt=Test.Inspection.Plugin:skip-O0 -O -fmax-worker-args=12
+  ghc-options: -Wall -Wno-name-shadowing -Wno-unused-binds -Wno-unused-matches -Wno-missing-signatures -Wno-unused-do-bind -Wno-unticked-promoted-constructors -fplugin-opt=Test.Inspection.Plugin:skip-O0 -O -fmax-worker-args=12 -ddump-simpl -ddump-to-file -dsuppress-all -dno-suppress-type-signatures -ddump-stg
   build-depends:
       base >=4.7 && <5
     , bytestring
@@ -61,7 +63,7 @@ executable app
   hs-source-dirs:
       app
   default-extensions: AllowAmbiguousTypes BangPatterns BlockArguments ConstraintKinds DataKinds DeriveFoldable DeriveFunctor DeriveTraversable DerivingVia ExplicitNamespaces FlexibleContexts FlexibleInstances GADTs KindSignatures LambdaCase MagicHash OverloadedStrings PatternSynonyms PolyKinds RankNTypes ScopedTypeVariables StandaloneDeriving Strict TemplateHaskell TupleSections TypeApplications TypeFamilies UnboxedTuples ViewPatterns
-  ghc-options: -Wall -Wno-name-shadowing -Wno-unused-binds -Wno-unused-matches -Wno-missing-signatures -Wno-unused-do-bind -Wno-unticked-promoted-constructors -fplugin-opt=Test.Inspection.Plugin:skip-O0 -O -fmax-worker-args=12 -fllvm -O2 -rtsopts
+  ghc-options: -Wall -Wno-name-shadowing -Wno-unused-binds -Wno-unused-matches -Wno-missing-signatures -Wno-unused-do-bind -Wno-unticked-promoted-constructors -fplugin-opt=Test.Inspection.Plugin:skip-O0 -O -fmax-worker-args=12 -ddump-simpl -ddump-to-file -dsuppress-all -dno-suppress-type-signatures -ddump-stg -fllvm -O2 -rtsopts
   build-depends:
       base >=4.7 && <5
     , staged-fp

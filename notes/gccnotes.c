@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
 
 #define INLINE static inline __attribute__((always_inline))
 
@@ -77,19 +78,14 @@ INLINE hp_word* hp_alloc(uint64_t size){
   memset(new_fr + 2, 0, size*sizeof(uint64_t));\
   (frame*)new_fr;})
 
-INLINE void fr_pop(frame*
-
-int test(){
-  frame* f1 = FR_ALLOC(2);
-  return 20;
-}
-
+/* int test(){ */
+/*   frame* f1 = FR_ALLOC(2); */
+/*   return 20; */
+/* } */
 
 /* -------------------------------------------------------------------------------- */
 
 
 int main(){
-  int foo = 20;
-  fr = NULL;
   printf("%d\n", foo);
 }

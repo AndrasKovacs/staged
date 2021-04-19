@@ -8,8 +8,8 @@ import qualified Data.ByteString as B
 
 
 import Lexer
+import Common hiding (U(..), CV(..))
 import Presyntax
-import Common
 
 -- import Debug.Trace
 

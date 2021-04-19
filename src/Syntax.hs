@@ -17,6 +17,7 @@ data Tm0
   | Down Tm1
   | Field0 Tm0 Name Int
   | RecCon0 (Fields Tm0)
+  | Wk0 Tm0
   deriving Show
 
 data Tm1
@@ -30,12 +31,14 @@ data Tm1
   | U U
   | Lift CV Ty
   | Up Tm0
-  | Rec (Fields Ty)
+  | Rec0 (Fields Ty)
+  | Rec1 (Fields Ty)
   | RecCon1 (Fields Tm1)
   | Field1 Tm1 Name Int
   | TyCon Lvl
   | DataCon1 Lvl Int
   | Inserted MetaVar Locals
+  | Wk1 Tm1
   | Meta MetaVar
   deriving Show
 

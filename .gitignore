@@ -8,3 +8,4 @@ TAGS
 *.dump-simpl
 *.dump-cmm
 *.dump-stg
+*.agdai

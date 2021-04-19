@@ -26,9 +26,22 @@ bind0' x a va acv (Cxt env l loc ntbl src) =
   Cxt (V.Snoc0 env l)
       (l + 1)
       (S.Bind0 loc x a acv)
-      (addName x (NILocal0 l va acv) ntbl)
+      (addName x (NameInfo l va (U0 acv)) ntbl)
       src
 {-# inline bind0' #-}
+
+bind1 :: Name -> S.Ty -> Cxt -> Cxt
+bind1 x a cxt = bind1' x a (eval1 (_env cxt) a) cxt
+{-# inline bind1 #-}
+
+bind1' :: Name -> S.Ty -> V.Ty -> Cxt -> Cxt
+bind1' x a va (Cxt env l loc ntbl src) =
+  Cxt (V.Snoc1 env (V.Var1 l))
+      (l + 1)
+      (S.Bind1 loc x a)
+      (addName x (NameInfo l va U1) ntbl)
+      src
+{-# inline bind1' #-}
 
 newBinder :: Name -> S.Ty -> Cxt -> Cxt
 newBinder x a (Cxt env l loc ntbl src) =
@@ -45,6 +58,6 @@ define' x a va t ~vt (Cxt env l loc ntbl src) =
   Cxt (V.Snoc1 env (V.Var1 l))
       (l + 1)
       (S.Define loc x a t)
-      (addName x (NILocal1 l va) ntbl)
+      (addName x (NameInfo l va U1) ntbl)
       src
 {-# inline define' #-}

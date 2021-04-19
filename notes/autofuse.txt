@@ -1,0 +1,168 @@
+
+data CV = C | V
+
+Con : Set
+Ty  : CV → Set
+Tm  : Con → Ty cv → Set
+
+Bool  : Ty V
+if    : (A : Ty C) → Tm Γ Bool → Tm Γ A → Tm Γ A → Tm Γ A
+true  : Tm Γ Bool
+false : Tm Γ Bool
+
+List  : Ty V → Ty V
+nil   : Tm Γ (List A)
+cons  : Tm Γ A → Tm Γ (List A) → Tm Γ (List A)
+foldr : (B : Ty C) → Tm (Γ, A, B) B → Tm Γ B → Tm Γ (List A) → Tm Γ B
+
+(_,_) : Ty V → Ty V → Ty V
+_→_   : Ty V → Ty C → Ty C
+Embed : Ty V → Ty C
+(↑,↓) : Tm Γ A ~ Tm Γ (Embed A)
+
+-- CPS Model of CVTT in 2LTT
+--------------------------------------------------------------------------------
+
+-- assume an implicit embedding from CVTT to 2LTT
+
+
+(Γ : Con)ᴹ            : MTy
+(A : Ty C)ᴹ           : MTy
+(A : Ty V)ᴹ           : (A-Alg : MTy) × (U : A-Alg → CTy)
+(t : Tm Γ (A : Ty C)) : Γᴹ → Aᴹ
+(t : Tm Γ (A : Ty V)) : Γᴹ → CPS A    where  CPS A = (α : A-Alg) → ^(U α)
+
+∙ᴹ               = ⊤
+(Γ, (A : Ty C))ᴹ = Γᴹ × Aᴹ
+(Γ, (A : Ty V))ᴹ = Γᴹ × CPS A
+
+-- Fun
+--------------------------------------------------------------------------------
+
+(A → B)ᴹ          = CPS A → Bᴹ
+(λ (x : A). t)ᴹ γ = λ (x : CPS A). tᴹ (γ, x)
+(tᴹ uᴹ) γ         = tᴹ γ (uᴹ γ)
+
+-- Embed
+--------------------------------------------------------------------------------
+
+(Embed A)ᴹ = CPS A
+(↑t)ᴹ      = tᴹ
+(↓t)ᴹ      = tᴹ
+
+-- Bool
+--------------------------------------------------------------------------------
+
+Bool-Alg    = (B : CTy) × ^B × ^B
+U (B, t, f) = B
+
+Trueᴹ  γ (B, t, f) = t
+Falseᴹ γ (B, t, f) = f
+
+(Id A b t f)ᴹ γ : Aᴹ
+  = λ γ. go A (bᴹ γ) (tᴹ γ) (uᴹ γ)  where
+
+  go : Ty C → CPS Bool → Aᴹ → Aᴹ → Aᴹ
+  go (A → B)   bᴹ tᴹ uᴹ = λ (α : CPS A). go B bᴹ (tᴹ α) (uᴹ α)
+  go (Embed A) bᴹ tᴹ uᴹ = λ (α : A-Alg). bᴹ (U α, tᴹ α, uᴹ α)
+
+
+-- Pair
+--------------------------------------------------------------------------------
+
+(A × B)-Alg  = (P : CTy) × (CPS A → CPS B → P)
+U (P, p)     = P
+(pair t u)ᴹ γ (P , p) = p (tᴹ γ) (uᴹ γ)
+(fst t)ᴹ γ (α : A-Alg) = tᴹ γ (U α) (λ x y. x)
+(snd t)ᴹ γ (β : B-Alg) = tᴹ γ (U β) (λ x y. y)
+
+-- List
+--------------------------------------------------------------------------------
+
+(List A)-Alg = (L : CTy) × (cons : CPS A → ^L → ^L) × (nil : ^L)
+U (L, cons, nil) = L
+
+nilᴹ         γ (L, cons, nil) = nil
+(cons a as)ᴹ γ (L, cons, nil) = cons (aᴹ γ) (asᴹ γ (L, cons, nil))
+
+
+(foldr B f b as)ᴹ (γ : Γᴹ) : Bᴹ
+
+  fᴹ  : Γᴹ × CPS A × Bᴹ → Bᴹ
+  bᴹ  : Γᴹ → Bᴹ
+  asᴹ : Γᴹ → CPS (List A)
+
+(foldr (Emb B) f b as)ᴹ : Γᴹ → CPS B
+                        : Γᴹ → (β : B-Alg) → ^(U β)
+  = λ γ (β : B-Alg). asᴹ γ (U β, (_ : CPS A → ^(U β) → ^(U β)), (bᴹ γ β))
+
+     _ = λ (α : CPS A) (b : ^(U β)). fᴹ (γ, α, (λ _. ?)) β
+
+  fᴹ  : Γᴹ × CPS A × CPS B → CPS B
+  bᴹ  : Γᴹ → CPS B
+  asᴹ : Γᴹ → CPS (List A)
+  asᴹ : Γᴹ → (L : CTy)(cons : CPS A → ^L → ^L)(nil : ^L) → L
+
+  map f as L c n = as L (λ a bs. c (f a) bs) n
+
+(foldr (B → C) f b as)ᴹ : Γᴹ → CPS B → CPS C
+  = λ γ β (c : C-Alg).
+
+  map f as L c n = as L (λ a bs. c (f a) bs) n
+
+--------------------------------------------------------------------------------
+
+autofusing doesn't work on recursive types! It's the same as supercompilation.
+
+idea:
+  - restrict recursor to fusing functions
+  - a fold which *does not eliminate recursive results* should be fusable
+
+Example:
+
+  map f as = fold as (λ a bs. cons (f a) bs) nil
+
+  map f as = λ L c n. as L (λ a bs. c (f a) bs) n
+
+This works because map does not eliminate bs, only passes it to constructor
+
+  reverse as = fold as (λ a k acc. k (cons a acc)) (λ acc. acc) []
+
+Again we don't eliminate the result of applying "k".
+
+  reverse as = λ L c n. as (L → L) (λ a k acc. k (c a acc)) (λ acc. acc) n
+
+How can we represent functions which don't eliminate their args? More precisely, if the arg is a C
+type, we want to forbid eliminating the V-type result of the function.
+
+nil  : Lock (List A)
+cons : A → Lock (List A) → Lock (List A)
+lock : A → Lock A
+
+foldr : (A → Lock B → Lock B) → B → List A → B
+foldr f b nil         = b
+foldr f b (cons a as) = f a (lock (foldr f b as))
+
+--------------------------------------------------------------------------------
+
+General form of fusing functions (conjecture)
+
+map f : (List B)-Alg → (List A)-Alg
+      (L : Set, c : B → L → L, n : L) = (L := L, c := λ a bs. c (f a) bs, n)
+
+-- U-preserving morphisms   (what about mutual/indexed data?)
+(f : B-Alg → A-Alg) × (∀ β. U β = U (f β))
+
+- with F-algebras:
+  F-Alg = (A : Set, con : F A → A)
+
+  CPS F = ∀ A. (F A → A) → A
+
+  _[_] : (α : ∀ A. (G A → A) → A) → (∀ A. (F A → A) → (G A → A)) → ∀ A. (F A → A) → A
+       : CPS G → (∀ A. (F A → A) → (G A → A)) → CPS F
+
+- list A to list B
+
+  ∀ L. (A → L → L) → L → (B → L → L) × L
+
+- what's a nice syntax? for this?

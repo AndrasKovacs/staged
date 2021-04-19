@@ -1,7 +1,7 @@
 
 module Evaluation (
-    ($$), ($$$), dive, diveN, up, down, eval0, eval1
-  , forceCV, forceF0, forceFU0, forceF1, forceFU1
+    ($$), ($$$), dive, dive2, diveN, up, down, eval0, eval1
+  , forceU, forceCV, forceF0, forceFU0, forceF1, forceFU1
   , quote0, quote1, app1Sp, app1, nfNil0, nfNil1, field1
   )
   where
@@ -62,10 +62,17 @@ infixl 2 $$$
 ($$$) (Close env t) ~u = eval1 (Snoc1 env u) t
 {-# inline ($$$) #-}
 
+-- | Go under 1 lvl0 binder.
 dive :: Close S.Tm0 -> Lvl -> Val0
 dive (Close env t) l = eval0 (Snoc0 env l) t
 {-# inline dive #-}
 
+-- | Go under 2 lvl0 binders.
+dive2 :: Close S.Tm0 -> Lvl -> Val0
+dive2 (Close env t) l = eval0 (env `Snoc0` l `Snoc0` (l + 1)) t
+{-# inline dive2 #-}
+
+-- | Go under N lvl0 binders.
 diveN :: Close S.Tm0 -> Lvl -> Int -> Val0
 diveN (Close env t) l n = eval0 (go env l n) t where
   go acc l 0 = acc
@@ -78,14 +85,14 @@ app1 t u i = case t of
   Unfold h sp t  -> Unfold h (SApp1 sp u i) (app1 t u i)
   t              -> App1 t u i
 
-ixFields :: Fields a -> Int -> a
-ixFields (FCons x a fs) 0 = a
-ixFields (FCons _ _ fs) n = ixFields fs (n - 1)
-ixFields _              _ = impossible
+lookupField :: Fields a -> Int -> a
+lookupField (FCons x a fs) 0 = a
+lookupField (FCons _ _ fs) n = lookupField fs (n - 1)
+lookupField _              _ = impossible
 
 field1 :: Val1 -> Name -> Int -> Val1
 field1 t x n = case t of
-  RecCon1 ts    -> ixFields ts n
+  RecCon1 ts    -> lookupField ts n
   Flex h sp     -> Flex h (SField1 sp x n)
   Unfold h sp t -> Unfold h (SField1 sp x n) (field1 t x n)
   t             -> Field1 t x n
@@ -111,6 +118,7 @@ eval0 env = \case
   S.Case t cs    -> Case (eval0 env t) (Close env cs)
   S.Fix x y t    -> Fix x y (Close env t)
   S.Down t       -> down (eval1 env t)
+  S.Wk0 t        -> eval0 (wk0Env env) t
 
 eval1 :: Env -> S.Tm1 -> Val1
 eval1 env = \case
@@ -122,7 +130,8 @@ eval1 env = \case
   S.App1 t u i    -> app1 (eval1 env t) (eval1 env u) i
   S.Fun a b       -> Fun (eval1 env a) (eval1 env b)
   S.U u           -> U u
-  S.Rec as        -> Rec (eval1 env <$> as)
+  S.Rec0 as       -> Rec0 (eval1 env <$> as)
+  S.Rec1 as       -> Rec1 (Close env as)
   S.RecCon1 ts    -> RecCon1 (eval1 env <$> ts)
   S.Field1 t x n  -> field1 (eval1 env t) x n
   S.TyCon x       -> TyCon x
@@ -131,6 +140,7 @@ eval1 env = \case
   S.Up t          -> up (eval0 env t)
   S.Inserted x ls -> runIO do {t <- metaIO x; pure $! inserted t env ls}
   S.Meta x        -> meta x
+  S.Wk1 t         -> eval1 (wk1Env env) t
 
 --------------------------------------------------------------------------------
 
@@ -146,6 +156,11 @@ forceCV = \case
                ES.CVSolved cv -> pure $! forceCV $! cv
                _              -> pure $! CVVar x
   cv -> cv
+
+forceU :: U -> U
+forceU = \case
+  U0 cv -> U0 (forceCV cv)
+  U1    -> U1
 
 -- | Force Flex only.
 forceF1 :: Val1 -> Val1
@@ -204,6 +219,12 @@ quote1 l st t = let
   goClose1 t = quote1 (l + 1) st (t $$ Var1 l)
   {-# inline goClose1 #-}
 
+  goRec1 :: Close (Fields S.Ty) -> Fields S.Ty
+  goRec1 (Close env as) = go env l as where
+    go env l FNil           = FNil
+    go env l (FCons x a as) =
+      FCons x (quote1 l st (eval1 env a)) (go (Snoc1 env (Var1 l)) (l + 1) as)
+
   in case force t of
     Unfold h sp _ -> goSp (goUH h) sp
     Flex x sp     -> goSp (S.Meta x) sp
@@ -216,7 +237,8 @@ quote1 l st t = let
     Lam1 x i a t  -> S.Lam1 x i (go1 a) (goClose1 t)
     App1 t u i    -> S.App1 (go1 t) (go1 u) i
     Fun a b       -> S.Fun (go1 a) (go1 b)
-    Rec fs        -> S.Rec (go1 <$> fs)
+    Rec0 as       -> S.Rec0 (go1 <$> as)
+    Rec1 as       -> S.Rec1 (goRec1 as)
     RecCon1 ts    -> S.RecCon1 (go1 <$> ts)
     Field1 t x n  -> S.Field1 (go1 t) x n
     U u           -> S.U u

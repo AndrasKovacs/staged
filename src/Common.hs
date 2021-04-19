@@ -95,6 +95,9 @@ instance Show a => Show (Cases a) where
 
 --------------------------------------------------------------------------------
 
+uf :: a
+uf = undefined
+
 type Dbg = () :: Constraint
 -- type Dbg = HasCallStack
 
@@ -155,11 +158,6 @@ instance Show Icit where
   show Impl = "Impl"
   show Expl = "Expl"
 
-data ArgInfo
-  = NoName Icit
-  | Named {-# unpack #-} Span
-  deriving (Show)
-
 data CV = C | V | CVVar CVMetaVar
   deriving (Eq, Show)
 
@@ -194,6 +192,7 @@ instance Hashable RawName where
 data Name
   = NName {-# unpack #-} RawName
   | NEmpty
+  | NX
   deriving (Eq, Show)
 
 instance IsString Name where

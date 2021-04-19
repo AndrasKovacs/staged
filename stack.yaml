@@ -9,10 +9,10 @@ ghc-options:
 extra-deps:
 # - flatparse-0.2.0.0
 
-# - git: https://github.com/AndrasKovacs/flatparse.git
-#   commit: d8aab8f422388272024d4c25668c7c486fbed2fb
+- git: https://github.com/AndrasKovacs/flatparse.git
+  commit: ce42a63d2d2c553773b39617be4d0ccb3d4803bc
 
-- /home/kutta/home/Dropbox/src/flatparse/
+# - /home/kutta/home/Dropbox/src/flatparse/
 
 - git: https://github.com/AndrasKovacs/dynamic-array.git
   commit: 0171e73e4d6ed7f3e51ae8ec1adcf7e9f56be5b9

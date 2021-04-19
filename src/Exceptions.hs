@@ -1,8 +1,5 @@
 
-module Exceptions (
-  Ex(..), throwIO, throw, catch
-  , fenceEx, ElabError(..),
-  ) where
+module Exceptions (Ex(..), throwIO, throw, catch , fenceEx) where
 
 import GHC.Exts
 import qualified Control.Exception as Ex
@@ -42,15 +39,36 @@ catch ma f = ma `Exceptions.catch#` \case
 data Ex =
     forall e. Ex.Exception e => SomeException e -- ^ Standard exceptions.
 
-  -- unification errors
+  | UnifyError0 S.Tm0 S.Tm0
+  | UnifyError1 S.Tm1 S.Tm1
+  | NameNotInScope {-# unpack #-} RawName
+  | NoSuchField    {-# unpack #-} RawName
+  | NoSuchArgument {-# unpack #-} RawName
+  | IcitMismatch Icit Icit
+  | NoImplicitLam0
+  | ExpectedV
+  | FieldNameMismatch Name Name
+  | NoNamedLambdaInference
+  | CantInfer
+  | CantSplice
+  | ExpectedNonEmptyRec
+  | ExpectedEmptyRec
+  | ExpectedEmptyRecCon
+  | ExpectedNonEmptyRecCon
+  | ExpectedType
+  | CantInferTuple
+  | ExpectedRecord
+  | ExpectedRuntimeType
+
+  -- raw unification exception
   | CantUnify
 
-  -- renaming errors
+  -- renaming
   | OccursCheck MetaVar
   | OutOfScope Lvl
 
-  -- elaboration errors
-  | ElabError S.Locals P.Tm ElabError
+  -- Exception with elaboration context
+  | ElabError S.Locals P.Tm Ex
 
 -- | Don't let any non-standard `Ex` exception escape. This should be used on the top of the main
 --   function of the program.
@@ -59,18 +77,3 @@ fenceEx act = act `Exceptions.catch#` \case
   SomeException e -> Ex.throw e
   _               -> impossible
 {-# inline fenceEx #-}
-
---------------------------------------------------------------------------------
-
-data ElabError
-  = UnifyError0 S.Tm0 S.Tm0
-  | UnifyError1 S.Tm1 S.Tm1
-  | NameNotInScope {-# unpack #-} RawName
-  | NoSuchField    {-# unpack #-} RawName
-  | NoSuchArgument {-# unpack #-} RawName
-  | IcitMismatch Icit Icit
-  | NoImplicitLam0
-  | ExpectedV
-  | FieldNameMismatch
-  | NoNamedLambdaInference
-deriving instance Show ElabError

@@ -7,6 +7,14 @@ import qualified Syntax as S
 data Close a = Close Env a
 data Env = Nil | Snoc1 Env ~Val1 | Snoc0 Env Lvl
 
+wk1Env :: Env -> Env
+wk1Env = \case Snoc1 env _ -> env; _ -> impossible
+{-# inline wk1Env #-}
+
+wk0Env :: Env -> Env
+wk0Env = \case Snoc0 env _ -> env; _ -> impossible
+{-# inline wk0Env #-}
+
 type Ty = Val1
 
 data Spine
@@ -34,14 +42,15 @@ data Val0
 data Val1
   = Unfold UnfoldHead Spine ~Val1
   | Flex MetaVar Spine
-  | Pi Name Icit Ty {-# unpack #-} (Close S.Tm1)
+  | Pi Name Icit Ty {-# unpack #-} (Close S.Ty)
   | Lam1 Name Icit Ty {-# unpack #-} (Close S.Tm1)
   | App1 Val1 Val1 Icit
   | Fun Ty Ty
   | Var1 Lvl
   | Lift CV Ty
   | Up Val0
-  | Rec (Fields Ty)
+  | Rec0 (Fields Ty)
+  | Rec1 (Close (Fields S.Ty))
   | RecCon1 (Fields Val1)
   | Field1 Val1 Name Int
   | U U

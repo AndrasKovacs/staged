@@ -5,6 +5,8 @@ module ElabState where
 import IO
 import qualified Data.Array.Dynamic.L as D
 import qualified Data.Array.LM        as A
+import qualified Data.HashMap.Strict  as M
+import Data.IORef
 
 import Common
 import qualified Syntax as S
@@ -24,9 +26,8 @@ data TopEntry
   -- ^ Type, Type val, constructors, name, source pos
   | TETyCon S.Ty V.Ty [Lvl] Name Pos
 
-  -- ^ Type, type val, universe, parent type constructor, name, source pos
-  | TEDataCon S.Ty V.Ty U Lvl Name Pos
-
+  -- ^ Type, type val, universe, parent type constructor, con index, name, source pos
+  | TEDataCon S.Ty V.Ty U Lvl Int Name Pos
 
 -- TODO: we'll implement top resizing and allocation later
 topSize :: Int
@@ -41,11 +42,22 @@ readTop (Lvl x) | 0 <= x && x < topSize = A.read top x
                 | otherwise             = error "index out of bounds"
 {-# inline readTop #-}
 
+type TopNames = M.HashMap RawName Lvl
+
+topNames :: IORef TopNames
+topNames = runIO $ newIORef mempty
+{-# noinline topNames #-}
+
+lookupTopName :: RawName -> IO (Maybe Lvl)
+lookupTopName x = do
+  ns <- readIORef topNames
+  pure $! M.lookup x ns
+
 -- Metacontext
 --------------------------------------------------------------------------------
 
 data MetaEntry
-  = Unsolved ~V.Ty -- ^ Closed type val
+  = Unsolved V.Ty -- ^ Closed type val
   | Solved V.Val1 V.Ty
 
 metaCxt :: D.Array MetaEntry
@@ -58,7 +70,7 @@ readMeta (MetaVar i) = D.read metaCxt i
 
 -- | Args: closed type value.
 newMeta :: V.Ty -> IO MetaVar
-newMeta ~a = do
+newMeta a = do
   s <- D.size metaCxt
   D.push metaCxt (Unsolved a)
   pure (MetaVar s)

@@ -2,7 +2,12 @@
 
 module Presyntax where
 
-import Common
+import Common hiding (U, CV)
+
+data ArgInfo
+  = NoName Icit
+  | Named {-# unpack #-} Span
+  deriving (Show)
 
 data TopLevel
   = Nil
@@ -10,6 +15,9 @@ data TopLevel
   | Definition0 Span (Maybe Tm) Tm TopLevel
   | Definition1 Span (Maybe Tm) Tm TopLevel
   deriving Show
+
+data CV = C | V     deriving Show
+data U = U0 CV | U1 deriving Show
 
 data Bind
   = Bind Span

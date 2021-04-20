@@ -100,7 +100,7 @@ restOfTuple l t = do
   ts <- (:) <$> tm' <*> many (comma *> tm')
   r  <- getPos
   bracketR'
-  pure $ Tuple (Span l r) ts
+  pure $ Tuple (Span l r) (t:ts)
 
 restOfRecCon :: Pos -> Span ->  Parser Tm
 restOfRecCon l x = do

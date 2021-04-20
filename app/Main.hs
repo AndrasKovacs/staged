@@ -89,14 +89,21 @@ test str = do
 
 p1 = unlines [
 
-  "f : {A} → ^(A → A) = λ x. x",
-  "g : {A B} → ^(A → B → A) = λ x y. x",
-  "comp : {A B C : MTy} → (B → C) → (A → B) → A → C",
-  "  = λ f g x. f (g x)",
-  "idM : {A : MTy} → A → A",
-  "  = λ x. x",
-  "idM2 : {A} → A → A",
-  "  = λ x. idM x"
+  "Sg : (A : MTy) → (A → MTy) → MTy = λ A B. [fst : A, snd : B fst]",
+  "Pointed : MTy     = Sg MTy (λ A. A)",
+  -- "pointed : Pointed = [MTy, MTy]",
+
+
+  "getPoint : (p : Pointed) → _ = λ p. p.snd"
+
+  -- "f : {A} → ^(A → A) = λ x. x",
+  -- "g : {A B} → ^(A → B → A) = λ x y. x",
+  -- "comp : {A B C : MTy} → (B → C) → (A → B) → A → C",
+  -- "  = λ f g x. f (g x)",
+  -- "idM : {A : MTy} → A → A",
+  -- "  = λ x. x",
+  -- "idM2 : {A} → A → A",
+  -- "  = λ x. idM x"
 
   -- "Nat : MTy = (N : MTy) → (N → N) → N → N",
   -- "zero : Nat = λ N s z. z",

@@ -21,10 +21,7 @@ import ElabState
 import InCxt
 import Exceptions
 
--- import Debug.Trace
-
-
--- TODO: fix context decoration of errors
+import Debug.Trace
 
 --------------------------------------------------------------------------------
 
@@ -411,6 +408,7 @@ check1 cxt topT topA = case (topT, forceFU1 topA) of
     S.RecCon1 <$!> checkRecCon1 cxt topT ts as
 
   (P.Tuple _ ts, V.Rec1 as) -> do
+    traceM "checktuple"
     S.RecCon1 <$!> checkTuple1 cxt topT ts as
 
   (P.EmptyRec _, V.Rec1 (V.Close _ as)) -> do

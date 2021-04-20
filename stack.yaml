@@ -15,7 +15,7 @@ extra-deps:
 # - /home/kutta/home/Dropbox/src/flatparse/
 
 - git: https://github.com/AndrasKovacs/dynamic-array.git
-  commit: 0171e73e4d6ed7f3e51ae8ec1adcf7e9f56be5b9
+  commit: 04fc3d5c99b8a4fed7f45c04ea047b57dede3aa5
 - git: https://github.com/AndrasKovacs/primdata.git
-  commit: d316106469990650ae040580742ef6a52d4c304a
+  commit: d050c16a088e973de879941aafb2c07c319a7a31
 - inspection-testing-0.4.3.0

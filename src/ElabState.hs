@@ -4,7 +4,6 @@ module ElabState where
 
 import IO
 import qualified Data.Array.Dynamic.L as D
-import qualified Data.Array.LM        as A
 import qualified Data.HashMap.Strict  as M
 import Data.IORef
 
@@ -29,32 +28,23 @@ data TopEntry
   -- ^ Type, type val, parent type constructor, con index, name, source pos
   | TEDataCon S.Ty V.Ty Lvl Int Name Pos
 
--- TODO: resizing and allocation
-topSize :: Int
-topSize = 50000
-
-undefTopEntry :: a
-undefTopEntry = error "top: undefined entry"
-{-# noinline undefTopEntry #-}
-
-initTop :: IO (A.Array TopEntry)
-initTop = A.new topSize undefTopEntry
-
-top :: A.Array TopEntry
-top = runIO initTop
+top :: D.Array TopEntry
+top = runIO D.empty
 {-# noinline top #-}
 
 resetTop :: IO ()
-resetTop = A.set top undefTopEntry
+resetTop = D.clear top
 
 readTop :: Lvl -> IO TopEntry
-readTop (Lvl x) | 0 <= x && x < topSize = A.read top x
-                | otherwise             = error "index out of bounds"
+readTop (Lvl x) = D.read top x
 {-# inline readTop #-}
 
-newTop :: Lvl -> TopEntry -> IO ()
-newTop x e = A.write top (coerce x) e
-{-# inline newTop #-}
+pushTop :: TopEntry -> IO Lvl
+pushTop e = do
+  s <- D.size top
+  D.push top e
+  pure $ coerce s
+{-# inline pushTop #-}
 
 type TopNames = M.HashMap RawName Lvl
 
@@ -116,7 +106,7 @@ unsolvedMetaTy m = readMeta m >>= \case
 -- CV metacontext
 --------------------------------------------------------------------------------
 
-data CVMetaEntry = CVUnsolved | CVSolved CV
+data CVMetaEntry = CVUnsolved | CVSolved CV deriving Show
 
 initCvCxt :: IO (D.Array CVMetaEntry)
 initCvCxt = D.empty
@@ -147,3 +137,5 @@ reset = do
   resetTopNames
   resetMetaCxt
   resetCvCxt
+
+--------------------------------------------------------------------------------

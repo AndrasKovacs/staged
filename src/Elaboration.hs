@@ -21,6 +21,8 @@ import ElabState
 import InCxt
 import Exceptions
 
+import Debug.Trace
+
 
 -- TODO: fix context decoration of errors
 
@@ -490,7 +492,8 @@ infer cxt topT = let
   err = elabError cxt topT; {-# inline err #-}
 
   in case topT of
-    P.Var (spanToRawName cxt -> x) ->
+    P.Var (spanToRawName cxt -> x) -> do
+      traceM "lookin up variable"
       case HM.lookup x (_nameTable cxt) of
         Just ni -> case ni of
           NameInfo x a (forceU -> au) -> case au of
@@ -687,11 +690,12 @@ infer cxt topT = let
       --     cs  <- checkCases cxt cs b bcv
       --     pure $! Tm0 (S.Case t cs) b bcv
 
+
 -- Top Level
 --------------------------------------------------------------------------------
 
-inferTop :: RawName -> Lvl -> P.TopLevel -> IO ()
-inferTop src topSize = \case
+inferTop :: RawName -> P.TopLevel -> IO ()
+inferTop src = \case
   P.Nil ->
     pure ()
 
@@ -703,9 +707,9 @@ inferTop src topSize = \case
     let va = eval1 cxt a
     rhs <- check0 cxt rhs va cv
     let ~vrhs = eval0 cxt rhs
-    newTopName x topSize
-    newTop topSize (TEDef0 a va rhs vrhs cv (NName x) pos)
-    inferTop src (topSize + 1) top
+    lvl <- pushTop (TEDef0 a va rhs vrhs cv (NName x) pos)
+    newTopName x lvl
+    inferTop src top
 
   P.Definition1 span@(Span pos _) ma rhs top -> do
     let x = unsafeSlice src span
@@ -714,10 +718,10 @@ inferTop src topSize = \case
     let va = eval1 cxt a
     rhs <- check1 cxt rhs va
     let ~vrhs = eval1 cxt rhs
-    newTopName x topSize
-    newTop topSize (TEDef1 a va rhs vrhs (NName x) pos)
-    inferTop src (topSize + 1) top
+    lvl <- pushTop (TEDef1 a va rhs vrhs (NName x) pos)
+    newTopName x lvl
+    inferTop src top
 
   P.DataDecl pos x params cons top -> do
     -- TODO
-    inferTop src topSize top
+    inferTop src top

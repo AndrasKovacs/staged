@@ -1,5 +1,5 @@
 
-module Parser (parse) where
+module Parser (parse, parseString, Result(..)) where
 
 import Prelude hiding (pi)
 import Data.Foldable
@@ -381,6 +381,10 @@ src = ws *> top
 
 parse :: B.ByteString -> Result Error TopLevel
 parse = runParser src
+
+parseString :: String -> (RawName, Result Error TopLevel)
+parseString (packUTF8 -> str) = (coerce str, parse str)
+{-# inline parseString #-}
 
 --------------------------------------------------------------------------------
 

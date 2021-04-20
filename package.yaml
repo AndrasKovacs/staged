@@ -81,8 +81,10 @@ executables:
     main:
       Main.hs
     ghc-options:
-      - -fllvm
-      - -O2
+      # - -fllvm
+      # - -O2
       - -rtsopts
     dependencies:
       - staged-fp
+      - dynamic-array
+      - bytestring

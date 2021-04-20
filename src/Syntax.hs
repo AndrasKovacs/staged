@@ -12,7 +12,6 @@ data Tm0
   | Lam0 Name Ty Tm0
   | App0 Tm0 Tm0
   | Case Tm0 (Cases Tm0)
-  | DataCon0 Lvl Int
   | Fix Name Name Tm0
   | Down Tm1
   | Field0 Tm0 Name Int
@@ -36,7 +35,7 @@ data Tm1
   | RecCon1 (Fields Tm1)
   | Field1 Tm1 Name Int
   | TyCon Lvl
-  | DataCon1 Lvl Int
+  | DataCon Lvl Int
   | Inserted MetaVar Locals
   | Wk1 Tm1
   | Meta MetaVar

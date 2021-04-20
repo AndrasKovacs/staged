@@ -11,7 +11,10 @@ data ArgInfo
 
 data TopLevel
   = Nil
-  | DataDecl Pos Span Tm [(Span, Tm)] TopLevel
+
+  -- src pos, tycon name, params, data constructors
+  | DataDecl Pos Span [(Span, Maybe Tm)] [(Span, [Tm])] TopLevel
+
   | Definition0 Span (Maybe Tm) Tm TopLevel
   | Definition1 Span (Maybe Tm) Tm TopLevel
   deriving Show

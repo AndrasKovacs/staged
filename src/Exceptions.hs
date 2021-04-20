@@ -59,6 +59,8 @@ data Ex =
   | CantInferTuple
   | ExpectedRecord
   | ExpectedRuntimeType
+  | CantInferSigma
+  | ExpectedDataCon
 
   -- raw unification exception
   | CantUnify

@@ -4,6 +4,8 @@ module Elaboration where
 
 import Control.Monad
 
+import Data.IORef
+
 import qualified Data.ByteString     as B
 import qualified Data.HashMap.Strict as HM
 import qualified FlatParse.Stateful  as FP
@@ -31,9 +33,12 @@ elabError cxt tgt err = throwIO $ ElabError (_locals cxt) tgt err
 -- Converting spans to names
 --------------------------------------------------------------------------------
 
+unsafeSlice :: RawName -> Span -> RawName
+unsafeSlice x span = coerce $ FP.unsafeSlice (coerce x) span
+{-# inline unsafeSlice #-}
+
 spanToRawName :: Cxt -> Span -> RawName
-spanToRawName cxt span =
-  coerce $ FP.unsafeSlice (coerce $ _src cxt) span
+spanToRawName cxt span = unsafeSlice (_src cxt) span
 {-# inline spanToRawName #-}
 
 spanToName :: Cxt -> Span -> Name
@@ -418,7 +423,7 @@ check1 cxt topT topA = case (topT, forceFU1 topA) of
 data TmU = Tm0 S.Tm0 V.Ty CV | Tm1 S.Tm1 V.Ty
 
 
--- TODO: add lambda and perhaps let inference here
+-- TODO: add more inference cases here
 infer0 :: Cxt -> P.Tm -> IO (S.Tm0, V.Ty, CV)
 infer0 cxt topT =
   infer cxt topT >>= \case
@@ -434,7 +439,7 @@ infer0 cxt topT =
         t  <- S.down <$!> coe1 cxt t a (V.Lift cv a')
         pure (t, a', cv)
 
--- TODO: add lambda and perhaps let inference here
+-- TODO: add more inference cases here
 infer1 :: Cxt -> P.Tm -> IO (S.Tm1, V.Ty)
 infer1 cxt t =
   infer cxt t >>= \case
@@ -448,19 +453,13 @@ checkU = \case
   P.U1     -> S.U U1
 
 inferRecCon0 :: Cxt -> [(Span, P.Tm)] -> IO (Fields S.Tm0, Fields V.Ty)
-inferRecCon0 = undefined
-
-inferRecCon1 :: Cxt -> [(Span, P.Tm)] -> IO (Fields S.Tm1, Fields V.Ty)
-inferRecCon1 = undefined
-
-inferTuple :: Cxt -> [P.Tm] -> IO (Fields S.Tm0, Fields V.Ty)
-inferTuple = undefined
-
-inferCases :: Cxt -> [(Span, [P.Bind], P.Tm)] -> V.Ty -> CV -> IO (Cases S.Tm0)
-inferCases cxt cs a acv = case cs of
-  []              -> pure CNil
-  (spanToName cxt -> conName, xs, rhs):cs -> do
-    uf
+inferRecCon0 cxt cs = case cs of
+  [] -> pure (FNil, FNil)
+  (spanToName cxt -> x, t):cs -> do
+    (t, a, cv) <- infer0 cxt t
+    unifyCV cv V
+    (ts, as) <- inferRecCon0 cxt cs
+    pure (FCons x t ts, FCons x a as)
 
 ensureFun :: Cxt -> V.Ty -> IO (V.Ty, V.Ty)
 ensureFun cxt a = case forceFU1 a of
@@ -500,11 +499,10 @@ infer cxt topT = let
         Nothing -> lookupTopName x >>= \case
           Nothing -> err $ NameNotInScope x
           Just x  -> readTop x >>= \case
-            TEDef0 _ va _ _ cv _ _               -> pure $! Tm0 (S.Top0 x) va cv
-            TEDef1 _ va _ _ _ _                  -> pure $! Tm1 (S.Top1 x) va
-            TETyCon _ va _ _ _                   -> pure $! Tm1 (S.TyCon x) va
-            TEDataCon _ va (U0 cv) parent ix _ _ -> pure $! Tm0 (S.DataCon0 parent ix) va cv
-            TEDataCon _ va (U1   ) parent ix _ _ -> pure $! Tm1 (S.DataCon1 parent ix) va
+            TEDef0 _ va _ _ cv _ _       -> pure $! Tm0 (S.Top0 x) va cv
+            TEDef1 _ va _ _ _ _          -> pure $! Tm1 (S.Top1 x) va
+            TETyCon _ va _ _ _           -> pure $! Tm1 (S.TyCon x) va
+            TEDataCon _ va parent ix _ _ -> pure $! Tm1 (S.DataCon parent ix) va
 
     P.Let0 _ (spanToName cxt -> x) a t u -> do
       acv <- freshCV
@@ -631,9 +629,7 @@ infer cxt topT = let
           (ts, as) <- inferRecCon0 cxt ts
           pure $! Tm0 (S.RecCon0 (FCons x t ts)) (V.Rec0 as) V
         Tm1 t a -> do
-          undefined
-          -- (ts, as) <- inferRecCon1 _ ts
-          -- pure $! Tm1 (S.RecCon1 _) (V.Rec _)
+          err CantInferSigma
 
     P.Tuple _ []     -> impossible
     P.Tuple _ (t:ts) -> err CantInferTuple
@@ -679,13 +675,49 @@ infer cxt topT = let
       pure $! Tm0 (S.Fix x y t) (V.Fun va vb) C
 
     P.Case _ t _ cs -> do
-      t <- infer cxt t
-      case t of
-        Tm1{} -> do
-          err ExpectedRuntimeType
-        Tm0 t a acv -> do
-          unifyCV acv V
-          bcv <- freshCV
-          b   <- eval1 cxt <$!> freshMeta cxt (S.U (U0 bcv))
-          cs  <- inferCases cxt cs b bcv
-          pure $! Tm0 (S.Case t cs) b bcv
+      error "TODO: case expressions"
+      -- t <- infer cxt t
+      -- case t of
+      --   Tm1{} -> do
+      --     err ExpectedRuntimeType
+      --   Tm0 t a acv -> do
+      --     unifyCV acv V
+      --     bcv <- freshCV
+      --     b   <- eval1 cxt <$!> freshMeta cxt (S.U (U0 bcv))
+      --     cs  <- checkCases cxt cs b bcv
+      --     pure $! Tm0 (S.Case t cs) b bcv
+
+-- Top Level
+--------------------------------------------------------------------------------
+
+inferTop :: RawName -> Lvl -> P.TopLevel -> IO ()
+inferTop src topSize = \case
+  P.Nil ->
+    pure ()
+
+  P.Definition0 span@(Span pos _) ma rhs top -> do
+    let x = unsafeSlice src span
+    let cxt = emptyCxt src
+    cv <- freshCV
+    a  <- tyAnnot cxt ma (U0 cv)
+    let va = eval1 cxt a
+    rhs <- check0 cxt rhs va cv
+    let ~vrhs = eval0 cxt rhs
+    newTopName x topSize
+    newTop topSize (TEDef0 a va rhs vrhs cv (NName x) pos)
+    inferTop src (topSize + 1) top
+
+  P.Definition1 span@(Span pos _) ma rhs top -> do
+    let x = unsafeSlice src span
+    let cxt = emptyCxt src
+    a  <- tyAnnot cxt ma U1
+    let va = eval1 cxt a
+    rhs <- check1 cxt rhs va
+    let ~vrhs = eval1 cxt rhs
+    newTopName x topSize
+    newTop topSize (TEDef1 a va rhs vrhs (NName x) pos)
+    inferTop src (topSize + 1) top
+
+  P.DataDecl pos x params cons top -> do
+    -- TODO
+    inferTop src topSize top

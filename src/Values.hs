@@ -32,7 +32,6 @@ data Val0
   | Let0 Name Ty Val0 {-# unpack #-} (Close S.Tm0)
   | App0 Val0 Val0
   | Case Val0 {-# unpack #-} (Close (Cases S.Tm0))
-  | DataCon0 Lvl Int
   | Fix Name Name {-# unpack #-} (Close S.Tm0)
   | Down Val1
   | Field0 Val0 Name Int
@@ -55,4 +54,4 @@ data Val1
   | Field1 Val1 Name Int
   | U U
   | TyCon Lvl
-  | DataCon1 Lvl Int
+  | DataCon Lvl Int

@@ -26,27 +26,51 @@ data TopEntry
   -- ^ Type, Type val, constructors, name, source pos
   | TETyCon S.Ty V.Ty [Lvl] Name Pos
 
-  -- ^ Type, type val, universe, parent type constructor, con index, name, source pos
-  | TEDataCon S.Ty V.Ty U Lvl Int Name Pos
+  -- ^ Type, type val, parent type constructor, con index, name, source pos
+  | TEDataCon S.Ty V.Ty Lvl Int Name Pos
 
--- TODO: we'll implement top resizing and allocation later
+-- TODO: resizing and allocation
 topSize :: Int
 topSize = 50000
 
+undefTopEntry :: a
+undefTopEntry = error "top: undefined entry"
+{-# noinline undefTopEntry #-}
+
+initTop :: IO (A.Array TopEntry)
+initTop = A.new topSize undefTopEntry
+
 top :: A.Array TopEntry
-top = runIO (A.new topSize (error "top: undefined entry"))
+top = runIO initTop
 {-# noinline top #-}
+
+resetTop :: IO ()
+resetTop = A.set top undefTopEntry
 
 readTop :: Lvl -> IO TopEntry
 readTop (Lvl x) | 0 <= x && x < topSize = A.read top x
                 | otherwise             = error "index out of bounds"
 {-# inline readTop #-}
 
+newTop :: Lvl -> TopEntry -> IO ()
+newTop x e = A.write top (coerce x) e
+{-# inline newTop #-}
+
 type TopNames = M.HashMap RawName Lvl
 
+initTopNames :: IO (IORef TopNames)
+initTopNames = newIORef mempty
+
 topNames :: IORef TopNames
-topNames = runIO $ newIORef mempty
+topNames = runIO initTopNames
 {-# noinline topNames #-}
+
+newTopName :: RawName -> Lvl -> IO ()
+newTopName x l = modifyIORef' topNames (M.insert x l)
+{-# inline newTopName #-}
+
+resetTopNames :: IO ()
+resetTopNames = writeIORef topNames mempty
 
 lookupTopName :: RawName -> IO (Maybe Lvl)
 lookupTopName x = do
@@ -60,9 +84,15 @@ data MetaEntry
   = Unsolved V.Ty -- ^ Closed type val
   | Solved V.Val1 V.Ty
 
+initMetaCxt :: IO (D.Array MetaEntry)
+initMetaCxt = D.empty
+
 metaCxt :: D.Array MetaEntry
-metaCxt = runIO D.empty
+metaCxt = runIO initMetaCxt
 {-# noinline metaCxt #-}
+
+resetMetaCxt :: IO ()
+resetMetaCxt = D.clear metaCxt
 
 readMeta :: MetaVar -> IO MetaEntry
 readMeta (MetaVar i) = D.read metaCxt i
@@ -88,9 +118,15 @@ unsolvedMetaTy m = readMeta m >>= \case
 
 data CVMetaEntry = CVUnsolved | CVSolved CV
 
+initCvCxt :: IO (D.Array CVMetaEntry)
+initCvCxt = D.empty
+
 cvCxt :: D.Array CVMetaEntry
-cvCxt = runIO D.empty
+cvCxt = runIO initCvCxt
 {-# noinline cvCxt #-}
+
+resetCvCxt :: IO ()
+resetCvCxt = D.clear cvCxt
 
 readCVMeta :: CVMetaVar -> IO CVMetaEntry
 readCVMeta (CVMetaVar i) = D.read cvCxt i
@@ -102,3 +138,12 @@ newCVMeta = do
   D.push cvCxt CVUnsolved
   pure (CVMetaVar s)
 {-# inline newCVMeta #-}
+
+--------------------------------------------------------------------------------
+
+reset :: IO ()
+reset = do
+  resetTop
+  resetTopNames
+  resetMetaCxt
+  resetCvCxt

@@ -128,7 +128,6 @@ rename0 m st pren t = let
     Let0 x a t u  -> S.Let0 x <$!> go1 a <*!> go0 t <*!> goClose0 u
     Lam0 x a t    -> S.Lam0 x <$!> go1 a <*!> goClose0 t
     Down t        -> S.Down <$!> go1 t
-    DataCon0 x i  -> pure $! S.DataCon0 x i
     RecCon0 fs    -> S.RecCon0 <$!> mapM go0 fs
     Case t cs     -> S.Case <$!> go0 t <*!> goCases cs
     Field0 t x n  -> S.Field0 <$!> go0 t <*!> pure x <*!> pure n
@@ -161,7 +160,7 @@ rename1 m st pren t = let
     Var1  x       -> case IM.lookup (coerce x) (ren pren) of
                        Nothing -> throwIO CantUnify
                        Just x' -> pure $! S.Var1 (lvlToIx (dom pren) x')
-    DataCon1 x i  -> pure $! S.DataCon1 x i
+    DataCon x i   -> pure $! S.DataCon x i
     RecCon1 fs    -> S.RecCon1 <$!> mapM go1 fs
     Field1 t x n  -> S.Field1 <$!> go1 t <*!> pure x <*!> pure n
     Flex x sp     -> if x == m then throwIO (OccursCheck x)
@@ -178,8 +177,8 @@ rename1 m st pren t = let
     Lift cv a     -> S.Lift cv <$!> go1 a
     Rec1 as       -> S.Rec1 <$!> goRec1 pren as
     Rec0 as       -> S.Rec1 <$!> mapM go1 as
-    U u           -> pure $ S.U u
-    TyCon x       -> pure $ S.TyCon x
+    U u           -> pure $! S.U u
+    TyCon x       -> pure $! S.TyCon x
     App1 t u i    -> S.App1 <$!> go1 t <*!> go1 u <*!> pure i
 
 
@@ -268,7 +267,6 @@ unify0 l st t t' = let
     (Top0 x       , Top0 x'         ) -> unifyEq x x'
     (Let0 _ a t u , Let0 _ a' t' u' ) -> go1 a a' >> go0 t t' >> goClose0 u u'
     (Down t       , Down t'         ) -> go1 t t'
-    (DataCon0 x n , DataCon0 x' n'  ) -> unifyEq n n'
     (Case t cs    , Case t' cs'     ) -> go0 t t' >> goCases cs cs'
     (Fix _ _ t    , Fix _ _ t'      ) -> goFix t t'
     (Lam0 _ a t   , Lam0 _ a' t'    ) -> goClose0 t t'
@@ -336,7 +334,7 @@ unify1 l st t t' = let
     (Lift cv a    , Lift cv' a'     ) -> unifyCV cv cv' >> go1 a a'
     (Up t         , Up t'           ) -> go0 t t'
     (TyCon x      , TyCon x'        ) -> unifyEq x x'
-    (DataCon1 x n , DataCon1 x' n'  ) -> unifyEq n n'
+    (DataCon  x n , DataCon x' n'   ) -> unifyEq n n'
     (Pi x i a b   , Pi x' i' a' b'  ) -> go1 a a' >> goClose1 b b'
     (App1 t u _   , App1 t' u' _    ) -> go1 t t' >> go1 u u'
     (Fun a b      , Fun a' b'       ) -> go1 a a' >> go1 b b'

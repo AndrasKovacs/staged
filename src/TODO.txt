@@ -1,0 +1,31 @@
+
+Simple ADTs:
+
+data List (A : VTy) = Nil | Cons A (List A)
+
+- params must be params (uniform), no nested induction
+- every field type must be in VTy
+
+- derived constructor types:
+  Nil  : {A : VTy} → ^(List A)
+  Cons : {A : VTy} → ^A → ^(List A)
+
+scheme :
+
+   T (φ : Δ) = D₀ F₀ⱼ | ... | Dᵢ Fᵢⱼ
+
+   Δ : Tel
+   φ : Δ ⊢ Fᵢⱼ : VTy
+   ∀ σ. (T σ ∈ Fᵢⱼ) → (σ = φ)
+
+constructor types:
+
+   T  : Δ → VTy
+   Dᵢ : {φ : Δ} → ^(Fᵢⱼ) → ^(T φ)
+
+case expressions:
+
+  Γ ⊢ t : T φ    Γ ⊢ Dᵢ constructor of T     Γ ⊢ R :
+  Γ, σ : Fᵢⱼ[φ ↦ φ] ⊢ rhsᵢ : R
+  ──────────────────────────────────────────────────────────────
+              Γ ⊢ case t of Dᵢ σ → rhsᵢ : R

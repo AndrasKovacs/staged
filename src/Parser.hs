@@ -352,16 +352,20 @@ topDef x = local (const 1) do
       local (const 0) (Definition0 x a rhs <$> top)|])
     `cut` ["=", ":="]
 
+sepBy :: Parser a -> Parser sep -> Parser [a]
+sepBy pa psep = ((:) <$!> pa <*!> many (psep *> pa)) <|> pure []
+{-# inline sepBy #-}
+
 dataDecl :: Parser TopLevel
 dataDecl = do
   pos <- getPos
-  moreIndented (modify (+4) >> $(keyword "data")) \_ -> do
-    tyConLvl <- get
-    (x, a)   <- moreIndented (ident' <* colon') \x -> (x,) <$> tm'
-    cons     <- many do
-      exactLvl tyConLvl
-      moreIndented (ident <* colon') \x -> ((x,) <$> tm')
-    local (const 0) (DataDecl pos x a cons <$> top)
+  $(keyword "data")
+  local (const 1) do
+    tycon  <- ident'
+    params <- many ((,) <$> ident <*> optional (colon *> tm'))
+    eq'
+    datacons <- sepBy ((,) <$> ident' <*> many atom) $(symbol "|")
+    local (const 0) (DataDecl pos tycon params datacons <$!> top)
 
 top :: Parser TopLevel
 top =  (exactLvl 0 >> (ident >>= topDef))
@@ -381,9 +385,9 @@ parse = runParser src
 --------------------------------------------------------------------------------
 
 p1 = unlines [
-  "data List : VTy → VTy",
-  "     Nil  : {A} → List A",
-  "     Cons : {A} → A → List A → List A",
-  "",
-  "data Foo : VTy"
+
+  "data List A = Nil | Cons A (List A)",
+
+  "map : {A B : VTy} -> (A -> B) -> List A -> List B",
+  " = λ f xs. xs"
   ]

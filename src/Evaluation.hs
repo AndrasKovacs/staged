@@ -114,7 +114,6 @@ eval0 env = \case
   S.App0 t u     -> App0 (eval0 env t) (eval0 env u)
   S.RecCon0 fs   -> RecCon0 (eval0 env <$> fs)
   S.Field0 t x n -> Field0 (eval0 env t) x n
-  S.DataCon0 x n -> DataCon0 x n
   S.Case t cs    -> Case (eval0 env t) (Close env cs)
   S.Fix x y t    -> Fix x y (Close env t)
   S.Down t       -> down (eval1 env t)
@@ -135,7 +134,7 @@ eval1 env = \case
   S.RecCon1 ts    -> RecCon1 (eval1 env <$> ts)
   S.Field1 t x n  -> field1 (eval1 env t) x n
   S.TyCon x       -> TyCon x
-  S.DataCon1 x n  -> DataCon1 x n
+  S.DataCon  x n  -> DataCon x n
   S.Lift cv a     -> Lift cv (eval1 env a)
   S.Up t          -> up (eval0 env t)
   S.Inserted x ls -> runIO do {t <- metaIO x; pure $! inserted t env ls}
@@ -232,7 +231,7 @@ quote1 l st t = let
     Lift cv t     -> S.Lift cv (go1 t)
     Up t          -> S.Up (go0 t)
     TyCon x       -> S.TyCon x
-    DataCon1 x n  -> S.DataCon1 x n
+    DataCon  x n  -> S.DataCon x n
     Pi x i a b    -> S.Pi x i (go1 a) (goClose1 b)
     Lam1 x i a t  -> S.Lam1 x i (go1 a) (goClose1 t)
     App1 t u i    -> S.App1 (go1 t) (go1 u) i
@@ -278,7 +277,6 @@ quote0 l st t = let
     Top0 x        -> S.Top0 x
     Let0 x a t u  -> S.Let0 x (go1 a) (go0 t) (goClose0 u)
     Down t        -> S.Down (go1 t)
-    DataCon0 x n  -> S.DataCon0 x n
     Case t ts     -> S.Case (go0 t) (goCases ts)
     Fix x y t     -> S.Fix x y (goFix t)
     Lam0 x a t    -> S.Lam0 x (go1 a) (goClose0 t)

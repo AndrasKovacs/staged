@@ -1,12 +1,12 @@
-{-# options_ghc -Wno-unused-imports #-}
+-- {-# options_ghc -Wno-unused-imports #-}
 
 module Elaboration where
 
 import Control.Monad
 
-import Data.IORef
+-- import Data.IORef
 
-import qualified Data.ByteString     as B
+-- import qualified Data.ByteString     as B
 import qualified Data.HashMap.Strict as HM
 import qualified FlatParse.Stateful  as FP
 
@@ -21,7 +21,7 @@ import ElabState
 import InCxt
 import Exceptions
 
-import Debug.Trace
+-- import Debug.Trace
 
 
 -- TODO: fix context decoration of errors
@@ -29,8 +29,14 @@ import Debug.Trace
 --------------------------------------------------------------------------------
 
 elabError :: Cxt -> P.Tm -> Ex -> IO a
-elabError cxt tgt err = throwIO $ ElabError (_locals cxt) tgt err
+elabError cxt t err = throwIO $ ElabError (_locals cxt) t err
 {-# inline elabError #-}
+
+decorateEx :: Cxt -> P.Tm -> IO a -> IO a
+decorateEx cxt t act = act `catch` \case
+  e@(ElabError _ _ _) -> throw e
+  e                   -> elabError cxt t e
+{-# inline decorateEx #-}
 
 -- Converting spans to names
 --------------------------------------------------------------------------------
@@ -56,7 +62,7 @@ bindToName cxt P.DontBind = NEmpty
 -- Implicit insertions
 --------------------------------------------------------------------------------
 
-insert' :: Cxt -> IO (S.Tm1, V.Ty) -> IO (S.Tm1, V.Ty)
+insert' :: Dbg => Cxt -> IO (S.Tm1, V.Ty) -> IO (S.Tm1, V.Ty)
 insert' cxt inf = do {(t, a) <- inf; go t a} where
   go :: S.Tm1 -> V.Ty -> IO (S.Tm1, V.Ty)
   go t topA = case forceFU1 topA of
@@ -66,12 +72,12 @@ insert' cxt inf = do {(t, a) <- inf; go t a} where
     topA ->
       pure (t, topA)
 
-insertTmU' :: Cxt -> IO TmU -> IO TmU
+insertTmU' :: Dbg => Cxt -> IO TmU -> IO TmU
 insertTmU' cxt inf = inf >>= \case
   Tm0 t a cv -> pure $! Tm0 t a cv
   Tm1 t a    -> do {(t, a) <- insert' cxt (pure (t, a)); pure (Tm1 t a)}
 
-insertUntilName :: Cxt -> P.Tm -> RawName -> IO (S.Tm1, V.Ty) -> IO (S.Tm1, V.Ty)
+insertUntilName :: Dbg => Cxt -> P.Tm -> RawName -> IO (S.Tm1, V.Ty) -> IO (S.Tm1, V.Ty)
 insertUntilName cxt topT topX inf = do {(t, a) <- inf; go t a} where
   go :: S.Tm1 -> V.Ty -> IO (S.Tm1, V.Ty)
   go t topA = case forceFU1 topA of
@@ -84,7 +90,7 @@ insertUntilName cxt topT topX inf = do {(t, a) <- inf; go t a} where
     _ ->
       elabError cxt topT $ NoSuchArgument topX
 
-insert :: Cxt -> IO (S.Tm1, V.Ty) -> IO (S.Tm1, V.Ty)
+insert :: Dbg => Cxt -> IO (S.Tm1, V.Ty) -> IO (S.Tm1, V.Ty)
 insert cxt inf = inf >>= \case
   res@(S.Lam1 _ Impl a t, va) -> pure res
   res                         -> insert' cxt (pure res)
@@ -94,7 +100,7 @@ insert cxt inf = inf >>= \case
 --------------------------------------------------------------------------------
 
 -- Subtyping in U0 (implicit)
-subtype0 :: Cxt -> V.Ty -> CV -> V.Ty -> CV -> IO ()
+subtype0 :: Dbg => Cxt -> V.Ty -> CV -> V.Ty -> CV -> IO ()
 subtype0 cxt a cv a' cv' = do
   case (forceCV cv, forceCV cv') of
     (V, C)    -> pure ()
@@ -102,11 +108,11 @@ subtype0 cxt a cv a' cv' = do
   unify1 cxt a a'
 
 -- Coercion in U1 (explicit)
-coe1 :: Cxt -> S.Tm1 -> V.Ty -> V.Ty -> IO S.Tm1
+coe1 :: Dbg => Cxt -> S.Tm1 -> V.Ty -> V.Ty -> IO S.Tm1
 coe1 cxt t a a' = maybe t id <$> go cxt t a a' where
 
   -- ugly helper for record structural rule
-  goRec1 :: Cxt -> S.Tm1 -> Int -> V.Close (Fields S.Tm1)
+  goRec1 :: Dbg => Cxt -> S.Tm1 -> Int -> V.Close (Fields S.Tm1)
                 -> V.Close (Fields S.Tm1) -> IO (Fields (Bool, S.Tm1))
   goRec1 cxt t ix (V.Close e as) (V.Close e' as') = case (as, as') of
     (FNil, FNil) -> pure FNil
@@ -126,7 +132,8 @@ coe1 cxt t a a' = maybe t id <$> go cxt t a a' where
              goRec1 cxt t (ix + 1) (V.Close (V.Snoc1 e  vt1)               as)
                                    (V.Close (V.Snoc1 e' (eval1 cxt coet1)) as')
     _ ->
-      throwIO CantUnify
+      throwIO $ UnifyError1 (quote1 cxt (V.Rec1 (V.Close e as)))
+                            (quote1 cxt (V.Rec1 (V.Close e' as')))
 
   -- lifting helpers
   --------------------------------------------------------------------------------
@@ -168,8 +175,15 @@ coe1 cxt t a a' = maybe t id <$> go cxt t a a' where
     go ix (FCons x _ as) = FCons x (S.Down (S.Field1 t x ix)) (go (ix + 1) as)
 
 
-  go :: Cxt -> S.Tm1 -> V.Ty -> V.Ty -> IO (Maybe S.Tm1)
+  go :: Dbg => Cxt -> S.Tm1 -> V.Ty -> V.Ty -> IO (Maybe S.Tm1)
   go cxt t a a' = case (forceFU1 a, forceFU1 a') of
+
+    -- universe subtyping
+    (V.U (U0 cv), V.U U1) -> do
+      pure $! Just $! S.Lift cv t
+
+    (V.U (U0 V), V.U (U0 C)) -> do
+      pure Nothing
 
     -- structural rules
     ------------------------------------------------------------
@@ -200,7 +214,6 @@ coe1 cxt t a a' = maybe t id <$> go cxt t a a' where
         then pure $! Just $! S.RecCon1 (snd <$> fs)
         else pure Nothing
 
-
     -- TODO: Pi-Flex, Flex-Pi   (refine other side)
     --       Rec-Flex, Flex-Rec (refine other side)
 
@@ -219,9 +232,12 @@ coe1 cxt t a a' = maybe t id <$> go cxt t a a' where
     (a, V.Lift _ (V.Rec0 as)) ->
       Just . downRecCon0 as <$!> coe1 cxt t a (liftRec0 cxt as)
 
+
+    -- fallback
+    ------------------------------------------------------------
+
     (a, a') ->
       Nothing <$ unify1 cxt a a'
-
 
 tyAnnot :: Cxt -> Maybe P.Tm -> U -> IO S.Ty
 tyAnnot cxt ma un =
@@ -231,12 +247,12 @@ tyAnnot cxt ma un =
 -- Checking
 --------------------------------------------------------------------------------
 
-check0 :: Cxt -> P.Tm -> V.Ty -> CV -> IO S.Tm0
+check0 :: Dbg => Cxt -> P.Tm -> V.Ty -> CV -> IO S.Tm0
 check0 cxt topT topA cv = case (topT, forceFU1 topA, forceCV cv) of
 
   (P.Lam _ (bindToName cxt -> x) i ma t, V.Fun a' b', !cv) -> do
     case i of P.NoName Expl -> pure ()
-              _           -> elabError cxt topT NoImplicitLam0
+              _             -> elabError cxt topT NoImplicitLam0
     let qa' = quote1 cxt a'
     S.Lam0 x qa' <$!>
       check0 (bind0' x qa' a' V cxt) t b' C
@@ -297,16 +313,16 @@ check0 cxt topT topA cv = case (topT, forceFU1 topA, forceCV cv) of
 
   (t, topA, cv) -> do
     (t, a, cv') <- infer0 cxt t
-    subtype0 cxt topA cv a cv'
+    decorateEx cxt topT $ subtype0 cxt a cv' topA cv
     pure t
 
-checkRec0 :: Cxt -> [(Span, P.Tm)] -> IO (Fields S.Ty)
+checkRec0 :: Dbg => Cxt -> [(Span, P.Tm)] -> IO (Fields S.Ty)
 checkRec0 cxt as = go as where
   go []          = pure FNil
   go ((x, a):as) = FCons (spanToName cxt x) <$!> check1 cxt a (V.U (U0 V))
                                             <*!> go as
 
-checkRec1 :: Cxt -> [(Span, P.Tm)] -> IO (Fields S.Tm1)
+checkRec1 :: Dbg => Cxt -> [(Span, P.Tm)] -> IO (Fields S.Tm1)
 checkRec1 cxt as = go cxt as where
   go cxt [] = pure FNil
   go cxt ((spanToName cxt -> x, a):as) = do
@@ -314,7 +330,7 @@ checkRec1 cxt as = go cxt as where
     as <- go (bind1' x a (eval1 cxt a) cxt) as
     pure $! FCons x a as
 
-checkRecCon1 :: Cxt -> P.Tm -> [(Span, P.Tm)] -> V.Close (Fields S.Ty) -> IO (Fields S.Tm1)
+checkRecCon1 :: Dbg => Cxt -> P.Tm -> [(Span, P.Tm)] -> V.Close (Fields S.Ty) -> IO (Fields S.Tm1)
 checkRecCon1 cxt topT ts (V.Close env as) = case (ts, as) of
   ([], FNil) -> pure FNil
   ((spanToRawName cxt -> x, t):ts, FCons x' a as) -> do
@@ -332,7 +348,7 @@ checkRecCon1 cxt topT ts (V.Close env as) = case (ts, as) of
   _ ->
     elabError cxt topT ExpectedEmptyRecCon
 
-checkTuple1 :: Cxt -> P.Tm -> [P.Tm] -> V.Close (Fields S.Ty) -> IO (Fields S.Tm1)
+checkTuple1 :: Dbg => Cxt -> P.Tm -> [P.Tm] -> V.Close (Fields S.Ty) -> IO (Fields S.Tm1)
 checkTuple1 cxt topT ts (V.Close env as) = case (ts, as) of
   ([], FNil) -> pure FNil
   (t:ts, FCons x' a as) -> do
@@ -348,7 +364,7 @@ checkTuple1 cxt topT ts (V.Close env as) = case (ts, as) of
   _ ->
     elabError cxt topT ExpectedEmptyRecCon
 
-check1 :: Cxt -> P.Tm -> V.Ty -> IO S.Tm1
+check1 :: Dbg => Cxt -> P.Tm -> V.Ty -> IO S.Tm1
 check1 cxt topT topA = case (topT, forceFU1 topA) of
 
   (P.Lam _ (bindToName cxt -> x) i ma t, V.Pi x' i' a' b')
@@ -365,7 +381,7 @@ check1 cxt topT topA = case (topT, forceFU1 topA) of
 
   (P.Pi _ P.DontBind Expl a b, V.U (U0 cv)) -> do
     unifyCV cv C
-    a <- check1 cxt b (V.U (U0 V))
+    a <- check1 cxt a (V.U (U0 V))
     b <- check1 cxt b (V.U (U0 C))
     pure $! S.Fun a b
 
@@ -420,13 +436,14 @@ check1 cxt topT topA = case (topT, forceFU1 topA) of
 
   (t, topA) -> do
     (t, a) <- insert cxt $ infer1 cxt t
-    coe1 cxt t a topA
+    -- traceShowM ("inferred", t)
+    decorateEx cxt topT $ coe1 cxt t a topA
 
 data TmU = Tm0 S.Tm0 V.Ty CV | Tm1 S.Tm1 V.Ty
 
 
 -- TODO: add more inference cases here
-infer0 :: Cxt -> P.Tm -> IO (S.Tm0, V.Ty, CV)
+infer0 :: Dbg => Cxt -> P.Tm -> IO (S.Tm0, V.Ty, CV)
 infer0 cxt topT =
   infer cxt topT >>= \case
     Tm0 t a cv ->
@@ -442,19 +459,19 @@ infer0 cxt topT =
         pure (t, a', cv)
 
 -- TODO: add more inference cases here
-infer1 :: Cxt -> P.Tm -> IO (S.Tm1, V.Ty)
+infer1 :: Dbg => Cxt -> P.Tm -> IO (S.Tm1, V.Ty)
 infer1 cxt t =
   infer cxt t >>= \case
     Tm0 t a cv -> let t' = S.up t in pure (t', V.Lift cv a)
     Tm1 t a    -> pure (t, a)
 
-checkU :: P.U -> S.Tm1
+checkU :: Dbg => P.U -> S.Tm1
 checkU = \case
   P.U0 P.C -> S.U (U0 C)
   P.U0 P.V -> S.U (U0 V)
   P.U1     -> S.U U1
 
-inferRecCon0 :: Cxt -> [(Span, P.Tm)] -> IO (Fields S.Tm0, Fields V.Ty)
+inferRecCon0 :: Dbg => Cxt -> [(Span, P.Tm)] -> IO (Fields S.Tm0, Fields V.Ty)
 inferRecCon0 cxt cs = case cs of
   [] -> pure (FNil, FNil)
   (spanToName cxt -> x, t):cs -> do
@@ -463,7 +480,7 @@ inferRecCon0 cxt cs = case cs of
     (ts, as) <- inferRecCon0 cxt cs
     pure (FCons x t ts, FCons x a as)
 
-ensureFun :: Cxt -> V.Ty -> IO (V.Ty, V.Ty)
+ensureFun :: Dbg => Cxt -> V.Ty -> IO (V.Ty, V.Ty)
 ensureFun cxt a = case forceFU1 a of
   V.Fun a b -> pure (a, b)
   a         -> do
@@ -473,7 +490,7 @@ ensureFun cxt a = case forceFU1 a of
     unify1 cxt a (V.Fun a' b')
     pure (a', b')
 
-coeToPi :: Cxt -> V.Ty -> Icit -> S.Tm1 -> IO (S.Tm1, Name, V.Ty, V.Close S.Ty)
+coeToPi :: Dbg => Cxt -> V.Ty -> Icit -> S.Tm1 -> IO (S.Tm1, Name, V.Ty, V.Close S.Ty)
 coeToPi cxt a i t = case forceFU1 a of
   V.Pi x i' a b -> do
     when (i /= i) $ throwIO $ IcitMismatch i' i
@@ -485,15 +502,17 @@ coeToPi cxt a i t = case forceFU1 a of
     t <- coe1 cxt t a (V.Pi NX i va' b')
     pure (t, NX, va', b')
 
-infer :: Cxt -> P.Tm -> IO TmU
+infer :: Dbg => Cxt -> P.Tm -> IO TmU
 infer cxt topT = let
 
   err :: forall a. Ex -> IO a
   err = elabError cxt topT; {-# inline err #-}
 
+  decorEx :: forall a. IO a -> IO a
+  decorEx = decorateEx cxt topT; {-# inline decorEx #-}
+
   in case topT of
     P.Var (spanToRawName cxt -> x) -> do
-      traceM "lookin up variable"
       case HM.lookup x (_nameTable cxt) of
         Just ni -> case ni of
           NameInfo x a (forceU -> au) -> case au of
@@ -558,26 +577,29 @@ infer cxt topT = let
     P.App t u i -> do
       case i of
         P.NoName Expl -> do
+          -- traceM "explicit app"
           t <- insertTmU' cxt $ infer cxt t
           case t of
             Tm0 t a cv -> do
-              (a, b) <- ensureFun cxt a
+              -- traceM "tm0"
+              (a, b) <- decorEx $ ensureFun cxt a
               u      <- check0 cxt u a V
               pure $ Tm0 (S.App0 t u) b cv
             Tm1 t a -> do
-              (t, x, a, b) <- coeToPi cxt a Expl t
+              -- traceM "tm1"
+              (t, x, a, b) <- decorEx $ coeToPi cxt a Expl t
               u            <- check1 cxt u a
               pure $ Tm1 (S.App1 t u Expl) (b $$$ eval1 cxt u)
 
         P.NoName Impl -> do
           (t, a)       <- infer1 cxt t
-          (t, x, a, b) <- coeToPi cxt a Impl t
+          (t, x, a, b) <- decorEx $ coeToPi cxt a Impl t
           u            <- check1 cxt u a
           pure $ Tm1 (S.App1 t u Impl) (b $$$ eval1 cxt u)
 
         P.Named (spanToRawName cxt -> x)  -> do
           (t, a)       <- insertUntilName cxt t x $ infer1 cxt t
-          (t, x, a, b) <- coeToPi cxt a Impl t
+          (t, x, a, b) <- decorEx $ coeToPi cxt a Impl t
           u            <- check1 cxt u a
           pure $ Tm1 (S.App1 t u Impl) (b $$$ eval1 cxt u)
 
@@ -694,7 +716,7 @@ infer cxt topT = let
 -- Top Level
 --------------------------------------------------------------------------------
 
-inferTop :: RawName -> P.TopLevel -> IO ()
+inferTop :: Dbg => RawName -> P.TopLevel -> IO ()
 inferTop src = \case
   P.Nil ->
     pure ()

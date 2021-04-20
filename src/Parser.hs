@@ -158,12 +158,11 @@ goProj p = chainl Field p (dot *> ident')
 proj :: Parser Tm
 proj = goProj atom'
 
-
 --------------------------------------------------------------------------------
 
 goApp :: Tm -> Parser Tm
 goApp t = branch braceL
-  (do optioned (ident <* eq')
+  (do optioned (ident <* eq)
         (\x -> do
           u <- tm'
           braceR'
@@ -340,6 +339,8 @@ tm' = lvl' >> tmBase `cut` [Msg "lambda expression", "let", "case", "fix"]
 
 --------------------------------------------------------------------------------
 
+-- TODO: fix shitty parse errors for top entries
+
 topDef :: Span -> Parser TopLevel
 topDef x = local (const 1) do
   a <- optional (colon `notFollowedBy` eq *> tm')
@@ -389,9 +390,12 @@ parseString (packUTF8 -> str) = (coerce str, parse str)
 --------------------------------------------------------------------------------
 
 p1 = unlines [
+  "id = foo{bar}"
+  -- "id : MTy = {A : CTy} → A → A",
+  -- "= λ x. x"
 
-  "data List A = Nil | Cons A (List A)",
+  -- "data List A = Nil | Cons A (List A)",
 
-  "map : {A B : VTy} -> (A -> B) -> List A -> List B",
-  " = λ f xs. xs"
+  -- "map : {A B : VTy} -> (A -> B) -> List A -> List B",
+  -- " = λ f xs. xs"
   ]

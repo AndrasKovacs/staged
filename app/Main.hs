@@ -1,7 +1,7 @@
 
 module Main where
 
-import qualified Data.ByteString as B
+import qualified Data.ByteString.Char8 as B
 import qualified Data.Array.Dynamic.L as D
 -- import qualified Data.HashMap.Strict  as M
 
@@ -11,12 +11,15 @@ import qualified Presyntax           as P
 import qualified Evaluation          as Eval
 
 import Common
-import Cxt
+-- import Cxt
 import ElabState
 -- import InCxt
 import Exceptions
 import Elaboration
 import Parser
+import Lexer
+
+import System.Exit
 
 --------------------------------------------------------------------------------
 
@@ -70,14 +73,43 @@ test str = do
   top <- case top of
     OK a _ _ -> pure a
     Fail     -> putStrLn "parse error" >> undefined
-    Err e    -> print e >> undefined
-  inferTop src top
+    Err e    -> putStrLn (prettyError (coerce src) e) >> exitSuccess
+
+  inferTop src top `catch` \case
+    ElabError ls t e -> do
+      let sp = coerce (unsafeSlice (coerce src) (P.span t))
+      B.putStrLn sp
+      print e
+      exitSuccess
+    e -> do
+      print e
+      exitSuccess
+
   displayState
+
+p1 = unlines [
+
+  "f : {A} → ^(A → A) = λ x. x",
+  "g : {A B} → ^(A → B → A) = λ x y. x",
+  "comp : {A B C : MTy} → (B → C) → (A → B) → A → C",
+  "  = λ f g x. f (g x)",
+  "idM : {A : MTy} → A → A",
+  "  = λ x. x",
+  "idM2 : {A} → A → A",
+  "  = λ x. idM x"
+
+  -- "Nat : MTy = (N : MTy) → (N → N) → N → N",
+  -- "zero : Nat = λ N s z. z",
+  -- "suc : Nat → Nat = λ a N s z. s (a N s z)",
+  -- "suc2 : _ = suc"
+  -- -- "foo : Nat → Nat = comp suc suc",
+  -- -- "bar = id suc2"
+  ]
 
 --------------------------------------------------------------------------------
 
 main :: IO ()
-main = do
-  elabError (emptyCxt (RawName "foo")) (P.Var (Span (Pos 3) (Pos 0))) $ CantUnify
+main = pure ()
+
 
   -- test "foo = bar"

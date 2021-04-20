@@ -19,6 +19,7 @@ import Data.Hashable
 import FNV164
 import FlatParse.Stateful
 import Data.Coerce
+import GHC.Stack
 
 --------------------------------------------------------------------------------
 
@@ -98,12 +99,12 @@ instance Show a => Show (Cases a) where
 uf :: a
 uf = undefined
 
-type Dbg = () :: Constraint
--- type Dbg = HasCallStack
+-- type Dbg = () :: Constraint
+type Dbg = HasCallStack
 
 impossible :: Dbg => a
 impossible = error "impossible"
-{-# noinline impossible #-}
+{-# inline impossible #-}
 
 infixl 9 $$!
 ($$!) :: (a -> b) -> a -> b
@@ -139,11 +140,14 @@ pattern DoUnfold :: Unfolding
 pattern DoUnfold   = Unfolding# 0
 pattern DontUnfold :: Unfolding
 pattern DontUnfold = Unfolding# 1
+-- pattern UnfoldMetas :: Unfolding
+-- pattern UnfoldMetas = Unfolding# 2
 {-# complete DoUnfold, DontUnfold #-}
 
 instance Show Unfolding where
   show DoUnfold   = "DoUnfold"
   show DontUnfold = "DontUnfold"
+  -- show UnfoldMetas = "UnfoldMetas"
 
 newtype Icit = Icit# Int deriving Eq
 
@@ -193,7 +197,12 @@ data Name
   = NName {-# unpack #-} RawName
   | NEmpty
   | NX
-  deriving (Eq, Show)
+  deriving (Eq)
+
+instance Show Name where
+  show (NName x) = show x
+  show NEmpty = "\"_\""
+  show NX = "\"x\""
 
 instance IsString Name where
   fromString = NName . fromString

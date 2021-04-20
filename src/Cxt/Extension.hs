@@ -13,8 +13,9 @@ emptyCxt = Cxt V.Nil 0 S.Empty mempty
 {-# inline emptyCxt #-}
 
 addName :: Name -> NameInfo -> NameTable -> NameTable
-addName NEmpty _ tbl = tbl
+addName NEmpty    _   tbl = tbl
 addName (NName x) inf tbl = M.insert x inf tbl
+addName NX        _   tbl = tbl
 {-# inline addName #-}
 
 bind0 :: Name -> S.Ty -> CV -> Cxt -> Cxt

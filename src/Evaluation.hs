@@ -14,29 +14,29 @@ import           Values
 
 --------------------------------------------------------------------------------
 
-var0 :: Env -> Ix -> Lvl
+var0 :: Dbg => Env -> Ix -> Lvl
 var0 (Snoc0 _ l)   0 = l
 var0 (Snoc1 env _) x = var0 env (x - 1)
 var0 (Snoc0 env _) x = var0 env (x - 1)
 var0 _             _ = impossible
 
-var1 :: Env -> Ix -> Val1
+var1 :: Dbg => Env -> Ix -> Val1
 var1 (Snoc1 _ v)   0 = v
 var1 (Snoc1 env _) x = var1 env (x - 1)
 var1 (Snoc0 env _) x = var1 env (x - 1)
 var1 _             _ = impossible
 
-metaIO :: MetaVar -> IO Val1
+metaIO :: Dbg => MetaVar -> IO Val1
 metaIO x = ES.readMeta x >>= \case
   ES.Unsolved{}  -> pure $ Flex x SId
   ES.Solved v _  -> pure $ Unfold (Solved x) SId v
 {-# inline metaIO #-}
 
-meta :: MetaVar -> Val1
+meta :: Dbg => MetaVar -> Val1
 meta x = runIO $ metaIO x
 {-# inline meta #-}
 
-top1 :: Lvl -> Val1
+top1 :: Dbg => Lvl -> Val1
 top1 x = runIO $ ES.readTop x >>= \case
   ES.TEDef1 _ _ _ v _ _ -> pure $ Unfold (Top1 x) SId v
   _                     -> impossible
@@ -52,52 +52,52 @@ up = \case Down t -> t; t -> Up t
 
 infixl 2 $$
 -- | Strict closure application.
-($$) :: Close S.Tm1 -> Val1 -> Val1
+($$) :: Dbg => Close S.Tm1 -> Val1 -> Val1
 ($$) (Close env t) u = eval1 (Snoc1 env u) t
 {-# inline ($$) #-}
 
 infixl 2 $$$
 -- | Lazy closure application.
-($$$) :: Close S.Tm1 -> Val1 -> Val1
+($$$) :: Dbg => Close S.Tm1 -> Val1 -> Val1
 ($$$) (Close env t) ~u = eval1 (Snoc1 env u) t
 {-# inline ($$$) #-}
 
 -- | Go under 1 lvl0 binder.
-dive :: Close S.Tm0 -> Lvl -> Val0
+dive :: Dbg => Close S.Tm0 -> Lvl -> Val0
 dive (Close env t) l = eval0 (Snoc0 env l) t
 {-# inline dive #-}
 
 -- | Go under 2 lvl0 binders.
-dive2 :: Close S.Tm0 -> Lvl -> Val0
+dive2 :: Dbg => Close S.Tm0 -> Lvl -> Val0
 dive2 (Close env t) l = eval0 (env `Snoc0` l `Snoc0` (l + 1)) t
 {-# inline dive2 #-}
 
 -- | Go under N lvl0 binders.
-diveN :: Close S.Tm0 -> Lvl -> Int -> Val0
+diveN :: Dbg => Close S.Tm0 -> Lvl -> Int -> Val0
 diveN (Close env t) l n = eval0 (go env l n) t where
   go acc l 0 = acc
   go acc l n = go (Snoc0 acc l) (l + 1) (n - 1)
 
-app1 :: Val1 -> Val1 -> Icit -> Val1
+app1 :: Dbg => Val1 -> Val1 -> Icit -> Val1
 app1 t u i = case t of
   Lam1 x i a t   -> t $$ u
-  Flex h sp   -> Flex h (SApp1 sp u i)
+  Flex h sp      -> Flex h (SApp1 sp u i)
   Unfold h sp t  -> Unfold h (SApp1 sp u i) (app1 t u i)
   t              -> App1 t u i
 
-lookupField :: Fields a -> Int -> a
+lookupField :: Dbg => Fields a -> Int -> a
 lookupField (FCons x a fs) 0 = a
 lookupField (FCons _ _ fs) n = lookupField fs (n - 1)
 lookupField _              _ = impossible
 
-field1 :: Val1 -> Name -> Int -> Val1
+field1 :: Dbg => Val1 -> Name -> Int -> Val1
 field1 t x n = case t of
   RecCon1 ts    -> lookupField ts n
   Flex h sp     -> Flex h (SField1 sp x n)
   Unfold h sp t -> Unfold h (SField1 sp x n) (field1 t x n)
   t             -> Field1 t x n
 
-inserted :: Val1 -> Env -> S.Locals -> Val1
+inserted :: Dbg => Val1 -> Env -> S.Locals -> Val1
 inserted t env ls = case (env, ls) of
   (!env,        S.Empty           ) -> t
   (Snoc1 env u, S.Define ls _ _ _ ) -> inserted t env ls
@@ -105,7 +105,7 @@ inserted t env ls = case (env, ls) of
   (Snoc1 env u, S.Bind1 ls _ _    ) -> app1 (inserted t env ls) u Expl
   _                                 -> impossible
 
-eval0 :: Env -> S.Tm0 -> Val0
+eval0 :: Dbg => Env -> S.Tm0 -> Val0
 eval0 env = \case
   S.Var0 x       -> Var0 (var0 env x)
   S.Top0 x       -> Top0 x
@@ -119,7 +119,7 @@ eval0 env = \case
   S.Down t       -> down (eval1 env t)
   S.Wk0 t        -> eval0 (wk0Env env) t
 
-eval1 :: Env -> S.Tm1 -> Val1
+eval1 :: Dbg => Env -> S.Tm1 -> Val1
 eval1 env = \case
   S.Var1 x        -> var1 env x
   S.Top1 x        -> top1 x
@@ -194,13 +194,13 @@ forceFU0 = \case
               t    -> Down t
   v      -> v
 
-quoteSp :: Lvl -> Unfolding -> S.Tm1 -> Spine -> S.Tm1
+quoteSp :: Dbg => Lvl -> Unfolding -> S.Tm1 -> Spine -> S.Tm1
 quoteSp l st h = \case
   SId            -> h
   SApp1 sp u i   -> S.App1 (quoteSp l st h sp) (quote1 l st u) i
   SField1 sp x n -> S.Field1 (quoteSp l st h sp) x n
 
-quote1 :: Lvl -> Unfolding -> Val1 -> S.Tm1
+quote1 :: Dbg => Lvl -> Unfolding -> Val1 -> S.Tm1
 quote1 l st t = let
   go0  = quote0 l st; {-# inline go0 #-}
   go1  = quote1 l st; {-# inline go1 #-}
@@ -242,7 +242,7 @@ quote1 l st t = let
     Field1 t x n  -> S.Field1 (go1 t) x n
     U u           -> S.U u
 
-quoteCases :: Lvl -> Unfolding -> Close (Cases S.Tm0) -> Cases S.Tm0
+quoteCases :: Dbg =>Lvl -> Unfolding -> Close (Cases S.Tm0) -> Cases S.Tm0
 quoteCases l st (Close env cs) = case cs of
   CNil -> CNil
   CCons c xs t cs ->
@@ -250,7 +250,7 @@ quoteCases l st (Close env cs) = case cs of
     in CCons c xs (quote0 (l + Lvl n) st (diveN (Close env t) l n))
                   (quoteCases l st (Close env cs))
 
-quote0 :: Lvl -> Unfolding -> Val0 -> S.Tm0
+quote0 :: Dbg => Lvl -> Unfolding -> Val0 -> S.Tm0
 quote0 l st t = let
   go0  = quote0 l st; {-# inline go0 #-}
   go1  = quote1 l st; {-# inline go1 #-}

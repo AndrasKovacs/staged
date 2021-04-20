@@ -1,46 +1,30 @@
 
-module Exceptions (Ex(..), throwIO, throw, catch , fenceEx) where
+module Exceptions (Ex(..), throwIO, catch, throw) where
 
-import GHC.Exts
 import qualified Control.Exception as Ex
-import IO
 
 import Common
 import qualified Syntax    as S
 import qualified Presyntax as P
 
---------------------------------------------------------------------------------
-
-throwIO :: forall a. Ex -> IO a
-throwIO e = IO (raiseIO# e)
+throwIO :: Ex -> IO a
+throwIO = Ex.throwIO
 {-# inline throwIO #-}
 
-throw :: forall a. Ex -> a
-throw = raise#
-{-# inline throw #-}
-
-catch# :: forall a. IO a -> (Ex -> IO a) -> IO a
-catch# (IO io) f = IO (GHC.Exts.catch# io (\e -> case f e of IO f -> f))
-{-# inline catch# #-}
-
 catch :: IO a -> (Ex -> IO a) -> IO a
-catch ma f = ma `Exceptions.catch#` \case
-  SomeException e -> Ex.throw e
-  e               -> f e
+catch = Ex.catch
 {-# inline catch #-}
 
--- | This is a dirty hack which ensures that our monomorphized `catch` can also catch every standard
---   `Control.Exception` exception potentially thrown by external library code or standard throwing
---   operations such as incomplete matches or zero division. The trick is that the first variant in
---   `Ex` has the same representation as the `Control.Exception` definition, and casing also works
---   because of the pointer tagging representationo. Why do we use this hack? The reason is
---   performance: we use exceptions internally for control flow purposes, and avoiding the standard
---   `Typeable` safety mechanism reduces overheads significantly.
-data Ex =
-    forall e. Ex.Exception e => SomeException e -- ^ Standard exceptions.
+throw :: Ex -> a
+throw = Ex.throw
+{-# inline throw #-}
 
-  | UnifyError0 S.Tm0 S.Tm0
+data Ex
+  = UnifyError0 S.Tm0 S.Tm0
   | UnifyError1 S.Tm1 S.Tm1
+  | CVUnifyError CV CV
+  | UUnifyError U U
+  | forall a. (Show a) => EqUnifyError a a
   | NameNotInScope {-# unpack #-} RawName
   | NoSuchField    {-# unpack #-} RawName
   | NoSuchArgument {-# unpack #-} RawName
@@ -72,10 +56,6 @@ data Ex =
   -- Exception with elaboration context
   | ElabError S.Locals P.Tm Ex
 
--- | Don't let any non-standard `Ex` exception escape. This should be used on the top of the main
---   function of the program.
-fenceEx :: Dbg => IO a -> IO a
-fenceEx act = act `Exceptions.catch#` \case
-  SomeException e -> Ex.throw e
-  _               -> impossible
-{-# inline fenceEx #-}
+deriving instance Show Ex
+
+instance Ex.Exception Ex

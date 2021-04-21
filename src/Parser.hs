@@ -11,7 +11,7 @@ import Lexer
 import Common hiding (U(..), CV(..))
 import Presyntax
 
--- import Debug.Trace
+import Debug.Trace
 
 --------------------------------------------------------------------------------
 
@@ -67,24 +67,40 @@ ident' = lvl' >> identBase `cut'` Msg "identifier"
 -- Atomic expressions
 --------------------------------------------------------------------------------
 
+-- TODO: clean this up
 recOrRec :: Pos -> Parser Tm
 recOrRec l =
   optioned (getPos <* bracketR)
     (\r -> pure (EmptyRec (Span l r)))
-    (optioned ident
-      (\x -> do
-         lvl >> $(switch [| case _ of
-           ":" -> ws >> restOfRec l x
-           "=" -> ws >> restOfRecCon l x
-           "," -> ws >> restOfTuple l (Var x)
-           "]" -> do {r <- getPos; ws; pure (Tuple (Span l r) [Var x])}
-           |]) `cut` [":", "=", ","])
-      (do
-         t <- tm'
-         lvl >> $(switch [| case _ of
-           "," -> ws >> restOfTuple l t
-           "]" -> ws >> pure t
-           |])) `cut` [",", "]"])
+    (optioned (ident <* $(symbol ":"))
+      (restOfRec l)
+      (optioned (ident <* $(symbol "="))
+        (restOfRecCon l)
+        (optioned (ident <* $(symbol ","))
+          (\x -> restOfTuple l (Var x))
+          (optioned (ident <* $(symbol "]"))
+            (\x -> do {r <- getPos; ws; pure (Tuple (Span l r) [Var x])})
+            (do t <- tm'
+                lvl >> $(switch [| case _ of
+                  "," -> ws >> restOfTuple l t
+                  "]" -> ws >> pure t
+                  |])) `cut` [",", "]"]))))
+
+    -- (optioned ident
+    --   (\x -> do
+    --      lvl >> $(switch [| case _ of
+    --        ":" -> ws >> restOfRec l x
+    --        "=" -> ws >> restOfRecCon l x
+    --        "," -> ws >> restOfTuple l (Var x)
+    --        "]" -> do {r <- getPos; ws; pure (Tuple (Span l r) [Var x])}
+    --        _   -> (goApp =<< goProj (pure (Var x))) `cut` [Msg "atom"]
+    --        |]))
+    --   (do
+    --      t <- tm'
+    --      lvl >> $(switch [| case _ of
+    --        "," -> ws >> restOfTuple l t
+    --        "]" -> ws >> pure t
+    --        |])) `cut` [",", "]"])
 
 restOfRec :: Pos -> Span -> Parser Tm
 restOfRec l x = do
@@ -390,7 +406,9 @@ parseString (packUTF8 -> str) = (coerce str, parse str)
 --------------------------------------------------------------------------------
 
 p1 = unlines [
-  "id = foo{bar}"
+  "id : Bool → Bool = λ b A. b [A.B, A.true, A.false]"
+  -- "f = [t u, g x]"
+  -- "id = foo{bar}"
   -- "id : MTy = {A : CTy} → A → A",
   -- "= λ x. x"
 

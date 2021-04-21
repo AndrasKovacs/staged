@@ -21,7 +21,7 @@ import ElabState
 import InCxt
 import Exceptions
 
-import Debug.Trace
+-- import Debug.Trace
 
 --------------------------------------------------------------------------------
 
@@ -337,8 +337,7 @@ checkRecCon1 cxt topT ts (V.Close env as) = case (ts, as) of
         qa = Eval.quote1 (_lvl cxt) DontUnfold va
     t  <- check1 cxt t va
     let ~vt = eval1 cxt t
-    ts <- checkRecCon1 (define' x' qa va t vt cxt)
-                       topT ts (V.Close (V.Snoc1 env vt) as)
+    ts <- checkRecCon1 cxt topT ts (V.Close (V.Snoc1 env vt) as)
     pure $! FCons x' t ts
   ([], FCons{}) ->
     elabError cxt topT ExpectedNonEmptyRecCon
@@ -353,8 +352,7 @@ checkTuple1 cxt topT ts (V.Close env as) = case (ts, as) of
         qa = Eval.quote1 (_lvl cxt) DontUnfold va
     t  <- check1 cxt t va
     let ~vt = eval1 cxt t
-    ts <- checkTuple1 (define' x' qa va t vt cxt)
-                       topT ts (V.Close (V.Snoc1 env vt) as)
+    ts <- checkTuple1 cxt topT ts (V.Close (V.Snoc1 env vt) as)
     pure $! FCons x' t ts
   ([], FCons{}) ->
     elabError cxt topT ExpectedNonEmptyRecCon
@@ -408,7 +406,6 @@ check1 cxt topT topA = case (topT, forceFU1 topA) of
     S.RecCon1 <$!> checkRecCon1 cxt topT ts as
 
   (P.Tuple _ ts, V.Rec1 as) -> do
-    traceM "checktuple"
     S.RecCon1 <$!> checkTuple1 cxt topT ts as
 
   (P.EmptyRec _, V.Rec1 (V.Close _ as)) -> do
@@ -434,16 +431,24 @@ check1 cxt topT topA = case (topT, forceFU1 topA) of
 
   (t, topA) -> do
     (t, a) <- insert cxt $ infer1 cxt t
-    -- traceShowM ("inferred", t)
     decorateEx cxt topT $ coe1 cxt t a topA
 
 data TmU = Tm0 S.Tm0 V.Ty CV | Tm1 S.Tm1 V.Ty
 
-
--- TODO: add more inference cases here
 infer0 :: Dbg => Cxt -> P.Tm -> IO (S.Tm0, V.Ty, CV)
-infer0 cxt topT =
-  infer cxt topT >>= \case
+infer0 cxt topT = case topT of
+
+  P.Lam _ (bindToName cxt -> x) i a t -> case i of
+    P.Named{}     -> elabError cxt topT ExpectedRuntimeType
+    P.NoName Impl -> elabError cxt topT ExpectedRuntimeType
+    P.NoName Expl -> do
+      a <- tyAnnot cxt a (U0 V)
+      let va   = eval1 cxt a
+      let cxt' = bind0' x a va V cxt
+      (t, b, bcv) <- infer0 cxt' t
+      pure $! (S.Lam0 x a t, V.Fun va b, C)
+
+  topT -> infer cxt topT >>= \case
     Tm0 t a cv ->
       pure (t, a, cv)
     Tm1 t a -> case forceFU1 a of
@@ -456,23 +461,20 @@ infer0 cxt topT =
         t  <- S.down <$!> coe1 cxt t a (V.Lift cv a')
         pure (t, a', cv)
 
--- TODO: add more inference cases here
 infer1 :: Dbg => Cxt -> P.Tm -> IO (S.Tm1, V.Ty)
-infer1 cxt t =
+infer1 cxt topT = case topT of
 
-  -- P.Lam _ (bindToName cxt -> x) i a t -> case i of
-  --   P.Named{} -> err NoNamedLambdaInference
-  --   P.NoName i -> do
-  --     a <- tyAnnot cxt a U1
-  --     let va = eval1 cxt a
-  --     let cxt' = bind1' x a va cxt
-  --     (t, b) <- infer1 cxt' t
-  --     let qb = quote1 cxt' b
-  --     pure $ Tm1 (S.Lam1 x i a t) (V.Pi x i va (V.Close V.Nil qb))
+  P.Lam _ (bindToName cxt -> x) i a t -> case i of
+    P.Named{}  -> elabError cxt topT NoNamedLambdaInference
+    P.NoName i -> do
+      a <- tyAnnot cxt a U1
+      let va = eval1 cxt a
+      let cxt' = bind1' x a va cxt
+      (t, b) <- infer1 cxt' t
+      let qb = quote1 cxt' b
+      pure $! (S.Lam1 x i a t, V.Pi x i va (V.Close V.Nil qb))
 
-
-
-  infer cxt t >>= \case
+  t -> infer cxt t >>= \case
     Tm0 t a cv -> let t' = S.up t in pure (t', V.Lift cv a)
     Tm1 t a    -> pure (t, a)
 
@@ -588,16 +590,13 @@ infer cxt topT = let
     P.App t u i -> do
       case i of
         P.NoName Expl -> do
-          -- traceM "explicit app"
           t <- insertTmU' cxt $ infer cxt t
           case t of
             Tm0 t a cv -> do
-              -- traceM "tm0"
               (a, b) <- decorEx $ ensureFun cxt a
               u      <- check0 cxt u a V
               pure $ Tm0 (S.App0 t u) b cv
             Tm1 t a -> do
-              -- traceM "tm1"
               (t, x, a, b) <- decorEx $ coeToPi cxt a Expl t
               u            <- check1 cxt u a
               pure $ Tm1 (S.App1 t u Expl) (b $$$ eval1 cxt u)

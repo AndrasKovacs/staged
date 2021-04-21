@@ -459,6 +459,19 @@ infer0 cxt topT =
 -- TODO: add more inference cases here
 infer1 :: Dbg => Cxt -> P.Tm -> IO (S.Tm1, V.Ty)
 infer1 cxt t =
+
+  -- P.Lam _ (bindToName cxt -> x) i a t -> case i of
+  --   P.Named{} -> err NoNamedLambdaInference
+  --   P.NoName i -> do
+  --     a <- tyAnnot cxt a U1
+  --     let va = eval1 cxt a
+  --     let cxt' = bind1' x a va cxt
+  --     (t, b) <- infer1 cxt' t
+  --     let qb = quote1 cxt' b
+  --     pure $ Tm1 (S.Lam1 x i a t) (V.Pi x i va (V.Close V.Nil qb))
+
+
+
   infer cxt t >>= \case
     Tm0 t a cv -> let t' = S.up t in pure (t', V.Lift cv a)
     Tm1 t a    -> pure (t, a)
@@ -517,7 +530,7 @@ infer cxt topT = let
             U0 cv -> pure $! Tm0 (S.Var0 (lvlToIx (_lvl cxt) x)) a cv
             U1    -> pure $! Tm1 (S.Var1 (lvlToIx (_lvl cxt) x)) a
         Nothing -> lookupTopName x >>= \case
-          Nothing -> err $ NameNotInScope x
+          Nothing -> impossible -- err $ NameNotInScope x
           Just x  -> readTop x >>= \case
             TEDef0 _ va _ _ cv _ _       -> pure $! Tm0 (S.Top0 x) va cv
             TEDef1 _ va _ _ _ _          -> pure $! Tm1 (S.Top1 x) va
@@ -636,7 +649,7 @@ infer cxt topT = let
           as <- checkRec0 cxt as
           pure $! Tm1 (S.Rec0 (FCons x a as)) (V.U (U0 V))
         V.U U1 -> do
-          as <- checkRec1 cxt as
+          as <- checkRec1 (bind1' x a (eval1 cxt a) cxt) as
           pure $! Tm1 (S.Rec1 (FCons x a as)) (V.U U1)
         _ ->
           err ExpectedType
@@ -659,7 +672,6 @@ infer cxt topT = let
 
     P.Field t (spanToRawName cxt -> x) -> do
       t <- infer cxt t
-
       case t of
         Tm0 t a _ -> do
           case forceFU1 a of
@@ -682,7 +694,7 @@ infer cxt topT = let
                         let va = Eval.eval1 env a
                         pure (va, ix)
                     | True = do
-                        go (V.Snoc1 env (Eval.eval1 env (S.Field1 t x' ix))) (ix + 1) as
+                        go (V.Snoc1 env (eval1 cxt (S.Field1 t x' ix))) (ix + 1) as
               (a, ix) <- go env 0 as
               pure $ Tm1 (S.Field1 t (NName x) ix) a
             _ ->

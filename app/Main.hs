@@ -89,12 +89,15 @@ test str = do
 
 p1 = unlines [
 
-  "Sg : (A : MTy) → (A → MTy) → MTy = λ A B. [fst : A, snd : B fst]",
-  "Pointed : MTy     = Sg MTy (λ A. A)",
-  -- "pointed : Pointed = [MTy, MTy]",
+  "NatAlg = [N : MTy, zero : N, suc: N → N]",
+  "Nat    = (A : NatAlg) → A.N",
+  "zero   = λ (A : NatAlg). A.z"
 
+  -- "Sg : (A : MTy) → (A → MTy) → MTy",
+  -- "  = λ A B. [fst : A, snd : B fst]",
+  -- "Pointed = Sg MTy (λ A. A)",
 
-  "getPoint : (p : Pointed) → _ = λ p. p.snd"
+  -- "foo : (p : Pointed) → p.fst = λ p. p.snd"
 
   -- "f : {A} → ^(A → A) = λ x. x",
   -- "g : {A B} → ^(A → B → A) = λ x y. x",

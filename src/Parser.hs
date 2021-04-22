@@ -3,9 +3,9 @@ module Parser (parse, parseString, Result(..)) where
 
 import Prelude hiding (pi)
 import Data.Foldable
-import FlatParse.Stateful hiding (Parser, runParser, string, char, cut)
+import FlatParse.Stateful hiding (Parser, runParser, string, cut)
 import qualified Data.ByteString as B
-
+import Data.Char (ord)
 
 import Lexer
 import Common hiding (U(..), CV(..))
@@ -49,7 +49,9 @@ isKeyword span = inSpan span do
      "VTy"  -> pure ()
      "CTy"  -> pure ()
      "data" -> pure ()
-     "MTy"  -> pure () |])
+     "MTy"  -> pure ()
+     "Int"  -> pure ()
+     |])
   eof
 
 identBase :: Parser Span
@@ -140,9 +142,20 @@ up l = do
   angleR'
   pure $ Up (Span l r) t
 
+intLit :: Parser Tm
+intLit = do
+  l      <- getPos
+  sign   <- ((-1) <$ $(char '-')) <|> pure 1
+  digits <- chainl
+    (flip (:)) ((:[]) <$!> satisfyASCII isDigit) (satisfyASCII isDigit)
+  r <- getPos
+  ws
+  let go place acc (d:ds) = go (place*10) (acc + (ord d - ord '0')*place) ds
+      go place acc []     = acc
+  pure $! IntLit (Span l r) $! sign * go 1 0 digits
+
 atomBase :: Parser Tm
 atomBase = do
-  -- !lvl <- ask
   l <- getPos
   $(switch [| case _ of
     "["    -> ws *> recOrRec l
@@ -158,7 +171,10 @@ atomBase = do
     "VTy"  -> skipToVar l \r -> pure $ Ty (Span l r) (U0 V)
     "CTy"  -> skipToVar l \r -> pure $ Ty (Span l r) (U0 C)
     "MTy"  -> skipToVar l \r -> pure $ Ty (Span l r) U1
-    _      -> do {identChar; manyIdents; r <- getPos; ws; pure (Var (Span l r))} |])
+    "Int"  -> skipToVar l \r -> pure $ Int (Span l r)
+    _      ->     do {identStartChar; manyIdents; r <- getPos; ws; pure (Var (Span l r))}
+              <|> intLit
+            |])
 
 atom :: Parser Tm
 atom = lvl >> atomBase
@@ -203,6 +219,17 @@ app' = do
 
 --------------------------------------------------------------------------------
 
+mul' :: Parser Tm
+mul' = chainl Mul app' ($(symbol "*") *> app')
+
+add' :: Parser Tm
+add' = chainl Add mul' ($(symbol "+") *> mul')
+
+sub' :: Parser Tm
+sub' = chainl Sub add' ($(symbol "-") *> add')
+
+--------------------------------------------------------------------------------
+
 pi' :: Parser Tm
 pi' = do
   l <- getPos
@@ -230,7 +257,7 @@ pi' = do
             branch arrow (Pi l DontBind Expl t <$> pi') (pure t))
 
     _   -> ws >> do
-      t <- app'
+      t <- sub'
       branch arrow (Pi l DontBind Expl t <$> pi') (pure t)
     |])
 
@@ -406,7 +433,8 @@ parseString (packUTF8 -> str) = (coerce str, parse str)
 --------------------------------------------------------------------------------
 
 p1 = unlines [
-  "id : Bool → Bool = λ b A. b [A.B, A.true, A.false]"
+  "id : Bool → Bool = λ b A. b [A.B, A.true, A.false]",
+  "foo : Int = 300 + 500 * 10"
   -- "f = [t u, g x]"
   -- "id = foo{bar}"
   -- "id : MTy = {A : CTy} → A → A",

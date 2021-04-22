@@ -117,7 +117,10 @@ eval0 env = \case
   S.Case t cs    -> Case (eval0 env t) (Close env cs)
   S.Fix x y t    -> Fix x y (Close env t)
   S.Down t       -> down (eval1 env t)
-  S.Wk0 t        -> eval0 (wk0Env env) t
+  S.Add t u      -> Add (eval0 env t) (eval0 env u)
+  S.Mul t u      -> Mul (eval0 env t) (eval0 env u)
+  S.Sub t u      -> Sub (eval0 env t) (eval0 env u)
+  S.IntLit n     -> IntLit n
 
 eval1 :: Dbg => Env -> S.Tm1 -> Val1
 eval1 env = \case
@@ -140,6 +143,7 @@ eval1 env = \case
   S.Inserted x ls -> runIO do {t <- metaIO x; pure $! inserted t env ls}
   S.Meta x        -> meta x
   S.Wk1 t         -> eval1 (wk1Env env) t
+  S.Int           -> Int
 
 --------------------------------------------------------------------------------
 
@@ -241,6 +245,7 @@ quote1 l st t = let
     RecCon1 ts    -> S.RecCon1 (go1 <$> ts)
     Field1 t x n  -> S.Field1 (go1 t) x n
     U u           -> S.U u
+    Int           -> S.Int
 
 quoteCases :: Dbg =>Lvl -> Unfolding -> Close (Cases S.Tm0) -> Cases S.Tm0
 quoteCases l st (Close env cs) = case cs of
@@ -283,6 +288,10 @@ quote0 l st t = let
     App0 t u      -> S.App0 (go0 t) (go0 u)
     RecCon0 ts    -> S.RecCon0 (go0 <$> ts)
     Field0 t x n  -> S.Field0 (go0 t) x n
+    Add t u       -> S.Add (go0 t) (go0 u)
+    Sub t u       -> S.Sub (go0 t) (go0 u)
+    Mul t u       -> S.Mul (go0 t) (go0 u)
+    IntLit n      -> S.IntLit n
 
 --------------------------------------------------------------------------------
 

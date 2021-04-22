@@ -6,6 +6,10 @@ module Common (
   , module Data.Coerce
   , module Control.Monad
   , module Data.Kind
+  , traceM
+  , traceShowM
+  , trace
+  , traceShow
   ) where
 
 import Data.Kind
@@ -20,6 +24,7 @@ import FNV164
 import FlatParse.Stateful
 import Data.Coerce
 import GHC.Stack
+import Debug.Trace
 
 --------------------------------------------------------------------------------
 

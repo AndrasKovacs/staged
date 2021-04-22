@@ -11,10 +11,6 @@ wk1Env :: Env -> Env
 wk1Env = \case Snoc1 env _ -> env; _ -> impossible
 {-# inline wk1Env #-}
 
-wk0Env :: Env -> Env
-wk0Env = \case Snoc0 env _ -> env; _ -> impossible
-{-# inline wk0Env #-}
-
 type Ty = Val1
 
 data Spine
@@ -37,6 +33,10 @@ data Val0
   | Field0 Val0 Name Int
   | RecCon0 (Fields Val0)
   | Lam0 Name Ty {-# unpack #-} (Close S.Tm0)
+  | Add Val0 Val0
+  | Sub Val0 Val0
+  | Mul Val0 Val0
+  | IntLit Int
 
 data Val1
   = Unfold UnfoldHead Spine ~Val1
@@ -55,3 +55,4 @@ data Val1
   | U U
   | TyCon Lvl
   | DataCon Lvl Int
+  | Int

@@ -88,22 +88,23 @@ test str = do
   displayState
 
 p1 = unlines [
-  -- "Alg  = [B: MTy, true: B, false: B]",
-  -- "Bool = (A : Alg) → A.B",
-  -- "id : Bool → Bool = λ b A. b [A.B, A.true, A.false]"
+  "Alg  = [B: MTy, true: B, false: B]",
+  "Bool = (A : Alg) → A.B",
+  "id : Bool → Bool = λ b A. b [A.B, A.true, A.false]",
 
   "NatAlg = [N : MTy, zero : N, suc: N → N]",
   "Nat    = (A : NatAlg) → A.N",
   "zero   = λ (A : NatAlg). A.zero",
   "suc : Nat → Nat = λ n A. A.suc (n A)",
-  "id : Nat → Nat = λ n A. n [A.N, A.zero, A.suc]",
+  "id  : Nat → Nat = λ n A. n [A.N, A.zero, A.suc]",
   "add : Nat → Nat → Nat = λ a b A. a [A.N, b A, A.suc]"
+
+  -- "foo = λ x. 10 + x"
 
   -- "Sg : (A : MTy) → (A → MTy) → MTy",
   -- "  = λ A B. [fst : A, snd : B fst]",
   -- "Pointed = Sg MTy (λ A. A)",
-
-  -- "foo : (p : Pointed) → p.fst = λ p. p.snd"
+  -- "foo : (p : Pointed) → p.fst = λ p. p.snd",
 
   -- "f : {A} → ^(A → A) = λ x. x",
   -- "g : {A B} → ^(A → B → A) = λ x y. x",
@@ -114,12 +115,12 @@ p1 = unlines [
   -- "idM2 : {A} → A → A",
   -- "  = λ x. idM x"
 
-  -- "Nat : MTy = (N : MTy) → (N → N) → N → N",
+  -- "Nat  : MTy = (N : MTy) → (N → N) → N → N",
   -- "zero : Nat = λ N s z. z",
-  -- "suc : Nat → Nat = λ a N s z. s (a N s z)",
-  -- "suc2 : _ = suc"
-  -- -- "foo : Nat → Nat = comp suc suc",
-  -- -- "bar = id suc2"
+  -- "suc  : Nat → Nat = λ a N s z. s (a N s z)",
+  -- "add  : Nat → Nat → Nat = λ a b N s z. a N s (b N s z)",
+  -- "mul  : Nat → Nat → Nat = λ a b N s z. a N (b N s) z"
+
   ]
 
 --------------------------------------------------------------------------------

@@ -1,4 +1,4 @@
--- {-# options_ghc -Wno-unused-imports #-}
+{-# options_ghc -Wno-unused-imports -Wno-type-defaults #-}
 
 module Elaboration where
 
@@ -21,7 +21,7 @@ import ElabState
 import InCxt
 import Exceptions
 
--- import Debug.Trace
+
 
 --------------------------------------------------------------------------------
 
@@ -106,7 +106,9 @@ subtype0 cxt a cv a' cv' = do
 
 -- Coercion in U1 (explicit)
 coe1 :: Dbg => Cxt -> S.Tm1 -> V.Ty -> V.Ty -> IO S.Tm1
-coe1 cxt t a a' = maybe t id <$> go cxt t a a' where
+coe1 cxt t a a' = do
+  traceShowM ("coe", t, quote1 cxt a, quote1 cxt a')
+  maybe t id <$> go cxt t a a' where
 
   -- ugly helper for record structural rule
   goRec1 :: Dbg => Cxt -> S.Tm1 -> Int -> V.Close (Fields S.Tm1)
@@ -310,7 +312,9 @@ check0 cxt topT topA cv = case (topT, forceFU1 topA, forceCV cv) of
 
   (t, topA, cv) -> do
     (t, a, cv') <- infer0 cxt t
+    traceShowM ("infer0-d", t, quote1 cxt a, cv', quote1 cxt topA, cv)
     decorateEx cxt topT $ subtype0 cxt a cv' topA cv
+    traceM "coerced"
     pure t
 
 checkRec0 :: Dbg => Cxt -> [(Span, P.Tm)] -> IO (Fields S.Ty)
@@ -455,7 +459,10 @@ infer0 cxt topT = case topT of
       V.Lift cv a -> do
         let t' = S.down t
         pure (t', a, cv)
+
+      -- PRUNING
       a -> do
+        traceM "suuss"
         cv <- freshCV
         a' <- eval1 cxt <$!> freshMeta cxt (S.U (U0 cv))
         t  <- S.down <$!> coe1 cxt t a (V.Lift cv a')
@@ -467,16 +474,20 @@ infer1 cxt topT = case topT of
   P.Lam _ (bindToName cxt -> x) i a t -> case i of
     P.Named{}  -> elabError cxt topT NoNamedLambdaInference
     P.NoName i -> do
+      traceM "inferlam"
       a <- tyAnnot cxt a U1
       let va = eval1 cxt a
       let cxt' = bind1' x a va cxt
+      traceM "infer1"
       (t, b) <- infer1 cxt' t
       let qb = quote1 cxt' b
       pure $! (S.Lam1 x i a t, V.Pi x i va (V.Close V.Nil qb))
 
   t -> infer cxt t >>= \case
-    Tm0 t a cv -> let t' = S.up t in pure (t', V.Lift cv a)
-    Tm1 t a    -> pure (t, a)
+    Tm0 t a cv -> do
+      traceM "fosdkfsodk"
+      let t' = S.up t in pure (t', V.Lift cv a)
+    Tm1 t a -> pure (t, a)
 
 checkU :: Dbg => P.U -> S.Tm1
 checkU = \case
@@ -721,6 +732,27 @@ infer cxt topT = let
       --     cs  <- checkCases cxt cs b bcv
       --     pure $! Tm0 (S.Case t cs) b bcv
 
+    P.Int _ -> do
+      pure $! Tm1 S.Int (V.U (U0 V))
+
+    P.IntLit _ n -> do
+      pure $! Tm0 (S.IntLit n) V.Int V
+
+    P.Add t u -> do
+      t <- check0 cxt t V.Int V
+      u <- check0 cxt u V.Int V
+      pure $! Tm0 (S.Add t u) V.Int V
+
+    P.Mul t u -> do
+      t <- check0 cxt t V.Int V
+      u <- check0 cxt u V.Int V
+      pure $! Tm0 (S.Mul t u) V.Int V
+
+    P.Sub t u -> do
+      t <- check0 cxt t V.Int V
+      u <- check0 cxt u V.Int V
+      pure $! Tm0 (S.Sub t u) V.Int V
+
 
 -- Top Level
 --------------------------------------------------------------------------------
@@ -731,23 +763,41 @@ inferTop src = \case
     pure ()
 
   P.Definition0 span@(Span pos _) ma rhs top -> do
-    let x = unsafeSlice src span
+    let x   = unsafeSlice src span
     let cxt = emptyCxt src
-    cv <- freshCV
-    a  <- tyAnnot cxt ma (U0 cv)
-    let va = eval1 cxt a
-    rhs <- check0 cxt rhs va cv
+
+    (rhs, a, va, cv) <- case ma of
+      Just a  -> do
+        cv <- freshCV
+        a <- check1 cxt a (V.U (U0 cv))
+        let va = eval1 cxt a
+        rhs <- check0 cxt rhs va cv
+        pure (rhs, a, va, cv)
+      Nothing -> do
+        (rhs, va, cv) <- infer0 cxt rhs
+        let qa = quote1 cxt va
+        pure (rhs, qa, va, cv)
+
     let ~vrhs = eval0 cxt rhs
     lvl <- pushTop (TEDef0 a va rhs vrhs cv (NName x) pos)
     newTopName x lvl
     inferTop src top
 
   P.Definition1 span@(Span pos _) ma rhs top -> do
-    let x = unsafeSlice src span
+    let x   = unsafeSlice src span
     let cxt = emptyCxt src
-    a  <- tyAnnot cxt ma U1
-    let va = eval1 cxt a
-    rhs <- check1 cxt rhs va
+
+    (rhs, a, va) <- case ma of
+      Just a  -> do
+        a <- check1 cxt a (V.U U1)
+        let va = eval1 cxt a
+        rhs <- check1 cxt rhs va
+        pure (rhs, a, va)
+      Nothing -> do
+        (rhs, va) <- infer1 cxt rhs
+        let qa = quote1 cxt va
+        pure (rhs, qa, va)
+
     let ~vrhs = eval1 cxt rhs
     lvl <- pushTop (TEDef1 a va rhs vrhs (NName x) pos)
     newTopName x lvl

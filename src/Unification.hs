@@ -1,3 +1,4 @@
+{-# options_ghc -Wno-unused-imports -Wno-type-defaults #-}
 
 module Unification where
 
@@ -11,6 +12,8 @@ import Evaluation
 import Exceptions
 import Values
 import qualified Syntax as S
+
+import Debug.Trace
 
 {-
 TODO:
@@ -75,19 +78,19 @@ invert gamma sp = do
       go SId =
         (0, mempty)
       go (SField1 sp x n) = do
-        throw CantUnify
+        impossible -- throw CantUnify
       go (SApp1 sp t i) =
         let (!dom, !ren) = go sp in
         case forceFU1 t of
           Var1 (Lvl x) | IM.notMember x ren ->
             ((,) $$! (dom + 1) $$! (IM.insert x dom ren))
           _ ->
-            throw CantUnify
+            impossible -- throw CantUnify
 
   let (!dom, !ren) = go sp
   pure $ PRen dom gamma ren
 
-renameSp :: MetaVar -> ConvState -> PartialRenaming -> S.Tm1 -> Spine -> IO S.Tm1
+renameSp :: Dbg => MetaVar -> ConvState -> PartialRenaming -> S.Tm1 -> Spine -> IO S.Tm1
 renameSp m st pren t sp = let
   go1   t = rename1 m st pren t;     {-# inline go1 #-}
   goSp sp = renameSp m st pren t sp; {-# inline goSp #-}
@@ -96,7 +99,7 @@ renameSp m st pren t sp = let
     SApp1 t u i   -> S.App1 <$!> goSp t <*!> go1 u <*!> pure i
     SField1 t x n -> S.Field1  <$!> goSp t <*!> pure x <*!> pure n
 
-rename0 :: MetaVar -> ConvState -> PartialRenaming -> Val0 -> IO S.Tm0
+rename0 :: Dbg => MetaVar -> ConvState -> PartialRenaming -> Val0 -> IO S.Tm0
 rename0 m st pren t = let
   go0 = rename0 m st pren; {-# inline go0 #-}
   go1 = rename1 m st pren; {-# inline go1 #-}
@@ -132,8 +135,12 @@ rename0 m st pren t = let
     Case t cs     -> S.Case <$!> go0 t <*!> goCases cs
     Field0 t x n  -> S.Field0 <$!> go0 t <*!> pure x <*!> pure n
     Fix x y t     -> S.Fix x y <$!> goFix t
+    Add t u       -> S.Add <$!> go0 t <*!> go0 u
+    Sub t u       -> S.Sub <$!> go0 t <*!> go0 u
+    Mul t u       -> S.Mul <$!> go0 t <*!> go0 u
+    IntLit n      -> pure $! S.IntLit n
 
-rename1 :: MetaVar -> ConvState -> PartialRenaming -> Val1 -> IO S.Tm1
+rename1 :: Dbg => MetaVar -> ConvState -> PartialRenaming -> Val1 -> IO S.Tm1
 rename1 m st pren t = let
   go0 = rename0 m st pren; {-# inline go0 #-}
   go1 = rename1 m st pren; {-# inline go1 #-}
@@ -180,6 +187,7 @@ rename1 m st pren t = let
     U u           -> pure $! S.U u
     TyCon x       -> pure $! S.TyCon x
     App1 t u i    -> S.App1 <$!> go1 t <*!> go1 u <*!> pure i
+    Int           -> pure $! S.Int
 
 
 -- | Wrap a term in Lvl number of lambdas, getting the domain types
@@ -195,8 +203,9 @@ lams l a t = go l 0 a t where
 
 solveMeta :: Dbg => Lvl -> ConvState -> MetaVar -> Spine -> Val1 -> IO ()
 solveMeta l st m sp rhs = do
+  traceShowM ("solve", m, quote1 l DoUnfold (Flex m sp), quote1 l DoUnfold rhs)
   ma <- ES.unsolvedMetaTy m
-  when (st == CSFlex) $ throwIO CantUnify
+  when (st == CSFlex) $ impossible -- throwIO CantUnify
   pren <- invert l sp
   rhs  <- rename1 m CSRigid pren rhs
   let sol = eval1 Nil (lams (dom pren) ma rhs)
@@ -230,7 +239,7 @@ unifyCV cv cv' = case (forceCV cv, forceCV cv') of
   (CVVar x , CVVar x' ) -> unifyEq x x'
   (CVVar x , cv'      ) -> D.write ES.cvCxt (coerce x)  (ES.CVSolved cv')
   (cv      , CVVar x' ) -> D.write ES.cvCxt (coerce x') (ES.CVSolved cv)
-  (cv      , cv'      ) -> impossible -- throwIO $ CVUnifyError cv cv'
+  (cv      , cv'      ) -> throwIO $ CVUnifyError cv cv'
 
 unify0 :: Dbg => Lvl -> ConvState -> Val0 -> Val0 -> IO ()
 unify0 l st t t' = let
@@ -277,13 +286,17 @@ unify0 l st t t' = let
     (App0 t u     , App0 t' u'      ) -> go0 t t' >> go0 u u'
     (RecCon0 ts   , RecCon0 ts'     ) -> goRecCon0 ts ts'
     (Field0 t x n , Field0 t' x' n' ) -> go0 t t' >> unifyEq n n'
+    (IntLit n     , IntLit n'       ) -> unifyEq n n'
+    (Add    t u   , Add    t' u'    ) -> go0 t t' >> go0 u u'
+    (Mul    t u   , Mul    t' u'    ) -> go0 t t' >> go0 u u'
+    (Sub    t u   , Sub    t' u'    ) -> go0 t t' >> go0 u u'
     (t, t')                           -> err t t'
 
 unify1 :: Dbg => Lvl -> ConvState -> Val1 -> Val1 -> IO ()
 unify1 l st t t' = let
-  go0  = unify0 l st;   {-# inline go0 #-}
-  go1  = unify1 l st;   {-# inline go1 #-}
-  goSp = unifySp l st; {-# inline goSp #-}
+  go0  = unify0 l st;         {-# inline go0 #-}
+  go1  = unify1 l st;         {-# inline go1 #-}
+  goSp = unifySp l st;        {-# inline goSp #-}
   q1   = quote1 l DontUnfold; {-# inline q1 #-}
 
   err t t' = throwIO $ UnifyError1 (q1 t) (q1 t'); {-# inline err #-}
@@ -355,6 +368,7 @@ unify1 l st t t' = let
     (RecCon1 ts   , RecCon1 ts'     ) -> goRecCon1 ts ts'
     (Field1 t x n , Field1 t' x' n' ) -> go1 t t' >> unifyEq n n'
     (U u          , U u'            ) -> unifyU u u'
+    (Int          , Int             ) -> pure ()
 
     -- eta
     (Lam1 _ _ _ t, Lam1 _ _ _ t') -> goClose1 t t'

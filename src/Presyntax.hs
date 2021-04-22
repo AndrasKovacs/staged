@@ -49,6 +49,13 @@ data Tm
   | Fix Pos Bind Bind Tm
   | Case Pos Tm Pos [(Span, [Bind], Tm)]
   | Hole Pos
+
+  | Int Span
+  | IntLit Span Int
+  | Add Tm Tm
+  | Mul Tm Tm
+  | Sub Tm Tm
+
 deriving instance Show Tm
 
 span :: Tm -> Span
@@ -73,6 +80,10 @@ span t = Span (left t) (right t) where
     Fix l _ _ _         -> l
     Case l _ _ _        -> l
     Hole l              -> l
+    IntLit (Span l _) _ -> l
+    Add l r             -> left l
+    Mul l r             -> left l
+    Sub l r             -> left l
 
   right :: Tm -> Pos
   right = \case
@@ -95,3 +106,7 @@ span t = Span (left t) (right t) where
     Case _ _ r []       -> r
     Case _ _ r ts       -> case last ts of (_, _, t) -> right t
     Hole r              -> r
+    IntLit (Span _ r) _ -> r
+    Add _ r             -> right r
+    Mul _ r             -> right r
+    Sub _ r             -> right r

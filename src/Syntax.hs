@@ -16,7 +16,10 @@ data Tm0
   | Down Tm1
   | Field0 Tm0 Name Int
   | RecCon0 (Fields Tm0)
-  | Wk0 Tm0
+  | Add Tm0 Tm0
+  | Mul Tm0 Tm0
+  | Sub Tm0 Tm0
+  | IntLit Int
   deriving Show
 
 data Tm1
@@ -39,6 +42,7 @@ data Tm1
   | Inserted MetaVar Locals
   | Wk1 Tm1
   | Meta MetaVar
+  | Int
   deriving Show
 
 data Locals

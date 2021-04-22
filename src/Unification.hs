@@ -13,8 +13,6 @@ import Exceptions
 import Values
 import qualified Syntax as S
 
-import Debug.Trace
-
 {-
 TODO:
   - eta-short unification solutions:

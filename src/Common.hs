@@ -6,10 +6,6 @@ module Common (
   , module Data.Coerce
   , module Control.Monad
   , module Data.Kind
-  , traceM
-  , traceShowM
-  , trace
-  , traceShow
   ) where
 
 import Data.Kind
@@ -24,7 +20,16 @@ import FNV164
 import FlatParse.Stateful
 import Data.Coerce
 import GHC.Stack
-import Debug.Trace
+
+import qualified Debug.Trace as Trace
+
+--------------------------------------------------------------------------------
+
+traceM :: Applicative m => String -> m ()
+traceM = Trace.traceM
+
+traceShowM :: (Show a, Applicative f) => a -> f ()
+traceShowM = Trace.traceShowM
 
 --------------------------------------------------------------------------------
 

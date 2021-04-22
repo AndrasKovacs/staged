@@ -88,16 +88,18 @@ test str = do
   displayState
 
 p1 = unlines [
-  "Alg  = [B: MTy, true: B, false: B]",
-  "Bool = (A : Alg) → A.B",
-  "id : Bool → Bool = λ b A. b [A.B, A.true, A.false]",
+  -- "Alg  = [B: MTy, true: B, false: B]",
+  -- "Bool = (A : Alg) → A.B",
+  -- "id : Bool → Bool = λ b A. b [A.B, A.true, A.false]",
 
-  "NatAlg = [N : MTy, zero : N, suc: N → N]",
-  "Nat    = (A : NatAlg) → A.N",
-  "zero   = λ (A : NatAlg). A.zero",
-  "suc : Nat → Nat = λ n A. A.suc (n A)",
-  "id  : Nat → Nat = λ n A. n [A.N, A.zero, A.suc]",
-  "add : Nat → Nat → Nat = λ a b A. a [A.N, b A, A.suc]"
+  -- "NatAlg = [N : MTy, zero : N, suc: N → N]",
+  -- "Nat    = (A : NatAlg) → A.N",
+  -- "zero   = λ (A : NatAlg). A.zero",
+  -- "suc : Nat → Nat = λ n A. A.suc (n A)",
+  -- "id  : Nat → Nat = λ n A. n [A.N, A.zero, A.suc]",
+  -- "add : Nat → Nat → Nat = λ a b A. a [A.N, b A, A.suc]",
+
+  "foo : (A : CTy) → A → A = λ A x. x"
 
   -- "foo = λ x. 10 + x"
 

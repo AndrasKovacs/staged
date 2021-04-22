@@ -50,6 +50,7 @@ data Tm
   | Case Pos Tm Pos [(Span, [Bind], Tm)]
   | Hole Pos
 
+
   | Int Span
   | IntLit Span Int
   | Add Tm Tm
@@ -84,6 +85,7 @@ span t = Span (left t) (right t) where
     Add l r             -> left l
     Mul l r             -> left l
     Sub l r             -> left l
+    Int (Span l r)      -> l
 
   right :: Tm -> Pos
   right = \case
@@ -110,3 +112,4 @@ span t = Span (left t) (right t) where
     Add _ r             -> right r
     Mul _ r             -> right r
     Sub _ r             -> right r
+    Int (Span l r)      -> r

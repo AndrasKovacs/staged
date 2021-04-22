@@ -101,10 +101,10 @@ large elimination) in staging.
 \emph{simple type theory}. In this case, there is no universe $\U^0$ in the
 object-level, so there is no $\Code\,\U^0$, but we can still freely include a
 meta-level type $\Ty^0$ whose terms are identified with object-level types. Now,
-meta-level functions can be used for quantification over object-level types, as in
-$\mathit{id} : (A : \Ty^0) \to \Code\,\sim\!A \to \Code\,\sim\!A$. However,
-since the object theory is simply typed and monomorphic, all polymorphism is
-guaranteed to compute away during staging.
+meta-level functions can be used for quantification over object-level types, as
+in $\mathit{id} : (A : \Ty^0) \to \Code\,A \to \Code\,A$. However, since the
+object theory is simply typed and monomorphic, all polymorphism is guaranteed to
+compute away during staging.
 
 \textbf{Control over lambda lifting and closure creation}. We assume now a
 dependent type theory on both levels, but with a \emph{first-order function

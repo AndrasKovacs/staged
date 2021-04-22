@@ -11,8 +11,6 @@ import Lexer
 import Common hiding (U(..), CV(..))
 import Presyntax
 
-import Debug.Trace
-
 --------------------------------------------------------------------------------
 
 semi      = $(symbol ";")

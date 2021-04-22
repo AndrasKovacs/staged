@@ -43,8 +43,8 @@ Andr\'as Kov\'acs
 
 \maketitle
 
-Two-level type theory \cite{twolevel} (2LTT) is a system for performing
-metatheoretic constructions and reasoning involving certain object-level type
+Two-level type theory \cite{twolevel} (2LTT) is a system for performing certain
+metatheoretic constructions and reasoning involving object-level type
 theories. Such reasoning is always possible by simply embedding object theories
 in metatheories, but in that case we have to explicitly handle a deluge of
 technical details about the object theory, most notably substitutions. If
@@ -73,9 +73,9 @@ The idea of staging is the following: given a closed $A : \U^0$ with a closed $t
 definitionally equal to $A$ and $t$ respectively after being embedded in
 2LTT. In short, every meta-level construction can be computed away, and only
 object-level constructions remain in the result. Annekov et al. \cite{twolevel}
-showed this without uniqueness of $A'$ and $t'$ (as a conservativity theorem for
-2LTT). We can get uniqueness as well, using the normalization of 2LTT: by
-induction on the (unique) normal forms of $A$ and $t$, we can show that they
+only showed mere existence of $A'$ and $t'$ (as a conservativity theorem for
+2LTT). We can get unique existence as well, using the normalization of 2LTT:
+by induction on the (unique) normal forms of $A$ and $t$, we can show that they
 cannot contain meta-level subterms. This shows that normalization is a sound
 staging algorithm, but in practice we do not want to compute full normal forms;
 we want to compute \emph{meta-level redexes only}. This can be done with a
@@ -110,7 +110,7 @@ compute away during staging.
 dependent type theory on both levels, but with a \emph{first-order function
 type} on the object level. This is defined by splitting $\U^0$ to a universe
 $\V^0$ which is closed under inductive types but not functions, and a universe
-$\C^0$ which has $V^0$ as a sub-universe, and is closed under functions with
+$\C^0$ which has $\V^0$ as a sub-universe, and is closed under functions with
 domains in $\V^0$ and codomains in $\C^0$. This object theory supports
 compilation which requires only lambda lifting, but no closures. On its own, the
 object theory is fairly restricted, but together with staging we have a
@@ -154,7 +154,7 @@ implementation.
 object theory in the presheaf semantics, it does not assume that we have
 presheaves over the initial model (syntax). Hence, $\Code\,A$ is a black box
 without elimination principles. However, if we are interested in staged
-compilation, we can assume the object-level to be syntactic and consistently add
+compilation, we can assume the object level to be syntactic and consistently add
 operations on $\Code\,A$ which rely on that assumption, e.g. conversion
 checking, pattern matching, or induction on normal forms of object-level
 expressions.

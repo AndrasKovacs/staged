@@ -45,6 +45,7 @@ data Ex
   | ExpectedRuntimeType
   | CantInferSigma
   | ExpectedDataCon
+  | SpineError
 
   -- raw unification exception
   | CantUnify

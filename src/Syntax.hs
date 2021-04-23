@@ -52,6 +52,13 @@ data Locals
   | Bind1 Locals Name Ty
   deriving Show
 
+localNames :: Locals -> [Name]
+localNames = \case
+  Empty -> []
+  Define ls x _ _ -> x : localNames ls
+  Bind0 ls x _ _  -> x : localNames ls
+  Bind1 ls x _    -> x : localNames ls
+
 up :: Tm0 -> Tm1
 up (Down t) = t
 up t        = Up t

@@ -25,11 +25,19 @@ import qualified Debug.Trace as Trace
 
 --------------------------------------------------------------------------------
 
+trace :: String -> a -> a
+trace = Trace.trace
+
+traceShow :: Show a => a -> b -> b
+traceShow = Trace.traceShow
+
 traceM :: Applicative m => String -> m ()
 traceM = Trace.traceM
+-- traceM _ = pure ()
 
 traceShowM :: (Show a, Applicative f) => a -> f ()
-traceShowM = Trace.traceShowM
+traceShowM a = Trace.traceShowM a
+-- traceShowM a = pure ()
 
 --------------------------------------------------------------------------------
 
@@ -172,6 +180,11 @@ instance Show Icit where
   show Impl = "Impl"
   show Expl = "Expl"
 
+icit :: Icit -> a -> a -> a
+icit Impl x y = x
+icit Expl x y = y
+{-# inline icit #-}
+
 data CV = C | V | CVVar CVMetaVar
   deriving (Eq, Show)
 
@@ -197,7 +210,13 @@ lvlToIx (Lvl envl) (Lvl l) = Ix (envl - l - 1)
 --------------------------------------------------------------------------------
 
 newtype RawName = RawName {unRawName :: B.ByteString}
-  deriving (Show, IsString, Eq) via B.ByteString
+  deriving (Semigroup, Monoid, Eq) via B.ByteString
+
+instance IsString RawName where
+  fromString = RawName . packUTF8
+
+instance Show RawName where
+  show = unpackUTF8 . unRawName
 
 instance Hashable RawName where
   hashWithSalt salt (RawName str) = fnv164 str salt
@@ -211,8 +230,8 @@ data Name
 
 instance Show Name where
   show (NName x) = show x
-  show NEmpty = "\"_\""
-  show NX = "\"x\""
+  show NEmpty = "_"
+  show NX = "x"
 
 instance IsString Name where
   fromString = NName . fromString

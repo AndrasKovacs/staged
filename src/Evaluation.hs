@@ -24,7 +24,7 @@ var1 :: Dbg => Env -> Ix -> Val1
 var1 (Snoc1 _ v)   0 = v
 var1 (Snoc1 env _) x = var1 env (x - 1)
 var1 (Snoc0 env _) x = var1 env (x - 1)
-var1 _             _ = impossible
+var1 env           x = impossible
 
 metaIO :: Dbg => MetaVar -> IO Val1
 metaIO x = ES.readMeta x >>= \case

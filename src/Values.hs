@@ -4,12 +4,18 @@ module Values where
 import Common
 import qualified Syntax as S
 
-data Close a = Close Env a
-data Env = Nil | Snoc1 Env ~Val1 | Snoc0 Env Lvl
+data Close a = Close Env a deriving Show
+data Env = Nil | Snoc1 Env ~Val1 | Snoc0 Env Lvl deriving Show
 
 wk1Env :: Env -> Env
 wk1Env = \case Snoc1 env _ -> env; _ -> impossible
 {-# inline wk1Env #-}
+
+envLen :: Env -> Int
+envLen = go 0 where
+  go acc Nil = acc
+  go acc (Snoc1 env _) = go (acc + 1) env
+  go acc (Snoc0 env _) = go (acc + 1) env
 
 type Ty = Val1
 
@@ -17,10 +23,12 @@ data Spine
   = SId
   | SApp1 Spine Val1 Icit
   | SField1 Spine Name Int
+  deriving Show
 
 data UnfoldHead
   = Top1 Lvl
   | Solved MetaVar
+  deriving Show
 
 data Val0
   = Var0 Lvl
@@ -37,6 +45,7 @@ data Val0
   | Sub Val0 Val0
   | Mul Val0 Val0
   | IntLit Int
+  deriving Show
 
 data Val1
   = Unfold UnfoldHead Spine ~Val1
@@ -56,3 +65,4 @@ data Val1
   | TyCon Lvl
   | DataCon Lvl Int
   | Int
+  deriving Show

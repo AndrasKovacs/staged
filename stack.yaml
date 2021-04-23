@@ -10,7 +10,7 @@ extra-deps:
 # - flatparse-0.2.0.0
 
 - git: https://github.com/AndrasKovacs/flatparse.git
-  commit: ce42a63d2d2c553773b39617be4d0ccb3d4803bc
+  commit: 21caeaf38a1ae1aef9d4397815c71ea214e49db8
 
 # - /home/kutta/home/Dropbox/src/flatparse/
 

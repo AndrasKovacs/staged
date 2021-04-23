@@ -76,14 +76,14 @@ invert gamma sp = do
       go SId =
         (0, mempty)
       go (SField1 sp x n) = do
-        impossible -- throw CantUnify
+        throw SpineError
       go (SApp1 sp t i) =
         let (!dom, !ren) = go sp in
         case forceFU1 t of
           Var1 (Lvl x) | IM.notMember x ren ->
             ((,) $$! (dom + 1) $$! (IM.insert x dom ren))
           _ ->
-            impossible -- throw CantUnify
+            throw SpineError
 
   let (!dom, !ren) = go sp
   pure $ PRen dom gamma ren
@@ -122,7 +122,7 @@ rename0 m st pren t = let
 
   in case force t of
     Var0  x       -> case IM.lookup (coerce x) (ren pren) of
-                       Nothing -> throwIO CantUnify
+                       Nothing -> throwIO $ OutOfScope x
                        Just x' -> pure $! S.Var0 (lvlToIx (dom pren) x')
     Top0 x        -> pure $! S.Top0 x
     App0 t u      -> S.App0 <$!> go0 t <*!> go0 u
@@ -163,7 +163,7 @@ rename1 m st pren t = let
 
   in case force t of
     Var1  x       -> case IM.lookup (coerce x) (ren pren) of
-                       Nothing -> throwIO CantUnify
+                       Nothing -> throwIO $ OutOfScope x
                        Just x' -> pure $! S.Var1 (lvlToIx (dom pren) x')
     DataCon x i   -> pure $! S.DataCon x i
     RecCon1 fs    -> S.RecCon1 <$!> mapM go1 fs
@@ -201,7 +201,7 @@ lams l a t = go l 0 a t where
 
 solveMeta :: Dbg => Lvl -> ConvState -> MetaVar -> Spine -> Val1 -> IO ()
 solveMeta l st m sp rhs = do
-  traceShowM ("solve", m, quote1 l DoUnfold (Flex m sp), quote1 l DoUnfold rhs)
+  -- traceShowM ("solve", quote1 l DoUnfold (Flex m sp), quote1 l DoUnfold rhs)
   ma <- ES.unsolvedMetaTy m
   when (st == CSFlex) $ impossible -- throwIO CantUnify
   pren <- invert l sp

@@ -20,6 +20,7 @@ import Cxt
 import ElabState
 import InCxt
 import Exceptions
+import Pretty
 
 
 
@@ -74,6 +75,11 @@ insertTmU' cxt inf = inf >>= \case
   Tm0 t a cv -> pure $! Tm0 t a cv
   Tm1 t a    -> do {(t, a) <- insert' cxt (pure (t, a)); pure (Tm1 t a)}
 
+insertTmU :: Dbg => Cxt -> IO TmU -> IO TmU
+insertTmU cxt inf = inf >>= \case
+  Tm0 t a cv -> pure $! Tm0 t a cv
+  Tm1 t a    -> do {(t, a) <- insert cxt (pure (t, a)); pure (Tm1 t a)}
+
 insertUntilName :: Dbg => Cxt -> P.Tm -> RawName -> IO (S.Tm1, V.Ty) -> IO (S.Tm1, V.Ty)
 insertUntilName cxt topT topX inf = do {(t, a) <- inf; go t a} where
   go :: S.Tm1 -> V.Ty -> IO (S.Tm1, V.Ty)
@@ -107,7 +113,6 @@ subtype0 cxt a cv a' cv' = do
 -- Coercion in U1 (explicit)
 coe1 :: Dbg => Cxt -> S.Tm1 -> V.Ty -> V.Ty -> IO S.Tm1
 coe1 cxt t a a' = do
-  traceShowM ("coe", t, quote1 cxt a, quote1 cxt a')
   maybe t id <$> go cxt t a a' where
 
   -- ugly helper for record structural rule
@@ -141,21 +146,23 @@ coe1 cxt t a a' = do
   liftFun :: Cxt -> V.Ty -> V.Ty -> V.Ty
   liftFun cxt a b =
     let qb = Eval.quote1 (_lvl cxt + 1) DontUnfold b
-    in V.Pi NEmpty Expl (V.Lift V a) (V.Close V.Nil (S.Lift C qb))
+    in V.Pi NEmpty Expl (V.Lift V a) (V.Close (_env cxt) (S.Lift C qb))
 
   --  ^(a -> b) -> ^a -> ^b
   upFun :: Cxt -> V.Ty -> S.Tm1 -> S.Tm1
   upFun cxt a t =
-    S.Lam1 NEmpty Expl (S.Lift V (quote1 cxt a)) (S.Up (S.App0 (S.Down (S.Wk1 t)) (S.Down (S.Var1 0))))
+    S.Lam1 NEmpty Expl (S.Lift V (quote1 cxt a))
+       (S.Up (S.App0 (S.Down (S.Wk1 t)) (S.Down (S.Var1 0))))
 
   --  (^a -> ^b) -> ^(a -> b)
   downFun :: Cxt -> V.Ty -> S.Tm1 -> S.Tm1
   downFun cxt a t =
-    S.Up (S.Lam0 NEmpty (quote1 cxt a) (S.Down (S.App1 (S.Wk1 t) (S.Var1 0) Expl)))
+    S.Up (S.Lam0 NEmpty (quote1 cxt a)
+         (S.Down (S.App1 (S.Wk1 t) (S.Var1 0) Expl)))
 
   -- compute ^(Rec0 as) to Rec1 (map ^ as)
   liftRec0 :: Cxt -> Fields V.Ty -> V.Ty
-  liftRec0 cxt as = V.Rec1 (V.Close V.Nil (go (_lvl cxt) as)) where
+  liftRec0 cxt as = V.Rec1 (V.Close (_env cxt) (go (_lvl cxt) as)) where
     go :: Lvl -> Fields V.Ty -> Fields S.Tm1
     go l FNil           = FNil
     go l (FCons x a as) =
@@ -172,7 +179,6 @@ coe1 cxt t a a' = do
   downRecCon0 as t = S.Up (S.RecCon0 (go 0 as)) where
     go ix FNil           = FNil
     go ix (FCons x _ as) = FCons x (S.Down (S.Field1 t x ix)) (go (ix + 1) as)
-
 
   go :: Dbg => Cxt -> S.Tm1 -> V.Ty -> V.Ty -> IO (Maybe S.Tm1)
   go cxt t a a' = case (forceFU1 a, forceFU1 a') of
@@ -235,7 +241,7 @@ coe1 cxt t a a' = do
     -- fallback
     ------------------------------------------------------------
 
-    (a, a') ->
+    (a, a') -> do
       Nothing <$ unify1 cxt a a'
 
 tyAnnot :: Cxt -> Maybe P.Tm -> U -> IO S.Ty
@@ -312,9 +318,7 @@ check0 cxt topT topA cv = case (topT, forceFU1 topA, forceCV cv) of
 
   (t, topA, cv) -> do
     (t, a, cv') <- infer0 cxt t
-    traceShowM ("infer0-d", t, quote1 cxt a, cv', quote1 cxt topA, cv)
     decorateEx cxt topT $ subtype0 cxt a cv' topA cv
-    traceM "coerced"
     pure t
 
 checkRec0 :: Dbg => Cxt -> [(Span, P.Tm)] -> IO (Fields S.Ty)
@@ -370,8 +374,8 @@ check1 cxt topT topA = case (topT, forceFU1 topA) of
     | case i of P.NoName i                    -> i == i'
                 P.Named (spanToName cxt -> x) -> x == x' -> do
     let qa' = quote1 cxt a'
-    S.Lam1 x' i' qa' <$!>
-      check1 (bind1' x (quote1 cxt a') a' cxt) t (b' $$ V.Var1 (_lvl cxt))
+    S.Lam1 x i' qa' <$!>
+      check1 (bind1' x qa' a' cxt) t (b' $$ V.Var1 (_lvl cxt))
 
   (t, V.Pi x' Impl a' b') -> do
     let qa' = quote1 cxt a'
@@ -406,7 +410,6 @@ check1 cxt topT topA = case (topT, forceFU1 topA) of
     S.Lift cv <$!> check1 cxt t (V.U (U0 cv))
 
   (P.RecCon _ ts, V.Rec1 as) -> do
-
     S.RecCon1 <$!> checkRecCon1 cxt topT ts as
 
   (P.Tuple _ ts, V.Rec1 as) -> do
@@ -452,7 +455,7 @@ infer0 cxt topT = case topT of
       (t, b, bcv) <- infer0 cxt' t
       pure $! (S.Lam0 x a t, V.Fun va b, C)
 
-  topT -> infer cxt topT >>= \case
+  topT -> insertTmU cxt (infer cxt topT) >>= \case
     Tm0 t a cv ->
       pure (t, a, cv)
     Tm1 t a -> case forceFU1 a of
@@ -462,7 +465,6 @@ infer0 cxt topT = case topT of
 
       -- PRUNING
       a -> do
-        traceM "suuss"
         cv <- freshCV
         a' <- eval1 cxt <$!> freshMeta cxt (S.U (U0 cv))
         t  <- S.down <$!> coe1 cxt t a (V.Lift cv a')
@@ -474,18 +476,15 @@ infer1 cxt topT = case topT of
   P.Lam _ (bindToName cxt -> x) i a t -> case i of
     P.Named{}  -> elabError cxt topT NoNamedLambdaInference
     P.NoName i -> do
-      traceM "inferlam"
       a <- tyAnnot cxt a U1
-      let va = eval1 cxt a
+      let va   = eval1 cxt a
       let cxt' = bind1' x a va cxt
-      traceM "infer1"
-      (t, b) <- infer1 cxt' t
+      (t, b) <- insert cxt' $ infer1 cxt' t
       let qb = quote1 cxt' b
-      pure $! (S.Lam1 x i a t, V.Pi x i va (V.Close V.Nil qb))
+      pure $! (S.Lam1 x i a t, V.Pi x i va (V.Close (_env cxt) qb))
 
   t -> infer cxt t >>= \case
     Tm0 t a cv -> do
-      traceM "fosdkfsodk"
       let t' = S.up t in pure (t', V.Lift cv a)
     Tm1 t a -> pure (t, a)
 
@@ -522,8 +521,8 @@ coeToPi cxt a i t = case forceFU1 a of
   a -> do
     a' <- freshMeta cxt (S.U U1)
     let va' = eval1 cxt a'
-    b' <- V.Close V.Nil <$!> freshMeta (bind1' NX a' va' cxt) (S.U U1)
-    t <- coe1 cxt t a (V.Pi NX i va' b')
+    b' <- V.Close (_env cxt) <$!> freshMeta (bind1' NX a' va' cxt) (S.U U1)
+    t  <- coe1 cxt t a (V.Pi NX i va' b')
     pure (t, NX, va', b')
 
 infer :: Dbg => Cxt -> P.Tm -> IO TmU
@@ -573,15 +572,15 @@ infer cxt topT = let
         a <- tyAnnot cxt a U1
         let va = eval1 cxt a
         let cxt' = bind1' x a va cxt
-        (t, b) <- infer1 cxt' t
+        (t, b) <- insert cxt' $ infer1 cxt' t
         let qb = quote1 cxt' b
-        pure $ Tm1 (S.Lam1 x Impl a t) (V.Pi x Impl va (V.Close V.Nil qb))
+        pure $ Tm1 (S.Lam1 x Impl a t) (V.Pi x Impl va (V.Close (_env cxt) qb))
 
     P.EmptyRec{} -> err CantInfer
 
     -- 0/1 ambiguity resolution based on domain universe
     P.Pi _ P.DontBind Expl a b -> do
-      (a, au) <- infer1 cxt a
+      (a, au) <- insert cxt $ infer1 cxt a
       case forceFU1 au of
         V.U (U0 cv) -> do
           unifyCV cv V
@@ -640,7 +639,7 @@ infer cxt topT = let
       err CantInfer
 
     P.Down _ t -> do
-      (t, a) <- infer1 cxt t
+      (t, a) <- insert cxt $ infer1 cxt t
       case forceFU1 a of
         V.Lift cv a -> do
           let t' = S.down t
@@ -652,7 +651,7 @@ infer cxt topT = let
       impossible
 
     P.Rec _ ((spanToName cxt -> x, a):as) -> do
-      (a, au) <- infer1 cxt a
+      (a, au) <- insert cxt $ infer1 cxt a
       case forceFU1 au of
         V.U (U0 cv) -> do
           unifyCV cv V
@@ -668,7 +667,7 @@ infer cxt topT = let
       impossible
 
     P.RecCon _ ((spanToName cxt -> x, t):ts) -> do
-      t <- infer cxt t
+      t <- insertTmU cxt $ infer cxt t
       case t of
         Tm0 t a cv -> do
           unifyCV cv V
@@ -681,7 +680,7 @@ infer cxt topT = let
     P.Tuple _ (t:ts) -> err CantInferTuple
 
     P.Field t (spanToRawName cxt -> x) -> do
-      t <- infer cxt t
+      t <- insertTmU cxt $ infer cxt t
       case t of
         Tm0 t a _ -> do
           case forceFU1 a of

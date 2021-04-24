@@ -1,7 +1,7 @@
 
 module Evaluation (
     ($$), ($$$), dive, dive2, diveN, up, down, eval0, eval1
-  , forceU, forceCV, forceF0, forceFU0, forceF1, forceFU1
+  , forceF0, forceFU0, forceF1, forceFU1
   , quote0, quote1, app1Sp, app1, nfNil0, nfNil1, field1
   )
   where
@@ -83,7 +83,8 @@ app1 t u i = case t of
   Lam1 x i a t   -> t $$ u
   Flex h sp      -> Flex h (SApp1 sp u i)
   Unfold h sp t  -> Unfold h (SApp1 sp u i) (app1 t u i)
-  t              -> App1 t u i
+  Rigid h sp     -> Rigid h (SApp1 sp u i)
+  _              -> impossible
 
 lookupField :: Dbg => Fields a -> Int -> a
 lookupField (FCons x a fs) 0 = a
@@ -95,7 +96,8 @@ field1 t x n = case t of
   RecCon1 ts    -> lookupField ts n
   Flex h sp     -> Flex h (SField1 sp x n)
   Unfold h sp t -> Unfold h (SField1 sp x n) (field1 t x n)
-  t             -> Field1 t x n
+  Rigid h sp    -> Rigid h (SField1 sp x n)
+  _             -> impossible
 
 inserted :: Dbg => Val1 -> Env -> S.Locals -> Val1
 inserted t env ls = case (env, ls) of
@@ -121,6 +123,7 @@ eval0 env = \case
   S.Mul t u      -> Mul (eval0 env t) (eval0 env u)
   S.Sub t u      -> Sub (eval0 env t) (eval0 env u)
   S.IntLit n     -> IntLit n
+  S.Wk0 t        -> eval0 (wk0Env env) t
 
 eval1 :: Dbg => Env -> S.Tm1 -> Val1
 eval1 env = \case
@@ -130,20 +133,24 @@ eval1 env = \case
   S.Pi x i a b    -> Pi x i (eval1 env a) (Close env b)
   S.Lam1 x i a t  -> Lam1 x i (eval1 env a) (Close env t)
   S.App1 t u i    -> app1 (eval1 env t) (eval1 env u) i
-  S.Fun a b       -> Fun (eval1 env a) (eval1 env b)
-  S.U u           -> U u
+  S.Fun a b bcv   -> Fun (eval1 env a) (eval1 env b) (eval1 env bcv)
+  S.U0 cv         -> U0 (eval1 env cv)
   S.Rec0 as       -> Rec0 (eval1 env <$> as)
   S.Rec1 as       -> Rec1 (Close env as)
   S.RecCon1 ts    -> RecCon1 (eval1 env <$> ts)
   S.Field1 t x n  -> field1 (eval1 env t) x n
-  S.TyCon x       -> TyCon x
-  S.DataCon  x n  -> DataCon x n
-  S.Lift cv a     -> Lift cv (eval1 env a)
+  S.TyCon x       -> Rigid (TyCon x) SId
+  S.DataCon  x n  -> Rigid (DataCon x n) SId
+  S.Lift cv a     -> Lift (eval1 env cv) (eval1 env a)
   S.Up t          -> up (eval0 env t)
   S.Inserted x ls -> runIO do {t <- metaIO x; pure $! inserted t env ls}
   S.Meta x        -> meta x
   S.Wk1 t         -> eval1 (wk1Env env) t
   S.Int           -> Int
+  S.U1            -> U1
+  S.CV            -> CV
+  S.Comp          -> Comp
+  S.Val           -> Val
 
 --------------------------------------------------------------------------------
 
@@ -152,18 +159,6 @@ app1Sp t = \case
   SId            -> t
   SApp1 sp u i   -> app1 (app1Sp t sp) u i
   SField1 sp x n -> field1 (app1Sp t sp) x n
-
-forceCV :: CV -> CV
-forceCV = \case
-  CVVar x -> runIO $ ES.readCVMeta x >>= \case
-               ES.CVSolved cv -> pure $! forceCV $! cv
-               _              -> pure $! CVVar x
-  cv -> cv
-
-forceU :: U -> U
-forceU = \case
-  U0 cv -> U0 (forceCV cv)
-  U1    -> U1
 
 -- | Force Flex only.
 forceF1 :: Val1 -> Val1
@@ -218,6 +213,13 @@ quote1 l st t = let
   goUH = \case Solved x -> S.Meta x; Top1 x -> S.Top1 x
   {-# inline goUH #-}
 
+  goRH :: Lvl -> RigidHead -> S.Tm1
+  goRH l = \case
+    RHVar1 x     -> S.Var1 (lvlToIx l x)
+    TyCon x      -> S.TyCon x
+    DataCon x ix -> S.DataCon x ix
+  {-# inline goRH #-}
+
   goClose1 :: Close S.Tm1 -> S.Tm1
   goClose1 t = quote1 (l + 1) st (t $$ Var1 l)
   {-# inline goClose1 #-}
@@ -231,21 +233,23 @@ quote1 l st t = let
   in case force t of
     Unfold h sp _ -> goSp (goUH h) sp
     Flex x sp     -> goSp (S.Meta x) sp
+    Rigid h sp    -> goSp (goRH l h) sp
     Var1 x        -> S.Var1 (lvlToIx l x)
-    Lift cv t     -> S.Lift cv (go1 t)
+    Lift cv t     -> S.Lift (go1 cv) (go1 t)
     Up t          -> S.Up (go0 t)
-    TyCon x       -> S.TyCon x
-    DataCon  x n  -> S.DataCon x n
     Pi x i a b    -> S.Pi x i (go1 a) (goClose1 b)
     Lam1 x i a t  -> S.Lam1 x i (go1 a) (goClose1 t)
-    App1 t u i    -> S.App1 (go1 t) (go1 u) i
-    Fun a b       -> S.Fun (go1 a) (go1 b)
+    Fun a b bcv   -> S.Fun (go1 a) (go1 b) (go1 bcv)
     Rec0 as       -> S.Rec0 (go1 <$> as)
     Rec1 as       -> S.Rec1 (goRec1 as)
     RecCon1 ts    -> S.RecCon1 (go1 <$> ts)
-    Field1 t x n  -> S.Field1 (go1 t) x n
-    U u           -> S.U u
     Int           -> S.Int
+    U1            -> S.U1
+    U0 cv         -> S.U0 (go1 cv)
+    Comp          -> S.Comp
+    Val           -> S.Val
+    CV            -> S.CV
+
 
 quoteCases :: Dbg =>Lvl -> Unfolding -> Close (Cases S.Tm0) -> Cases S.Tm0
 quoteCases l st (Close env cs) = case cs of

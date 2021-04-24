@@ -6,7 +6,10 @@ import qualified Syntax as S
 import qualified Values as V
 import Data.HashMap.Strict
 
-data NameInfo  = NameInfo Lvl V.Ty U
+data NameInfo
+ = NameInfo0 Lvl V.Ty V.CV
+ | NameInfo1 Lvl V.Ty
+
 type NameTable = HashMap RawName NameInfo
 
 data Cxt = Cxt {

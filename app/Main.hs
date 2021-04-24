@@ -33,6 +33,19 @@ displayState = do
   let nl = putStrLn ""
 
   nl
+  putStrLn "Metacontext"
+  putStrLn (replicate 60 '-')
+  nl
+  D.forIx metaCxt \i -> \case
+    Unsolved a -> do
+      putStrLn ("?" ++ show i ++ " : " ++ showVal1Top a)
+      nl
+    Solved t a -> do
+      putStrLn ("?" ++ show i ++ " : " ++ showVal1Top a)
+      putStrLn ("  = " ++ showVal1Top t)
+      nl
+
+  nl
   putStrLn "Top environment"
   putStrLn (replicate 60 '-')
   nl
@@ -40,34 +53,17 @@ displayState = do
     TEDef0 a va t vt cv x _ -> do
       putStrLn (show x ++ " : " ++ showTm1Top a)
       putStrLn ("  = " ++ showTm0Top t)
+      nl
     TEDef1 a va t vt x _ -> do
       putStrLn (show x ++ " : " ++ showTm1Top a)
       putStrLn ("  = " ++ showTm1Top t)
+      nl
     TETyCon{} -> do
       putStrLn "<tycon not supported>"
     TEDataCon{} -> do
       putStrLn "<datacon not supported>"
 
-  nl
-  putStrLn "Metacontext"
-  putStrLn (replicate 60 '-')
-  nl
-  D.forIx metaCxt \i -> \case
-    Unsolved a -> do
-      putStrLn ("?" ++ show i ++ " : " ++ showVal1Top a)
-    Solved t a -> do
-      putStrLn ("?" ++ show i ++ " : " ++ showVal1Top a)
-      putStrLn ("  = " ++ showVal1Top t)
 
-  nl
-  putStrLn "CV context"
-  putStrLn (replicate 60 '-')
-  nl
-  D.forIx cvCxt \i -> \case
-    CVUnsolved   -> do
-      putStrLn ("?" ++ show i)
-    CVSolved cv  -> do
-      putStrLn ("?" ++ show i ++ " = " ++ show cv)
 
 --------------------------------------------------------------------------------
 
@@ -125,21 +121,43 @@ test str = do
   displayState
 
 p1 = unlines [
-  -- "Alg = [B: MTy, true: B, false: B]",
+  -- "Alg = [B: U1, true: B, false: B]",
   -- "Bool = (A : Alg) → A.B",
   -- "id : Bool → Bool = λ b A. b [A.B, A.true, A.false]",
 
-  -- "NatAlg = [N : MTy, zero : N, suc: N → N]",
-  -- "Nat    = (A : NatAlg) → A.N",
-  -- "zero   = λ (A : NatAlg). A.zero",
-  -- "suc : Nat → Nat = λ n A. A.suc (n A)",
-  -- "id  : Nat → Nat = λ n A. n [A.N, A.zero, A.suc]",
-  -- "add : Nat → Nat → Nat = λ a b A. a [A.N, b A, A.suc]",
+  "NatAlg = [N : U1, zero : N, suc: N → N]",
+  "Nat    = (A : NatAlg) → A.N",
+  "zero   = λ (A : NatAlg). A.zero",
+  "suc : Nat → Nat = λ n A. A.suc (n A)",
+  "id  : Nat → Nat = λ n A. n [A.N, A.zero, A.suc]",
+  "add : Nat → Nat → Nat = λ a b A. a [A.N, b A, A.suc]",
+  "n5 = suc (suc (suc (suc (suc zero))))",
 
-  -- "foo : {A : MTy} → A → A = λ {A} B x. x",
+  "id : {i}{A : U0 i} → A → A = λ x. x",
 
-  "id : {A : CTy} → A → A = λ x. x",
-  "f : ^Int → ^Int = id"
+  "comp : {i j k}{A : U0 i}{B : U0 j}{C : U0 k}",
+  "     → (B → C) → (A → B) → A → C",
+  "  = λ f g x. f (g x)",
+
+  "id2 : Int → Int := id",
+  "f : Int → Int = λ x. x + x + 10",
+  "g := comp id (comp f f)",
+  "h = comp g id",
+
+  "Sg = λ A (B : A → U1). [fst : A, snd: B fst]",
+
+  "Pointed = Sg U1 (λ A. A)",
+
+  "SmallFunctor : U1 = [F : U0 Val → U1, map : {A B : U0 _} → (A → B) → F A → F B]",
+  "BigFunctor   : U1 = [F : U1 → U1, map : {A B} → (A → B) → F A → F B]"
+
+  -- "foo : {A : U1} → A → A = λ {A} B x. x"
+
+  -- "foo = 100",
+  -- "bar := foo"
+
+  -- "id : Int → Int = λ x. x",
+  -- "f : Int → Int := id"
 
   -- "id2 : Int → Int := id",
   -- "foo := λ x. x + 10",

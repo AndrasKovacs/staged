@@ -185,12 +185,6 @@ icit Impl x y = x
 icit Expl x y = y
 {-# inline icit #-}
 
-data CV = C | V | CVVar CVMetaVar
-  deriving (Eq, Show)
-
-data U = U0 CV | U1
-  deriving (Eq, Show)
-
 newtype Ix = Ix Int
   deriving (Eq, Ord, Show, Num) via Int
 
@@ -198,9 +192,6 @@ newtype Lvl = Lvl Int
   deriving (Eq, Ord, Show, Num, Bits) via Int
 
 newtype MetaVar = MetaVar Int
-  deriving (Eq, Ord, Show, Num) via Int
-
-newtype CVMetaVar = CVMetaVar Int
   deriving (Eq, Ord, Show, Num) via Int
 
 lvlToIx :: Lvl -> Lvl -> Ix

@@ -1,15 +1,13 @@
 
 module InCxt (
     eval0, eval1
-  , Eval.forceU
-  , Eval.forceF0, Eval.forceFU0, Eval.forceF1, Eval.forceFU1, Eval.forceCV
+  , Eval.forceF0, Eval.forceFU0, Eval.forceF1, Eval.forceFU1
   , Eval.up, Eval.down
   , Eval.app1, (Eval.$$), (Eval.$$$)
   , quote0, quote1
   , unify0, unify1
   , Unif.freshMeta
   , Unif.freshCV
-  , Unif.unifyCV
   ) where
 
 import Common

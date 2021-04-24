@@ -15,6 +15,8 @@ import Exceptions
 import qualified Values as V
 import qualified Evaluation as Eval
 
+--------------------------------------------------------------------------------
+
 showTm0 :: Cxt -> Tm0 -> String
 showTm0 cxt t = tm0 tmp (localNames (_locals cxt)) t []
 
@@ -125,8 +127,8 @@ inserted :: Int -> [Name] -> MetaVar -> Ix -> Locals -> ShowS
 inserted p ns m ix = \case
   Empty           -> (("?"++show m)++)
   Define ls _ _ _ -> inserted p ns m (ix + 1) ls
-  Bind0 ls _ _ _  -> par p appp (inserted p ns m (ix + 1) ls . (' ':) . var ns ix)
-  Bind1 ls _ _    -> par p appp (inserted p ns m (ix + 1) ls . (' ':) . var ns ix)
+  Bind0 ls _ _ _  -> par p appp (inserted appp ns m (ix + 1) ls . (' ':) . var ns ix)
+  Bind1 ls _ _    -> par p appp (inserted appp ns m (ix + 1) ls . (' ':) . var ns ix)
 
 tm0 :: Int -> [Name] -> Tm0 -> ShowS
 tm0 p ns = \case
@@ -156,6 +158,7 @@ tm0 p ns = \case
   Mul t u      -> par p mulp $ tm0 mulp ns t . (" * "++) . tm0 appp ns u
   App0 t u     -> par p appp $ tm0 appp ns t . (' ':) . tm0 projp ns u
   IntLit n     -> (show n++)
+  Wk0 t        -> par p appp (("_wk_ "++).tm0 p (tail ns) t)
 
 piBind ns x Expl a = showParen True (name x . (" : "++) . tm1 tmp ns a)
 piBind ns x Impl a = brace          (name x . (" : "++) . tm1 tmp ns a)
@@ -186,15 +189,16 @@ tm1 p ns = \case
   App1 t u Expl  -> par p appp $ tm1 appp ns t . (' ':) . tm1 projp ns u
   App1 t u Impl  -> par p appp $ tm1 appp ns t . (' ':) . brace (tm1 tmp ns u)
 
-  Fun a b        -> par p pip $ tm1 subp ns a . (" → "++) . tm1 pip ns b
+  Fun a b _      -> par p pip $ tm1 subp ns a . (" → "++) . tm1 pip ns b
 
-  U u            -> case u of
-                      U0 C         -> ("CTy"++)
-                      U0 V         -> ("VTy"++)
-                      U0 (CVVar x) -> par p appp (("U0 ?"++).(show x++))
-                      U1           -> ("MTy"++)
+  U1             -> ("U1"++)
+  U0 cv          -> par p appp $ ("U0 "++) . tm1 projp ns cv
+  CV             -> ("CV"++)
+  Comp           -> ("Comp"++)
+  Val            -> ("Val"++)
 
-  Lift _ a       -> par p appp $ ("^"++) . tm1 projp ns a
+  -- Lift cv a      -> par p appp $ ("^ "++). tm1 projp ns cv . (" "++) . tm1 projp ns a
+  Lift cv a      -> par p appp $ ("^"++).tm1 projp ns a
 
   Up t           -> ('<':). tm0 tmp ns t. ('>':)
 
@@ -217,13 +221,15 @@ tm1 p ns = \case
 
 --------------------------------------------------------------------------------
 
+-- TODO
 showEx :: [Name] -> Ex -> String
 showEx ns = \case
+  UnifyError0 t u ->
+    printf "Can't unify\n\n  %s\n\nwith\n\n  %s\n"
+      (tm0 tmp ns t [])
+      (tm0 tmp ns u [])
   UnifyError1 t u ->
     printf "Can't unify\n\n  %s\n\nwith\n\n  %s\n"
       (tm1 tmp ns t [])
       (tm1 tmp ns u [])
-  CVUnifyError cv cv' ->
-    printf "Can't unify\n\n  %s\n\nwith\n\n  %s\n"
-          (show cv) (show cv')
   e -> show e

@@ -53,8 +53,11 @@ freshMeta cxt ~a = do
   m <- ES.newMeta va
   pure $! S.Inserted m (_locals cxt)
 
-freshCV :: IO CV
-freshCV = CVVar <$!> ES.newCVMeta
+freshCV :: Cxt -> IO S.CV
+freshCV cxt = do
+  let ~va = eval1 Nil (closeType (_locals cxt) S.CV)
+  m <- ES.newMeta va
+  pure $! S.Inserted m (_locals cxt)
 {-# inline freshCV #-}
 
 -- Solutions
@@ -142,6 +145,7 @@ rename1 :: Dbg => MetaVar -> ConvState -> PartialRenaming -> Val1 -> IO S.Tm1
 rename1 m st pren t = let
   go0 = rename0 m st pren; {-# inline go0 #-}
   go1 = rename1 m st pren; {-# inline go1 #-}
+  goSp = renameSp m st pren; {-# inline goSp #-}
 
   goClose1 t = rename1 m st (lift pren) (t $$ Var1 (cod pren));
   {-# inline goClose1 #-}
@@ -154,38 +158,45 @@ rename1 m st pren t = let
   goUH = \case Top1 x -> S.Top1 x; Solved x -> S.Meta x
   {-# inline goUH #-}
 
+  goRH = \case
+    RHVar1 x     -> S.Var1 (lvlToIx (dom pren) x)
+    TyCon x      -> S.TyCon x
+    DataCon x ix -> S.DataCon x ix
+  {-# inline goRH #-}
+
   goRec1 :: PartialRenaming -> Close (Fields S.Ty) -> IO (Fields S.Ty)
   goRec1 pren (Close env FNil) =
     pure FNil
   goRec1 pren (Close env (FCons x a as)) =
-    FCons x <$!>  rename1 m st pren (eval1 env a)
+    FCons x <$!> rename1 m st pren (eval1 env a)
             <*!> goRec1 (lift pren) (Close (Snoc1 env (Var1 (cod pren))) as)
 
   in case force t of
-    Var1  x       -> case IM.lookup (coerce x) (ren pren) of
-                       Nothing -> throwIO $ OutOfScope x
-                       Just x' -> pure $! S.Var1 (lvlToIx (dom pren) x')
-    DataCon x i   -> pure $! S.DataCon x i
-    RecCon1 fs    -> S.RecCon1 <$!> mapM go1 fs
-    Field1 t x n  -> S.Field1 <$!> go1 t <*!> pure x <*!> pure n
-    Flex x sp     -> if x == m then throwIO (OccursCheck x)
-                               else renameSp m CSFlex pren (S.Meta x) sp
-    Unfold h sp t -> case st of
-                       CSRigid -> renameSp m CSFlex pren (goUH h) sp
-                                  `catch` \_ -> rename1 m CSFull pren t
-                       CSFlex  -> throwIO CantUnify
-                       _       -> impossible
-    Pi x i a b    -> S.Pi x i <$!> go1 a <*!> goClose1 b
-    Fun a b       -> S.Fun <$!> go1 a <*!> go1 b
-    Lam1 x i a t  -> S.Lam1 x i <$!> go1 a <*!> goClose1 t
-    Up t          -> S.Up <$!> go0 t
-    Lift cv a     -> S.Lift cv <$!> go1 a
-    Rec1 as       -> S.Rec1 <$!> goRec1 pren as
-    Rec0 as       -> S.Rec1 <$!> mapM go1 as
-    U u           -> pure $! S.U u
-    TyCon x       -> pure $! S.TyCon x
-    App1 t u i    -> S.App1 <$!> go1 t <*!> go1 u <*!> pure i
-    Int           -> pure $! S.Int
+    Var1  x         -> case IM.lookup (coerce x) (ren pren) of
+                         Nothing -> throwIO $ OutOfScope x
+                         Just x' -> pure $! S.Var1 (lvlToIx (dom pren) x')
+    RecCon1 fs      -> S.RecCon1 <$!> mapM go1 fs
+    Flex x sp       -> if x == m then throwIO (OccursCheck x)
+                                 else renameSp m CSFlex pren (S.Meta x) sp
+    Unfold h sp t   -> case st of
+                         CSRigid -> renameSp m CSFlex pren (goUH h) sp
+                                    `catch` \_ -> rename1 m CSFull pren t
+                         CSFlex  -> throwIO CantUnify
+                         _       -> impossible
+    Rigid h sp      -> goSp (goRH h) sp
+    Pi x i a b      -> S.Pi x i <$!> go1 a <*!> goClose1 b
+    Fun a b bcv     -> S.Fun <$!> go1 a <*!> go1 b <*!> go1 bcv
+    Lam1 x i a t    -> S.Lam1 x i <$!> go1 a <*!> goClose1 t
+    Up t            -> S.Up <$!> go0 t
+    Lift cv a       -> S.Lift <$!> go1 cv <*!> go1 a
+    Rec1 as         -> S.Rec1 <$!> goRec1 pren as
+    Rec0 as         -> S.Rec1 <$!> mapM go1 as
+    U1              -> pure S.U1
+    U0 cv           -> S.U0 <$!> go1 cv
+    CV              -> pure S.CV
+    Comp            -> pure S.Comp
+    Val             -> pure S.Val
+    Int             -> pure $! S.Int
 
 
 -- | Wrap a term in Lvl number of lambdas, getting the domain types
@@ -197,13 +208,13 @@ lams l a t = go l 0 a t where
   go l l' a t = case forceFU1 a of
     Pi x i a b ->
       S.Lam1 x i (quote1 l' DontUnfold a) (go l (l' + 1) (b $$ Var1 l') t)
-    _ -> impossible
+    foo -> error (show foo)
 
-solveMeta :: Dbg => Lvl -> ConvState -> MetaVar -> Spine -> Val1 -> IO ()
-solveMeta l st m sp rhs = do
+solve :: Dbg => Lvl -> ConvState -> MetaVar -> Spine -> Val1 -> IO ()
+solve l st m sp rhs = do
   -- traceShowM ("solve", quote1 l DoUnfold (Flex m sp), quote1 l DoUnfold rhs)
   ma <- ES.unsolvedMetaTy m
-  when (st == CSFlex) $ impossible -- throwIO CantUnify
+  when (st == CSFlex) $ throwIO CantUnify
   pren <- invert l sp
   rhs  <- rename1 m CSRigid pren rhs
   let sol = eval1 Nil (lams (dom pren) ma rhs)
@@ -223,21 +234,6 @@ unifySp l st topT sp topT' sp' = case (sp, sp') of
 unifyEq :: (Eq a, Show a) => a -> a -> IO ()
 unifyEq a a' = unless (a == a') (throwIO $ EqUnifyError a a')
 {-# inline unifyEq #-}
-
-unifyU :: U -> U -> IO ()
-unifyU u u' = case (u, u') of
-  (U0 cv, U0 cv') -> unifyCV cv cv'
-  (U1   , U1    ) -> pure ()
-  (u    , u'    ) -> throwIO $ UUnifyError u u'
-
-unifyCV :: Dbg => CV -> CV -> IO ()
-unifyCV cv cv' = case (forceCV cv, forceCV cv') of
-  (C       , C        ) -> pure ()
-  (V       , V        ) -> pure ()
-  (CVVar x , CVVar x' ) -> unifyEq x x'
-  (CVVar x , cv'      ) -> D.write ES.cvCxt (coerce x)  (ES.CVSolved cv')
-  (cv      , CVVar x' ) -> D.write ES.cvCxt (coerce x') (ES.CVSolved cv)
-  (cv      , cv'      ) -> impossible -- throwIO $ CVUnifyError cv cv'
 
 unify0 :: Dbg => Lvl -> ConvState -> Val0 -> Val0 -> IO ()
 unify0 l st t t' = let
@@ -352,32 +348,32 @@ unify1 l st t t' = let
       CSFlex  -> err t (Unfold h' sp' t')
       _       -> impossible
 
-    -- canonical/rigid
-    (Var1 x       , Var1 x'         ) -> unifyEq x x'
-    (Lift cv a    , Lift cv' a'     ) -> unifyCV cv cv' >> go1 a a'
-    (Up t         , Up t'           ) -> go0 t t'
-    (TyCon x      , TyCon x'        ) -> unifyEq x x'
-    (DataCon  x n , DataCon x' n'   ) -> unifyEq n n'
-    (Pi x i a b   , Pi x' i' a' b'  ) -> go1 a a' >> goClose1 b b'
-    (App1 t u _   , App1 t' u' _    ) -> go1 t t' >> go1 u u'
-    (Fun a b      , Fun a' b'       ) -> go1 a a' >> go1 b b'
-    (Rec0 as      , Rec0 as'        ) -> goRec0 as as'
-    (Rec1 as      , Rec1 as'        ) -> goRec1 l as as'
-    (RecCon1 ts   , RecCon1 ts'     ) -> goRecCon1 ts ts'
-    (Field1 t x n , Field1 t' x' n' ) -> go1 t t' >> unifyEq n n'
-    (U u          , U u'            ) -> unifyU u u'
-    (Int          , Int             ) -> pure ()
+    -- rigid & canonical
+    (t@(Rigid h sp)  , t'@(Rigid h' sp')   ) -> unifyEq h h' >> goSp t sp t' sp'
+    (Var1 x          , Var1 x'             ) -> unifyEq x x'
+    (Lift cv a       , Lift cv' a'         ) -> go1 cv cv' >> go1 a a'
+    (Up t            , Up t'               ) -> go0 t t'
+    (Pi x i a b      , Pi x' i' a' b'      ) -> go1 a a' >> goClose1 b b'
+    (Fun a b bcv     , Fun a' b' bcv'      ) -> go1 a a' >> go1 bcv bcv' >> go1 b b'
+    (Rec0 as         , Rec0 as'            ) -> goRec0 as as'
+    (Rec1 as         , Rec1 as'            ) -> goRec1 l as as'
+    (RecCon1 ts      , RecCon1 ts'         ) -> goRecCon1 ts ts'
+    (U1              , U1                  ) -> pure ()
+    (U0 cv           , U0 cv'              ) -> go1 cv cv'
+    (CV              , CV                  ) -> pure ()
+    (Comp            , Comp                ) -> pure ()
+    (Val             , Val                 ) -> pure ()
+    (Int             , Int                 ) -> pure ()
 
     -- eta
     (Lam1 _ _ _ t, Lam1 _ _ _ t') -> goClose1 t t'
     (Lam1 _ i _ t, t'           ) -> unify1 (l + 1) st (t $$ Var1 l) (app1 t' (Var1 l) i)
     (t           , Lam1 _ i _ t') -> unify1 (l + 1) st (app1 t (Var1 l) i) (t' $$ Var1 l)
 
-    -- todo: record eta, split RecCon0 and RecCon1
-
+    -- TODO: record eta
     -- TODO: flex-flex, intersection
     (Flex x sp, Flex x' sp') | x == x' -> goSp (Flex x sp) sp (Flex x' sp') sp'
-    (Flex x sp, t'         ) -> solveMeta l st x sp t'
-    (t        , Flex x' sp') -> solveMeta l st x' sp' t
+    (Flex x sp, t'         ) -> solve l st x sp t'
+    (t        , Flex x' sp') -> solve l st x' sp' t
 
     (t, t') -> err t t'

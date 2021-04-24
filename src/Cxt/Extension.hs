@@ -18,16 +18,16 @@ addName (NName x) inf tbl = M.insert x inf tbl
 addName NX        _   tbl = tbl
 {-# inline addName #-}
 
-bind0 :: Name -> S.Ty -> CV -> Cxt -> Cxt
-bind0 x a acv cxt = bind0' x a (eval1 (_env cxt) a) acv cxt
+bind0 :: Name -> S.Ty -> S.CV -> Cxt -> Cxt
+bind0 x a acv cxt = bind0' x a (eval1 (_env cxt) a) acv (eval1 (_env cxt) acv) cxt
 {-# inline bind0 #-}
 
-bind0' :: Name -> S.Ty -> V.Ty -> CV -> Cxt -> Cxt
-bind0' x a va acv (Cxt env l loc ntbl src) =
+bind0' :: Name -> S.Ty -> V.Ty -> S.CV -> V.CV -> Cxt -> Cxt
+bind0' x a va acv vacv (Cxt env l loc ntbl src) =
   Cxt (V.Snoc0 env l)
       (l + 1)
       (S.Bind0 loc x a acv)
-      (addName x (NameInfo l va (U0 acv)) ntbl)
+      (addName x (NameInfo0 l va (V.U0 vacv)) ntbl)
       src
 {-# inline bind0' #-}
 
@@ -40,7 +40,7 @@ bind1' x a va (Cxt env l loc ntbl src) =
   Cxt (V.Snoc1 env (V.Var1 l))
       (l + 1)
       (S.Bind1 loc x a)
-      (addName x (NameInfo l va U1) ntbl)
+      (addName x (NameInfo1 l va) ntbl)
       src
 {-# inline bind1' #-}
 
@@ -59,6 +59,6 @@ define' x a va t ~vt (Cxt env l loc ntbl src) =
   Cxt (V.Snoc1 env (V.Var1 l))
       (l + 1)
       (S.Define loc x a t)
-      (addName x (NameInfo l va U1) ntbl)
+      (addName x (NameInfo1 l va) ntbl)
       src
 {-# inline define' #-}

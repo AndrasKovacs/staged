@@ -8,7 +8,7 @@ import qualified Data.ByteString as B
 import Data.Char (ord)
 
 import Lexer
-import Common hiding (U(..), CV(..))
+import Common
 import Presyntax
 
 --------------------------------------------------------------------------------
@@ -44,10 +44,12 @@ isKeyword span = inSpan span do
      "fix"  -> pure ()
      "case" -> pure ()
      "of"   -> pure ()
-     "VTy"  -> pure ()
-     "CTy"  -> pure ()
+     "CV"   -> pure ()
      "data" -> pure ()
-     "MTy"  -> pure ()
+     "Val"  -> pure ()
+     "Comp" -> pure ()
+     "U0"   -> pure ()
+     "U1"   -> pure ()
      "Int"  -> pure ()
      |])
   eof
@@ -85,22 +87,6 @@ recOrRec l =
                   "," -> ws >> restOfTuple l t
                   "]" -> ws >> pure t
                   |])) `cut` [",", "]"]))))
-
-    -- (optioned ident
-    --   (\x -> do
-    --      lvl >> $(switch [| case _ of
-    --        ":" -> ws >> restOfRec l x
-    --        "=" -> ws >> restOfRecCon l x
-    --        "," -> ws >> restOfTuple l (Var x)
-    --        "]" -> do {r <- getPos; ws; pure (Tuple (Span l r) [Var x])}
-    --        _   -> (goApp =<< goProj (pure (Var x))) `cut` [Msg "atom"]
-    --        |]))
-    --   (do
-    --      t <- tm'
-    --      lvl >> $(switch [| case _ of
-    --        "," -> ws >> restOfTuple l t
-    --        "]" -> ws >> pure t
-    --        |])) `cut` [",", "]"])
 
 restOfRec :: Pos -> Span -> Parser Tm
 restOfRec l x = do
@@ -140,6 +126,7 @@ up l = do
   angleR'
   pure $ Up (Span l r) t
 
+-- todo: speed up
 intLit :: Parser Tm
 intLit = do
   l      <- getPos
@@ -166,9 +153,11 @@ atomBase = do
     "fix"  -> skipToVar l \_ -> empty
     "case" -> skipToVar l \_ -> empty
     "data" -> skipToVar l \_ -> empty
-    "VTy"  -> skipToVar l \r -> pure $ Ty (Span l r) (U0 V)
-    "CTy"  -> skipToVar l \r -> pure $ Ty (Span l r) (U0 C)
-    "MTy"  -> skipToVar l \r -> pure $ Ty (Span l r) U1
+    "Val"  -> skipToVar l \r -> pure $ Val (Span l r)
+    "Comp" -> skipToVar l \r -> pure $ Comp (Span l r)
+    "CV"   -> skipToVar l \r -> pure $ CV (Span l r)
+    "U0"   -> skipToVar l \r -> empty
+    "U1"   -> skipToVar l \r -> pure $ U1 (Span l r)
     "Int"  -> skipToVar l \r -> pure $ Int (Span l r)
     _      ->     do {identStartChar; manyIdents; r <- getPos; ws; pure (Var (Span l r))}
               <|> intLit
@@ -211,9 +200,10 @@ app' :: Parser Tm
 app' = do
   pos <- getPos
   lvl' >> $(switch [| case _ of
-    "~" -> do {ws; p <- proj; goApp (Down pos p)}
-    "^" -> do {ws; p <- proj; goApp (Lift pos p)}
-    _   -> do {goApp =<< proj} |])
+    "~"  -> do {ws; p <- proj; goApp (Down pos p)}
+    "^"  -> do {ws; p <- proj; goApp (Lift pos p)}
+    "U0" -> do {ws; p <- proj; goApp (U0 pos p)}
+    _    -> do {goApp =<< proj} |])
 
 --------------------------------------------------------------------------------
 
@@ -431,8 +421,10 @@ parseString (packUTF8 -> str) = (coerce str, parse str)
 --------------------------------------------------------------------------------
 
 p1 = unlines [
-  "id : Bool → Bool = λ b A. b [A.B, A.true, A.false]",
-  "foo : Int = 300 + 500 * 10"
+  -- "id : Bool → Bool = λ b A. b [A.B, A.true, A.false]",
+  -- "bar : U1 = U0 Comp"
+  -- "foo : Int = 300 + 500 * 10"
+  -- "bar = let x = Comp; let foo := mallc; U0 x"
   -- "f = [t u, g x]"
   -- "id = foo{bar}"
   -- "id : MTy = {A : CTy} → A → A",

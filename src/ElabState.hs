@@ -17,7 +17,7 @@ import qualified Values as V
 data TopEntry
 
   -- ^ Type, type val, rhs, rhs val, CV, name, source pos
-  = TEDef0 S.Ty V.Ty S.Tm0 V.Val0 CV Name Pos
+  = TEDef0 S.Ty V.Ty S.Tm0 V.Val0 V.CV Name Pos
 
   -- ^ Type, type val, rhs, rhs val, name, source pos
   | TEDef1 S.Ty V.Ty S.Tm1 V.Val1 Name Pos
@@ -71,8 +71,8 @@ lookupTopName x = do
 --------------------------------------------------------------------------------
 
 data MetaEntry
-  = Unsolved V.Ty -- ^ Closed type val
-  | Solved V.Val1 V.Ty
+  = Unsolved V.Ty        -- ^ Closed type
+  | Solved V.Val1 V.Ty   -- ^ Closed solution, type
 
 initMetaCxt :: IO (D.Array MetaEntry)
 initMetaCxt = D.empty
@@ -102,33 +102,6 @@ unsolvedMetaTy m = readMeta m >>= \case
   _          -> impossible
 {-# inline unsolvedMetaTy #-}
 
-
--- CV metacontext
---------------------------------------------------------------------------------
-
-data CVMetaEntry = CVUnsolved | CVSolved CV deriving Show
-
-initCvCxt :: IO (D.Array CVMetaEntry)
-initCvCxt = D.empty
-
-cvCxt :: D.Array CVMetaEntry
-cvCxt = runIO initCvCxt
-{-# noinline cvCxt #-}
-
-resetCvCxt :: IO ()
-resetCvCxt = D.clear cvCxt
-
-readCVMeta :: CVMetaVar -> IO CVMetaEntry
-readCVMeta (CVMetaVar i) = D.read cvCxt i
-{-# inline readCVMeta #-}
-
-newCVMeta :: IO CVMetaVar
-newCVMeta = do
-  s <- D.size cvCxt
-  D.push cvCxt CVUnsolved
-  pure (CVMetaVar s)
-{-# inline newCVMeta #-}
-
 --------------------------------------------------------------------------------
 
 reset :: IO ()
@@ -136,6 +109,5 @@ reset = do
   resetTop
   resetTopNames
   resetMetaCxt
-  resetCvCxt
 
 --------------------------------------------------------------------------------

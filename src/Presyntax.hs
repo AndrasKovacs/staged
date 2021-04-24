@@ -2,7 +2,7 @@
 
 module Presyntax where
 
-import Common hiding (U, CV)
+import Common
 
 data ArgInfo
   = NoName Icit
@@ -19,9 +19,6 @@ data TopLevel
   | Definition1 Span (Maybe Tm) Tm TopLevel
   deriving Show
 
-data CV = C | V     deriving Show
-data U = U0 CV | U1 deriving Show
-
 data Bind
   = Bind Span
   | DontBind
@@ -37,7 +34,11 @@ data Tm
   | Pi Pos Bind Icit Tm Tm
   | Lam Pos Bind ArgInfo (Maybe Tm) Tm
   | App Tm Tm ArgInfo
-  | Ty Span U
+  | U0 Pos Tm
+  | U1 Span
+  | CV Span
+  | Comp Span
+  | Val Span
   | Lift Pos Tm
   | Up   Span Tm
   | Down Pos Tm
@@ -49,8 +50,6 @@ data Tm
   | Fix Pos Bind Bind Tm
   | Case Pos Tm Pos [(Span, [Bind], Tm)]
   | Hole Pos
-
-
   | Int Span
   | IntLit Span Int
   | Add Tm Tm
@@ -69,7 +68,6 @@ span t = Span (left t) (right t) where
     Pi l _ _ _ _        -> l
     Lam l _ _ _ _       -> l
     App t u _           -> left t
-    Ty (Span l _) _     -> l
     Lift l _            -> l
     Up (Span l _) _     -> l
     Down l _            -> l
@@ -86,6 +84,11 @@ span t = Span (left t) (right t) where
     Mul l r             -> left l
     Sub l r             -> left l
     Int (Span l r)      -> l
+    CV (Span l r)       -> l
+    U0 l t              -> l
+    U1 (Span l r)       -> l
+    Comp (Span l r)     -> l
+    Val (Span l r)      -> l
 
   right :: Tm -> Pos
   right = \case
@@ -95,7 +98,6 @@ span t = Span (left t) (right t) where
     Pi _ _ _ _ t        -> right t
     Lam _ _ _ _ t       -> right t
     App _ t _           -> right t
-    Ty (Span _ r) _     -> r
     Lift _ t            -> right t
     Up (Span _ r) _     -> r
     Down _ t            -> right t
@@ -113,3 +115,8 @@ span t = Span (left t) (right t) where
     Mul _ r             -> right r
     Sub _ r             -> right r
     Int (Span l r)      -> r
+    CV (Span l r)       -> r
+    U0 l t              -> right t
+    U1 (Span l r)       -> r
+    Comp (Span l r)     -> r
+    Val (Span l r)      -> r

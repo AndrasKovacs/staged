@@ -11,6 +11,10 @@ wk1Env :: Env -> Env
 wk1Env = \case Snoc1 env _ -> env; _ -> impossible
 {-# inline wk1Env #-}
 
+wk0Env :: Env -> Env
+wk0Env = \case Snoc0 env _ -> env; _ -> impossible
+{-# inline wk0Env #-}
+
 envLen :: Env -> Int
 envLen = go 0 where
   go acc Nil = acc
@@ -18,6 +22,7 @@ envLen = go 0 where
   go acc (Snoc0 env _) = go (acc + 1) env
 
 type Ty = Val1
+type CV = Val1
 
 data Spine
   = SId
@@ -29,6 +34,12 @@ data UnfoldHead
   = Top1 Lvl
   | Solved MetaVar
   deriving Show
+
+data RigidHead
+  = RHVar1 Lvl
+  | TyCon Lvl
+  | DataCon Lvl Int
+  deriving (Eq, Show)
 
 data Val0
   = Var0 Lvl
@@ -50,19 +61,22 @@ data Val0
 data Val1
   = Unfold UnfoldHead Spine ~Val1
   | Flex MetaVar Spine
+  | Rigid RigidHead Spine
   | Pi Name Icit Ty {-# unpack #-} (Close S.Ty)
   | Lam1 Name Icit Ty {-# unpack #-} (Close S.Tm1)
-  | App1 Val1 Val1 Icit
-  | Fun Ty Ty
-  | Var1 Lvl
+  | Fun Ty Ty CV
   | Lift CV Ty
   | Up Val0
   | Rec0 (Fields Ty)
   | Rec1 (Close (Fields S.Ty))
   | RecCon1 (Fields Val1)
-  | Field1 Val1 Name Int
-  | U U
-  | TyCon Lvl
-  | DataCon Lvl Int
+  | U0 CV
+  | U1
+  | CV
+  | Comp
+  | Val
   | Int
   deriving Show
+
+pattern Var1 :: Lvl -> Val1
+pattern Var1 x = Rigid (RHVar1 x) SId

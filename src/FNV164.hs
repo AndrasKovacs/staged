@@ -1,4 +1,7 @@
 
+-- | This module exists because the `hashable` in my stackage snapshot uses the wrong
+--   hash function: https://github.com/haskell-unordered-containers/hashable/issues/190
+
 module FNV164 where
 
 import qualified Data.ByteString as B
@@ -8,7 +11,7 @@ import GHC.Exts
 
 -- TODO: switch to something faster, like
 --   http://hackage.haskell.org/package/murmur-hash-0.1.0.9/docs/src/Data-Digest-Murmur64.html
---   (but fix perf bugs)
+--   (but fix its performance bugs first)
 fnv164 :: B.ByteString -> Int -> Int
 fnv164 (B.PS (ForeignPtr ptr _) (I# offset) (I# len)) (I# salt) = let
   go :: Addr# -> Addr# -> Int# -> Int#

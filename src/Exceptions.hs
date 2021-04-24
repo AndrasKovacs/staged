@@ -19,18 +19,21 @@ throw :: Ex -> a
 throw = Ex.throw
 {-# inline throw #-}
 
+
+-- todo: cleanup
+
 data Ex
+
+  -- elaboration errors
   = UnifyError0 S.Tm0 S.Tm0
   | UnifyError1 S.Tm1 S.Tm1
-  | CVUnifyError CV CV
-  | UUnifyError U U
   | forall a. (Show a) => EqUnifyError a a
   | NameNotInScope {-# unpack #-} RawName
   | NoSuchField    {-# unpack #-} RawName
   | NoSuchArgument {-# unpack #-} RawName
   | IcitMismatch Icit Icit
   | NoImplicitLam0
-  | ExpectedV
+  | ExpectedVal
   | FieldNameMismatch Name Name
   | NoNamedLambdaInference
   | CantInfer
@@ -45,18 +48,17 @@ data Ex
   | ExpectedRuntimeType
   | CantInferSigma
   | ExpectedDataCon
-  | SpineError
 
-  -- raw unification exception
+  -- exception for control-flow purposes in unification
   | CantUnify
 
-  -- renaming
+  -- renaming errors
   | OccursCheck MetaVar
   | OutOfScope Lvl
+  | SpineError
 
-  -- Exception with elaboration context
+  -- decorated with elaboration context
   | ElabError S.Locals P.Tm Ex
 
 deriving instance Show Ex
-
 instance Ex.Exception Ex

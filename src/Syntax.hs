@@ -20,7 +20,10 @@ data Tm0
   | Mul Tm0 Tm0
   | Sub Tm0 Tm0
   | IntLit Int
+  | Wk0 Tm0
   deriving Show
+
+type CV = Tm1
 
 data Tm1
   = Var1 Ix
@@ -29,9 +32,13 @@ data Tm1
   | Pi Name Icit Ty Ty
   | Lam1 Name Icit Ty Tm1
   | App1 Tm1 Tm1 Icit
-  | Fun Ty Ty
-  | U U
+  | Fun Ty Ty CV
+  | U0 CV
+  | U1
   | Lift CV Ty
+  | CV
+  | Comp
+  | Val
   | Up Tm0
   | Rec0 (Fields Ty)
   | Rec1 (Fields Ty)

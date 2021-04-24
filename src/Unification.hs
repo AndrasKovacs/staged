@@ -237,7 +237,7 @@ unifyCV cv cv' = case (forceCV cv, forceCV cv') of
   (CVVar x , CVVar x' ) -> unifyEq x x'
   (CVVar x , cv'      ) -> D.write ES.cvCxt (coerce x)  (ES.CVSolved cv')
   (cv      , CVVar x' ) -> D.write ES.cvCxt (coerce x') (ES.CVSolved cv)
-  (cv      , cv'      ) -> throwIO $ CVUnifyError cv cv'
+  (cv      , cv'      ) -> impossible -- throwIO $ CVUnifyError cv cv'
 
 unify0 :: Dbg => Lvl -> ConvState -> Val0 -> Val0 -> IO ()
 unify0 l st t t' = let
@@ -375,8 +375,8 @@ unify1 l st t t' = let
 
     -- todo: record eta, split RecCon0 and RecCon1
 
-    -- TODO: flex-flex
-    (Flex x sp, Flex x' sp') -> unifyEq x x' >> goSp (Flex x sp) sp (Flex x' sp') sp'
+    -- TODO: flex-flex, intersection
+    (Flex x sp, Flex x' sp') | x == x' -> goSp (Flex x sp) sp (Flex x' sp') sp'
     (Flex x sp, t'         ) -> solveMeta l st x sp t'
     (t        , Flex x' sp') -> solveMeta l st x' sp' t
 

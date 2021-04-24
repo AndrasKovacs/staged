@@ -136,13 +136,14 @@ p1 = unlines [
   -- "id  : Nat → Nat = λ n A. n [A.N, A.zero, A.suc]",
   -- "add : Nat → Nat → Nat = λ a b A. a [A.N, b A, A.suc]",
 
-  -- "foo : {A : MTy} → A → A = λ {A} B x. x"
+  -- "foo : {A : MTy} → A → A = λ {A} B x. x",
 
-  "id : {A : VTy} → A → A = λ x. x",
+  "id : {A : CTy} → A → A = λ x. x",
+  "f : ^Int → ^Int = id"
 
-  "id2 : Int → Int := id"
-
-
+  -- "id2 : Int → Int := id",
+  -- "foo := λ x. x + 10",
+  -- "bar := λ y. y * y + 400",
 
   -- Lam1 x Expl (Inserted 0 (Bind1 (Bind1 Empty A (U U1)) B (Var1 0))) (Var1 0)
   -- Pi x Expl (Flex 0 (SApp1 (SApp1 SId (Var1 0) Expl) (Var1 1) Expl))

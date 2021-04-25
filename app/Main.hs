@@ -52,7 +52,7 @@ displayState = do
   D.for top \case
     TEDef0 a va t vt cv x _ -> do
       putStrLn (show x ++ " : " ++ showTm1Top a)
-      putStrLn ("  = " ++ showTm0Top t)
+      putStrLn ("  := " ++ showTm0Top t)
       nl
     TEDef1 a va t vt x _ -> do
       putStrLn (show x ++ " : " ++ showTm1Top a)
@@ -121,9 +121,9 @@ test str = do
   displayState
 
 p1 = unlines [
-  -- "Alg = [B: U1, true: B, false: B]",
-  -- "Bool = (A : Alg) → A.B",
-  -- "id : Bool → Bool = λ b A. b [A.B, A.true, A.false]",
+  "Alg = [B: U1, true: B, false: B]",
+  "Bool = (A : Alg) → A.B",
+  "id : Bool → Bool = λ b A. b [A.B, A.true, A.false]",
 
   "NatAlg = [N : U1, zero : N, suc: N → N]",
   "Nat    = (A : NatAlg) → A.N",
@@ -149,7 +149,19 @@ p1 = unlines [
   "Pointed = Sg U1 (λ A. A)",
 
   "SmallFunctor : U1 = [F : U0 Val → U1, map : {A B : U0 _} → (A → B) → F A → F B]",
-  "BigFunctor   : U1 = [F : U1 → U1, map : {A B} → (A → B) → F A → F B]"
+  "BigFunctor   : U1 = [F : U1 → U1, map : {A B} → (A → B) → F A → F B]",
+
+  "Eq : {A : U1} → A → A → U1",
+  "  = λ {A} x y. (P : A → U1) → P x → P y",
+  "refl : {A x} → Eq {A} x x = λ P px. px",
+
+  "g := λ x. 10 + x",
+
+  "foo : Eq g g = refl",
+
+  "g : [fst: Int, snd: Int, thd: Int] := [20, 30, 100]",
+
+  "foo : Eq g g = refl"
 
   -- "foo : {A : U1} → A → A = λ {A} B x. x"
 

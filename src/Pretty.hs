@@ -1,5 +1,5 @@
 
-module Pretty (showTm0, showTm1, showTm0Top, showTm1Top, showEx,
+module Pretty (showTm0, showTm1, showTm0Top, showTm1Top, showEx, showVal1',
                showVal0, showVal1, showVal0Top, showVal1Top) where
 
 import qualified Data.ByteString.Char8 as B
@@ -28,6 +28,9 @@ showVal0 cxt t = showTm0 cxt $ quote0 cxt t
 
 showVal1 :: Cxt -> V.Val1 -> String
 showVal1 cxt t = showTm1 cxt $ quote1 cxt t
+
+showVal1' :: Cxt -> V.Val1 -> String
+showVal1' cxt t = showTm1 cxt $ Eval.quote1 (_lvl cxt) DoUnfold t
 
 showTm0Top :: Tm0 -> String
 showTm0Top t = tm0 tmp [] t []
@@ -158,7 +161,7 @@ tm0 p ns = \case
   Mul t u      -> par p mulp $ tm0 mulp ns t . (" * "++) . tm0 appp ns u
   App0 t u     -> par p appp $ tm0 appp ns t . (' ':) . tm0 projp ns u
   IntLit n     -> (show n++)
-  Wk0 t        -> par p appp (("_wk_ "++).tm0 p (tail ns) t)
+  Wk10 t       -> par p appp (("_wk_ "++).tm0 p (tail ns) t)
 
 piBind ns x Expl a = showParen True (name x . (" : "++) . tm1 tmp ns a)
 piBind ns x Impl a = brace          (name x . (" : "++) . tm1 tmp ns a)
@@ -214,10 +217,13 @@ tm1 p ns = \case
 
   Inserted m ls  -> inserted p ns m 0 ls
 
-  Wk1 t          -> par p appp (("_wk_ "++).tm1 p (tail ns) t)
+  Wk11 t         -> par p appp (("_wk_ "++).tm1 p (tail ns) t)
+  Wk01 t         -> par p appp (("_wk_ "++).tm1 p (tail ns) t)
   Meta m         -> (("?"++show m)++)
 
   Int            -> ("Int"++)
+
+
 
 --------------------------------------------------------------------------------
 

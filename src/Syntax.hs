@@ -20,7 +20,7 @@ data Tm0
   | Mul Tm0 Tm0
   | Sub Tm0 Tm0
   | IntLit Int
-  | Wk0 Tm0
+  | Wk10 Tm0
   deriving Show
 
 type CV = Tm1
@@ -47,7 +47,8 @@ data Tm1
   | TyCon Lvl
   | DataCon Lvl Int
   | Inserted MetaVar Locals
-  | Wk1 Tm1
+  | Wk11 Tm1
+  | Wk01 Tm1
   | Meta MetaVar
   | Int
   deriving Show

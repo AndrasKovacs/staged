@@ -27,7 +27,7 @@ bind0' x a va acv vacv (Cxt env l loc ntbl src) =
   Cxt (V.Snoc0 env l)
       (l + 1)
       (S.Bind0 loc x a acv)
-      (addName x (NameInfo0 l va (V.U0 vacv)) ntbl)
+      (addName x (NameInfo0 l va vacv) ntbl)
       src
 {-# inline bind0' #-}
 

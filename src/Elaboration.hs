@@ -144,14 +144,14 @@ coe cxt t a a' = do
   upFun :: Cxt -> V.Ty -> S.Tm1 -> S.Tm1
   upFun cxt a t =
     S.Lam1 NEmpty Expl (S.Lift S.Val (quote1 cxt a))
-       (S.Up (S.App0 (S.Wk0 (S.down t)) (S.Down (S.Var1 0))))
+       (S.Up (S.App0 ( S.Wk10 (S.down (t))) (S.Down (S.Var1 0))))
 
   --  (^a -> ^b) -> ^(a -> b)
   -- f ↦ <λ a. ~(f <a>)>
   downFun :: Cxt -> V.Ty -> S.Tm1 -> S.Tm1
   downFun cxt a t =
     S.Up (S.Lam0 NEmpty (quote1 cxt a)
-         (S.Down (S.App1 (S.Wk1 t) (S.Up (S.Var0 0)) Expl)))
+         (S.Down (S.App1 (S.Wk01 t) (S.Up (S.Var0 0)) Expl)))
 
   -- compute ^(Rec0 as) to Rec1 (map ^ as)
   liftRec0 :: Cxt -> Fields V.Ty -> V.Ty
@@ -179,6 +179,11 @@ coe cxt t a a' = do
     -- traceShowM ("coe.go", t, a, a')
     case (forceFU1 a, forceFU1 a') of
 
+      -- if we have flex on one side, we just switch to unification
+      -- TODO (later): postpone coe on flex RHS
+      (a@(V.Flex x sp), a')   -> Nothing <$ unify1 cxt a a'
+      (a, a'@(V.Flex x' sp')) -> Nothing <$ unify1 cxt a a'
+
       -- universe subtyping
       (V.U0 cv, V.U1) -> do
         pure $! Just $! S.Lift (quote1 cxt cv) t
@@ -193,13 +198,13 @@ coe cxt t a a' = do
         case coev0 of
           Nothing ->
             (S.Lam1 x i (quote1 cxt a') <$!>) <$!>
-              go cxt' (S.App1 (S.Wk1 t) (S.Var1 0) i)
+              go cxt' (S.App1 (S.Wk11 t) (S.Var1 0) i)
                       (b  $$$ eval1 cxt' (S.Var1 0))
                       (b' $$  V.Var1 (_lvl cxt))
 
           Just coev0 ->
             (Just . S.Lam1 x i (quote1 cxt a')) <$!>
-              coe cxt' (S.App1 (S.Wk1 t) coev0 i) (b  $$$ eval1 cxt' coev0)
+              coe cxt' (S.App1 (S.Wk11 t) coev0 i) (b  $$$ eval1 cxt' coev0)
                                                    (b' $$  V.Var1 (_lvl cxt))
 
       (V.Rec1 as, V.Rec1 as') -> do
@@ -208,22 +213,19 @@ coe cxt t a a' = do
           then pure $! Just $! S.RecCon1 (snd <$> fs)
           else pure Nothing
 
-      -- TODO: Pi-Flex, Flex-Pi   (refine other side)
-      --       Rec-Flex, Flex-Rec (refine other side)
-
       -- lift preservation
       ------------------------------------------------------------
 
-      (V.Lift _ (V.Fun a b bcv), a') ->
+      (V.Lift _ (V.Fun a b bcv), a') -> do
         Just <$!> coe cxt (upFun cxt a t) (liftFun cxt a b bcv) a'
 
-      (a, V.Lift _ (V.Fun a' b' b'cv)) ->
+      (a, V.Lift _ (V.Fun a' b' b'cv)) -> do
         Just . downFun cxt a' <$!> coe cxt t a (liftFun cxt a' b' b'cv)
 
-      (V.Lift _ (V.Rec0 as), a') ->
+      (V.Lift _ (V.Rec0 as), a') -> do
         Just <$!> coe cxt (upRecCon0 t as) (liftRec0 cxt as) a'
 
-      (a, V.Lift _ (V.Rec0 as)) ->
+      (a, V.Lift _ (V.Rec0 as)) -> do
         Just . downRecCon0 as <$!> coe cxt t a (liftRec0 cxt as)
 
       -- refining under lift
@@ -263,78 +265,79 @@ tyAnnot cxt ma un =
 --------------------------------------------------------------------------------
 
 check0 :: Dbg => Cxt -> P.Tm -> V.Ty -> V.CV -> IO S.Tm0
-check0 cxt topT topA cv = case (topT, forceFU1 topA, forceFU1 cv) of
+check0 cxt topT topA cv = do
+  -- traceShowM ("check0", topT, forceFU1 topA, forceFU1 cv)
+  case (topT, forceFU1 topA, forceFU1 cv) of
+    (P.Lam _ (bindToName cxt -> x) i ma t, V.Fun a' b' b'cv, !cv) -> do
+      case i of P.NoName Expl -> pure ()
+                _             -> elabError cxt topT NoImplicitLam0
+      let qa' = quote1 cxt a'
+      S.Lam0 x qa' <$!>
+        check0 (bind0' x qa' a' S.Val V.Val cxt) t b' b'cv
 
-  (P.Lam _ (bindToName cxt -> x) i ma t, V.Fun a' b' b'cv, !cv) -> do
-    case i of P.NoName Expl -> pure ()
-              _             -> elabError cxt topT NoImplicitLam0
-    let qa' = quote1 cxt a'
-    S.Lam0 x qa' <$!>
-      check0 (bind0' x qa' a' S.Val V.Val cxt) t b' b'cv
+    (P.RecCon _ ts, V.Rec0 as, _) -> do
 
-  (P.RecCon _ ts, V.Rec0 as, _) -> do
+      let go [] FNil = pure FNil
+          go ((x, t): ts) (FCons x' a as) = do
+            let rn = spanToRawName cxt x
+            unless (NName rn == x') $
+              elabError cxt topT (NoSuchField rn)
+            t <- check0 cxt t a V.Val
+            ts <- go ts as
+            pure $! FCons x' t ts
+          go ((x, t):ts) FNil =
+            elabError cxt topT ExpectedEmptyRecCon
+          go _ _ =
+            elabError cxt topT ExpectedNonEmptyRecCon
 
-    let go [] FNil = pure FNil
-        go ((x, t): ts) (FCons x' a as) = do
-          let rn = spanToRawName cxt x
-          unless (NName rn == x') $
-            elabError cxt topT (NoSuchField rn)
-          t <- check0 cxt t a V.Val
-          ts <- go ts as
-          pure $! FCons x' t ts
-        go ((x, t):ts) FNil =
-          elabError cxt topT ExpectedEmptyRecCon
-        go _ _ =
-          elabError cxt topT ExpectedNonEmptyRecCon
+      S.RecCon0 <$!> go ts as
 
-    S.RecCon0 <$!> go ts as
+    (P.Fix{}, _, _) ->
+      error "fix not supported"
+    -- -- TODO : index Fun with cod CV!
+    -- (P.Fix _ (bindToName cxt -> x) (bindToName cxt -> y) t, V.Fun a b bcv, _) -> do
+    --   let cxt' = bind0' x (quote1 cxt b) b C $ bind0' x (quote1 cxt a) a V cxt
+    --   t <- check0 cxt' t b V
+    --   pure $! S.Fix x y t
 
-  (P.Fix{}, _, _) ->
-    error "fix not supported"
-  -- -- TODO : index Fun with cod CV!
-  -- (P.Fix _ (bindToName cxt -> x) (bindToName cxt -> y) t, V.Fun a b bcv, _) -> do
-  --   let cxt' = bind0' x (quote1 cxt b) b C $ bind0' x (quote1 cxt a) a V cxt
-  --   t <- check0 cxt' t b V
-  --   pure $! S.Fix x y t
+    (P.Tuple _ ts, V.Rec0 as, _) -> do
 
-  (P.Tuple _ ts, V.Rec0 as, _) -> do
+      let go [] FNil = pure FNil
+          go (t:ts) (FCons x' a as) =
+            FCons x' <$!> check0 cxt t a V.Val <*!> go ts as
+          go (t:ts) FNil =
+            elabError cxt topT ExpectedEmptyRecCon
+          go _ _ =
+            elabError cxt topT ExpectedNonEmptyRecCon
 
-    let go [] FNil = pure FNil
-        go (t:ts) (FCons x' a as) =
-          FCons x' <$!> check0 cxt t a V.Val <*!> go ts as
-        go (t:ts) FNil =
-          elabError cxt topT ExpectedEmptyRecCon
-        go _ _ =
-          elabError cxt topT ExpectedNonEmptyRecCon
+      S.RecCon0 <$!> go ts as
 
-    S.RecCon0 <$!> go ts as
+    (P.EmptyRec _, V.Rec0 as, _) -> do
+      case as of FNil -> pure ()
+                 _    -> elabError cxt topT ExpectedEmptyRec
+      pure $! S.RecCon0 FNil
 
-  (P.EmptyRec _, V.Rec0 as, _) -> do
-    case as of FNil -> pure ()
-               _    -> elabError cxt topT ExpectedEmptyRec
-    pure $! S.RecCon0 FNil
+    (P.Let0 _ (spanToName cxt -> x) ma t u, topA, cv) -> do
+      acv  <- freshCV cxt
+      let vacv = eval1 cxt acv
+      a    <- tyAnnot cxt ma (V.U0 vacv)
+      let va = eval1 cxt a
+      t <- check0 cxt t va vacv
+      u <- check0 (bind0' x a va acv vacv cxt) u topA cv
+      pure $! S.Let0 x a t u
 
-  (P.Let0 _ (spanToName cxt -> x) ma t u, topA, cv) -> do
-    acv  <- freshCV cxt
-    let vacv = eval1 cxt acv
-    a    <- tyAnnot cxt ma (V.U0 vacv)
-    let va = eval1 cxt a
-    t <- check0 cxt t va vacv
-    u <- check0 (bind0' x a va acv vacv cxt) u topA cv
-    pure $! S.Let0 x a t u
+    (P.Hole _, topA, cv) -> do
+      S.down <$!> freshMeta cxt (S.Lift (quote1 cxt cv) (quote1 cxt topA))
 
-  (P.Hole _, topA, cv) -> do
-    S.down <$!> freshMeta cxt (S.Lift (quote1 cxt cv) (quote1 cxt topA))
+    (P.Down _ t, topA, cv) -> do
+      S.down <$!> check1 cxt t (V.Lift cv topA)
 
-  (P.Down _ t, topA, cv) -> do
-    S.down <$!> check1 cxt t (V.Lift cv topA)
-
-  (t, topA, cv) -> do
-    (t, a, cv') <- infer0 cxt t
-    decorateEx cxt topT $ do
-      unify1 cxt cv' cv
-      unify1 cxt a topA
-    pure t
+    (t, topA, cv) -> do
+      (t, a, cv') <- infer0 cxt t
+      decorateEx cxt topT $ do
+        unify1 cxt cv' cv
+        unify1 cxt a topA
+      pure t
 
 checkRec0 :: Dbg => Cxt -> [(Span, P.Tm)] -> IO (Fields S.Ty)
 checkRec0 cxt as = go as where
@@ -385,6 +388,7 @@ checkTuple1 cxt topT ts (V.Close env as) = case (ts, as) of
 check1 :: Dbg => Cxt -> P.Tm -> V.Ty -> IO S.Tm1
 check1 cxt topT topA = do
   -- traceShowM ("check1", topT, showVal1 cxt topA)
+  -- traceShowM ("check1", topT, forceFU1 topA)
   case (topT, forceFU1 topA) of
 
     (P.Lam _ (bindToName cxt -> x) i ma t, V.Pi x' i' a' b')
@@ -452,6 +456,7 @@ check1 cxt topT topA = do
       S.up <$!> check0 cxt t topA cv
 
     (t, V.Lift cv topA) -> do
+      -- traceShowM ("check with lift", forceFU1 topA)
       S.up <$!> check0 cxt t topA cv
 
     (P.Hole _, topA) -> do
@@ -508,6 +513,8 @@ infer1 cxt topT = case topT of
 
   t -> infer cxt t >>= \case
     Tm0 t a cv -> do
+      -- traceShowM ("inferred", showTm1 cxt (S.up t), showVal1 cxt a, showVal1 cxt cv)
+      -- traceShowM ("inferred", showTm1 cxt (S.up t), forceFU1 a)
       let t' = S.up t in pure (t', V.Lift cv a)
     Tm1 t a -> pure (t, a)
 
@@ -554,7 +561,6 @@ infer cxt topT = do
       decorEx = decorateEx cxt topT; {-# inline decorEx #-}
 
   -- traceShowM ("infer", topT)
-
   res <- case topT of
 
     P.Var (spanToRawName cxt -> x) -> do
@@ -784,19 +790,18 @@ inferTop src = \case
     let x   = unsafeSlice src span
     let cxt = emptyCxt src
 
-    (rhs, a, va, cv, vcv) <- case ma of
+    (rhs, a, va, vcv) <- case ma of
       Just a  -> do
         cv <- freshCV cxt
         let vcv = eval1 cxt cv
         a <- check1 cxt a (V.U0 vcv)
         let va = eval1 cxt a
         rhs <- check0 cxt rhs va vcv
-        pure (rhs, a, va, cv, vcv)
+        pure (rhs, a, va, vcv)
       Nothing -> do
         (rhs, va, cv) <- infer0 cxt rhs
         let qa = quote1 cxt va
-            qcv = quote1 cxt cv
-        pure (rhs, qa, va, qcv, cv)
+        pure (rhs, qa, va, cv)
 
     let ~vrhs = eval0 cxt rhs
     lvl <- pushTop (TEDef0 a va rhs vrhs vcv (NName x) pos)

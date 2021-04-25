@@ -190,7 +190,7 @@ rename1 m st pren t = let
     Up t            -> S.Up <$!> go0 t
     Lift cv a       -> S.Lift <$!> go1 cv <*!> go1 a
     Rec1 as         -> S.Rec1 <$!> goRec1 pren as
-    Rec0 as         -> S.Rec1 <$!> mapM go1 as
+    Rec0 as         -> S.Rec0 <$!> mapM go1 as
     U1              -> pure S.U1
     U0 cv           -> S.U0 <$!> go1 cv
     CV              -> pure S.CV
@@ -219,7 +219,6 @@ solve l st m sp rhs = do
   rhs  <- rename1 m CSRigid pren rhs
   let sol = eval1 Nil (lams (dom pren) ma rhs)
   D.write ES.metaCxt (coerce m) (ES.Solved sol ma)
-
 
 -- Unification
 --------------------------------------------------------------------------------

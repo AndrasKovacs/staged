@@ -123,7 +123,7 @@ eval0 env = \case
   S.Mul t u      -> Mul (eval0 env t) (eval0 env u)
   S.Sub t u      -> Sub (eval0 env t) (eval0 env u)
   S.IntLit n     -> IntLit n
-  S.Wk0 t        -> eval0 (wk0Env env) t
+  S.Wk10 t       -> eval0 (wk1Env env) t
 
 eval1 :: Dbg => Env -> S.Tm1 -> Val1
 eval1 env = \case
@@ -145,7 +145,8 @@ eval1 env = \case
   S.Up t          -> up (eval0 env t)
   S.Inserted x ls -> runIO do {t <- metaIO x; pure $! inserted t env ls}
   S.Meta x        -> meta x
-  S.Wk1 t         -> eval1 (wk1Env env) t
+  S.Wk11 t        -> eval1 (wk1Env env) t
+  S.Wk01 t        -> eval1 (wk0Env env) t
   S.Int           -> Int
   S.U1            -> U1
   S.CV            -> CV

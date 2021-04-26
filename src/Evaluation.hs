@@ -99,12 +99,12 @@ field1 t x n = case t of
   Rigid h sp    -> Rigid h (SField1 sp x n)
   _             -> impossible
 
-inserted :: Dbg => Val1 -> Env -> S.Locals -> Val1
-inserted t env ls = case (env, ls) of
-  (!env,        S.Empty           ) -> t
-  (Snoc1 env u, S.Define ls _ _ _ ) -> inserted t env ls
-  (Snoc0 env u, S.Bind0 ls _ _ _  ) -> app1 (inserted t env ls) (Up (Var0 u)) Expl
-  (Snoc1 env u, S.Bind1 ls _ _    ) -> app1 (inserted t env ls) u Expl
+appPruning :: Dbg => Env -> Val1 -> S.Pruning -> Val1
+appPruning env ~v pr = case (env, pr) of
+  (Nil         , []               ) -> v
+  (Snoc1 env u , pr :> S.PESkip   ) -> appPruning env v pr
+  (Snoc0 env u , pr :> S.PEBind0  ) -> app1 (appPruning env v pr) (Up (Var0 u)) Expl
+  (Snoc1 env u , pr :> S.PEBind1 i) -> app1 (appPruning env v pr) u i
   _                                 -> impossible
 
 eval0 :: Dbg => Env -> S.Tm0 -> Val0
@@ -127,31 +127,31 @@ eval0 env = \case
 
 eval1 :: Dbg => Env -> S.Tm1 -> Val1
 eval1 env = \case
-  S.Var1 x        -> var1 env x
-  S.Top1 x        -> top1 x
-  S.Let1 x a t u  -> eval1 (Snoc1 env (eval1 env t)) u
-  S.Pi x i a b    -> Pi x i (eval1 env a) (Close env b)
-  S.Lam1 x i a t  -> Lam1 x i (eval1 env a) (Close env t)
-  S.App1 t u i    -> app1 (eval1 env t) (eval1 env u) i
-  S.Fun a b bcv   -> Fun (eval1 env a) (eval1 env b) (eval1 env bcv)
-  S.U0 cv         -> U0 (eval1 env cv)
-  S.Rec0 as       -> Rec0 (eval1 env <$> as)
-  S.Rec1 as       -> Rec1 (Close env as)
-  S.RecCon1 ts    -> RecCon1 (eval1 env <$> ts)
-  S.Field1 t x n  -> field1 (eval1 env t) x n
-  S.TyCon x       -> Rigid (TyCon x) SId
-  S.DataCon  x n  -> Rigid (DataCon x n) SId
-  S.Lift cv a     -> Lift (eval1 env cv) (eval1 env a)
-  S.Up t          -> up (eval0 env t)
-  S.Inserted x ls -> runIO do {t <- metaIO x; pure $! inserted t env ls}
-  S.Meta x        -> meta x
-  S.Wk11 t        -> eval1 (wk1Env env) t
-  S.Wk01 t        -> eval1 (wk0Env env) t
-  S.Int           -> Int
-  S.U1            -> U1
-  S.CV            -> CV
-  S.Comp          -> Comp
-  S.Val           -> Val
+  S.Var1 x          -> var1 env x
+  S.Top1 x          -> top1 x
+  S.Let1 x a t u    -> eval1 (Snoc1 env (eval1 env t)) u
+  S.Pi x i a b      -> Pi x i (eval1 env a) (Close env b)
+  S.Lam1 x i a t    -> Lam1 x i (eval1 env a) (Close env t)
+  S.App1 t u i      -> app1 (eval1 env t) (eval1 env u) i
+  S.Fun a b bcv     -> Fun (eval1 env a) (eval1 env b) (eval1 env bcv)
+  S.U0 cv           -> U0 (eval1 env cv)
+  S.Rec0 as         -> Rec0 (eval1 env <$> as)
+  S.Rec1 as         -> Rec1 (Close env as)
+  S.RecCon1 ts      -> RecCon1 (eval1 env <$> ts)
+  S.Field1 t x n    -> field1 (eval1 env t) x n
+  S.TyCon x         -> Rigid (TyCon x) SId
+  S.DataCon  x n    -> Rigid (DataCon x n) SId
+  S.Lift cv a       -> Lift (eval1 env cv) (eval1 env a)
+  S.Up t            -> up (eval0 env t)
+  S.AppPruning t pr -> appPruning env (eval1 env t) pr
+  S.Meta x          -> meta x
+  S.Wk11 t          -> eval1 (wk1Env env) t
+  S.Wk01 t          -> eval1 (wk0Env env) t
+  S.Int             -> Int
+  S.U1              -> U1
+  S.CV              -> CV
+  S.Comp            -> Comp
+  S.Val             -> Val
 
 --------------------------------------------------------------------------------
 

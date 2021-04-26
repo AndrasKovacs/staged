@@ -137,12 +137,12 @@ var ns x = case ns !! coerce x of
   NEmpty  -> ("@"++).(show x++)
   NX      -> impossible
 
-inserted :: Int -> [Name] -> MetaVar -> Ix -> Locals -> ShowS
-inserted p ns m ix = \case
-  Empty           -> (("?"++show m)++)
-  Define ls _ _ _ -> inserted p ns m (ix + 1) ls
-  Bind0 ls _ _ _  -> par p appp (inserted appp ns m (ix + 1) ls . (' ':) . var ns ix)
-  Bind1 ls _ _    -> par p appp (inserted appp ns m (ix + 1) ls . (' ':) . var ns ix)
+appPruning :: Tm1 -> Ix -> Pruning -> Tm1
+appPruning t ix = \case
+  []              -> t
+  pr :> PESkip    -> appPruning t (ix + 1) pr
+  pr :> PEBind0   -> App1 (appPruning t (ix + 1) pr) (Up (Var0 ix)) Expl
+  pr :> PEBind1 i -> App1 (appPruning t (ix + 1) pr) (Var1 ix) i
 
 tm0 :: Int -> [Name] -> Tm0 -> ShowS
 tm0 p ns = \case
@@ -226,7 +226,7 @@ tm1 p ns = \case
 
   DataCon x _    -> topVar x
 
-  Inserted m ls  -> inserted p ns m 0 ls
+  AppPruning t pr -> tm1 p ns (appPruning t 0 pr)
 
   Wk11 t         -> par p appp (("_wk_ "++).tm1 p (tail ns) t)
   Wk01 t         -> par p appp (("_wk_ "++).tm1 p (tail ns) t)

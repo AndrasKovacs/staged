@@ -15,29 +15,9 @@ import qualified Syntax as S
 
 {-
 TODO:
-  - eta-short unification solutions:
-      1. try eta-short solution without unfolding
-      2. retry eta-long full solution
+  - eta short unification
+  - better data structures
 
-    This does not require fancy heuristics, eta-conversion, or
-    general backtracking. Should still reduce solution sizes in
-    many cases
-
-  - use array or list instead of IntMap for PartialRenaming
-
-  - pruning, intersection
-
-  - sigma unification
-
-  - intern field names on elaboration instead of directly comparing them
-
-  - split unification to 0 and 1
-
-  - record eta, split RecCon for levels
-
-  - cache meta occurs
-
-  - cache pruning occurs
 -}
 
 closeType :: S.Locals -> S.Ty -> S.Ty
@@ -51,13 +31,13 @@ freshMeta :: Cxt -> S.Ty -> IO S.Tm1
 freshMeta cxt ~a = do
   let ~va = eval1 Nil (closeType (_locals cxt) a)
   m <- ES.newMeta va
-  pure $! S.Inserted m (_locals cxt)
+  pure $! S.AppPruning (S.Meta m) (_pruning cxt)
 
 freshCV :: Cxt -> IO S.CV
 freshCV cxt = do
   let ~va = eval1 Nil (closeType (_locals cxt) S.CV)
   m <- ES.newMeta va
-  pure $! S.Inserted m (_locals cxt)
+  pure $! S.AppPruning (S.Meta m) (_pruning cxt)
 {-# inline freshCV #-}
 
 -- Solutions

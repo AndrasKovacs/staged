@@ -16,6 +16,7 @@ data Cxt = Cxt {
   _env       :: V.Env,
   _lvl       :: Lvl,
   _locals    :: S.Locals,
+  _pruning   :: S.Pruning,
   _nameTable :: NameTable,
   _src       :: RawName
   }

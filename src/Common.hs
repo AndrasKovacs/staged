@@ -139,6 +139,7 @@ infixl 4 <*!>
 
 --------------------------------------------------------------------------------
 
+-- States for approximate scope/conversion checking
 newtype ConvState = ConvState# Int deriving Eq via Int
 pattern CSRigid :: ConvState
 pattern CSRigid = ConvState# 0
@@ -153,19 +154,17 @@ instance Show ConvState where
   show CSFlex  = "Flex"
   show CSFull  = "Full"
 
+-- Unfolding mode for quoting
 newtype Unfolding = Unfolding# Int deriving (Eq, Num) via Int
 pattern DoUnfold :: Unfolding
 pattern DoUnfold   = Unfolding# 0
 pattern DontUnfold :: Unfolding
 pattern DontUnfold = Unfolding# 1
--- pattern UnfoldMetas :: Unfolding
--- pattern UnfoldMetas = Unfolding# 2
 {-# complete DoUnfold, DontUnfold #-}
 
 instance Show Unfolding where
   show DoUnfold   = "DoUnfold"
   show DontUnfold = "DontUnfold"
-  -- show UnfoldMetas = "UnfoldMetas"
 
 newtype Icit = Icit# Int deriving Eq
 
@@ -198,6 +197,7 @@ lvlToIx :: Lvl -> Lvl -> Ix
 lvlToIx (Lvl envl) (Lvl l) = Ix (envl - l - 1)
 {-# inline lvlToIx #-}
 
+-- names
 --------------------------------------------------------------------------------
 
 newtype RawName = RawName {unRawName :: B.ByteString}
@@ -226,3 +226,11 @@ instance Show Name where
 
 instance IsString Name where
   fromString = NName . fromString
+
+-- snoc lists
+--------------------------------------------------------------------------------
+
+infixl 4 :>
+pattern (:>) :: [a] -> a -> [a]
+pattern xs :> x <- x:xs where (:>) xs ~x = x:xs
+{-# complete (:>), [] #-}

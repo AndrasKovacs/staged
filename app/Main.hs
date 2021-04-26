@@ -4,7 +4,6 @@ module Main where
 import qualified Data.ByteString.Char8 as B
 import qualified Data.Array.Dynamic.L as D
 -- import qualified Data.HashMap.Strict  as M
-
 -- import qualified FlatParse.Stateful as FP
 -- import qualified Data.Set as S
 
@@ -131,6 +130,8 @@ test str = do
 
 p1 = unlines [
 
+  "test : Int → Int := λ x. _"
+
   -- "Alg = [B: U1, true: B, false: B]",
   -- "Bool = (A : Alg) → A.B",
   -- "id : Bool → Bool = λ b A. b [A.B, A.true, A.false]",
@@ -143,7 +144,9 @@ p1 = unlines [
   -- "add : Nat → Nat → Nat = λ a b A. a [A.N, b A, A.suc]",
   -- "n5 = suc (suc (suc (suc (suc zero))))",
 
-  -- "id : {i}{A : U0 i} → A → A = λ x. x",
+  -- "id    : {A : U1} → A → A = λ x. x",
+  -- "const : {A B : U1} → A → B → A = λ a b. a",
+  -- "comp  : {A B C : U1} → (B → C) → (A → B) → A → C = λ f g x. f (g x)",
 
   -- "id2 : Int → Int := id",
   -- "f : Int → Int = λ x. x + x + 10",
@@ -157,6 +160,8 @@ p1 = unlines [
   -- "SmallFunctor : U1 = [F : U0 Val → U1, map : {A B : U0 _} → (A → B) → F A → F B]",
   -- "BigFunctor   : U1 = [F : U1 → U1, map : {A B} → (A → B) → F A → F B]",
 
+  -- "test : Int → Int → Int → Int = λ a b c. _",
+
   -- "Eq : {A : U1} → A → A → U1",
   -- "  = λ {A} x y. (P : A → U1) → P x → P y",
   -- "refl : {A x} → Eq {A} x x = λ P px. px",
@@ -169,21 +174,13 @@ p1 = unlines [
 
   -- "foo : Eq g g = refl"
 
-  -- "VTy = U0 Val",       -- type synonym for "value" runtime types        (records + inductive types + primitives)
-  -- "CTy = U0 Comp",      -- type synonym for "computation" runtime types  (functions)
-
-  -- -- two kinds of let binder:  =   -- compile-time
-  -- --                          :=   -- runtime binding
-
   -- --
 
   -- "f1 : Int → Int := λ x. x + 10",
 
-  "id    : {A : U1} → A → A = λ x. x",
-  -- "const : {A B : U1} → A → B → A = λ a b. a",
-  -- "comp  : {A B C : U1} → (B → C) → (A → B) → A → C = λ f g x. f (g x)",
 
-  "f2 : Int → Int := λ x. id x"
+
+  -- "f2 : Int → Int := λ x. id x"
 
 
 
@@ -204,11 +201,6 @@ p1 = unlines [
   -- "VTy = U0 Val",       -- type synonym for "value" runtime types        (records + inductive types + primitives)
   -- "CTy = U0 Comp",      -- type synonym for "computation" runtime types  (functions)
 
-  -- _~>_ : U0 Val → U0 Val → U0 Val
-  -- Int ~> Int     -- closure-based function
-  -- Int -> Int     -- known C-calling convention function
-
-
   -- "id    : {A} → A → A = λ x. x",
   -- "comp  : {A B C} → (B → C) → (A → B) → (A → C) = λ f g x. f (g x)",
   -- "app   : {A B} → (A → B) → A → B = λ f x. f x",
@@ -221,22 +213,12 @@ p1 = unlines [
   -- data Nat₀ : VTy = Zero | Suc Nat₀
   -- ^Nat₀ ≃ ((N : VTy) → (^N → ^N) → ^N → ^N)
 
-  -- user defines :
-  --   data List A = Nil | Cons A (List A)
-  --   CPS (List A)
-
-  --   ^(List A) ≤ CPS (List A)
-  --   CPS (List A) ≤ ^(List A)
-
   -- map : {A B : VTy} → (^A → ^B) → CPS (List A) → CPS (List A)
 
   -- myListFun : List Int → List Int := map (+100) ∘ filter even ∘ take 100
-  --                                 :=
 
   -- (f . g) x = f (g x)
   -- (f . g) = \x -> f (g x)
-
-  --
 
   -- "n0 : Nat = λ N s z. z",
   -- "n1 : Nat = λ N s z. s z",

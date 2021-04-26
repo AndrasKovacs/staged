@@ -46,7 +46,7 @@ data Tm1
   | Field1 Tm1 Name Int
   | TyCon Lvl
   | DataCon Lvl Int
-  | Inserted MetaVar Locals
+  | AppPruning Tm1 Pruning
   | Wk11 Tm1
   | Wk01 Tm1
   | Meta MetaVar
@@ -59,6 +59,13 @@ data Locals
   | Bind0 Locals Name Ty CV
   | Bind1 Locals Name Ty
   deriving Show
+
+data PruneEntry = PESkip | PEBind0 | PEBind1 Icit
+  deriving Show
+
+type Pruning = [PruneEntry]
+newtype RevPruning = RevPruning Pruning
+  deriving stock Show
 
 localNames :: Locals -> [Name]
 localNames = \case

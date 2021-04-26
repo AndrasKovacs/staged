@@ -212,7 +212,7 @@ lams l a t = go l 0 a t where
 
 solve :: Dbg => Lvl -> ConvState -> MetaVar -> Spine -> Val1 -> IO ()
 solve l st m sp rhs = do
-  -- traceShowM ("solve", quote1 l DoUnfold (Flex m sp), quote1 l DoUnfold rhs)
+  traceShowM ("solve", quote1 l DoUnfold (Flex m sp), quote1 l DoUnfold rhs)
   ma <- ES.unsolvedMetaTy m
   when (st == CSFlex) $ throwIO CantUnify
   pren <- invert l sp

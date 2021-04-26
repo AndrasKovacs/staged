@@ -1,5 +1,7 @@
 
-module Pretty (showTm0, showTm1, showTm0Top, showTm1Top, showEx, showVal1',
+module Pretty (showTm0, showTm1, showTm0Top, showTm1Top, showEx,
+               showVal1', showVal1Top',
+               showTm1Top', showTm0Top',
                showVal0, showVal1, showVal0Top, showVal1Top) where
 
 import qualified Data.ByteString.Char8 as B
@@ -31,6 +33,15 @@ showVal1 cxt t = showTm1 cxt $ quote1 cxt t
 
 showVal1' :: Cxt -> V.Val1 -> String
 showVal1' cxt t = showTm1 cxt $ Eval.quote1 (_lvl cxt) DoUnfold t
+
+showVal1Top' :: V.Val1 -> String
+showVal1Top' t = showTm1Top $ Eval.quote1 0 DoUnfold t
+
+showTm1Top' :: Tm1 -> String
+showTm1Top' t = tm1 tmp [] (Eval.quote1 0 DoUnfold (Eval.eval1 V.Nil t)) []
+
+showTm0Top' :: Tm0 -> String
+showTm0Top' t = tm0 tmp [] (Eval.quote0 0 DoUnfold (Eval.eval0 V.Nil t)) []
 
 showTm0Top :: Tm0 -> String
 showTm0Top t = tm0 tmp [] t []

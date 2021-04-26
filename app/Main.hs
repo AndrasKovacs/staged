@@ -54,10 +54,18 @@ displayState = do
       putStrLn (show x ++ " : " ++ showTm1Top a)
       putStrLn ("  := " ++ showTm0Top t)
       nl
+      putStrLn "-- STAGED"
+      putStrLn (show x ++ " : " ++ showTm1Top' a)
+      putStrLn ("  := " ++ showTm0Top' t)
+      nl
     TEDef1 a va t vt x _ -> do
       putStrLn (show x ++ " : " ++ showTm1Top a)
       putStrLn ("  = " ++ showTm1Top t)
       nl
+      -- putStrLn "-- NORMAL FORM"
+      -- putStrLn (show x ++ " : " ++ showTm1Top' a)
+      -- putStrLn ("  = " ++ showTm1Top' t)
+      -- nl
     TETyCon{} -> do
       putStrLn "<tycon not supported>"
     TEDataCon{} -> do
@@ -120,86 +128,165 @@ test str = do
 
   displayState
 
+
 p1 = unlines [
-  "Alg = [B: U1, true: B, false: B]",
-  "Bool = (A : Alg) → A.B",
-  "id : Bool → Bool = λ b A. b [A.B, A.true, A.false]",
 
-  "NatAlg = [N : U1, zero : N, suc: N → N]",
-  "Nat    = (A : NatAlg) → A.N",
-  "zero   = λ (A : NatAlg). A.zero",
-  "suc : Nat → Nat = λ n A. A.suc (n A)",
-  "id  : Nat → Nat = λ n A. n [A.N, A.zero, A.suc]",
-  "add : Nat → Nat → Nat = λ a b A. a [A.N, b A, A.suc]",
-  "n5 = suc (suc (suc (suc (suc zero))))",
+  -- "Alg = [B: U1, true: B, false: B]",
+  -- "Bool = (A : Alg) → A.B",
+  -- "id : Bool → Bool = λ b A. b [A.B, A.true, A.false]",
 
-  "id : {i}{A : U0 i} → A → A = λ x. x",
+  -- "NatAlg = [N : U1, zero : N, suc: N → N]",
+  -- "Nat    = (A : NatAlg) → A.N",
+  -- "zero   = λ (A : NatAlg). A.zero",
+  -- "suc : Nat → Nat = λ n A. A.suc (n A)",
+  -- "id  : Nat → Nat = λ n A. n [A.N, A.zero, A.suc]",
+  -- "add : Nat → Nat → Nat = λ a b A. a [A.N, b A, A.suc]",
+  -- "n5 = suc (suc (suc (suc (suc zero))))",
 
-  "comp : {i j k}{A : U0 i}{B : U0 j}{C : U0 k}",
-  "     → (B → C) → (A → B) → A → C",
-  "  = λ f g x. f (g x)",
-
-  "id2 : Int → Int := id",
-  "f : Int → Int = λ x. x + x + 10",
-  "g := comp id (comp f f)",
-  "h = comp g id",
-
-  "Sg = λ A (B : A → U1). [fst : A, snd: B fst]",
-
-  "Pointed = Sg U1 (λ A. A)",
-
-  "SmallFunctor : U1 = [F : U0 Val → U1, map : {A B : U0 _} → (A → B) → F A → F B]",
-  "BigFunctor   : U1 = [F : U1 → U1, map : {A B} → (A → B) → F A → F B]",
-
-  "Eq : {A : U1} → A → A → U1",
-  "  = λ {A} x y. (P : A → U1) → P x → P y",
-  "refl : {A x} → Eq {A} x x = λ P px. px",
-
-  "g := λ x. 10 + x",
-
-  "foo : Eq g g = refl",
-
-  "g : [fst: Int, snd: Int, thd: Int] := [20, 30, 100]",
-
-  "foo : Eq g g = refl"
-
-  -- "foo : {A : U1} → A → A = λ {A} B x. x"
-
-  -- "foo = 100",
-  -- "bar := foo"
-
-  -- "id : Int → Int = λ x. x",
-  -- "f : Int → Int := id"
+  -- "id : {i}{A : U0 i} → A → A = λ x. x",
 
   -- "id2 : Int → Int := id",
-  -- "foo := λ x. x + 10",
-  -- "bar := λ y. y * y + 400",
+  -- "f : Int → Int = λ x. x + x + 10",
+  -- "g := comp id (comp f f)",
+  -- "h = comp g id",
 
-  -- Lam1 x Expl (Inserted 0 (Bind1 (Bind1 Empty A (U U1)) B (Var1 0))) (Var1 0)
-  -- Pi x Expl (Flex 0 (SApp1 (SApp1 SId (Var1 0) Expl) (Var1 1) Expl))
-  --           (Close Nil (App1 (App1 (Meta 0) (Var1 2) Expl) (Var1 1) Expl))
+  -- "Sg = λ A (B : A → U1). [fst : A, snd: B fst]",
 
-  -- "foo = λ x. 10 + x"
+  -- "Pointed = Sg U1 (λ A. A)",
 
-  -- "Sg : (A : MTy) → (A → MTy) → MTy",
-  -- "  = λ A B. [fst : A, snd : B fst]",
-  -- "Pointed = Sg MTy (λ A. A)",
-  -- "foo : (p : Pointed) → p.fst = λ p. p.snd",
+  -- "SmallFunctor : U1 = [F : U0 Val → U1, map : {A B : U0 _} → (A → B) → F A → F B]",
+  -- "BigFunctor   : U1 = [F : U1 → U1, map : {A B} → (A → B) → F A → F B]",
 
-  -- "f : {A} → ^(A → A) = λ x. x",
-  -- "g : {A B} → ^(A → B → A) = λ x y. x",
-  -- "comp : {A B C : MTy} → (B → C) → (A → B) → A → C",
-  -- "  = λ f g x. f (g x)",
-  -- "idM : {A : MTy} → A → A",
-  -- "  = λ x. x",
-  -- "idM2 : {A} → A → A",
-  -- "  = λ x. idM x"
+  -- "Eq : {A : U1} → A → A → U1",
+  -- "  = λ {A} x y. (P : A → U1) → P x → P y",
+  -- "refl : {A x} → Eq {A} x x = λ P px. px",
 
-  -- "Nat  : MTy = (N : MTy) → (N → N) → N → N",
-  -- "zero : Nat = λ N s z. z",
-  -- "suc  : Nat → Nat = λ a N s z. s (a N s z)",
-  -- "add  : Nat → Nat → Nat = λ a b N s z. a N s (b N s z)",
-  -- "mul  : Nat → Nat → Nat = λ a b N s z. a N (b N s) z"
+  -- "g := λ x. 10 + x",
+
+  -- "foo : Eq g g = refl",
+
+  -- "g : [fst: Int, snd: Int, thd: Int] := [20, 30, 100]",
+
+  -- "foo : Eq g g = refl"
+
+  -- "VTy = U0 Val",       -- type synonym for "value" runtime types        (records + inductive types + primitives)
+  -- "CTy = U0 Comp",      -- type synonym for "computation" runtime types  (functions)
+
+  -- -- two kinds of let binder:  =   -- compile-time
+  -- --                          :=   -- runtime binding
+
+  -- --
+
+  -- "f1 : Int → Int := λ x. x + 10",
+
+  "id    : {A : U1} → A → A = λ x. x",
+  -- "const : {A B : U1} → A → B → A = λ a b. a",
+  -- "comp  : {A B C : U1} → (B → C) → (A → B) → A → C = λ f g x. f (g x)",
+
+  "f2 : Int → Int := λ x. id x"
+
+
+
+  -- "f2 : Int → Int := comp f1 f1",              -- stage inference: inserts staging annotations automatically
+  --                                              -- "coercive subtyping"
+
+  -- -- "f2 : Int → Int := λ x. comp f1 f1"           -- Int → Int ≤ ^Int → ^Int
+  -- --                                               -- whenever (A : U0 cv) then (^A : U1)
+  -- --                                               -- <_> : A → ^A
+  --                                                  -- ~_  : ^A → A
+
+  -- "myConstant : ^Int = <1000>",           -- ^Int   : type of Int-expressions (at meta level)
+  --                                         -- <1000> : quoting of 1000
+
+  -- "myInt := myConstant",
+  -- "f2 : Int → Int := comp f1 f1",
+
+  -- "VTy = U0 Val",       -- type synonym for "value" runtime types        (records + inductive types + primitives)
+  -- "CTy = U0 Comp",      -- type synonym for "computation" runtime types  (functions)
+
+  -- _~>_ : U0 Val → U0 Val → U0 Val
+  -- Int ~> Int     -- closure-based function
+  -- Int -> Int     -- known C-calling convention function
+
+
+  -- "id    : {A} → A → A = λ x. x",
+  -- "comp  : {A B C} → (B → C) → (A → B) → (A → C) = λ f g x. f (g x)",
+  -- "app   : {A B} → (A → B) → A → B = λ f x. f x",
+  -- "const : {A B} → A → B → A = λ a b. a",
+
+  -- "Nat : U1 = (N : U1) → (N → N) → N → N",  -- full Church Nat at meta level
+
+  -- "Nat : U1 = (N : VTy) → (N → N) → N → N",
+
+  -- data Nat₀ : VTy = Zero | Suc Nat₀
+  -- ^Nat₀ ≃ ((N : VTy) → (^N → ^N) → ^N → ^N)
+
+  -- user defines :
+  --   data List A = Nil | Cons A (List A)
+  --   CPS (List A)
+
+  --   ^(List A) ≤ CPS (List A)
+  --   CPS (List A) ≤ ^(List A)
+
+  -- map : {A B : VTy} → (^A → ^B) → CPS (List A) → CPS (List A)
+
+  -- myListFun : List Int → List Int := map (+100) ∘ filter even ∘ take 100
+  --                                 :=
+
+  -- (f . g) x = f (g x)
+  -- (f . g) = \x -> f (g x)
+
+  --
+
+  -- "n0 : Nat = λ N s z. z",
+  -- "n1 : Nat = λ N s z. s z",
+  -- "add : Nat → Nat → Nat = λ a b N s z. a N s (b N s z)",
+  -- "n5 : Nat = λ N s z. s (s (s (s (s z))))",
+  -- "mul : Nat → Nat → Nat = λ a b N s. a N (b N s)",
+
+  -- "NatToInt : Nat → Int = λ n. n Int (λ x. x + 1) 0",
+  -- "IntToNat : Int → Nat = λ x N s z. _",
+
+  -- "add2 = λ (x : Int). x + 2",
+
+  -- "foo := comp add2 (comp add2 id)",
+
+  -- "hof : (Int → Int) → Int = λ f. f (f 10)",
+
+  -- "staticExp : Nat → Int → Int = λ a b. a Int (λ x. x * b) 1",
+
+  -- "exp5 := comp add2 (staticExp n5)",
+
+  -- -- meta-level
+  -- "NatAlg : U1 = [N : U1, zero : N, suc : N → N]",
+  -- "zero : (Alg : NatAlg) → Alg.N = λ Alg. Alg.zero",
+
+  -- -- runtime
+
+  -- "Pair1 : U1 → U1 → U1    = λ A B. [fst : A, snd : B]",
+  -- "Pair0 : VTy → VTy → VTy = λ A B. [fst : A, snd : B]",
+
+  -- "dup : {A : VTy} → A → Pair0 A A = λ x. let v := x; [x, x]",
+
+  -- -- " enumFromTo x y
+
+  -- "p1 : Pair1 Int Int = [add2 10, add2 20]",
+
+  -- "p2 : Pair0 Int Int := let v := p1.fst; [v, v]"     -- "let insertion"
+
+
+  -- "Eq : {A : U1} → A → A → U1",                -- Church-encoded propositional equality
+  -- "  = λ {A} x y. (P : A → U1) → P x → P y",
+  -- "refl : {A x} → Eq {A} x x = λ P px. px"
+
+  -- if I have a) general recursion b) side effects c) exceptions
+
+  -- let x := foo in bar
+  -- let x =  foo in bar
+  -- let x =  foo in bar
+
+  -- "g := λ x. 100",
+  -- "foo : Eq <g 10> <g 20> = refl"
 
   ]
 

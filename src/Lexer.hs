@@ -62,8 +62,8 @@ prettyError b (Error pos e) =
 
       err (Precise exp)     = "expected " ++ expected exp
       err (Imprecise exps)  = "expected " ++ (imprec $ S.toList $ S.fromList exps)
-      err (IndentMore col)  = "expected token indented to column " ++ show col ++ " or more"
-      err (ExactIndent col) = "expected token indented to column " ++ show col
+      err (IndentMore col)  = "expected a token, indented to column " ++ show col ++ " or more"
+      err (ExactIndent col) = "expected a token, indented to column " ++ show col
 
       imprec :: [Expected] -> String
       imprec []     = error "impossible"

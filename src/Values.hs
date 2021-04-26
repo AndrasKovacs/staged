@@ -59,7 +59,7 @@ data Val0
   deriving Show
 
 data Val1
-  = Unfold UnfoldHead Spine ~Val1
+  = Unfold UnfoldHead Spine ~Val1  -- delayed top-level def unfolding
   | Flex MetaVar Spine
   | Rigid RigidHead Spine
   | Pi Name Icit Ty {-# unpack #-} (Close S.Ty)

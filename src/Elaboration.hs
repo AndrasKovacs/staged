@@ -249,6 +249,8 @@ coe cxt t a a' = do
         unify1 cxt a (V.Fun a1 a2 va2cv)
         go cxt t (V.Lift V.Comp (V.Fun a1 a2 va2cv)) (V.Pi x' Expl a' b')
 
+      -- TODO: same for Rec
+
 
       -- fallback
       ------------------------------------------------------------
@@ -274,6 +276,18 @@ check0 cxt topT topA cv = do
       let qa' = quote1 cxt a'
       S.Lam0 x qa' <$!>
         check0 (bind0' x qa' a' S.Val V.Val cxt) t b' b'cv
+
+    (P.Lam _ (bindToName cxt -> x) i a t, a', cv) -> case i of
+      P.Named{}     -> elabError cxt topT ExpectedRuntimeType
+      P.NoName Impl -> elabError cxt topT ExpectedRuntimeType
+      P.NoName Expl -> do
+        a <- tyAnnot cxt a (V.U0 V.Val)
+        let va   = eval1 cxt a
+        let cxt' = bind0' x a va S.Val V.Val cxt
+        (t, b, bcv) <- infer0 cxt' t
+        unify1 cxt cv V.Comp
+        unify1 cxt a' (V.Fun va b bcv)
+        pure $! (S.Lam0 x a t)
 
     (P.RecCon _ ts, V.Rec0 as, _) -> do
 
@@ -387,7 +401,7 @@ checkTuple1 cxt topT ts (V.Close env as) = case (ts, as) of
 
 check1 :: Dbg => Cxt -> P.Tm -> V.Ty -> IO S.Tm1
 check1 cxt topT topA = do
-  -- traceShowM ("check1", topT, showVal1 cxt topA)
+  -- traceShowM ("check1", topT, showVal1' cxt topA)
   -- traceShowM ("check1", topT, forceFU1 topA)
   case (topT, forceFU1 topA) of
 
@@ -469,6 +483,66 @@ check1 cxt topT topA = do
 data TmU = Tm0 S.Tm0 V.Ty V.CV | Tm1 S.Tm1 V.Ty deriving Show
 
 -- TODO: handle record constructors
+infer0check :: Dbg => Cxt -> P.Tm -> IO (S.Tm0, V.Ty, V.CV)
+infer0check cxt topT = case topT of
+
+  P.Lam _ (bindToName cxt -> x) i a t -> case i of
+    P.Named{}     -> elabError cxt topT ExpectedRuntimeType
+    P.NoName Impl -> elabError cxt topT ExpectedRuntimeType
+    P.NoName Expl -> do
+      a <- tyAnnot cxt a (V.U0 V.Val)
+      let va   = eval1 cxt a
+      let cxt' = bind0' x a va S.Val V.Val cxt
+      (t, b, bcv) <- infer0 cxt' t
+      pure $! (S.Lam0 x a t, V.Fun va b bcv, V.Comp)
+
+  topT -> insertTmU cxt (infer cxt topT) >>= \case
+    Tm0 t a cv ->
+      pure (t, a, cv)
+    Tm1 t a -> case forceFU1 a of
+      V.Lift cv a -> do
+        let t' = S.down t
+        pure (t', a, cv)
+
+      -- PRUNING needed (often)
+      a -> do
+        cv <- freshCV cxt
+        let vcv = eval1 cxt cv
+        a' <- eval1 cxt <$!> freshMeta cxt (S.U0 cv)
+        t  <- S.down <$!> coe cxt t a (V.Lift vcv a')
+        pure (t, a', vcv)
+
+-- TODO: handle records
+infer0chk :: Dbg => Cxt -> P.Tm -> IO (S.Tm0, V.Ty, V.CV)
+infer0chk cxt topT = case topT of
+
+  P.Lam _ (bindToName cxt -> x) i a t -> case i of
+    P.Named{}     -> elabError cxt topT ExpectedRuntimeType
+    P.NoName Impl -> elabError cxt topT ExpectedRuntimeType
+    P.NoName Expl -> do
+      a <- tyAnnot cxt a (V.U0 V.Val)
+      let va   = eval1 cxt a
+      let cxt' = bind0' x a va S.Val V.Val cxt
+      (t, b, bcv) <- infer0 cxt' t
+      pure $! (S.Lam0 x a t, V.Fun va b bcv, V.Comp)
+
+  topT -> insertTmU cxt (infer cxt topT) >>= \case
+    Tm0 t a cv ->
+      pure (t, a, cv)
+    Tm1 t a -> case forceFU1 a of
+      V.Lift cv a -> do
+        let t' = S.down t
+        pure (t', a, cv)
+
+      -- PRUNING needed
+      a -> do
+        cv <- freshCV cxt
+        let vcv = eval1 cxt cv
+        a' <- eval1 cxt <$!> freshMeta cxt (S.U0 cv)
+        t  <- S.down <$!> coe cxt t a (V.Lift vcv a')
+        pure (t, a', vcv)
+
+-- TODO: handle records
 infer0 :: Dbg => Cxt -> P.Tm -> IO (S.Tm0, V.Ty, V.CV)
 infer0 cxt topT = case topT of
 

@@ -366,7 +366,7 @@ tmBase = do
 {-# inline tmBase #-}
 
 tm' :: Parser Tm
-tm' = lvl' >> tmBase `cut` [Msg "lambda expression", "let", "case", "fix"]
+tm' = lvl' >> tmBase `cut` [Msg "lambda expression", "let"]
 
 --------------------------------------------------------------------------------
 
@@ -402,7 +402,7 @@ dataDecl = do
 top :: Parser TopLevel
 top =  (exactLvl 0 >> (ident >>= topDef))
    <|> (exactLvl 0 >> dataDecl)
-   <|> (Nil <$ eof)
+   <|> (Nil <$ eof `cut` [Msg "end of input"])
 
 --------------------------------------------------------------------------------
 
@@ -421,7 +421,10 @@ parseString (packUTF8 -> str) = (coerce str, parse str)
 --------------------------------------------------------------------------------
 
 p1 = unlines [
-  -- "id : Bool → Bool = λ b A. b [A.B, A.true, A.false]",
+  "id : Bool → Bool = λ b A. b [A.B, A.true, ,A.false]",
+  "  ",
+  "  "
+
   -- "bar : U1 = U0 Comp"
   -- "foo : Int = 300 + 500 * 10"
   -- "bar = let x = Comp; let foo := mallc; U0 x"

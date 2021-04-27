@@ -1,21 +1,26 @@
 {-# options_ghc -Wno-unused-imports -Wno-type-defaults #-}
 
-module Unification where
+module Unification (freshCV, freshMeta, closeType, unify0, unify1) where
 
 import qualified Data.Array.Dynamic.L as D
 import qualified Data.IntMap.Strict as IM
+import Control.Exception (try)
 
 import Common
 import Cxt
-import qualified ElabState as ES
-import Evaluation
 import Exceptions
 import Values
+import qualified ElabState as ES
+import Evaluation
 import qualified Syntax as S
+import Pretty
 
 {-
 TODO:
+  - pruning with currying and <_> handling
   - eta short unification
+  - flex-flex
+  - intersection
   - better data structures
 
 -}
@@ -27,10 +32,10 @@ closeType ls topA = case ls of
   S.Bind0 ls x a cv -> closeType ls (S.Pi x Expl (S.Lift cv a) topA)
   S.Bind1 ls x a    -> closeType ls (S.Pi x Expl a topA)
 
-freshMeta :: Cxt -> S.Ty -> IO S.Tm1
-freshMeta cxt ~a = do
-  let ~va = eval1 Nil (closeType (_locals cxt) a)
-  m <- ES.newMeta va
+freshMeta :: Cxt -> Ty -> IO S.Tm1
+freshMeta cxt a = do
+  let qa = closeType (_locals cxt) $! quote1 (_lvl cxt) (LiftVars (_lvl cxt)) a
+  m <- ES.newMeta (eval1 Nil qa)
   pure $! S.AppPruning (S.Meta m) (_pruning cxt)
 
 freshCV :: Cxt -> IO S.CV
@@ -43,49 +48,206 @@ freshCV cxt = do
 -- Solutions
 --------------------------------------------------------------------------------
 
-data PartialRenaming = PRen {
-    dom :: Lvl
-  , cod :: Lvl
-  , ren :: IM.IntMap Lvl}
+data PSEntry = PS0 Val0 | PS1 Val1
+  deriving Show
 
-lift :: PartialRenaming -> PartialRenaming
-lift (PRen dom cod ren) =
-  PRen (dom + 1) (cod + 1) (IM.insert (coerce cod) dom ren)
+data PartialSub = PSub {
+    occurs   :: Maybe MetaVar     -- optional meta for occurs check
+  , dom      :: Lvl               -- Γ
+  , cod      :: Lvl               -- Δ
+  , sub      :: IM.IntMap PSEntry -- Γ ~> Δ     a partial substitution
+  , isLinear :: Bool              -- if sub is not linear, we have to check rhs type validity
+  }                               -- after substitution
+  deriving Show
 
-invert :: Lvl -> Spine -> IO PartialRenaming
-invert gamma sp = do
+emptyPSub :: PartialSub
+emptyPSub = PSub Nothing 0 0 mempty True
 
-  let go :: Spine -> (Lvl, IM.IntMap Lvl) -- TODO: optimize
-      go SId =
-        (0, mempty)
-      go (SField1 sp x n) = do
-        throw SpineError
-      go (SApp1 sp t i) =
-        let (!dom, !ren) = go sp in
-        case forceFU1 t of
-          Var1 (Lvl x) | IM.notMember x ren ->
-            ((,) $$! (dom + 1) $$! (IM.insert x dom ren))
-          _ ->
-            throw SpineError
+lift1 :: PartialSub -> PartialSub
+lift1 (PSub occ dom cod sub isLinear) =
+  PSub occ (dom + 1) (cod + 1) (IM.insert (coerce cod) (PS1 (Var1 dom)) sub) isLinear
 
-  let (!dom, !ren) = go sp
-  pure $ PRen dom gamma ren
+lift0 :: PartialSub -> PartialSub
+lift0 (PSub occ dom cod sub isLinear) =
+  PSub occ (dom + 1) (cod + 1) (IM.insert (coerce cod) (PS0 (Var0 dom)) sub) isLinear
 
-renameSp :: Dbg => MetaVar -> ConvState -> PartialRenaming -> S.Tm1 -> Spine -> IO S.Tm1
-renameSp m st pren t sp = let
-  go1   t = rename1 m st pren t;     {-# inline go1 #-}
-  goSp sp = renameSp m st pren t sp; {-# inline goSp #-}
+skip :: PartialSub -> PartialSub
+skip sub = sub {cod = cod sub + 1}
+
+-- Inversion
+--------------------------------------------------------------------------------
+
+invertVal1 :: Val1 -> Val1 -> PartialSub -> IO PartialSub
+invertVal1 v rhs psub = case forceFU1 v of
+  Var1 x -> do
+    -- x is non-linear
+    if IM.member (coerce x) (sub psub) then do
+      pure $! psub {isLinear = False, sub = IM.delete (coerce x) (sub psub)}
+
+    -- x is linear
+    else do
+      pure $! psub {
+        sub = IM.insert (coerce x) (PS1 rhs) (sub psub)}
+
+  RecCon1 ts -> do
+   let go psub ix FNil           = pure psub
+       go psub ix (FCons x t ts) = do
+         psub <- invertVal1 t (field1 rhs x ix) psub
+         go psub (ix + 1) ts
+   go psub 0 ts
+
+  Up v -> do
+    invertVal0 v (down rhs) psub
+
+  _ -> do
+    throwIO SpineError
+
+invertVal0 :: Val0 -> Val0 -> PartialSub -> IO PartialSub
+invertVal0 v rhs psub = case forceFU0 v of
+
+  Var0 x -> do
+    -- x is non-linear
+    if IM.member (coerce x) (sub psub) then do
+      pure $! psub {isLinear = False, sub = IM.delete (coerce x) (sub psub)}
+
+    -- x is linear
+    else do
+      pure $! psub {
+        sub = IM.insert (coerce x) (PS0 rhs) (sub psub)}
+
+  RecCon0 ts -> do
+    let go psub ix FNil           = pure psub
+        go psub ix (FCons x t ts) = do
+          psub <- invertVal0 t (Field0 rhs x ix) psub
+          go psub (ix + 1) ts
+    go psub 0 ts
+
+  Down t -> do
+    invertVal1 t (up rhs) psub
+
+  _ -> do
+    throwIO SpineError
+
+invertSp :: Lvl -> Spine -> IO PartialSub
+invertSp gamma = \case
+  Id ->
+    pure emptyPSub
+
+  App1 t u i -> do
+    psub <- invertSp gamma t
+    let d = dom psub
+    invertVal1 u (Var1 d) (psub {dom = d + 1})
+
+  Field1{} -> do
+    throwIO NeedExpansion
+
+--------------------------------------------------------------------------------
+
+-- | Create a fresh eta-expanded value for a meta such that applying it to the spine returns
+--   a VFlex without projections.
+metaExpansion :: MetaVar -> Spine -> IO Val1
+metaExpansion m sp = do
+  a <- ES.unsolvedMetaTy m
+
+  let go :: Cxt -> Spine -> Ty -> IO S.Tm1
+      go cxt sp a = case (sp, forceFU1 a) of
+
+        (Id, a) -> do
+          freshMeta cxt a
+
+        (App1 sp t i, Pi x _ a b  ) -> do
+          let qa = quote1 (_lvl cxt) UnfoldNone a
+          S.Lam1 x i qa <$> go (bind1' x qa a cxt) sp (b $$ Var1 (_lvl cxt))
+
+        (Field1 t x ix, Rec1 fs) -> do
+
+          let goFields (Close env FNil) = do
+                pure FNil
+              goFields (Close env (FCons x' a as)) = do
+                t <- if x == x' then go cxt t (eval1 env a)
+                                else freshMeta cxt (eval1 env a)
+                ts <- goFields (Close (Snoc1 env (eval1 (_env cxt) t)) as)
+                pure $! FCons x' t ts
+
+          S.RecCon1 <$!> goFields fs
+
+        _ -> impossible
+
+  eval1 Nil <$!> go (emptyCxt "") (reverseSpine sp) a
+
+-- | Expand a meta, eliminating projections from the spine. Also update the meta with the expansion.
+expandMeta :: MetaVar -> Spine -> IO Val1
+expandMeta m sp = do
+  m' <- metaExpansion m sp
+  solve' m Id emptyPSub m'
+  pure $! app1Sp m' sp
+
+validateRhsType :: Ty -> Spine -> PartialSub -> IO ()
+validateRhsType mty sp psub = do
+  let getTy :: Ty -> Spine -> Ty
+      getTy a            Id            = a
+      getTy (Pi x i a b) (App1 sp t _) = getTy (b $$ t) sp
+      getTy _             _            = impossible
+  let rhsTy = getTy mty (reverseSpine sp)
+  rhsTy <- psubst1 CSRigid psub rhsTy
+  pure ()
+
+-- | Solve m given the result of inversion on a spine.
+solve' :: Dbg => MetaVar -> Spine -> PartialSub -> Val1 -> IO ()
+solve' m sp psub rhs = do
+  mty <- ES.unsolvedMetaTy m
+
+  when (not $ isLinear psub) $ do
+    validateRhsType mty sp psub
+
+  rhs <- psubst1 CSRigid (psub {occurs = Just m}) rhs
+  let solution = eval1 Nil $ lams (dom psub) mty rhs
+  D.write ES.metaCxt (coerce m) (ES.Solved solution mty)
+
+psubstSp :: Dbg => ConvState -> PartialSub -> S.Tm1 -> Spine -> IO S.Tm1
+psubstSp st psub t sp = let
+  go1   t = psubst1 st psub t;     {-# inline go1 #-}
+  goSp sp = psubstSp st psub t sp; {-# inline goSp #-}
   in case sp of
-    SId           -> pure $! t
-    SApp1 t u i   -> S.App1 <$!> goSp t <*!> go1 u <*!> pure i
-    SField1 t x n -> S.Field1  <$!> goSp t <*!> pure x <*!> pure n
+    Id           -> pure $! t
+    App1 t u i   -> S.App1 <$!> goSp t <*!> go1 u <*!> pure i
+    Field1 t x n -> S.Field1  <$!> goSp t <*!> pure x <*!> pure n
 
-rename0 :: Dbg => MetaVar -> ConvState -> PartialRenaming -> Val0 -> IO S.Tm0
-rename0 m st pren t = let
-  go0 = rename0 m st pren; {-# inline go0 #-}
-  go1 = rename1 m st pren; {-# inline go1 #-}
 
-  goClose0 t = rename0 m st (lift pren) (dive t (cod pren))
+-- | Remove some arguments from a closed iterated Pi type.
+pruneTy :: S.RevPruning -> Ty -> IO S.Ty
+pruneTy (S.RevPruning pr) a = go pr emptyPSub a where
+  go :: S.Pruning -> PartialSub -> Ty -> IO S.Ty
+  go pr psub a = case (pr, forceFU1 a) of
+    ([]               , a         ) -> psubst1 CSRigid psub a
+    (S.PESkip    : pr , Pi x i a b) -> go pr (skip psub) (b $$ Var1 (cod psub))
+    (S.PEBind1{} : pr , Pi x i a b) -> S.Pi x i <$!> psubst1 CSRigid psub a
+                                                <*!> go pr (lift1 psub) (b $$ Var1 (cod psub))
+    _                               -> impossible
+
+psubstSpWithPruning :: ConvState -> PartialSub -> MetaVar -> Spine -> IO S.Tm1
+psubstSpWithPruning st psub m sp = do
+  -- ms <- readIORef mcxt
+  -- traceShowM ("prunesp", m, sp)
+  -- try (psubstSp psub (S.Meta m) sp) >>= \case
+  --   Left NeedExpansion -> impossible
+  --   Left _ -> do
+  --     -- traceShowM ("try to prune", m, sp)
+  --     (m, sp) <- prunePrep psub m sp
+  --     -- traceShowM ("prepped", m, sp)
+  --     t <- pruneFlex psub m sp
+  --     -- traceShowM ("pruned", t)
+  --     pure t
+  --   Right t -> do
+  --     pure t
+  undefined
+
+psubst0 :: Dbg => ConvState -> PartialSub -> Val0 -> IO S.Tm0
+psubst0 st psub t = let
+  go0 = psubst0 st psub; {-# inline go0 #-}
+  go1 = psubst1 st psub; {-# inline go1 #-}
+
+  goClose0 t = psubst0 st (lift0 psub) (dive t (cod psub))
   {-# inline goClose0 #-}
 
   force t = case st of
@@ -93,41 +255,39 @@ rename0 m st pren t = let
     _      -> forceF0 t
   {-# inline force #-}
 
-  goFix t = rename0 m st (lift (lift pren)) (dive2 t (cod pren))
-  {-# inline goFix #-}
-
   goCases (Close env cs) = goCs cs where
     goCs CNil =
       pure CNil
     goCs (CCons x xs t cs) =
-      CCons x xs <$!>  go0 (diveN (Close env t) (cod pren) (length xs))
+      CCons x xs <$!> go0 (diveN (Close env t) (cod psub) (length xs))
                  <*!> goCs cs
 
   in case force t of
-    Var0  x       -> case IM.lookup (coerce x) (ren pren) of
-                       Nothing -> throwIO $ OutOfScope x
-                       Just x' -> pure $! S.Var0 (lvlToIx (dom pren) x')
+    Var0  x       -> case IM.lookup (coerce x) (sub psub) of
+                       Nothing       -> throwIO $ OutOfScope x
+                       Just (PS1 _)  -> impossible
+                       Just (PS0 x') -> pure $! quote0 (dom psub) UnfoldNone x'
+
     Top0 x        -> pure $! S.Top0 x
     App0 t u      -> S.App0 <$!> go0 t <*!> go0 u
     Let0 x a t u  -> S.Let0 x <$!> go1 a <*!> go0 t <*!> goClose0 u
     Lam0 x a t    -> S.Lam0 x <$!> go1 a <*!> goClose0 t
     Down t        -> S.Down <$!> go1 t
+    Case t ts     -> S.Case <$!> go0 t <*!> goCases ts
     RecCon0 fs    -> S.RecCon0 <$!> mapM go0 fs
-    Case t cs     -> S.Case <$!> go0 t <*!> goCases cs
     Field0 t x n  -> S.Field0 <$!> go0 t <*!> pure x <*!> pure n
-    Fix x y t     -> S.Fix x y <$!> goFix t
     Add t u       -> S.Add <$!> go0 t <*!> go0 u
     Sub t u       -> S.Sub <$!> go0 t <*!> go0 u
     Mul t u       -> S.Mul <$!> go0 t <*!> go0 u
     IntLit n      -> pure $! S.IntLit n
 
-rename1 :: Dbg => MetaVar -> ConvState -> PartialRenaming -> Val1 -> IO S.Tm1
-rename1 m st pren t = let
-  go0 = rename0 m st pren; {-# inline go0 #-}
-  go1 = rename1 m st pren; {-# inline go1 #-}
-  goSp = renameSp m st pren; {-# inline goSp #-}
+psubst1 :: Dbg => ConvState -> PartialSub -> Val1 -> IO S.Tm1
+psubst1 st psub t = let
+  go0  = psubst0 st psub; {-# inline go0 #-}
+  go1  = psubst1 st psub; {-# inline go1 #-}
+  goSp = psubstSp st psub; {-# inline goSp #-}
 
-  goClose1 t = rename1 m st (lift pren) (t $$ Var1 (cod pren));
+  goClose1 t = psubst1 st (lift1 psub) (t $$ Var1 (cod psub));
   {-# inline goClose1 #-}
 
   force t = case st of
@@ -139,44 +299,53 @@ rename1 m st pren t = let
   {-# inline goUH #-}
 
   goRH = \case
-    RHVar1 x     -> S.Var1 (lvlToIx (dom pren) x)
-    TyCon x      -> S.TyCon x
-    DataCon x ix -> S.DataCon x ix
+    RHVar1 x -> case IM.lookup (coerce x) (sub psub) of
+      Nothing       -> throwIO $! OutOfScope x
+      Just (PS0 _)  -> impossible
+      Just (PS1 x') -> pure $! quote1 (dom psub) UnfoldNone x'
+    RHTyCon x -> pure $! S.TyCon x
+    RHDataCon x ix -> pure $! S.DataCon x ix
   {-# inline goRH #-}
 
-  goRec1 :: PartialRenaming -> Close (Fields S.Ty) -> IO (Fields S.Ty)
-  goRec1 pren (Close env FNil) =
+  goRec1 :: PartialSub -> Close (Fields S.Ty) -> IO (Fields S.Ty)
+  goRec1 psub (Close env FNil) =
     pure FNil
-  goRec1 pren (Close env (FCons x a as)) =
-    FCons x <$!> rename1 m st pren (eval1 env a)
-            <*!> goRec1 (lift pren) (Close (Snoc1 env (Var1 (cod pren))) as)
+  goRec1 psub (Close env (FCons x a as)) =
+    FCons x <$!> psubst1 st psub (eval1 env a)
+            <*!> goRec1 (lift1 psub) (Close (Snoc1 env (Var1 (cod psub))) as)
 
   in case force t of
-    Var1  x         -> case IM.lookup (coerce x) (ren pren) of
-                         Nothing -> throwIO $ OutOfScope x
-                         Just x' -> pure $! S.Var1 (lvlToIx (dom pren) x')
-    RecCon1 fs      -> S.RecCon1 <$!> mapM go1 fs
-    Flex x sp       -> if x == m then throwIO (OccursCheck x)
-                                 else renameSp m CSFlex pren (S.Meta x) sp
-    Unfold h sp t   -> case st of
-                         CSRigid -> renameSp m CSFlex pren (goUH h) sp
-                                    `catch` \_ -> rename1 m CSFull pren t
-                         CSFlex  -> throwIO CantUnify
-                         _       -> impossible
-    Rigid h sp      -> goSp (goRH h) sp
-    Pi x i a b      -> S.Pi x i <$!> go1 a <*!> goClose1 b
-    Fun a b bcv     -> S.Fun <$!> go1 a <*!> go1 b <*!> go1 bcv
-    Lam1 x i a t    -> S.Lam1 x i <$!> go1 a <*!> goClose1 t
-    Up t            -> S.Up <$!> go0 t
-    Lift cv a       -> S.Lift <$!> go1 cv <*!> go1 a
-    Rec1 as         -> S.Rec1 <$!> goRec1 pren as
-    Rec0 as         -> S.Rec0 <$!> mapM go1 as
-    U1              -> pure S.U1
-    U0 cv           -> S.U0 <$!> go1 cv
-    CV              -> pure S.CV
-    Comp            -> pure S.Comp
-    Val             -> pure S.Val
-    Int             -> pure $! S.Int
+
+    Rigid h sp -> do
+      h <- goRH h
+      psubstSp st psub h sp
+
+    Flex x sp ->
+      if Just x == occurs psub then do
+        throwIO (OccursCheck x)
+      else do
+        psubstSp st psub (S.Meta x) sp
+
+    Unfold h sp t -> case st of
+      CSRigid -> psubstSp CSFlex psub (goUH h) sp
+                 `catch` \_ -> psubst1 CSFull psub t
+      CSFlex  -> throwIO CantUnify
+      _       -> impossible
+
+    RecCon1 fs   -> S.RecCon1 <$!> mapM go1 fs
+    Pi x i a b   -> S.Pi x i <$!> go1 a <*!> goClose1 b
+    Fun a b bcv  -> S.Fun <$!> go1 a <*!> go1 b <*!> go1 bcv
+    Lam1 x i a t -> S.Lam1 x i <$!> go1 a <*!> goClose1 t
+    Up t         -> S.Up <$!> go0 t
+    Lift cv a    -> S.Lift <$!> go1 cv <*!> go1 a
+    Rec1 as      -> S.Rec1 <$!> goRec1 psub as
+    Rec0 as      -> S.Rec0 <$!> mapM go1 as
+    U1           -> pure S.U1
+    U0 cv        -> S.U0 <$!> go1 cv
+    CV           -> pure S.CV
+    Comp         -> pure S.Comp
+    Val          -> pure S.Val
+    Int          -> pure $! S.Int
 
 
 -- | Wrap a term in Lvl number of lambdas, getting the domain types
@@ -187,17 +356,22 @@ lams l a t = go l 0 a t where
   go l l' a t | l == l' = t
   go l l' a t = case forceFU1 a of
     Pi x i a b ->
-      S.Lam1 x i (quote1 l' DontUnfold a) (go l (l' + 1) (b $$ Var1 l') t)
+      S.Lam1 x i (quote1 l' UnfoldNone a) (go l (l' + 1) (b $$ Var1 l') t)
     foo -> error (show foo)
 
 solve :: Dbg => Lvl -> ConvState -> MetaVar -> Spine -> Val1 -> IO ()
 solve l st m sp rhs = do
-  traceShowM ("solve", quote1 l DoUnfold (Flex m sp), quote1 l DoUnfold rhs)
+
   ma <- ES.unsolvedMetaTy m
+
+  traceM ("?" ++ show m ++ " : " ++ showVal1Top' ma)
+  traceM ((showTm1Top $ quote1 l UnfoldAll (Flex m sp)) ++ " =? " ++
+           (showTm1Top $ quote1 l UnfoldAll rhs) ++ "\n")
+
   when (st == CSFlex) $ throwIO CantUnify
-  pren <- invert l sp
-  rhs  <- rename1 m CSRigid pren rhs
-  let sol = eval1 Nil (lams (dom pren) ma rhs)
+  psub <- invertSp l sp
+  rhs  <- psubst1 CSRigid psub rhs
+  let sol = eval1 Nil (lams (dom psub) ma rhs)
   D.write ES.metaCxt (coerce m) (ES.Solved sol ma)
 
 -- Unification
@@ -205,10 +379,10 @@ solve l st m sp rhs = do
 
 unifySp :: Dbg => Lvl -> ConvState -> Val1 -> Spine -> Val1 -> Spine -> IO ()
 unifySp l st topT sp topT' sp' = case (sp, sp') of
-  (SId          , SId            )           -> pure ()
-  (SApp1 t u i  , SApp1 t' u' i' )           -> unifySp l st topT t topT' t' >> unify1 l st u u'
-  (SField1 t _ n, SField1 t' _ n') | n == n' -> unifySp l st topT t topT' t'
-  _ -> throwIO $ UnifyError1 (quote1 l DontUnfold topT) (quote1 l DontUnfold topT')
+  (Id          , Id            )           -> pure ()
+  (App1 t u i  , App1 t' u' i' )           -> unifySp l st topT t topT' t' >> unify1 l st u u'
+  (Field1 t _ n, Field1 t' _ n') | n == n' -> unifySp l st topT t topT' t'
+  _ -> throwIO $ UnifyError1 (quote1 l UnfoldNone topT) (quote1 l UnfoldNone topT')
 
 unifyEq :: (Eq a, Show a) => a -> a -> IO ()
 unifyEq a a' = unless (a == a') (throwIO $ EqUnifyError a a')
@@ -221,7 +395,7 @@ unify0 l st t t' = let
   force t = case st of CSFull -> forceFU0 t
                        _      -> forceF0  t
   {-# inline force #-}
-  q0 = quote0 l DontUnfold; {-# inline q0 #-}
+  q0 = quote0 l UnfoldNone; {-# inline q0 #-}
 
   err t t' = throwIO $ UnifyError0 (q0 t) (q0 t'); {-# inline err #-}
 
@@ -254,7 +428,6 @@ unify0 l st t t' = let
     (Let0 _ a t u , Let0 _ a' t' u' ) -> go1 a a' >> go0 t t' >> goClose0 u u'
     (Down t       , Down t'         ) -> go1 t t'
     (Case t cs    , Case t' cs'     ) -> go0 t t' >> goCases t cs t' cs'
-    (Fix _ _ t    , Fix _ _ t'      ) -> goFix t t'
     (Lam0 _ a t   , Lam0 _ a' t'    ) -> goClose0 t t'
     (App0 t u     , App0 t' u'      ) -> go0 t t' >> go0 u u'
     (RecCon0 ts   , RecCon0 ts'     ) -> goRecCon0 ts ts'
@@ -265,12 +438,13 @@ unify0 l st t t' = let
     (Sub    t u   , Sub    t' u'    ) -> go0 t t' >> go0 u u'
     (t, t')                           -> err t t'
 
+
 unify1 :: Dbg => Lvl -> ConvState -> Val1 -> Val1 -> IO ()
 unify1 l st t t' = let
   go0  = unify0 l st;         {-# inline go0 #-}
   go1  = unify1 l st;         {-# inline go1 #-}
   goSp = unifySp l st;        {-# inline goSp #-}
-  q1   = quote1 l DontUnfold; {-# inline q1 #-}
+  q1   = quote1 l UnfoldNone; {-# inline q1 #-}
 
   err t t' = throwIO $ UnifyError1 (q1 t) (q1 t'); {-# inline err #-}
 
@@ -328,21 +502,21 @@ unify1 l st t t' = let
       _       -> impossible
 
     -- rigid & canonical
-    (t@(Rigid h sp)  , t'@(Rigid h' sp')   ) -> unifyEq h h' >> goSp t sp t' sp'
-    (Var1 x          , Var1 x'             ) -> unifyEq x x'
-    (Lift cv a       , Lift cv' a'         ) -> go1 cv cv' >> go1 a a'
-    (Up t            , Up t'               ) -> go0 t t'
-    (Pi x i a b      , Pi x' i' a' b'      ) -> go1 a a' >> goClose1 b b'
-    (Fun a b bcv     , Fun a' b' bcv'      ) -> go1 a a' >> go1 bcv bcv' >> go1 b b'
-    (Rec0 as         , Rec0 as'            ) -> goRec0 as as'
-    (Rec1 as         , Rec1 as'            ) -> goRec1 l as as'
-    (RecCon1 ts      , RecCon1 ts'         ) -> goRecCon1 ts ts'
-    (U1              , U1                  ) -> pure ()
-    (U0 cv           , U0 cv'              ) -> go1 cv cv'
-    (CV              , CV                  ) -> pure ()
-    (Comp            , Comp                ) -> pure ()
-    (Val             , Val                 ) -> pure ()
-    (Int             , Int                 ) -> pure ()
+    (t@(Rigid h sp) , t'@(Rigid h' sp') ) -> unifyEq h h' >> goSp t sp t' sp'
+    (Var1 x         , Var1 x'           ) -> unifyEq x x'
+    (Lift cv a      , Lift cv' a'       ) -> go1 cv cv' >> go1 a a'
+    (Up t           , Up t'             ) -> go0 t t'
+    (Pi x i a b     , Pi x' i' a' b'    ) -> go1 a a' >> goClose1 b b'
+    (Fun a b bcv    , Fun a' b' bcv'    ) -> go1 a a' >> go1 bcv bcv' >> go1 b b'
+    (Rec0 as        , Rec0 as'          ) -> goRec0 as as'
+    (Rec1 as        , Rec1 as'          ) -> goRec1 l as as'
+    (RecCon1 ts     , RecCon1 ts'       ) -> goRecCon1 ts ts'
+    (U1             , U1                ) -> pure ()
+    (U0 cv          , U0 cv'            ) -> go1 cv cv'
+    (CV             , CV                ) -> pure ()
+    (Comp           , Comp              ) -> pure ()
+    (Val            , Val               ) -> pure ()
+    (Int            , Int               ) -> pure ()
 
     -- eta
     (Lam1 _ _ _ t, Lam1 _ _ _ t') -> goClose1 t t'

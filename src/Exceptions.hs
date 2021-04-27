@@ -60,5 +60,8 @@ data Ex
   -- decorated with elaboration context
   | ElabError S.Locals P.Tm Ex
 
+  -- spine exception
+  | NeedExpansion
+
 deriving instance Show Ex
 instance Ex.Exception Ex

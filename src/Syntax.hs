@@ -12,7 +12,6 @@ data Tm0
   | Lam0 Name Ty Tm0
   | App0 Tm0 Tm0
   | Case Tm0 (Cases Tm0)
-  | Fix Name Name Tm0
   | Down Tm1
   | Field0 Tm0 Name Int
   | RecCon0 (Fields Tm0)

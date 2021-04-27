@@ -63,7 +63,7 @@ insert' cxt inf = do {(t, a) <- inf; go t a} where
   go :: S.Tm1 -> V.Ty -> IO (S.Tm1, V.Ty)
   go t topA = case forceFU1 topA of
     V.Pi x Impl a b -> do
-      m <- freshMeta cxt (quote1 cxt a)
+      m <- freshMeta cxt a
       go (S.App1 t m Impl) (b $$$ eval1 cxt m)
     topA ->
       pure (t, topA)
@@ -86,7 +86,7 @@ insertUntilName cxt topT topX inf = do {(t, a) <- inf; go t a} where
       if NName topX == x then
         pure (t, topA)
       else do
-        m <- freshMeta cxt (quote1 cxt a)
+        m <- freshMeta cxt a
         go (S.App1 t m Impl) (b $$ eval1 cxt m)
     _ ->
       elabError cxt topT $ NoSuchArgument topX
@@ -135,8 +135,9 @@ coe cxt t a a' = do
   -- compute ^(a -> b) to ^a -> ^b
   liftFun :: Cxt -> V.Ty -> V.Ty -> V.CV -> V.Ty
   liftFun cxt a b bcv =
-    let qbcv = quote1 cxt bcv
-        qb   = Eval.quote1 (_lvl cxt + 1) DontUnfold b
+    let l'   = _lvl cxt + 1
+        qbcv = Eval.quote1 l' UnfoldNone bcv
+        qb   = Eval.quote1 l' UnfoldNone b
     in V.Pi NEmpty Expl (V.Lift V.Val a) (V.Close (_env cxt) (S.Lift qbcv qb))
 
   --  ^(a -> b) -> ^a -> ^b
@@ -144,7 +145,7 @@ coe cxt t a a' = do
   upFun :: Cxt -> V.Ty -> S.Tm1 -> S.Tm1
   upFun cxt a t =
     S.Lam1 NEmpty Expl (S.Lift S.Val (quote1 cxt a))
-       (S.Up (S.App0 ( S.Wk10 (S.down (t))) (S.Down (S.Var1 0))))
+       (S.Up (S.App0 (S.Wk10 (S.down t)) (S.Down (S.Var1 0))))
 
   --  (^a -> ^b) -> ^(a -> b)
   -- f ↦ <λ a. ~(f <a>)>
@@ -159,7 +160,7 @@ coe cxt t a a' = do
     go :: Lvl -> Fields V.Ty -> Fields S.Tm1
     go l FNil           = FNil
     go l (FCons x a as) =
-      FCons x (S.Lift S.Val (Eval.quote1 l DontUnfold a)) (go (l + 1) as)
+      FCons x (S.Lift S.Val (Eval.quote1 l UnfoldNone a)) (go (l + 1) as)
 
   --  ^(Rec as) -> Rec (map ^ as)
   upRecCon0 :: S.Tm1 -> Fields a -> S.Tm1
@@ -175,7 +176,7 @@ coe cxt t a a' = do
 
   go :: Dbg => Cxt -> S.Tm1 -> V.Ty -> V.Ty -> IO (Maybe S.Tm1)
   go cxt t a a' = do
-    -- traceShowM ("coe.go", showTm1 cxt t, showVal1 cxt a, showVal1 cxt a')
+    -- traceShowM ("coe.go", showTm1 cxt t, showVal1' cxt a, showVal1' cxt a')
     -- traceShowM ("coe.go", t, a, a')
     case (forceFU1 a, forceFU1 a') of
 
@@ -233,19 +234,19 @@ coe cxt t a a' = do
 
       (V.Pi x Expl a b, V.Lift cv a') -> do
         unify1 cxt cv V.Comp
-        a1'   <- eval1 cxt <$!> freshMeta cxt (S.U0 S.Val)
+        a1'   <- eval1 cxt <$!> freshMeta cxt (V.U0 V.Val)
         a2'cv <- freshCV cxt
         let va2'cv = eval1 cxt a2'cv
-        a2'   <- eval1 cxt <$!> freshMeta cxt (S.U0 a2'cv)
+        a2'   <- eval1 cxt <$!> freshMeta cxt (V.U0 va2'cv)
         unify1 cxt a' (V.Fun a1' a2' va2'cv)
         go cxt t (V.Pi x Expl a b) (V.Lift V.Comp (V.Fun a1' a2' va2'cv))
 
       (V.Lift cv a, V.Pi x' Expl a' b') -> do
         unify1 cxt cv V.Comp
-        a1 <- eval1 cxt <$!> freshMeta cxt (S.U0 S.Val)
+        a1 <- eval1 cxt <$!> freshMeta cxt (V.U0 V.Val)
         a2cv <- freshCV cxt
         let va2cv = eval1 cxt a2cv
-        a2 <- eval1 cxt <$!> freshMeta cxt (S.U0 a2cv)
+        a2 <- eval1 cxt <$!> freshMeta cxt (V.U0 va2cv)
         unify1 cxt a (V.Fun a1 a2 va2cv)
         go cxt t (V.Lift V.Comp (V.Fun a1 a2 va2cv)) (V.Pi x' Expl a' b')
 
@@ -259,8 +260,7 @@ coe cxt t a a' = do
         Nothing <$ unify1 cxt a a'
 
 tyAnnot :: Cxt -> Maybe P.Tm -> V.Ty -> IO S.Ty
-tyAnnot cxt ma un =
-  maybe (freshMeta cxt (quote1 cxt un)) (\a -> check1 cxt a un) ma
+tyAnnot cxt ma un = maybe (freshMeta cxt un) (\a -> check1 cxt a un) ma
 {-# inline tyAnnot #-}
 
 -- Checking
@@ -306,14 +306,6 @@ check0 cxt topT topA cv = do
 
       S.RecCon0 <$!> go ts as
 
-    (P.Fix{}, _, _) ->
-      error "fix not supported"
-    -- -- TODO : index Fun with cod CV!
-    -- (P.Fix _ (bindToName cxt -> x) (bindToName cxt -> y) t, V.Fun a b bcv, _) -> do
-    --   let cxt' = bind0' x (quote1 cxt b) b C $ bind0' x (quote1 cxt a) a V cxt
-    --   t <- check0 cxt' t b V
-    --   pure $! S.Fix x y t
-
     (P.Tuple _ ts, V.Rec0 as, _) -> do
 
       let go [] FNil = pure FNil
@@ -341,7 +333,7 @@ check0 cxt topT topA cv = do
       pure $! S.Let0 x a t u
 
     (P.Hole _, topA, cv) -> do
-      S.down <$!> freshMeta cxt (S.Lift (quote1 cxt cv) (quote1 cxt topA))
+      S.down <$!> freshMeta cxt (V.Lift cv topA)
 
     (P.Down _ t, topA, cv) -> do
       S.down <$!> check1 cxt t (V.Lift cv topA)
@@ -374,7 +366,7 @@ checkRecCon1 cxt topT ts (V.Close env as) = case (ts, as) of
     unless (NName x == x') $
       elabError cxt topT (NoSuchField x)
     let va = Eval.eval1 env a
-        qa = Eval.quote1 (_lvl cxt) DontUnfold va
+        qa = Eval.quote1 (_lvl cxt) UnfoldNone va
     t  <- check1 cxt t va
     let ~vt = eval1 cxt t
     ts <- checkRecCon1 cxt topT ts (V.Close (V.Snoc1 env vt) as)
@@ -389,7 +381,7 @@ checkTuple1 cxt topT ts (V.Close env as) = case (ts, as) of
   ([], FNil) -> pure FNil
   (t:ts, FCons x' a as) -> do
     let va = Eval.eval1 env a
-        qa = Eval.quote1 (_lvl cxt) DontUnfold va
+        qa = Eval.quote1 (_lvl cxt) UnfoldNone va
     t  <- check1 cxt t va
     let ~vt = eval1 cxt t
     ts <- checkTuple1 cxt topT ts (V.Close (V.Snoc1 env vt) as)
@@ -474,7 +466,7 @@ check1 cxt topT topA = do
       S.up <$!> check0 cxt t topA cv
 
     (P.Hole _, topA) -> do
-      freshMeta cxt (quote1 cxt topA)
+      freshMeta cxt topA
 
     (t, topA) -> do
       (t, a) <- insert cxt $ infer1 cxt t
@@ -508,7 +500,7 @@ infer0check cxt topT = case topT of
       a -> do
         cv <- freshCV cxt
         let vcv = eval1 cxt cv
-        a' <- eval1 cxt <$!> freshMeta cxt (S.U0 cv)
+        a' <- eval1 cxt <$!> freshMeta cxt (V.U0 vcv)
         t  <- S.down <$!> coe cxt t a (V.Lift vcv a')
         pure (t, a', vcv)
 
@@ -538,7 +530,7 @@ infer0chk cxt topT = case topT of
       a -> do
         cv <- freshCV cxt
         let vcv = eval1 cxt cv
-        a' <- eval1 cxt <$!> freshMeta cxt (S.U0 cv)
+        a' <- eval1 cxt <$!> freshMeta cxt (V.U0 vcv)
         t  <- S.down <$!> coe cxt t a (V.Lift vcv a')
         pure (t, a', vcv)
 
@@ -568,7 +560,7 @@ infer0 cxt topT = case topT of
       a -> do
         cv <- freshCV cxt
         let vcv = eval1 cxt cv
-        a' <- eval1 cxt <$!> freshMeta cxt (S.U0 cv)
+        a' <- eval1 cxt <$!> freshMeta cxt (V.U0 vcv)
         t  <- S.down <$!> coe cxt t a (V.Lift vcv a')
         pure (t, a', vcv)
 
@@ -606,10 +598,10 @@ ensureFun cxt a acv = case forceFU1 a of
   V.Fun a b bcv -> pure (a, b, bcv)
   a -> do
     unify1 cxt acv V.Comp
-    a'   <- eval1 cxt <$!> freshMeta cxt (S.U0 S.Val)
+    a'   <- eval1 cxt <$!> freshMeta cxt (V.U0 V.Val)
     b'cv <- freshCV cxt
     let vb'cv = eval1 cxt b'cv
-    b'   <- eval1 cxt <$!> freshMeta cxt (S.U0 b'cv)
+    b'   <- eval1 cxt <$!> freshMeta cxt (V.U0 vb'cv)
     unify1 cxt a (V.Fun a' b' vb'cv)
     pure (a', b', vb'cv)
 
@@ -619,9 +611,9 @@ coeToPi cxt a i t = case forceFU1 a of
     when (i /= i) $ throwIO $ IcitMismatch i' i
     pure (t, x, a, b)
   a -> do
-    a' <- freshMeta cxt S.U1
+    a' <- freshMeta cxt V.U1
     let va' = eval1 cxt a'
-    b' <- V.Close (_env cxt) <$!> freshMeta (bind1' NX a' va' cxt) S.U1
+    b' <- V.Close (_env cxt) <$!> freshMeta (bind1' NX a' va' cxt) V.U1
     t  <- coe cxt t a (V.Pi NX i va' b')
     pure (t, NX, va', b')
 
@@ -717,7 +709,6 @@ infer cxt topT = do
 
         P.NoName Impl -> do
           (t, a)       <- infer1 cxt t
-          -- traceShowM ("app inferred", showTm1 cxt t, showVal1 cxt a)
           (t, x, a, b) <- decorEx $ coeToPi cxt a Impl t
           u            <- check1 cxt u a
           pure $ Tm1 (S.App1 t u Impl) (b $$$ eval1 cxt u)
@@ -820,9 +811,6 @@ infer cxt topT = do
     P.CV _   -> pure $! Tm1 S.CV V.U1
     P.Comp _ -> pure $! Tm1 S.Comp V.CV
     P.Val _  -> pure $! Tm1 S.Val V.CV
-
-    P.Fix{} -> do
-      error "fix not supported"
 
     P.Case _ t _ cs -> do
       error "case not supported"

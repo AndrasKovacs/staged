@@ -25,10 +25,23 @@ type Ty = Val1
 type CV = Val1
 
 data Spine
-  = SId
-  | SApp1 Spine Val1 Icit
-  | SField1 Spine Name Int
+  = Id
+  | App1 Spine Val1 Icit
+  | Field1 Spine Name Int
   deriving Show
+
+reverseSpine :: Spine -> Spine
+reverseSpine = go Id where
+  go acc Id               = acc
+  go acc (App1 sp t i)    = go (App1 acc t i) sp
+  go acc (Field1 sp x ix) = go (Field1 acc x ix) sp
+
+spineLen :: Spine -> Lvl
+spineLen = go 0 where
+  go acc Id              = acc
+  go acc (App1 sp _ _)   = go (acc + 1) sp
+  go acc (Field1 sp _ _) = go (acc + 1) sp
+
 
 data UnfoldHead
   = Top1 Lvl
@@ -37,8 +50,8 @@ data UnfoldHead
 
 data RigidHead
   = RHVar1 Lvl
-  | TyCon Lvl
-  | DataCon Lvl Int
+  | RHTyCon Lvl
+  | RHDataCon Lvl Int
   deriving (Eq, Show)
 
 data Val0
@@ -47,7 +60,6 @@ data Val0
   | Let0 Name Ty Val0 {-# unpack #-} (Close S.Tm0)
   | App0 Val0 Val0
   | Case Val0 {-# unpack #-} (Close (Cases S.Tm0))
-  | Fix Name Name {-# unpack #-} (Close S.Tm0)
   | Down Val1
   | Field0 Val0 Name Int
   | RecCon0 (Fields Val0)
@@ -79,4 +91,4 @@ data Val1
   deriving Show
 
 pattern Var1 :: Lvl -> Val1
-pattern Var1 x = Rigid (RHVar1 x) SId
+pattern Var1 x = Rigid (RHVar1 x) Id

@@ -47,7 +47,6 @@ data Tm
   | EmptyRec Span                 -- overloads both tt and Top
   | Tuple Span [Tm]
   | Field Tm Span
-  | Fix Pos Bind Bind Tm
   | Case Pos Tm Pos [(Span, [Bind], Tm)]
   | Hole Pos
   | Int Span
@@ -76,7 +75,6 @@ span t = Span (left t) (right t) where
     EmptyRec (Span l _) -> l
     Tuple (Span l _) _  -> l
     Field t _           -> left t
-    Fix l _ _ _         -> l
     Case l _ _ _        -> l
     Hole l              -> l
     IntLit (Span l _) _ -> l
@@ -106,7 +104,6 @@ span t = Span (left t) (right t) where
     EmptyRec (Span _ r) -> r
     Tuple (Span _ r) _  -> r
     Field _ (Span _ r)  -> r
-    Fix _ _ _ t         -> right t
     Case _ _ r []       -> r
     Case _ _ r ts       -> case last ts of (_, _, t) -> right t
     Hole r              -> r

@@ -53,7 +53,7 @@ prettyError b (Error pos e) =
 
   let ls       = FP.lines b
       [(l, c)] = posLineCols b [pos]
-      line     = if l < length ls then ls !! l else ""
+      line     = if 0 <= l && l < length ls then ls !! l else ""
       linum    = show l
       lpad     = map (const ' ') linum
 

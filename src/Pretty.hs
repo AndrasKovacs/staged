@@ -12,7 +12,6 @@ import Common
 import Syntax
 import Cxt
 import ElabState
-import InCxt
 import Exceptions
 import qualified Values as V
 import qualified Evaluation as Eval
@@ -26,22 +25,22 @@ showTm1 :: Cxt -> Tm1 -> String
 showTm1 cxt t = tm1 tmp (localNames (_locals cxt)) t []
 
 showVal0 :: Cxt -> V.Val0 -> String
-showVal0 cxt t = showTm0 cxt $ quote0 cxt t
+showVal0 cxt t = showTm0 cxt $ Eval.quote0 (_lvl cxt) UnfoldFlex t
 
 showVal1 :: Cxt -> V.Val1 -> String
-showVal1 cxt t = showTm1 cxt $ quote1 cxt t
+showVal1 cxt t = showTm1 cxt $ Eval.quote1 (_lvl cxt) UnfoldFlex t
 
 showVal1' :: Cxt -> V.Val1 -> String
-showVal1' cxt t = showTm1 cxt $ Eval.quote1 (_lvl cxt) DoUnfold t
+showVal1' cxt t = showTm1 cxt $ Eval.quote1 (_lvl cxt) UnfoldFlex t
 
 showVal1Top' :: V.Val1 -> String
-showVal1Top' t = showTm1Top $ Eval.quote1 0 DoUnfold t
+showVal1Top' t = showTm1Top $ Eval.quote1 0 UnfoldAll t
 
 showTm1Top' :: Tm1 -> String
-showTm1Top' t = tm1 tmp [] (Eval.quote1 0 DoUnfold (Eval.eval1 V.Nil t)) []
+showTm1Top' t = tm1 tmp [] (Eval.quote1 0 UnfoldAll (Eval.eval1 V.Nil t)) []
 
 showTm0Top' :: Tm0 -> String
-showTm0Top' t = tm0 tmp [] (Eval.quote0 0 DoUnfold (Eval.eval0 V.Nil t)) []
+showTm0Top' t = tm0 tmp [] (Eval.quote0 0 UnfoldAll (Eval.eval0 V.Nil t)) []
 
 showTm0Top :: Tm0 -> String
 showTm0Top t = tm0 tmp [] t []
@@ -50,10 +49,10 @@ showTm1Top :: Tm1 -> String
 showTm1Top t = tm1 tmp [] t []
 
 showVal0Top :: V.Val0 -> String
-showVal0Top t = showTm0Top $ Eval.quote0 0 DontUnfold t
+showVal0Top t = showTm0Top $ Eval.quote0 0 UnfoldFlex t
 
 showVal1Top :: V.Val1 -> String
-showVal1Top t = showTm1Top $ Eval.quote1 0 DontUnfold t
+showVal1Top t = showTm1Top $ Eval.quote1 0 UnfoldFlex t
 
 --------------------------------------------------------------------------------
 
@@ -74,7 +73,7 @@ Precedences:
   atomp : atoms
 -}
 
-(tmp:pip:subp:addp:mulp:appp:projp:atomp:_) = [(0::Int)..]
+(tmp:pip:subp:addp:mulp:appp:projp:downp:atomp:_) = [(0::Int)..]
 
 fresh :: [Name] -> Name -> Name
 fresh ns NX        = fresh ns (NName "x")
@@ -131,11 +130,18 @@ rec1 ns = \case
   FCons (fresh ns -> x) t ts   ->
     name x . (" : "++). tm1 tmp ns t . (", "++) . rec1 (x:ns) ts
 
+-- var :: [Name] -> Ix -> ShowS
+-- var ns x = case ns !! coerce x of
+--   NName x -> (show x++)
+--   NEmpty  -> ("@"++).(show x++)
+--   NX      -> impossible
+
 var :: [Name] -> Ix -> ShowS
-var ns x = case ns !! coerce x of
+var ns x | 0 <= x && coerce x < length ns = case ns !! coerce x of
   NName x -> (show x++)
   NEmpty  -> ("@"++).(show x++)
   NX      -> impossible
+var ns x = ("@!"++).(show x++)
 
 appPruning :: Tm1 -> Ix -> Pruning -> Tm1
 appPruning t ix = \case
@@ -162,9 +168,8 @@ tm0 p ns = \case
         (". "++) . tm0 tmp ns t
 
   Case{} -> ("CASE_TODO"++)
-  Fix{}  -> ("FIX_DEPRECATED"++)
 
-  Down t       -> par p appp (('~':) . tm1 projp ns t)
+  Down t       -> par p downp (('~':) . tm1 atomp ns t)
   Field0 t x n -> par p projp $ tm0 projp ns t . ('.':) . name x
   RecCon0 ts   -> bracket (recCon0 ns ts)
   Sub t u      -> par p subp $ tm0 subp ns t . (" - "++) . tm0 addp ns u
@@ -172,7 +177,8 @@ tm0 p ns = \case
   Mul t u      -> par p mulp $ tm0 mulp ns t . (" * "++) . tm0 appp ns u
   App0 t u     -> par p appp $ tm0 appp ns t . (' ':) . tm0 projp ns u
   IntLit n     -> (show n++)
-  Wk10 t       -> par p appp (("_wk_ "++).tm0 p (tail ns) t)
+  Wk10 t       -> tm0 p (tail ns) t
+  -- Wk10 t       -> par p appp (("_wk_ "++).tm0 p (tail ns) t)
 
 piBind ns x Expl a = showParen True (name x . (" : "++) . tm1 tmp ns a)
 piBind ns x Impl a = brace          (name x . (" : "++) . tm1 tmp ns a)
@@ -228,8 +234,10 @@ tm1 p ns = \case
 
   AppPruning t pr -> tm1 p ns (appPruning t 0 pr)
 
-  Wk11 t         -> par p appp (("_wk_ "++).tm1 p (tail ns) t)
-  Wk01 t         -> par p appp (("_wk_ "++).tm1 p (tail ns) t)
+  -- Wk11 t         -> par p appp (("_wk_ "++).tm1 p (tail ns) t)
+  -- Wk01 t         -> par p appp (("_wk_ "++).tm1 p (tail ns) t)
+  Wk11 t         -> tm1 p (tail ns) t
+  Wk01 t         -> tm1 p (tail ns) t
   Meta m         -> (("?"++show m)++)
 
   Int            -> ("Int"++)

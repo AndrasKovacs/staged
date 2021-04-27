@@ -28,8 +28,8 @@ var1 env           x = impossible
 
 metaIO :: Dbg => MetaVar -> IO Val1
 metaIO x = ES.readMeta x >>= \case
-  ES.Unsolved{}  -> pure $ Flex x SId
-  ES.Solved v _  -> pure $ Unfold (Solved x) SId v
+  ES.Unsolved{}  -> pure $ Flex x Id
+  ES.Solved v _  -> pure $ Unfold (Solved x) Id v
 {-# inline metaIO #-}
 
 meta :: Dbg => MetaVar -> Val1
@@ -38,7 +38,7 @@ meta x = runIO $ metaIO x
 
 top1 :: Dbg => Lvl -> Val1
 top1 x = runIO $ ES.readTop x >>= \case
-  ES.TEDef1 _ _ _ v _ _ -> pure $ Unfold (Top1 x) SId v
+  ES.TEDef1 _ _ _ v _ _ -> pure $ Unfold (Top1 x) Id v
   _                     -> impossible
 {-# inline top1 #-}
 
@@ -81,9 +81,9 @@ diveN (Close env t) l n = eval0 (go env l n) t where
 app1 :: Dbg => Val1 -> Val1 -> Icit -> Val1
 app1 t u i = case t of
   Lam1 x i a t   -> t $$ u
-  Flex h sp      -> Flex h (SApp1 sp u i)
-  Unfold h sp t  -> Unfold h (SApp1 sp u i) (app1 t u i)
-  Rigid h sp     -> Rigid h (SApp1 sp u i)
+  Flex h sp      -> Flex h (App1 sp u i)
+  Unfold h sp t  -> Unfold h (App1 sp u i) (app1 t u i)
+  Rigid h sp     -> Rigid h (App1 sp u i)
   _              -> impossible
 
 lookupField :: Dbg => Fields a -> Int -> a
@@ -94,9 +94,9 @@ lookupField _              _ = impossible
 field1 :: Dbg => Val1 -> Name -> Int -> Val1
 field1 t x n = case t of
   RecCon1 ts    -> lookupField ts n
-  Flex h sp     -> Flex h (SField1 sp x n)
-  Unfold h sp t -> Unfold h (SField1 sp x n) (field1 t x n)
-  Rigid h sp    -> Rigid h (SField1 sp x n)
+  Flex h sp     -> Flex h (Field1 sp x n)
+  Unfold h sp t -> Unfold h (Field1 sp x n) (field1 t x n)
+  Rigid h sp    -> Rigid h (Field1 sp x n)
   _             -> impossible
 
 appPruning :: Dbg => Env -> Val1 -> S.Pruning -> Val1
@@ -117,7 +117,6 @@ eval0 env = \case
   S.RecCon0 fs   -> RecCon0 (eval0 env <$> fs)
   S.Field0 t x n -> Field0 (eval0 env t) x n
   S.Case t cs    -> Case (eval0 env t) (Close env cs)
-  S.Fix x y t    -> Fix x y (Close env t)
   S.Down t       -> down (eval1 env t)
   S.Add t u      -> Add (eval0 env t) (eval0 env u)
   S.Mul t u      -> Mul (eval0 env t) (eval0 env u)
@@ -139,8 +138,8 @@ eval1 env = \case
   S.Rec1 as         -> Rec1 (Close env as)
   S.RecCon1 ts      -> RecCon1 (eval1 env <$> ts)
   S.Field1 t x n    -> field1 (eval1 env t) x n
-  S.TyCon x         -> Rigid (TyCon x) SId
-  S.DataCon  x n    -> Rigid (DataCon x n) SId
+  S.TyCon x         -> Rigid (RHTyCon x) Id
+  S.DataCon  x n    -> Rigid (RHDataCon x n) Id
   S.Lift cv a       -> Lift (eval1 env cv) (eval1 env a)
   S.Up t            -> up (eval0 env t)
   S.AppPruning t pr -> appPruning env (eval1 env t) pr
@@ -157,9 +156,9 @@ eval1 env = \case
 
 app1Sp :: Val1 -> Spine -> Val1
 app1Sp t = \case
-  SId            -> t
-  SApp1 sp u i   -> app1 (app1Sp t sp) u i
-  SField1 sp x n -> field1 (app1Sp t sp) x n
+  Id            -> t
+  App1 sp u i   -> app1 (app1Sp t sp) u i
+  Field1 sp x n -> field1 (app1Sp t sp) x n
 
 -- | Force Flex only.
 forceF1 :: Val1 -> Val1
@@ -194,20 +193,23 @@ forceFU0 = \case
               t    -> Down t
   v      -> v
 
-quoteSp :: Dbg => Lvl -> Unfolding -> S.Tm1 -> Spine -> S.Tm1
-quoteSp l st h = \case
-  SId            -> h
-  SApp1 sp u i   -> S.App1 (quoteSp l st h sp) (quote1 l st u) i
-  SField1 sp x n -> S.Field1 (quoteSp l st h sp) x n
+--------------------------------------------------------------------------------
 
-quote1 :: Dbg => Lvl -> Unfolding -> Val1 -> S.Tm1
+quoteSp :: Dbg => Lvl -> QuoteOption -> S.Tm1 -> Spine -> S.Tm1
+quoteSp l st h = \case
+  Id            -> h
+  App1 sp u i   -> S.App1 (quoteSp l st h sp) (quote1 l st u) i
+  Field1 sp x n -> S.Field1 (quoteSp l st h sp) x n
+
+quote1 :: Dbg => Lvl -> QuoteOption -> Val1 -> S.Tm1
 quote1 l st t = let
   go0  = quote0 l st; {-# inline go0 #-}
   go1  = quote1 l st; {-# inline go1 #-}
   goSp = quoteSp l st; {-# inline goSp #-}
 
-  force t = case st of DoUnfold -> forceFU1 t
-                       _        -> forceF1 t
+  force t = case st of UnfoldAll  -> forceFU1 t
+                       UnfoldFlex -> forceF1 t
+                       _          -> t
   {-# inline force #-}
 
   goUH :: UnfoldHead -> S.Tm1
@@ -217,8 +219,8 @@ quote1 l st t = let
   goRH :: Lvl -> RigidHead -> S.Tm1
   goRH l = \case
     RHVar1 x     -> S.Var1 (lvlToIx l x)
-    TyCon x      -> S.TyCon x
-    DataCon x ix -> S.DataCon x ix
+    RHTyCon x      -> S.TyCon x
+    RHDataCon x ix -> S.DataCon x ix
   {-# inline goRH #-}
 
   goClose1 :: Close S.Tm1 -> S.Tm1
@@ -251,8 +253,7 @@ quote1 l st t = let
     Val           -> S.Val
     CV            -> S.CV
 
-
-quoteCases :: Dbg =>Lvl -> Unfolding -> Close (Cases S.Tm0) -> Cases S.Tm0
+quoteCases :: Dbg => Lvl -> QuoteOption -> Close (Cases S.Tm0) -> Cases S.Tm0
 quoteCases l st (Close env cs) = case cs of
   CNil -> CNil
   CCons c xs t cs ->
@@ -260,14 +261,15 @@ quoteCases l st (Close env cs) = case cs of
     in CCons c xs (quote0 (l + Lvl n) st (diveN (Close env t) l n))
                   (quoteCases l st (Close env cs))
 
-quote0 :: Dbg => Lvl -> Unfolding -> Val0 -> S.Tm0
+quote0 :: Dbg => Lvl -> QuoteOption -> Val0 -> S.Tm0
 quote0 l st t = let
   go0  = quote0 l st; {-# inline go0 #-}
   go1  = quote1 l st; {-# inline go1 #-}
   goSp = quoteSp l st; {-# inline goSp #-}
 
-  force t = case st of DoUnfold -> forceFU0 t
-                       _        -> forceF0 t
+  force t = case st of UnfoldAll  -> forceFU0 t
+                       UnfoldFlex -> forceF0 t
+                       _          -> t
   {-# inline force #-}
 
   goClose0 :: Close S.Tm0 -> S.Tm0
@@ -283,12 +285,13 @@ quote0 l st t = let
   {-# inline goFix #-}
 
   in case force t of
-    Var0 x        -> S.Var0 (lvlToIx l x)
+    Var0 x        -> case st of
+                       LiftVars lvl | x < lvl -> S.Down (S.Var1 (lvlToIx l x))
+                       _                      -> S.Var0 (lvlToIx l x)
     Top0 x        -> S.Top0 x
     Let0 x a t u  -> S.Let0 x (go1 a) (go0 t) (goClose0 u)
     Down t        -> S.Down (go1 t)
     Case t ts     -> S.Case (go0 t) (goCases ts)
-    Fix x y t     -> S.Fix x y (goFix t)
     Lam0 x a t    -> S.Lam0 x (go1 a) (goClose0 t)
     App0 t u      -> S.App0 (go0 t) (go0 u)
     RecCon0 ts    -> S.RecCon0 (go0 <$> ts)
@@ -301,7 +304,7 @@ quote0 l st t = let
 --------------------------------------------------------------------------------
 
 nfNil0 :: S.Tm0 -> S.Tm0
-nfNil0 t = quote0 0 DoUnfold (eval0 Nil t)
+nfNil0 t = quote0 0 UnfoldAll (eval0 Nil t)
 
 nfNil1 :: S.Tm1 -> S.Tm1
-nfNil1 t = quote1 0 DoUnfold (eval1 Nil t)
+nfNil1 t = quote1 0 UnfoldAll (eval1 Nil t)

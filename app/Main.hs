@@ -130,12 +130,21 @@ test str = do
 
 p1 = unlines [
 
-  "test : Int → Int := λ x. _"
+  "id    : {A} → A → A = λ x. x",
+  "const : {A B} → A → B → A = λ a b. a",
+  "comp  : {A B C} → (B → C) → (A → B) → A → C = λ f g x. f (g x)",
+
+  "f : Int → Int := λ x. x + 10",
+  "foo : Int → Int := comp f f",
+  "foo : Int → Int = λ x. <f ~x>",
+  "foo : Int → Int := λ x. ~(comp f (λ x. <f ~x>) <x>)"
+
+     -- ?15 <1> =
+     --     Lift (App1 (App1 (Meta 17) (Up (Var0 1)) Expl) (Var1 0) Expl) (App1 (App1 (Meta 18) (Up (Var0 1)) Expl) (Var1 0) Expl))
 
   -- "Alg = [B: U1, true: B, false: B]",
   -- "Bool = (A : Alg) → A.B",
   -- "id : Bool → Bool = λ b A. b [A.B, A.true, A.false]",
-
   -- "NatAlg = [N : U1, zero : N, suc: N → N]",
   -- "Nat    = (A : NatAlg) → A.N",
   -- "zero   = λ (A : NatAlg). A.zero",
@@ -146,7 +155,9 @@ p1 = unlines [
 
   -- "id    : {A : U1} → A → A = λ x. x",
   -- "const : {A B : U1} → A → B → A = λ a b. a",
-  -- "comp  : {A B C : U1} → (B → C) → (A → B) → A → C = λ f g x. f (g x)",
+  -- "comp  : {A B C : U1} → (B → C) → (A → B) → A → C = λ f g x. f (g x)"
+
+
 
   -- "id2 : Int → Int := id",
   -- "f : Int → Int = λ x. x + x + 10",

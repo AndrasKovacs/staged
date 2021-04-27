@@ -41,7 +41,6 @@ isKeyword span = inSpan span do
   $(switch [| case _ of
      "let"  -> pure ()
      "λ"    -> pure ()
-     "fix"  -> pure ()
      "case" -> pure ()
      "of"   -> pure ()
      "CV"   -> pure ()
@@ -171,11 +170,27 @@ atom' = lvl' >> atomBase `cut` [Msg "atomic expression"]
 
 --------------------------------------------------------------------------------
 
+down' :: Parser Tm
+down' = do
+  pos <- getPos
+  $(switch [| case _ of
+    "~" -> do {ws; Down pos <$!> atom'}
+    _   -> atom' |])
+
+down :: Parser Tm
+down = do
+  pos <- getPos
+  $(switch [| case _ of
+    "~" -> do {ws; Down pos <$!> atom}
+    _   -> atom |])
+
+--------------------------------------------------------------------------------
+
 goProj :: Parser Tm -> Parser Tm
 goProj p = chainl Field p (dot *> ident')
 
 proj :: Parser Tm
-proj = goProj atom'
+proj = goProj down'
 
 --------------------------------------------------------------------------------
 
@@ -190,7 +205,7 @@ goApp t = branch braceL
           u <- tm'
           braceR'
           goApp (App t u (NoName Impl))))
-  (do optioned atom
+  (do optioned down
         (\u -> do
           u <- goProj (pure u)
           goApp (App t u (NoName Expl)))
@@ -200,7 +215,6 @@ app' :: Parser Tm
 app' = do
   pos <- getPos
   lvl' >> $(switch [| case _ of
-    "~"  -> do {ws; p <- proj; goApp (Down pos p)}
     "^"  -> do {ws; p <- proj; goApp (Lift pos p)}
     "U0" -> do {ws; p <- proj; goApp (U0 pos p)}
     _    -> do {goApp =<< proj} |])
@@ -344,9 +358,6 @@ pCase' l = do
    (\cl -> Case l t r . (cl:) <$> many (semi *> clause))
    (pure $ Case l t r [])
 
-fix' :: Pos -> Parser Tm
-fix' l = Fix l <$> bind' <*> bind' <*> (dot' *> tm')
-
 skipToApp :: Pos -> (Pos -> Parser Tm) -> Parser Tm
 skipToApp l p = branch identChar
   (do {manyIdents; r <- getPos; ws; goApp =<< goProj (pure (Var (Span l r)))})
@@ -361,7 +372,6 @@ tmBase = do
     "\\"   -> ws >> lam' l
     "let"  -> skipToApp l \_ -> pLet' l
     "case" -> skipToApp l \_ -> pCase' l
-    "fix"  -> skipToApp l \_ -> fix' l
     _      -> ws >> pi' |])
 {-# inline tmBase #-}
 
@@ -421,8 +431,8 @@ parseString (packUTF8 -> str) = (coerce str, parse str)
 --------------------------------------------------------------------------------
 
 p1 = unlines [
-  "id : Bool → Bool = λ b A. b [A.B, A.true, ,A.false]",
-  "  ",
+  -- "id : Bool → Bool = λ b A. b [A.B, A.true, foo]",
+  "bar = λ x. <f ~x>   ",
   "  "
 
   -- "bar : U1 = U0 Comp"

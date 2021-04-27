@@ -154,17 +154,15 @@ instance Show ConvState where
   show CSFlex  = "Flex"
   show CSFull  = "Full"
 
--- Unfolding mode for quoting
-newtype Unfolding = Unfolding# Int deriving (Eq, Num) via Int
-pattern DoUnfold :: Unfolding
-pattern DoUnfold   = Unfolding# 0
-pattern DontUnfold :: Unfolding
-pattern DontUnfold = Unfolding# 1
-{-# complete DoUnfold, DontUnfold #-}
 
-instance Show Unfolding where
-  show DoUnfold   = "DoUnfold"
-  show DontUnfold = "DontUnfold"
+data QuoteOption
+  = UnfoldAll     -- ^ Unfold top defs and metas
+  | UnfoldFlex    -- ^ Unfold metas only
+  | UnfoldNone    -- ^ No unfolding
+  | LiftVars Lvl  -- ^ Don't unfold anything, but raise var below Lvl to level 1.
+                  --   Used for creating types for fresh metas (where we have to
+                  --   move a type from an arbitrary context to a fully Lvl1 context).
+  deriving Show
 
 newtype Icit = Icit# Int deriving Eq
 

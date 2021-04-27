@@ -26,11 +26,11 @@ eval1 cxt t = Eval.eval1 (_env cxt) t
 {-# inline eval1 #-}
 
 quote0 :: Dbg => Cxt -> Val0 -> Tm0
-quote0 cxt t = Eval.quote0 (_lvl cxt) DontUnfold t
+quote0 cxt t = Eval.quote0 (_lvl cxt) UnfoldNone t
 {-# inline quote0 #-}
 
 quote1 :: Dbg => Cxt -> Val1 -> Tm1
-quote1 cxt t = Eval.quote1 (_lvl cxt) DontUnfold t
+quote1 cxt t = Eval.quote1 (_lvl cxt) UnfoldNone t
 {-# inline quote1 #-}
 
 unify0 :: Dbg => Cxt -> Val0 -> Val0 -> IO ()

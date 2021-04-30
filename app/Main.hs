@@ -1,15 +1,15 @@
 
 module Main where
 
-import qualified Data.ByteString.Char8 as B
+-- import qualified Data.ByteString.Char8 as B
 import qualified Data.Array.Dynamic.L as D
 -- import qualified Data.HashMap.Strict  as M
 -- import qualified FlatParse.Stateful as FP
 -- import qualified Data.Set as S
 
-import qualified Syntax              as S
+-- import qualified Syntax              as S
 -- import qualified Values              as V
-import qualified Presyntax           as P
+-- import qualified Presyntax           as P
 -- import qualified Evaluation          as Eval
 
 import Common
@@ -71,40 +71,7 @@ displayState = do
       putStrLn "<datacon not supported>"
 
 
-
 --------------------------------------------------------------------------------
-
--- prettyEx :: B.ByteString -> Error -> String
--- prettyEx b (Error pos e) =
-
---   let ls       = FP.lines b
---       [(l, c)] = posLineCols b [pos]
---       line     = if l < length ls then ls !! l else ""
---       linum    = show l
---       lpad     = map (const ' ') linum
-
---       expected (Lit s) = show s
---       expected (Msg s) = s
-
---       err (Precise exp)     = "expected " ++ expected exp
---       err (Imprecise exps)  = "expected " ++ (imprec $ S.toList $ S.fromList exps)
---       err (IndentMore col)  = "expected token indented to column " ++ show col ++ " or more"
---       err (ExactIndent col) = "expected token indented to column " ++ show col
-
---       imprec :: [Expected] -> String
---       imprec []     = error "impossible"
---       imprec [s]    = expected s
---       imprec (s:ss) = expected s ++ go ss where
---         go []     = ""
---         go [s]    = " or " ++ expected s
---         go (s:ss) = ", " ++ expected s ++ go ss
-
---   in show l ++ ":" ++ show c ++ ":\n" ++
---      lpad   ++ "|\n" ++
---      linum  ++ "| " ++ line ++ "\n" ++
---      lpad   ++ "| " ++ replicate c ' ' ++ "^\n" ++
---      "parse error: " ++
---      err e
 
 test :: String -> IO ()
 test str = do
@@ -116,13 +83,8 @@ test str = do
     Err e    -> putStrLn (prettyError (coerce src) e) >> exitSuccess
 
   inferTop src top `catch` \case
-    ElabError ls t e -> do
-      let sp = coerce (unsafeSlice (coerce src) (P.span t))
-      B.putStrLn sp
-      putStrLn $ showEx (S.localNames ls) e
-      exitSuccess
     e -> do
-      putStrLn $ showEx [] e
+      putStrLn $ showElabError (coerce src) e
       exitSuccess
 
   displayState
@@ -130,17 +92,41 @@ test str = do
 
 p1 = unlines [
 
-  "id    : {A} → A → A = λ x. x",
-  "const : {A B} → A → B → A = λ a b. a",
-  "comp  : {A B C} → (B → C) → (A → B) → A → C = λ f g x. f (g x)",
+  "Eq : {A : U1} → A → A → U1",
+  "  = λ {A} x y. (P : A → U1) → P x → P y",
+  "refl : {A : U1}{x :A} → Eq {A} x x = λ P px. px",
 
-  "f : Int → Int := λ x. x + 10",
-  "foo : Int → Int := comp f f",
-  "foo : Int → Int = λ x. <f ~x>",
-  "foo : Int → Int := λ x. ~(comp f (λ x. <f ~x>) <x>)"
+  "the : (A : U1) → A → A = λ A x. x",
+  "const0 : (A : U1) → A → Int = λ A x. 0",
 
-     -- ?15 <1> =
-     --     Lift (App1 (App1 (Meta 17) (Up (Var0 1)) Expl) (Var1 0) Expl) (App1 (App1 (Meta 18) (Up (Var0 1)) Expl) (Var1 0) Expl))
+  -- "foo : [fst : Int, snd : Int] = 100",
+
+  -- -- occurs check
+  -- "m1 : U1 = _",
+  -- "p1 : Eq {U1} m1 (m1 → m1) = refl {U1}{m1}",
+
+  -- inverting quotes
+  "m1 : Int → Int = _",
+  "p1 := λ (x : Int). const0 (Eq (m1 x) x) refl",
+
+  -- non-linear spine solution
+  "m2 : Int → Int → Int = _",
+  "p2 := λ (x : Int). const0 (Eq (m2 x x) 20) (refl {_} {20})",
+
+  -- -- pruning
+  -- "p3 = λ f x. f x",
+
+  -- record coercion (other dir not yet supported)
+  "rec1 : [fst : Int, snd : Int] := [100, 200]",
+  "rec2 : [fst: ^Int, snd: ^Int] = rec1"
+  -- "rec3 : ^[fst: Int, snd: Int ] = rec2"  -- FIX
+
+
+
+
+
+
+
 
   -- "Alg = [B: U1, true: B, false: B]",
   -- "Bool = (A : Alg) → A.B",
@@ -151,13 +137,11 @@ p1 = unlines [
   -- "suc : Nat → Nat = λ n A. A.suc (n A)",
   -- "id  : Nat → Nat = λ n A. n [A.N, A.zero, A.suc]",
   -- "add : Nat → Nat → Nat = λ a b A. a [A.N, b A, A.suc]",
-  -- "n5 = suc (suc (suc (suc (suc zero))))",
+  -- "n5 = suc (suc (suc (suc (suc zero))))"
 
   -- "id    : {A : U1} → A → A = λ x. x",
   -- "const : {A B : U1} → A → B → A = λ a b. a",
-  -- "comp  : {A B C : U1} → (B → C) → (A → B) → A → C = λ f g x. f (g x)"
-
-
+  -- "comp  : {A B C : U1} → (B → C) → (A → B) → A → C = λ f g x. f (g x)",
 
   -- "id2 : Int → Int := id",
   -- "f : Int → Int = λ x. x + x + 10",
@@ -171,7 +155,7 @@ p1 = unlines [
   -- "SmallFunctor : U1 = [F : U0 Val → U1, map : {A B : U0 _} → (A → B) → F A → F B]",
   -- "BigFunctor   : U1 = [F : U1 → U1, map : {A B} → (A → B) → F A → F B]",
 
-  -- "test : Int → Int → Int → Int = λ a b c. _",
+  -- "test : Int → Int → Int → Int = λ a b c. _"
 
   -- "Eq : {A : U1} → A → A → U1",
   -- "  = λ {A} x y. (P : A → U1) → P x → P y",

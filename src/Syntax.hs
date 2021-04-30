@@ -54,9 +54,9 @@ data Tm1
 
 data Locals
   = Empty
-  | Define Locals Name Ty Tm1
-  | Bind0 Locals Name Ty CV
-  | Bind1 Locals Name Ty
+  | Define Locals Ty Tm1
+  | Bind0 Locals Ty CV
+  | Bind1 Locals Ty
   deriving Show
 
 data PruneEntry = PESkip | PEBind0 | PEBind1 Icit
@@ -65,13 +65,6 @@ data PruneEntry = PESkip | PEBind0 | PEBind1 Icit
 type Pruning = [PruneEntry]
 newtype RevPruning = RevPruning Pruning
   deriving stock Show
-
-localNames :: Locals -> [Name]
-localNames = \case
-  Empty -> []
-  Define ls x _ _ -> x : localNames ls
-  Bind0 ls x _ _  -> x : localNames ls
-  Bind1 ls x _    -> x : localNames ls
 
 up :: Tm0 -> Tm1
 up (Down t) = t

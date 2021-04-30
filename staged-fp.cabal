@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 01ca28f385ab5362ea7da760aff51a9736abcc2ad29c7762e56ec8d71c30d50d
+-- hash: b4d4354dd629cd7f6eef2f27147fadfda4734880229bb36302409e998235abe5
 
 name:           staged-fp
 version:        0.1.0.0
@@ -36,12 +36,13 @@ library
       Pretty
       Syntax
       Unification
+      UnifyCxt
       Values
   other-modules:
       Paths_staged_fp
   hs-source-dirs:
       src
-  default-extensions: AllowAmbiguousTypes BangPatterns BlockArguments ConstraintKinds DataKinds DeriveFoldable DeriveFunctor DeriveTraversable DerivingVia ExplicitNamespaces FlexibleContexts FlexibleInstances GADTs KindSignatures LambdaCase MagicHash OverloadedStrings PatternSynonyms PolyKinds RankNTypes ScopedTypeVariables StandaloneDeriving Strict TemplateHaskell TupleSections TypeApplications TypeFamilies UnboxedTuples ViewPatterns
+  default-extensions: AllowAmbiguousTypes BangPatterns BlockArguments ConstraintKinds DataKinds DeriveFoldable DeriveFunctor DeriveTraversable DerivingVia ExplicitNamespaces FlexibleContexts FlexibleInstances GADTs KindSignatures LambdaCase MagicHash OverloadedStrings PatternSynonyms PolyKinds RankNTypes ScopedTypeVariables StandaloneDeriving Strict TemplateHaskell TupleSections TypeApplications TypeFamilies UnboxedTuples ViewPatterns MultiParamTypeClasses FunctionalDependencies
   ghc-options: -Wall -Wno-name-shadowing -Wno-unused-binds -Wno-unused-matches -Wno-missing-signatures -Wno-unused-do-bind -Wno-unticked-promoted-constructors -fplugin-opt=Test.Inspection.Plugin:skip-O0 -O -fmax-worker-args=12
   build-depends:
       base >=4.7 && <5
@@ -51,6 +52,8 @@ library
     , flatparse
     , hashable
     , inspection-testing
+    , microlens
+    , microlens-th
     , primdata
     , template-haskell
     , unordered-containers
@@ -62,7 +65,7 @@ executable app
       Paths_staged_fp
   hs-source-dirs:
       app
-  default-extensions: AllowAmbiguousTypes BangPatterns BlockArguments ConstraintKinds DataKinds DeriveFoldable DeriveFunctor DeriveTraversable DerivingVia ExplicitNamespaces FlexibleContexts FlexibleInstances GADTs KindSignatures LambdaCase MagicHash OverloadedStrings PatternSynonyms PolyKinds RankNTypes ScopedTypeVariables StandaloneDeriving Strict TemplateHaskell TupleSections TypeApplications TypeFamilies UnboxedTuples ViewPatterns
+  default-extensions: AllowAmbiguousTypes BangPatterns BlockArguments ConstraintKinds DataKinds DeriveFoldable DeriveFunctor DeriveTraversable DerivingVia ExplicitNamespaces FlexibleContexts FlexibleInstances GADTs KindSignatures LambdaCase MagicHash OverloadedStrings PatternSynonyms PolyKinds RankNTypes ScopedTypeVariables StandaloneDeriving Strict TemplateHaskell TupleSections TypeApplications TypeFamilies UnboxedTuples ViewPatterns MultiParamTypeClasses FunctionalDependencies
   ghc-options: -Wall -Wno-name-shadowing -Wno-unused-binds -Wno-unused-matches -Wno-missing-signatures -Wno-unused-do-bind -Wno-unticked-promoted-constructors -fplugin-opt=Test.Inspection.Plugin:skip-O0 -O -fmax-worker-args=12 -rtsopts
   build-depends:
       base >=4.7 && <5

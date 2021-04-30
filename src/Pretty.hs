@@ -1,37 +1,42 @@
 
-module Pretty (showTm0, showTm1, showTm0Top, showTm1Top, showEx,
+module Pretty (showTm0, showTm1, showTm0Top, showTm1Top,
                showVal1', showVal1Top',
-               showTm1Top', showTm0Top',
+               showTm1Top', showTm0Top', showElabError,
                showVal0, showVal1, showVal0Top, showVal1Top) where
 
 import qualified Data.ByteString.Char8 as B
+import qualified FlatParse.Stateful as FP
 import IO
 import Text.Printf
 
 import Common
 import Syntax
-import Cxt
+import Cxt.Fields
 import ElabState
 import Exceptions
-import qualified Values as V
+
+
+import qualified Values     as V
 import qualified Evaluation as Eval
+import qualified Presyntax  as P
+import qualified UnifyCxt   as Unif
 
 --------------------------------------------------------------------------------
 
-showTm0 :: Cxt -> Tm0 -> String
-showTm0 cxt t = tm0 tmp (localNames (_locals cxt)) t []
+showTm0 :: (HasNames cxt [Name]) => cxt -> Tm0 -> String
+showTm0 cxt t = tm0 tmp (cxt^.names) t []
 
-showTm1 :: Cxt -> Tm1 -> String
-showTm1 cxt t = tm1 tmp (localNames (_locals cxt)) t []
+showTm1 :: (HasNames cxt [Name]) => cxt -> Tm1 -> String
+showTm1 cxt t = tm1 tmp (cxt^.names) t []
 
-showVal0 :: Cxt -> V.Val0 -> String
-showVal0 cxt t = showTm0 cxt $ Eval.quote0 (_lvl cxt) UnfoldFlex t
+showVal0 :: (HasNames s [Name], HasLvl s Lvl) => s -> V.Val0 -> String
+showVal0 cxt t = showTm0 cxt $ Eval.quote0 (cxt^.lvl) UnfoldFlex t
 
-showVal1 :: Cxt -> V.Val1 -> String
-showVal1 cxt t = showTm1 cxt $ Eval.quote1 (_lvl cxt) UnfoldFlex t
+showVal1 :: (HasNames s [Name], HasLvl s Lvl) => s -> V.Val1 -> String
+showVal1 cxt t = showTm1 cxt $ Eval.quote1 (cxt^.lvl) UnfoldFlex t
 
-showVal1' :: Cxt -> V.Val1 -> String
-showVal1' cxt t = showTm1 cxt $ Eval.quote1 (_lvl cxt) UnfoldFlex t
+showVal1' :: (HasNames s [Name], HasLvl s Lvl) => s -> V.Val1 -> String
+showVal1' cxt t = showTm1 cxt $ Eval.quote1 (cxt^.lvl) UnfoldAll t
 
 showVal1Top' :: V.Val1 -> String
 showVal1Top' t = showTm1Top $ Eval.quote1 0 UnfoldAll t
@@ -130,18 +135,18 @@ rec1 ns = \case
   FCons (fresh ns -> x) t ts   ->
     name x . (" : "++). tm1 tmp ns t . (", "++) . rec1 (x:ns) ts
 
--- var :: [Name] -> Ix -> ShowS
--- var ns x = case ns !! coerce x of
---   NName x -> (show x++)
---   NEmpty  -> ("@"++).(show x++)
---   NX      -> impossible
-
 var :: [Name] -> Ix -> ShowS
-var ns x | 0 <= x && coerce x < length ns = case ns !! coerce x of
+var ns x = case ns !! coerce x of
   NName x -> (show x++)
   NEmpty  -> ("@"++).(show x++)
   NX      -> impossible
-var ns x = ("@!"++).(show x++)
+
+-- var :: [Name] -> Ix -> ShowS
+-- var ns x | 0 <= x && coerce x < length ns = case ns !! coerce x of
+--   NName x -> (show x++)
+--   NEmpty  -> ("@"++).(show x++)
+--   NX      -> impossible
+-- var ns x = ("@!"++).(show x++)
 
 appPruning :: Tm1 -> Ix -> Pruning -> Tm1
 appPruning t ix = \case
@@ -242,19 +247,86 @@ tm1 p ns = \case
 
   Int            -> ("Int"++)
 
-
-
 --------------------------------------------------------------------------------
 
--- TODO
-showEx :: [Name] -> Ex -> String
-showEx ns = \case
-  UnifyError0 t u ->
-    printf "Can't unify\n\n  %s\n\nwith\n\n  %s\n"
-      (tm0 tmp ns t [])
-      (tm0 tmp ns u [])
-  UnifyError1 t u ->
-    printf "Can't unify\n\n  %s\n\nwith\n\n  %s\n"
-      (tm1 tmp ns t [])
-      (tm1 tmp ns u [])
-  e -> show e
+solutionEx :: Unif.Cxt -> SolutionEx -> String
+solutionEx cxt = \case
+  Occurs m       -> printf "Metavariable ?%s occurs in solution candidate" (show m)
+  OutOfScope x   -> printf "Variable %s is out of the scope of solution candidate" (showVal1 cxt (V.Var1 x))
+  SpineError     -> "Non-variable entry in meta spine"
+  NeedExpansion  -> "Projection in meta spine"
+  CSFlexSolution -> "IMPOSSIBLE: can't solve metavar in flexible unification state"
+
+unifyEx :: Unif.Cxt -> UnifyEx -> String
+unifyEx cxt = \case
+  Unify0 t u ->
+    printf "Can't unify\n\n  %s\n\nwith\n\n  %s\n" (showVal0 cxt t) (showVal0 cxt u)
+  Unify1 t u ->
+    printf "Can't unify\n\n  %s\n\nwith\n\n  %s\n" (showVal1 cxt t) (showVal1 cxt u)
+  UnifyEq x y ->
+    printf "Can't unify\n\n  %s\n\nwith\n\n  %s\n" (show x) (show y)
+  SolutionError t u e ->
+    printf "%s\n\nwhile trying to unify\n\n  %s\n\nwith\n\n  %s\n"
+      (solutionEx cxt e) (showVal1' cxt t) (showVal1' cxt u)
+
+unifyInner :: UnifyInner -> String
+unifyInner (UnifyInner cxt e) = unifyEx cxt e
+
+elabEx :: Unif.Cxt -> ElabEx -> String
+elabEx cxt = \case
+  UnifyOuter t u e ->
+    printf "%s\nwhile trying to unify\n\n  %s\n\nwith\n\n  %s\n"
+      (unifyInner e)  (showVal1 cxt t) (showVal1 cxt u)
+  NameNotInScope x ->
+    "Name not in scope: " ++ show x ++ "\n"
+  NoSuchField ty x ->
+    "Record has no field with name " ++ show x ++ "\n\n" ++
+    "inferred record type:\n\n  " ++ showTm1 cxt ty ++ "\n"
+  NoSuchArgument x ->
+    "Function has no named argument with name " ++ show x ++ "\n"
+  IcitMismatch i i' ->
+    printf "Icit mismatch: expected %s, inferred %s\n" (show i) (show i')
+  NoImplicitLam0 ->
+    "Implicit lambda expression are not supported at runtime stage\n"
+  ExpectedVal ty ->
+    printf "Expected a value type, inferrred\n\n  %s\n" (showTm1 cxt ty)
+  FieldNameMismatch x x' ->
+    printf "Record field name mismatch: expected %s, got %s\n" (show x) (show x')
+  NoNamedLambdaInference ->
+    "Can't infer type for named argument in lambda expression.\n"++
+    "Provide a type annotation for the lambda\n"
+  CantInfer ->
+    "Can't infer type for expression\n"
+  ExpectedNonEmptyRec ->
+    "Expected non-empty record type\n"
+  ExpectedEmptyRec ->
+    "Expected empty record type\n"
+  ExpectedEmptyRecCon ->
+    "Expected empty record\n"
+  ExpectedNonEmptyRecCon ->
+    "Expected non-empty record\n"
+  ExpectedType ty ->
+    printf "Expected a type, inferred\n\n  %s\n" (showTm1 cxt ty)
+  CantInferTuple ->
+    "Can't infer type for tuple at unknown stage\n"
+  ExpectedRecord ty ->
+    printf "Expected record type, inferred\n\n %s\n" (showTm1 cxt ty)
+  ExpectedRuntimeType ty ->
+    printf "Expected runtime type, inferred\n\n %s\n" (showTm1 cxt ty)
+  CantInferRec1 ->
+    "Can't infer type for meta stage record\n"
+
+showElabError :: B.ByteString -> ElabError -> String
+showElabError src (ElabError cxt t e) = let
+  ls         = FP.lines src
+  Span pos _ = P.span t
+  ns         = cxt^.names
+  [(l, c)]   = FP.posLineCols src [pos]
+  line       = if l < length ls then ls !! l else ""
+  linum      = show l
+  lpad       = map (const ' ') linum
+  in show l ++ ":" ++ show c ++ ":\n" ++
+     lpad   ++ "|\n" ++
+     linum  ++ "| " ++ line ++ "\n" ++
+     lpad   ++ "| " ++ replicate c ' ' ++ "^\n" ++
+     elabEx cxt e

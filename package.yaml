@@ -41,6 +41,8 @@ default-extensions:
   - TypeFamilies
   - UnboxedTuples
   - ViewPatterns
+  - MultiParamTypeClasses
+  - FunctionalDependencies
 
 ghc-options:
   - -Wall
@@ -73,6 +75,8 @@ library:
     - inspection-testing
     - template-haskell
     - unordered-containers
+    - microlens
+    - microlens-th
 
 executables:
   app:

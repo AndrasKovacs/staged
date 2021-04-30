@@ -1,67 +1,65 @@
 
-module Exceptions (Ex(..), throwIO, catch, throw) where
+module Exceptions (throwIO, catch, throw, module Exceptions) where
 
-import qualified Control.Exception as Ex
+import Control.Exception
+import qualified Data.ByteString as B
 
 import Common
 import qualified Syntax    as S
+import qualified Values    as V
+import qualified UnifyCxt  as Unif
 import qualified Presyntax as P
 
-throwIO :: Ex -> IO a
-throwIO = Ex.throwIO
-{-# inline throwIO #-}
+-- | Exception thrown while trying to solve a metavar.
+data SolutionEx
+  = Occurs MetaVar
+  | OutOfScope Lvl
+  | SpineError
+  | NeedExpansion
+  | CSFlexSolution
+  deriving Show
 
-catch :: IO a -> (Ex -> IO a) -> IO a
-catch = Ex.catch
-{-# inline catch #-}
+-- | Exception thrown during unification.
+data UnifyEx
+  = Unify0 V.Val0 V.Val0
+  | Unify1 V.Val1 V.Val1
+  | forall a. (Show a) => UnifyEq a a
+  | SolutionError V.Val1 V.Val1 SolutionEx
+deriving instance Show UnifyEx
 
-throw :: Ex -> a
-throw = Ex.throw
-{-# inline throw #-}
+-- | Unification exception in local unification context.
+data UnifyInner = UnifyInner Unif.Cxt UnifyEx
+  deriving Show
 
-
--- todo: cleanup
-
-data Ex
-
-  -- elaboration errors
-  = UnifyError0 S.Tm0 S.Tm0
-  | UnifyError1 S.Tm1 S.Tm1
-  | forall a. (Show a) => EqUnifyError a a
-  | NameNotInScope {-# unpack #-} RawName
-  | NoSuchField    {-# unpack #-} RawName
-  | NoSuchArgument {-# unpack #-} RawName
+-- | Exception thrown during elaboration
+data ElabEx
+  = UnifyOuter V.Val1 V.Val1 UnifyInner
+  | NoSuchField S.Tm1 RawName
+  | NoSuchArgument RawName
+  | NameNotInScope RawName
   | IcitMismatch Icit Icit
   | NoImplicitLam0
-  | ExpectedVal
+  | ExpectedVal S.Tm1
   | FieldNameMismatch Name Name
   | NoNamedLambdaInference
-  | CantInfer
-  | CantSplice
   | ExpectedNonEmptyRec
   | ExpectedEmptyRec
   | ExpectedEmptyRecCon
   | ExpectedNonEmptyRecCon
-  | ExpectedType
+  | ExpectedType S.Ty
   | CantInferTuple
-  | ExpectedRecord
-  | ExpectedRuntimeType
-  | CantInferSigma
-  | ExpectedDataCon
+  | ExpectedRecord S.Ty
+  | ExpectedRuntimeType S.Ty
+  | CantInferRec1
+  | CantInfer
+  deriving Show
 
-  -- exception for control-flow purposes in unification
-  | CantUnify
+-- | Elaboration exception in elaboration context.
+data ElabError = ElabError Unif.Cxt P.Tm ElabEx
+  deriving Show
 
-  -- renaming errors
-  | OccursCheck MetaVar
-  | OutOfScope Lvl
-  | SpineError
-
-  -- decorated with elaboration context
-  | ElabError S.Locals P.Tm Ex
-
-  -- spine exception
-  | NeedExpansion
-
-deriving instance Show Ex
-instance Ex.Exception Ex
+instance Exception SolutionEx
+instance Exception UnifyEx
+instance Exception UnifyInner
+instance Exception ElabEx
+instance Exception ElabError

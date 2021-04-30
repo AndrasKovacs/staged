@@ -6,6 +6,7 @@ module Common (
   , module Data.Coerce
   , module Control.Monad
   , module Data.Kind
+  , module Lens.Micro
   ) where
 
 import Data.Kind
@@ -13,6 +14,7 @@ import Control.Monad
 import Data.Foldable
 import GHC.Exts
 import qualified Data.ByteString as B
+import Lens.Micro
 
 import Data.Bits
 import Data.Hashable

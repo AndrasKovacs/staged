@@ -1,6 +1,8 @@
 
 module Cxt.Types where
 
+import Lens.Micro.TH
+
 import Common
 import qualified Syntax as S
 import qualified Values as V
@@ -13,10 +15,13 @@ data NameInfo
 type NameTable = HashMap RawName NameInfo
 
 data Cxt = Cxt {
-  _env       :: V.Env,
-  _lvl       :: Lvl,
-  _locals    :: S.Locals,
-  _pruning   :: S.Pruning,
-  _nameTable :: NameTable,
-  _src       :: RawName
+  cxtEnv       :: V.Env,
+  cxtLvl       :: Lvl,
+  cxtLocals    :: S.Locals,
+  cxtPruning   :: S.Pruning,
+  cxtNameTable :: NameTable,
+  cxtNames     :: [Name],
+  cxtSrc       :: RawName
   }
+
+makeFields ''Cxt

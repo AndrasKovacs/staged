@@ -23,6 +23,38 @@ import Pretty
 
 --------------------------------------------------------------------------------
 
+{-
+High-level design:
+
+- lower : coercing from level 1 to level 0
+
+- check0 :
+  - purely presyntax-directed, matches canonical cases + let
+  - refines checking type if necessary
+  - no need for matching on checking types, because level 0 does not have type-directed
+    elaboration!
+  - why do we even have check0? a) because we can resolve stage ambiguity b) efficiency
+
+- check1 :
+  - Mixed presyntax + type directed, canonical cases + let
+  - performs insertions (<_>, implicit lam)
+
+- infer0 :
+  - purely presyntax-directed, matches *level-ambiguous* canonical cases only
+
+- infer1 :
+  - purely presyntax-directed, matches *level-ambiguous* canonical cases only
+
+- infer :
+  - purely presyntax-directed
+
+
+-}
+
+
+
+--------------------------------------------------------------------------------
+
 elabError :: Cxt -> P.Tm -> ElabEx -> IO a
 elabError cxt t err = throwIO $ ElabError (unifyCxt cxt) t err
 {-# inline elabError #-}
@@ -125,10 +157,9 @@ coe cxt topT t a a' = do
              goRec1 cxt t (ix + 1) (V.Close (V.Snoc1 e  vt1)               as)
                                    (V.Close (V.Snoc1 e' (eval1 cxt coet1)) as')
     _ ->
-      uf
-      -- throwIO
-      -- throwIO $ UnifyError1 (quote1 cxt (V.Rec1 (V.Close e as)))
-      --                       (quote1 cxt (V.Rec1 (V.Close e' as')))
+      throwIO $ UnifyInner (unifyCxt cxt)
+                           (Unify1 (V.Rec1 (V.Close e as)) (V.Rec1 (V.Close e' as')))
+
 
   -- lifting helpers
   --------------------------------------------------------------------------------
@@ -251,13 +282,23 @@ coe cxt topT t a a' = do
         unify1 cxt topT a (V.Fun a1 a2 va2cv)
         go cxt t (V.Lift V.Comp (V.Fun a1 a2 va2cv)) (V.Pi x' Expl a' b')
 
-      -- TODO: same for Rec
+      -- TODO: same for non-empty Rec
 
+      (V.Rec1 (V.Close _ FNil), V.Lift cv a') -> do
+        unify1 cxt topT cv V.Val
+        unify1 cxt topT a' (V.Rec0 FNil)
+        pure $! Just $! S.Up (S.RecCon0 FNil)
+
+      (V.Lift cv a, V.Rec1 (V.Close _ FNil)) -> do
+        unify1 cxt topT cv V.Val
+        unify1 cxt topT a (V.Rec0 FNil)
+        pure $! Just $! S.RecCon1 FNil
 
       -- fallback
       ------------------------------------------------------------
 
       (a, a') -> do
+        -- traceShowM ("coe fallback", a, a')
         Nothing <$ unify1 cxt topT a a'
 
 tyAnnot :: Cxt -> Maybe P.Tm -> V.Ty -> IO S.Ty
@@ -271,24 +312,13 @@ check0 :: Dbg => Cxt -> P.Tm -> V.Ty -> V.CV -> IO S.Tm0
 check0 cxt topT topA cv = do
   -- traceShowM ("check0", topT, forceFU1 topA, forceFU1 cv)
   case (topT, forceFU1 topA, forceFU1 cv) of
-    (P.Lam _ (bindToName cxt -> x) i ma t, V.Fun a' b' b'cv, !cv) -> do
+    (P.Lam _ (bindToName cxt -> x) i ma t, a', !cv) -> do
       case i of P.NoName Expl -> pure ()
                 _             -> elabError cxt topT NoImplicitLam0
+      (a', b', b'cv) <- ensureFun cxt topT a' cv
       let qa' = quote1 cxt a'
       S.Lam0 x qa' <$!>
         check0 (bind0' x qa' a' S.Val V.Val cxt) t b' b'cv
-
-    (P.Lam _ (bindToName cxt -> x) i a t, a', cv) -> case i of
-      P.Named{}     -> elabError cxt topT (ExpectedRuntimeType (quote1 cxt a'))
-      P.NoName Impl -> elabError cxt topT (ExpectedRuntimeType (quote1 cxt a'))
-      P.NoName Expl -> do
-        a <- tyAnnot cxt a (V.U0 V.Val)
-        let va   = eval1 cxt a
-        let cxt' = bind0' x a va S.Val V.Val cxt
-        (t, b, bcv) <- infer0 cxt' t
-        unify1 cxt topT cv V.Comp
-        unify1 cxt topT a' (V.Fun va b bcv)
-        pure $! (S.Lam0 x a t)
 
     (P.RecCon _ ts, topA@(V.Rec0 as), _) -> do
 
@@ -319,9 +349,9 @@ check0 cxt topT topA cv = do
 
       S.RecCon0 <$!> go ts as
 
-    (P.EmptyRec _, V.Rec0 as, _) -> do
-      case as of FNil -> pure ()
-                 _    -> elabError cxt topT ExpectedEmptyRec
+    (P.EmptyRec _, a, cv) -> do
+      unify1 cxt topT cv V.Val
+      unify1 cxt topT a (V.Rec0 FNil)
       pure $! S.RecCon0 FNil
 
     (P.Let0 _ (spanToName cxt -> x) ma t u, topA, cv) -> do
@@ -474,39 +504,9 @@ check1 cxt topT topA = do
 
 data TmU = Tm0 S.Tm0 V.Ty V.CV | Tm1 S.Tm1 V.Ty deriving Show
 
--- TODO: handle record constructors
-infer0check :: Dbg => Cxt -> P.Tm -> IO (S.Tm0, V.Ty, V.CV)
-infer0check cxt topT = case topT of
-
-  P.Lam _ (bindToName cxt -> x) i a t -> case i of
-    P.Named{}     -> elabError cxt topT NoImplicitLam0
-    P.NoName Impl -> elabError cxt topT NoImplicitLam0
-    P.NoName Expl -> do
-      a <- tyAnnot cxt a (V.U0 V.Val)
-      let va   = eval1 cxt a
-      let cxt' = bind0' x a va S.Val V.Val cxt
-      (t, b, bcv) <- infer0 cxt' t
-      pure $! (S.Lam0 x a t, V.Fun va b bcv, V.Comp)
-
-  topT -> insertTmU cxt (infer cxt topT) >>= \case
-    Tm0 t a cv ->
-      pure (t, a, cv)
-    Tm1 t a -> case forceFU1 a of
-      V.Lift cv a -> do
-        let t' = S.down t
-        pure (t', a, cv)
-
-      -- PRUNING needed (often)
-      a -> do
-        cv <- freshCV cxt
-        let vcv = eval1 cxt cv
-        a' <- eval1 cxt <$!> freshMeta cxt (V.U0 vcv)
-        t  <- S.down <$!> coe cxt topT t a (V.Lift vcv a')
-        pure (t, a', vcv)
-
--- -- TODO: handle records
--- infer0chk :: Dbg => Cxt -> P.Tm -> IO (S.Tm0, V.Ty, V.CV)
--- infer0chk cxt topT = case topT of
+-- -- TODO: handle record constructors
+-- infer0check :: Dbg => Cxt -> P.Tm -> IO (S.Tm0, V.Ty, V.CV)
+-- infer0check cxt topT = case topT of
 
 --   P.Lam _ (bindToName cxt -> x) i a t -> case i of
 --     P.Named{}     -> elabError cxt topT NoImplicitLam0
@@ -526,12 +526,12 @@ infer0check cxt topT = case topT of
 --         let t' = S.down t
 --         pure (t', a, cv)
 
---       -- PRUNING needed
+--       -- PRUNING needed (often)
 --       a -> do
 --         cv <- freshCV cxt
 --         let vcv = eval1 cxt cv
 --         a' <- eval1 cxt <$!> freshMeta cxt (V.U0 vcv)
---         t  <- S.down <$!> coe cxt t a (V.Lift vcv a')
+--         t  <- S.down <$!> coe cxt topT t a (V.Lift vcv a')
 --         pure (t, a', vcv)
 
 -- TODO: handle records
@@ -542,11 +542,15 @@ infer0 cxt topT = case topT of
     P.Named{}     -> elabError cxt topT NoImplicitLam0
     P.NoName Impl -> elabError cxt topT NoImplicitLam0
     P.NoName Expl -> do
-      a <- tyAnnot cxt a (V.U0 V.Val)
-      let va   = eval1 cxt a
+      a  <- tyAnnot cxt a (V.U0 V.Val)
+      cv <- freshCV cxt
+      let vcv = eval1 cxt cv
+      b  <- freshMeta cxt (V.U0 vcv)
+      let vb = eval1 cxt b
+      let va = eval1 cxt a
       let cxt' = bind0' x a va S.Val V.Val cxt
-      (t, b, bcv) <- infer0 cxt' t
-      pure $! (S.Lam0 x a t, V.Fun va b bcv, V.Comp)
+      t <- check0 cxt' t va vcv
+      pure $! (S.Lam0 x a t, V.Fun va vb vcv, V.Comp)
 
   topT -> insertTmU cxt (infer cxt topT) >>= \case
     Tm0 t a cv ->
@@ -864,6 +868,7 @@ inferTop src = \case
       Nothing -> do
         (rhs, va, cv) <- infer0 cxt rhs
         let qa = quote1 cxt va
+        -- traceShowM ("infertop0", va, qa)
         pure (rhs, qa, va, cv)
 
     let ~vrhs = eval0 cxt rhs

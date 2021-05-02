@@ -372,9 +372,9 @@ solve :: Dbg => Cxt -> ConvState -> MetaVar -> Spine -> Val1 -> IO ()
 solve cxt st m sp rhs = do
 
   ------------------------------------------------------------
-  -- ma <- ES.unsolvedMetaTy m
-  -- traceM ("?" ++ show m ++ " : " ++ showVal1Top' ma)
-  -- traceM (showVal1 cxt (Flex m sp) ++ " =? " ++ showVal1' cxt rhs ++ "\n")
+  ma <- ES.unsolvedMetaTy m
+  traceM ("?" ++ show m ++ " : " ++ showVal1Top' ma)
+  traceM (showVal1 cxt (Flex m sp) ++ " =? " ++ showVal1' cxt rhs ++ "\n")
   ------------------------------------------------------------
 
   psub <- invertSp (cxt^.lvl) sp

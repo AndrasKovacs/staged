@@ -256,7 +256,9 @@ pi' = do
             let !res = foldr' (\x@(Span x1 x2) -> Pi x1 (Bind x) Expl a) b xs
             pure $! Pi l (Bind x) Expl a res)
         (do t <- tm' <* parR'
-            branch arrow (Pi l DontBind Expl t <$> pi') (pure t))
+            branch arrow
+              (Pi l DontBind Expl t <$> pi')
+              (goProj (pure t)))
 
     _   -> ws >> do
       t <- sub'
@@ -431,9 +433,9 @@ parseString (packUTF8 -> str) = (coerce str, parse str)
 --------------------------------------------------------------------------------
 
 p1 = unlines [
-  -- "id : Bool → Bool = λ b A. b [A.B, A.true, foo]",
-  "bar = λ x. <f ~x>   ",
-  "  "
+  "foo = λ ma s. (ma s).fst"
+  -- "bar = λ x. <f ~x>   ",
+  -- "  "
 
   -- "bar : U1 = U0 Comp"
   -- "foo : Int = 300 + 500 * 10"

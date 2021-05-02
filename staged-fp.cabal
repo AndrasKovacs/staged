@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: b4d4354dd629cd7f6eef2f27147fadfda4734880229bb36302409e998235abe5
+-- hash: 6fcb49d6069a59c7907c35adc6a03dfa34f24c976b1f5b77047f70fadef4ff1e
 
 name:           staged-fp
 version:        0.1.0.0
@@ -22,6 +22,7 @@ library
       Common
       Cxt
       Cxt.Extension
+      Cxt.Fields
       Cxt.Types
       Elaboration
       ElabState

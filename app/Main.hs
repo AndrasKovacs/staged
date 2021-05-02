@@ -50,21 +50,21 @@ displayState = do
   nl
   D.for top \case
     TEDef0 a va t vt cv x _ -> do
-      putStrLn (show x ++ " : " ++ showTm1Top a)
+      putStrLn (show x ++ " : " ++ showVal1Top va)
       putStrLn ("  := " ++ showTm0Top t)
       nl
       putStrLn "-- STAGED"
-      putStrLn (show x ++ " : " ++ showTm1Top' a)
+      putStrLn (show x ++ " : " ++ showVal1Top va)
       putStrLn ("  := " ++ showTm0Top' t)
       nl
     TEDef1 a va t vt x _ -> do
       putStrLn (show x ++ " : " ++ showTm1Top a)
       putStrLn ("  = " ++ showTm1Top t)
       nl
-      -- putStrLn "-- NORMAL FORM"
-      -- putStrLn (show x ++ " : " ++ showTm1Top' a)
-      -- putStrLn ("  = " ++ showTm1Top' t)
-      -- nl
+      putStrLn "-- NORMAL FORM"
+      putStrLn (show x ++ " : " ++ showTm1Top' a)
+      putStrLn ("  = " ++ showTm1Top' t)
+      nl
     TETyCon{} -> do
       putStrLn "<tycon not supported>"
     TEDataCon{} -> do
@@ -92,179 +92,64 @@ test str = do
 
 p1 = unlines [
 
+  "VTy : U1 = U0 Val",
+  "CTy : U1 = U0 Comp",
+  "Pair : VTy → VTy → VTy = λ A B . [fst: A, snd: B]",
+
+  -- "let-insertion"
+  "CPair : VTy → VTy → U1 = λ A B. (P : VTy) → (A → B → P) → P",
+  "dup : {A : U0 Val} → A → CPair A A = λ a P p. let v := a; p a a",
+
+  -- -- here      Template Haskell
+  -- -- <_>        [| _ |]
+  -- -- ~_         $(_)
+
   "Eq : {A : U1} → A → A → U1",
   "  = λ {A} x y. (P : A → U1) → P x → P y",
   "refl : {A : U1}{x :A} → Eq {A} x x = λ P px. px",
 
-  "the : (A : U1) → A → A = λ A x. x",
-  "const0 : (A : U1) → A → Int = λ A x. 0",
-
-  -- "foo : [fst : Int, snd : Int] = 100",
-
-  -- -- occurs check
-  -- "m1 : U1 = _",
-  -- "p1 : Eq {U1} m1 (m1 → m1) = refl {U1}{m1}",
-
-  -- inverting quotes
-  "m1 : Int → Int = _",
-  "p1 := λ (x : Int). const0 (Eq (m1 x) x) refl",
-
-  -- non-linear spine solution
-  "m2 : Int → Int → Int = _",
-  "p2 := λ (x : Int). const0 (Eq (m2 x x) 20) (refl {_} {20})",
-
-  -- -- pruning
-  -- "p3 = λ f x. f x",
-
-  -- record coercion (other dir not yet supported)
-  "rec1 : [fst : Int, snd : Int] := [100, 200]",
-  "rec2 : [fst: ^Int, snd: ^Int] = rec1"
-  -- "rec3 : ^[fst: Int, snd: Int ] = rec2"  -- FIX
-
-
-
-
-
-
-
-
-  -- "Alg = [B: U1, true: B, false: B]",
-  -- "Bool = (A : Alg) → A.B",
-  -- "id : Bool → Bool = λ b A. b [A.B, A.true, A.false]",
-  -- "NatAlg = [N : U1, zero : N, suc: N → N]",
-  -- "Nat    = (A : NatAlg) → A.N",
-  -- "zero   = λ (A : NatAlg). A.zero",
-  -- "suc : Nat → Nat = λ n A. A.suc (n A)",
-  -- "id  : Nat → Nat = λ n A. n [A.N, A.zero, A.suc]",
-  -- "add : Nat → Nat → Nat = λ a b A. a [A.N, b A, A.suc]",
-  -- "n5 = suc (suc (suc (suc (suc zero))))"
-
-  -- "id    : {A : U1} → A → A = λ x. x",
-  -- "const : {A B : U1} → A → B → A = λ a b. a",
-  -- "comp  : {A B C : U1} → (B → C) → (A → B) → A → C = λ f g x. f (g x)",
-
-  -- "id2 : Int → Int := id",
-  -- "f : Int → Int = λ x. x + x + 10",
-  -- "g := comp id (comp f f)",
-  -- "h = comp g id",
-
-  -- "Sg = λ A (B : A → U1). [fst : A, snd: B fst]",
-
-  -- "Pointed = Sg U1 (λ A. A)",
-
-  -- "SmallFunctor : U1 = [F : U0 Val → U1, map : {A B : U0 _} → (A → B) → F A → F B]",
-  -- "BigFunctor   : U1 = [F : U1 → U1, map : {A B} → (A → B) → F A → F B]",
-
-  -- "test : Int → Int → Int → Int = λ a b c. _"
-
-  -- "Eq : {A : U1} → A → A → U1",
-  -- "  = λ {A} x y. (P : A → U1) → P x → P y",
-  -- "refl : {A x} → Eq {A} x x = λ P px. px",
-
-  -- "g := λ x. 10 + x",
-
-  -- "foo : Eq g g = refl",
-
-  -- "g : [fst: Int, snd: Int, thd: Int] := [20, 30, 100]",
-
-  -- "foo : Eq g g = refl"
-
-  -- --
-
-  -- "f1 : Int → Int := λ x. x + 10",
-
-
-
-  -- "f2 : Int → Int := λ x. id x"
-
-
-
-  -- "f2 : Int → Int := comp f1 f1",              -- stage inference: inserts staging annotations automatically
-  --                                              -- "coercive subtyping"
-
-  -- -- "f2 : Int → Int := λ x. comp f1 f1"           -- Int → Int ≤ ^Int → ^Int
-  -- --                                               -- whenever (A : U0 cv) then (^A : U1)
-  -- --                                               -- <_> : A → ^A
-  --                                                  -- ~_  : ^A → A
-
-  -- "myConstant : ^Int = <1000>",           -- ^Int   : type of Int-expressions (at meta level)
-  --                                         -- <1000> : quoting of 1000
-
-  -- "myInt := myConstant",
-  -- "f2 : Int → Int := comp f1 f1",
-
-  -- "VTy = U0 Val",       -- type synonym for "value" runtime types        (records + inductive types + primitives)
-  -- "CTy = U0 Comp",      -- type synonym for "computation" runtime types  (functions)
-
-  -- "id    : {A} → A → A = λ x. x",
-  -- "comp  : {A B C} → (B → C) → (A → B) → (A → C) = λ f g x. f (g x)",
-  -- "app   : {A B} → (A → B) → A → B = λ f x. f x",
-  -- "const : {A B} → A → B → A = λ a b. a",
-
-  -- "Nat : U1 = (N : U1) → (N → N) → N → N",  -- full Church Nat at meta level
-
-  -- "Nat : U1 = (N : VTy) → (N → N) → N → N",
-
-  -- data Nat₀ : VTy = Zero | Suc Nat₀
-  -- ^Nat₀ ≃ ((N : VTy) → (^N → ^N) → ^N → ^N)
-
-  -- map : {A B : VTy} → (^A → ^B) → CPS (List A) → CPS (List A)
-
-  -- myListFun : List Int → List Int := map (+100) ∘ filter even ∘ take 100
-
-  -- (f . g) x = f (g x)
-  -- (f . g) = \x -> f (g x)
-
-  -- "n0 : Nat = λ N s z. z",
-  -- "n1 : Nat = λ N s z. s z",
-  -- "add : Nat → Nat → Nat = λ a b N s z. a N s (b N s z)",
-  -- "n5 : Nat = λ N s z. s (s (s (s (s z))))",
-  -- "mul : Nat → Nat → Nat = λ a b N s. a N (b N s)",
-
-  -- "NatToInt : Nat → Int = λ n. n Int (λ x. x + 1) 0",
-  -- "IntToNat : Int → Nat = λ x N s z. _",
-
-  -- "add2 = λ (x : Int). x + 2",
-
-  -- "foo := comp add2 (comp add2 id)",
-
-  -- "hof : (Int → Int) → Int = λ f. f (f 10)",
-
-  -- "staticExp : Nat → Int → Int = λ a b. a Int (λ x. x * b) 1",
-
-  -- "exp5 := comp add2 (staticExp n5)",
-
-  -- -- meta-level
-  -- "NatAlg : U1 = [N : U1, zero : N, suc : N → N]",
-  -- "zero : (Alg : NatAlg) → Alg.N = λ Alg. Alg.zero",
-
-  -- -- runtime
-
-  -- "Pair1 : U1 → U1 → U1    = λ A B. [fst : A, snd : B]",
-  -- "Pair0 : VTy → VTy → VTy = λ A B. [fst : A, snd : B]",
-
-  -- "dup : {A : VTy} → A → Pair0 A A = λ x. let v := x; [x, x]",
-
-  -- -- " enumFromTo x y
-
-  -- "p1 : Pair1 Int Int = [add2 10, add2 20]",
-
-  -- "p2 : Pair0 Int Int := let v := p1.fst; [v, v]"     -- "let insertion"
-
-
-  -- "Eq : {A : U1} → A → A → U1",                -- Church-encoded propositional equality
-  -- "  = λ {A} x y. (P : A → U1) → P x → P y",
-  -- "refl : {A x} → Eq {A} x x = λ P px. px"
-
-  -- if I have a) general recursion b) side effects c) exceptions
-
-  -- let x := foo in bar
-  -- let x =  foo in bar
-  -- let x =  foo in bar
-
-  -- "g := λ x. 100",
-  -- "foo : Eq <g 10> <g 20> = refl"
-
+  "id    : {A : U1} → A → A = λ x. x",
+  "const : {A B : U1} → A → B → A = λ a b. a",
+  "comp  : {A B C : U1} → (B → C) → (A → B) → A → C = λ f g x. f (g x)",
+
+  "rec1 : [fst : Int, snd : Int] := [1000, 2000]",
+
+  "Sigma  : (A : U1) → (A → U1) → U1 = λ A B. [fst : A, snd : B fst]",
+  "Sigma2 : (A : U1) → (A → U1) → U1 = λ A B. [fst : A, snd : B fst]",
+
+   -- "relative monad"
+  "SmallState : U0 Val → U0 Val → U0 Comp = λ S A. S → [fst : A, snd : S]",
+
+  -- "relative monad" as well
+  "State  : VTy → VTy → U1 = λ S A. S → [fst: A, snd: S]",
+  "put    : {S: VTy} → S → State S [] = λ s _. [[], s]",
+  "get    : {S: VTy} → State S S = λ s. [s, s]",   -- non-linear!!
+  "modify : {S : VTy} → (S → S) → State S [] = λ f s. [[], f s]",
+  "pure   : {A S : VTy} → A → State S A = λ a s. [a, s]",
+  "bind   : {A B S : VTy} → State S A → (A → State S B) → State S B",
+  "         = λ ma f s. let as = ma s; f as.fst as.snd",
+  "seq    : {A B S : VTy} → State S A → State S B → State S B = λ ma mb. bind ma (λ _. mb)",
+  "evalState : {A S : VTy} → State S A → S → A = λ ma s. (ma s).fst",
+  "execState : {A S : VTy} → State S A → S → S = λ ma s. (ma s).snd",
+
+  "f := execState (seq (modify (λ x. x + 10)) (modify (λ x. x + 100)))",
+  "g := λ (n:Int). execState {[]}{_} (modify {Int} (λ s. s + 10)) n",
+
+  "h := execState (seq (put 100) (seq (put 100) (pure 5)))",
+
+  "State  : VTy → VTy → U1 = λ S A. S → CPair A S",
+  "put    : {S: VTy} → S → State S [] = λ s _ P p. p [] s",
+  "get    : {S: VTy} → State S S = λ s P p . p s s",   -- non-linear!!
+  "modify : {S : VTy} → (S → S) → State S [] = λ f s P p. p [] (f s)",
+  "pure   : {A S : VTy} → A → State S A = λ a s P p. p a s",
+  "bind   : {A B S : VTy} → State S A → (A → State S B) → State S B",
+  "         = λ ma f s P p. ma s P (λ a s. f a s P p)",
+  "seq    : {A B S : VTy} → State S A → State S B → State S B = λ ma mb. bind ma (λ _. mb)",
+  "evalState : {A S : VTy} → State S A → S → A = λ ma s. let s := s; ma s _ (λ a s. a)",
+  "execState : {A S : VTy} → State S A → S → S = λ ma s. let s := s; ma s _ (λ a s. s)",
+
+  "g : Int → Int := λ n. execState (seq (modify (λ x. x*x*x)) (modify (λ x. x*x*x))) (n + 100)",
+  "h := execState (bind get (λ x. seq (modify (λ x. x * x)) get))"
   ]
 
 --------------------------------------------------------------------------------

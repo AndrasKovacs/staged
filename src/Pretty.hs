@@ -135,18 +135,18 @@ rec1 ns = \case
   FCons (fresh ns -> x) t ts   ->
     name x . (" : "++). tm1 tmp ns t . (", "++) . rec1 (x:ns) ts
 
-var :: [Name] -> Ix -> ShowS
-var ns x = case ns !! coerce x of
-  NName x -> (show x++)
-  NEmpty  -> ("@"++).(show x++)
-  NX      -> impossible
-
 -- var :: [Name] -> Ix -> ShowS
--- var ns x | 0 <= x && coerce x < length ns = case ns !! coerce x of
+-- var ns x = case ns !! coerce x of
 --   NName x -> (show x++)
 --   NEmpty  -> ("@"++).(show x++)
 --   NX      -> impossible
--- var ns x = ("@!"++).(show x++)
+
+var :: [Name] -> Ix -> ShowS
+var ns x | 0 <= x && coerce x < length ns = case ns !! coerce x of
+  NName x -> (show x++)
+  NEmpty  -> ("@"++).(show x++)
+  NX      -> impossible
+var ns x = ("@!"++).(show x++)
 
 appPruning :: Tm1 -> Ix -> Pruning -> Tm1
 appPruning t ix = \case

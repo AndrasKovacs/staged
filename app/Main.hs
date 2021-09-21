@@ -61,10 +61,10 @@ displayState = do
       putStrLn (show x ++ " : " ++ showTm1Top a)
       putStrLn ("  = " ++ showTm1Top t)
       nl
-      putStrLn "-- NORMAL FORM"
-      putStrLn (show x ++ " : " ++ showTm1Top' a)
-      putStrLn ("  = " ++ showTm1Top' t)
-      nl
+      -- putStrLn "-- NORMAL FORM"
+      -- putStrLn (show x ++ " : " ++ showTm1Top' a)
+      -- putStrLn ("  = " ++ showTm1Top' t)
+      -- nl
     TETyCon{} -> do
       putStrLn "<tycon not supported>"
     TEDataCon{} -> do
@@ -94,31 +94,46 @@ p1 = unlines [
 
   "VTy : U1 = U0 Val",
   "CTy : U1 = U0 Comp",
-  "Pair : VTy → VTy → VTy = λ A B . [fst: A, snd: B]",
+  "the : (A : U1) → A → A = λ A x. x",
+  -- "Pair : VTy → VTy → VTy = λ A B . [fst: A, snd: B]",
 
   -- "let-insertion"
   "CPair : VTy → VTy → U1 = λ A B. (P : VTy) → (A → B → P) → P",
-  "dup : {A : U0 Val} → A → CPair A A = λ a P p. let v := a; p a a",
+  -- "dup : {A : U0 Val} → A → CPair A A = λ a P p. let v := a; p a a",
 
-  -- -- here      Template Haskell
-  -- -- <_>        [| _ |]
-  -- -- ~_         $(_)
+  -- -- -- here      Template Haskell
+  -- -- -- <_>        [| _ |]
+  -- -- -- ~_         $(_)
 
   "Eq : {A : U1} → A → A → U1",
   "  = λ {A} x y. (P : A → U1) → P x → P y",
   "refl : {A : U1}{x :A} → Eq {A} x x = λ P px. px",
 
-  "id    : {A : U1} → A → A = λ x. x",
-  "const : {A B : U1} → A → B → A = λ a b. a",
-  "comp  : {A B C : U1} → (B → C) → (A → B) → A → C = λ f g x. f (g x)",
+  -- "id    : {A : U1} → A → A = λ x. x",
+  -- "const : {A B : U1} → A → B → A = λ a b. a",
+  -- "comp  : {A B C : U1} → (B → C) → (A → B) → A → C = λ f g x. f (g x)",
 
-  "rec1 : [fst : Int, snd : Int] := [1000, 2000]",
+  -- "rec1 : [fst : Int, snd : Int] := [1000, 2000]",
 
-  "Sigma  : (A : U1) → (A → U1) → U1 = λ A B. [fst : A, snd : B fst]",
-  "Sigma2 : (A : U1) → (A → U1) → U1 = λ A B. [fst : A, snd : B fst]",
+  -- "rec1 : [Int, Int] := [1000, 2000]",
 
-   -- "relative monad"
-  "SmallState : U0 Val → U0 Val → U0 Comp = λ S A. S → [fst : A, snd : S]",
+  -- "foo : [fst: Int, snd: Int] := [100, 200]",
+  -- "bar : [snd: Int, fst: Int] := foo"
+
+  -- "p = the (Eq [foo : ^Int] [foo : ^Int]) refl"
+
+
+  -- "foo : ^(Int → Int) → Int → Int = λ f x. f x",
+  -- "fst : {A B : VTy} → [A → Int → B, A] → B = λ x. x.0 100 x.1"
+
+  -- "foo := [10, 20]"
+
+
+  -- "Sigma  : (A : U1) → (A → U1) → U1 = λ A B. [fst : A, snd : B fst]",
+  -- "Sigma2 : (A : U1) → (A → U1) → U1 = λ A B. [fst : A, snd : B fst]",
+
+  --  -- "relative monad"
+  -- "SmallState : U0 Val → U0 Val → U0 Comp = λ S A. S → [fst : A, snd : S]",
 
   -- "relative monad" as well
   "State  : VTy → VTy → U1 = λ S A. S → [fst: A, snd: S]",
@@ -156,6 +171,3 @@ p1 = unlines [
 
 main :: IO ()
 main = pure ()
-
-
-  -- test "foo = bar"

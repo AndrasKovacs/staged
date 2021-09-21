@@ -1,0 +1,102 @@
+
+\documentclass{easychair}
+
+\usepackage{doc}
+\usepackage{scalerel}
+\usepackage{amsfonts}
+
+\newcommand{\easychair}{\textsf{easychair}}
+\newcommand{\miktex}{MiK{\TeX}}
+\newcommand{\texniccenter}{{\TeX}nicCenter}
+\newcommand{\makefile}{\texttt{Makefile}}
+\newcommand{\latexeditor}{LEd}
+\newcommand{\emptycon}{\scaleobj{.75}\bullet}
+\newcommand{\ext}{\triangleright}
+\newcommand{\arri}{\Rightarrow}
+
+\newcommand{\ms}[1]{\mathsf{#1}}
+\newcommand{\ToS}{\mathsf{ToS}}
+\newcommand{\U}{\mathsf{U}}
+\newcommand{\Code}{\mathsf{Code}}
+\newcommand{\Ty}{\mathsf{Ty}}
+\newcommand{\V}{\mathsf{V}}
+\newcommand{\C}{\mathsf{C}}
+\newcommand{\Bool}{\ms{Bool}}
+
+\title{Staged Compilation and Generativity%
+  \thanks{The author was supported by the European Union, co-financed
+    by the European Social Fund (EFOP-3.6.3-VEKOP-16-2017-00002).}}
+
+\author{
+Andr\'as Kov\'acs
+}
+
+% Institutes for affiliations are also joined by \and,
+\institute{
+  E\"otv\"os Lor\'and University,
+  Budapest, Hungary \\
+  \email{kovacsandras@inf.elte.hu}
+}
+
+\authorrunning{Kov\'acs}
+\titlerunning{Staged Compilation and Generativity}
+\pagenumbering{gobble}
+\begin{document}
+
+\maketitle
+
+The purpose of staged compilation is to write code-generating programs in a safe
+and ergonomic way. Although it is always possible to write metaprograms by
+simply manipulating strings or deeply embedded syntax trees, this is often
+error-prone and tedious. Staging is a way to have more guarantees about the
+safety and well-typing of metaprograms, and also a way to integrate object-level
+and meta-level syntaxes more organically.
+
+Two-level type theory (2LTT) \cite{twolevel} was originally developed for the
+purpose of doing synthetic homotopy theory, by adding a metaprogramming layer on
+top of homotopy type theory \cite{hottbook}. However, it turns out that 2LTT is
+also a great framework for metaprogramming and staging in general; it is
+applicable to a wide range of object theories.
+
+There is a natural semantics to 2LTT which justifies the metaprogramming view:
+this is the \emph{presheaf model} of 2LTT. Here, meta-level types are presheaves
+over the underlying category of the object theory. Hence, every meta-level
+construction must be stable under the object-level morphisms.
+
+\paragraph{Generativity}Generativity means that we can only generate code, but not look inside
+object-level syntax and make decisions based on that. Generativity simplifies
+staging, and it is often enforced in practical implementations
+\cite{kiselyov14metaocaml}. However, non-generative staging provides additional
+power and flexibility. A simple example for a non-generative feature is
+conversion checking. Assume that given an object-level type $A$, $\Code\,A$ is
+the type of meta-level programs which compute $A$-expressions. Conversion
+checking may be postulated as $\ms{conversion}_A : (t\,u : \Code\,A) \to (t = u)
++ (t \neq u)$. We aim to investigate generativity in the presheaf model. We
+observe that it depend on the choice of morphisms in the object theory.
+
+If base morphisms are \emph{substitutions}, then $\ms{conversion}$ does not hold
+in the model, because definitional inequality is not stable under substitution. For
+example, inequal variables may become equal after substitution.
+
+If base morphisms are \emph{weakenings}, then $\ms{conversion}$
+holds. However, in this case the object theory can only support features which
+can be specified with weakenings. For instance, this allows simple types at at
+the object level, without any $\beta$-rules, but it does not allow polymorphism
+or dependent types. This is still sufficient for many staging applications.
+
+\paragraph{Yoneda lemma} It is worth to note that we get generativity statements
+in the presheaf model from the Yoneda lemma. For example, the natural
+transformation $\ms{y}\,\Bool_0 \Rightarrow \Bool_1$ must be a constant map in the
+model. How is it possible then to have non-generativity? The answer is that
+the Yoneda lemma can only meaningfully apply to \emph{types} (as opposed to
+contexts) in the presheaf model, if context extension is preserved by Yoneda
+embedding. If base morphisms are weakenings, the base category does not have all
+binary products, and context extension is not preserved by $\ms{y}$. Hence, the
+singleton context $\emptycon,\ms{y}\,\Bool_0$ is not representable, and the
+Yoneda lemma does not say anything about dependency on $\ms{y}\,\Bool_0$.
+
+
+\bibliographystyle{plain}
+\bibliography{references}
+
+\end{document}

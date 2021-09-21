@@ -1,0 +1,13 @@
+\begin{thebibliography}{ACKS19}
+
+\bibitem[ACKS19]{twolevel}
+Danil Annenkov, Paolo Capriotti, Nicolai Kraus, and Christian Sattler.
+\newblock Two-level type theory and applications.
+\newblock {\em ArXiv e-prints}, may 2019.
+
+\bibitem[Voe13]{voevodsky2013simple}
+Vladimir Voevodsky.
+\newblock A simple type system with two identity types.
+\newblock {\em Unpublished note}, 2013.
+
+\end{thebibliography}

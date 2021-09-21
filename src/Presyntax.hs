@@ -23,6 +23,11 @@ data Bind
   = Bind Span
   | DontBind
 
+data Proj
+  = ProjIx Span Int
+  | ProjName Span
+  deriving Show
+
 instance Show Bind where
   show (Bind x) = show x
   show DontBind = "_"
@@ -46,7 +51,7 @@ data Tm
   | RecCon Span [(Span, Tm)]
   | EmptyRec Span                 -- overloads both tt and Top
   | Tuple Span [Tm]
-  | Field Tm Span
+  | Field Tm Proj
   | Case Pos Tm Pos [(Span, [Bind], Tm)]
   | Hole Pos
   | Int Span
@@ -59,6 +64,7 @@ deriving instance Show Tm
 
 span :: Tm -> Span
 span t = Span (left t) (right t) where
+
   left :: Tm -> Pos
   left = \case
     Var (Span l _)      -> l
@@ -74,7 +80,7 @@ span t = Span (left t) (right t) where
     RecCon (Span l _) _ -> l
     EmptyRec (Span l _) -> l
     Tuple (Span l _) _  -> l
-    Field t _           -> left t
+    Field t pr          -> left t
     Case l _ _ _        -> l
     Hole l              -> l
     IntLit (Span l _) _ -> l
@@ -90,30 +96,31 @@ span t = Span (left t) (right t) where
 
   right :: Tm -> Pos
   right = \case
-    Var (Span _ r)      -> r
-    Let0 _ _ _ _ t      -> right t
-    Let1 _ _ _ _ t      -> right t
-    Pi _ _ _ _ t        -> right t
-    Lam _ _ _ _ t       -> right t
-    App _ t _           -> right t
-    Lift _ t            -> right t
-    Up (Span _ r) _     -> r
-    Down _ t            -> right t
-    Rec (Span _ r) _    -> r
-    RecCon (Span _ r) _ -> r
-    EmptyRec (Span _ r) -> r
-    Tuple (Span _ r) _  -> r
-    Field _ (Span _ r)  -> r
-    Case _ _ r []       -> r
-    Case _ _ r ts       -> case last ts of (_, _, t) -> right t
-    Hole r              -> r
-    IntLit (Span _ r) _ -> r
-    Add _ r             -> right r
-    Mul _ r             -> right r
-    Sub _ r             -> right r
-    Int (Span l r)      -> r
-    CV (Span l r)       -> r
-    U0 l t              -> right t
-    U1 (Span l r)       -> r
-    Comp (Span l r)     -> r
-    Val (Span l r)      -> r
+    Var (Span _ r)                 -> r
+    Let0 _ _ _ _ t                 -> right t
+    Let1 _ _ _ _ t                 -> right t
+    Pi _ _ _ _ t                   -> right t
+    Lam _ _ _ _ t                  -> right t
+    App _ t _                      -> right t
+    Lift _ t                       -> right t
+    Up (Span _ r) _                -> r
+    Down _ t                       -> right t
+    Rec (Span _ r) _               -> r
+    RecCon (Span _ r) _            -> r
+    EmptyRec (Span _ r)            -> r
+    Tuple (Span _ r) _             -> r
+    Field _ (ProjIx (Span l r) ix) -> r
+    Field _ (ProjName (Span l r))  -> r
+    Case _ _ r []                  -> r
+    Case _ _ r ts                  -> case last ts of (_, _, t) -> right t
+    Hole r                         -> r
+    IntLit (Span _ r) _            -> r
+    Add _ r                        -> right r
+    Mul _ r                        -> right r
+    Sub _ r                        -> right r
+    Int (Span l r)                 -> r
+    CV (Span l r)                  -> r
+    U0 l t                         -> right t
+    U1 (Span l r)                  -> r
+    Comp (Span l r)                -> r
+    Val (Span l r)                 -> r

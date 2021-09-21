@@ -2,7 +2,6 @@
 module Exceptions (throwIO, catch, throw, module Exceptions) where
 
 import Control.Exception
-import qualified Data.ByteString as B
 
 import Common
 import qualified Syntax    as S
@@ -23,8 +22,8 @@ data SolutionEx
 data UnifyEx
   = Unify0 V.Val0 V.Val0
   | Unify1 V.Val1 V.Val1
-  | forall a. (Show a) => UnifyEq a a
   | SolutionError V.Val1 V.Val1 SolutionEx
+  | UnifyFieldName Name Name
 deriving instance Show UnifyEx
 
 -- | Unification exception in local unification context.
@@ -34,10 +33,12 @@ data UnifyInner = UnifyInner Unif.Cxt UnifyEx
 -- | Exception thrown during elaboration
 data ElabEx
   = UnifyOuter V.Val1 V.Val1 UnifyInner
-  | NoSuchField S.Tm1 RawName
+  | NoSuchFieldName S.Tm1 RawName
+  | NoSuchFieldIx   S.Tm1 Int
   | NoSuchArgument RawName
   | NameNotInScope RawName
   | IcitMismatch Icit Icit
+  | NegativeFieldIndex
   | NoImplicitLam0
   | ExpectedVal S.Tm1
   | FieldNameMismatch Name Name
@@ -48,7 +49,7 @@ data ElabEx
   | ExpectedNonEmptyRecCon
   | ExpectedType S.Ty
   | CantInferTuple
-  | ExpectedRecord S.Ty
+  | ExpectedRecord V.Ty
   | ExpectedRuntimeType S.Ty
   | CantInferRec1
   | CantInfer

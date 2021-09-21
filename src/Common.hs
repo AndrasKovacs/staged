@@ -21,7 +21,7 @@ import Data.Hashable
 import FNV164
 import FlatParse.Stateful
 import Data.Coerce
-import GHC.Stack
+-- import GHC.Stack
 
 import qualified Debug.Trace as Trace
 
@@ -119,8 +119,8 @@ instance Show a => Show (Cases a) where
 uf :: a
 uf = undefined
 
--- type Dbg = () :: Constraint
-type Dbg = HasCallStack
+type Dbg = () :: Constraint
+-- type Dbg = HasCallStack
 
 impossible :: Dbg => a
 impossible = error "impossible"

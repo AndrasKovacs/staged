@@ -126,7 +126,7 @@ up l = do
   pure $ Up (Span l r) t
 
 -- todo: speed up
-intLit :: Parser Tm
+intLit :: Parser (Span, Int)
 intLit = do
   l      <- getPos
   sign   <- ((-1) <$ $(char '-')) <|> pure 1
@@ -136,7 +136,8 @@ intLit = do
   ws
   let go place acc (d:ds) = go (place*10) (acc + (ord d - ord '0')*place) ds
       go place acc []     = acc
-  pure $! IntLit (Span l r) $! sign * go 1 0 digits
+  let n = sign * go 1 0 digits
+  pure (Span l r, n)
 
 atomBase :: Parser Tm
 atomBase = do
@@ -159,7 +160,7 @@ atomBase = do
     "U1"   -> skipToVar l \r -> pure $ U1 (Span l r)
     "Int"  -> skipToVar l \r -> pure $ Int (Span l r)
     _      ->     do {identStartChar; manyIdents; r <- getPos; ws; pure (Var (Span l r))}
-              <|> intLit
+              <|> (uncurry IntLit <$!> intLit)
             |])
 
 atom :: Parser Tm
@@ -186,11 +187,21 @@ down = do
 
 --------------------------------------------------------------------------------
 
-goProj :: Parser Tm -> Parser Tm
-goProj p = chainl Field p (dot *> ident')
+-- goField :: Tm -> Either Span -> Tm
+-- goField t x = _
+
+-- goProj :: Parser Tm -> Parser Tm
+-- goProj p = chainl  p (dot *> ident')
+
+goProj :: Tm -> Parser Tm
+goProj t =
+  branch dot
+    (do {(x, n) <- intLit; goProj (Field t (ProjIx x n))} <|>
+     do {x <- ident'; goProj (Field t (ProjName x))})
+    (pure t)
 
 proj :: Parser Tm
-proj = goProj down'
+proj = goProj =<< down'
 
 --------------------------------------------------------------------------------
 
@@ -207,7 +218,7 @@ goApp t = branch braceL
           goApp (App t u (NoName Impl))))
   (do optioned down
         (\u -> do
-          u <- goProj (pure u)
+          u <- goProj u
           goApp (App t u (NoName Expl)))
         (pure t))
 
@@ -258,7 +269,7 @@ pi' = do
         (do t <- tm' <* parR'
             branch arrow
               (Pi l DontBind Expl t <$> pi')
-              (goProj (pure t)))
+              (goProj t))
 
     _   -> ws >> do
       t <- sub'
@@ -362,7 +373,7 @@ pCase' l = do
 
 skipToApp :: Pos -> (Pos -> Parser Tm) -> Parser Tm
 skipToApp l p = branch identChar
-  (do {manyIdents; r <- getPos; ws; goApp =<< goProj (pure (Var (Span l r)))})
+  (do {manyIdents; r <- getPos; ws; goApp =<< goProj (Var (Span l r))})
   (do {r <- getPos; ws; p r})
 {-# inline skipToApp #-}
 
@@ -436,7 +447,6 @@ p1 = unlines [
   "foo = λ ma s. (ma s).fst"
   -- "bar = λ x. <f ~x>   ",
   -- "  "
-
   -- "bar : U1 = U0 Comp"
   -- "foo : Int = 300 + 500 * 10"
   -- "bar = let x = Comp; let foo := mallc; U0 x"

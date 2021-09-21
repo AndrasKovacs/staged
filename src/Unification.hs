@@ -409,11 +409,6 @@ unifySp cxt st topT sp topT' sp' = case (sp, sp') of
   _ -> throwIO $ UnifyInner cxt (Unify1 topT topT')
 
 -- throws UnifyInner
-unifyEq :: (Eq a, Show a) => Cxt -> a -> a -> IO ()
-unifyEq cxt a a' = unless (a == a') (throwIO $ UnifyInner cxt $ UnifyEq a a')
-{-# inline unifyEq #-}
-
--- throws UnifyInner
 unify0 :: Dbg => Cxt -> ConvState -> Val0 -> Val0 -> IO ()
 unify0 cxt st t t' = let
   go0  = unify0 cxt st;   {-# inline go0 #-}
@@ -437,27 +432,27 @@ unify0 cxt st t t' = let
       pure ()
     (CCons x xs t cs, CCons x' xs' t' cs') -> do
       let len = length xs
-      unifyEq cxt x x'
+      unless (x == x') $ err topT topT'
       unify0 cxt st (diveN (Close env t) (cxt^.lvl) len) (diveN (Close env' t') (cxt^.lvl) len)
       goCases topT (Close env cs) topT' (Close env cs')
     (cs, cs') ->
       err (Case topT (Close env cs)) (Case topT' (Close env' cs'))
 
   in case (,) $$! force t $$! force t' of
-    (Var0 x       , Var0 x'         ) -> unifyEq cxt x x'
-    (Top0 x       , Top0 x'         ) -> unifyEq cxt x x'
-    (Let0 x a t u , Let0 _ a' t' u' ) -> go1 a a' >> go0 t t' >> goClose0 x u u'
-    (Down t       , Down t'         ) -> go1 t t'
-    (Case t cs    , Case t' cs'     ) -> go0 t t' >> goCases t cs t' cs'
-    (Lam0 x a t   , Lam0 _ a' t'    ) -> goClose0 x t t'
-    (App0 t u     , App0 t' u'      ) -> go0 t t' >> go0 u u'
-    (RecCon0 ts   , RecCon0 ts'     ) -> goRecCon0 ts ts'
-    (Field0 t x n , Field0 t' x' n' ) -> go0 t t' >> unifyEq cxt n n'
-    (IntLit n     , IntLit n'       ) -> unifyEq cxt n n'
-    (Add    t u   , Add    t' u'    ) -> go0 t t' >> go0 u u'
-    (Mul    t u   , Mul    t' u'    ) -> go0 t t' >> go0 u u'
-    (Sub    t u   , Sub    t' u'    ) -> go0 t t' >> go0 u u'
-    (t, t')                           -> err t t'
+    (t@(Var0 x)       , t'@(Var0 x')       ) -> unless (x == x') $ err t t'
+    (t@(Top0 x)       , t'@(Top0 x')       ) -> unless (x == x') $ err t t'
+    (Let0 x a t u     , Let0 _ a' t' u'    ) -> go1 a a' >> go0 t t' >> goClose0 x u u'
+    (Down t           , Down t'            ) -> go1 t t'
+    (Case t cs        , Case t' cs'        ) -> go0 t t' >> goCases t cs t' cs'
+    (Lam0 x a t       , Lam0 _ a' t'       ) -> goClose0 x t t'
+    (App0 t u         , App0 t' u'         ) -> go0 t t' >> go0 u u'
+    (RecCon0 ts       , RecCon0 ts'        ) -> goRecCon0 ts ts'
+    (l@(Field0 t x n) , r@(Field0 t' x' n')) -> go0 t t' >> unless (n == n') (err l r)
+    (t@(IntLit n)     , t'@(IntLit n')     ) -> unless (n == n') $ err t t'
+    (Add    t u       , Add    t' u'       ) -> go0 t t' >> go0 u u'
+    (Mul    t u       , Mul    t' u'       ) -> go0 t t' >> go0 u u'
+    (Sub    t u       , Sub    t' u'       ) -> go0 t t' >> go0 u u'
+    (t                , t'                 ) -> err t t'
 
 
 -- throws UnifyInner
@@ -473,14 +468,18 @@ unify1 cxt st t t' = let
   {-# inline force #-}
 
   goUH topT topT' h h' = case (h, h') of
-    (Solved x, Solved x') -> unifyEq cxt x x'
-    (Top1 x  , Top1 x')   -> unifyEq cxt x x'
-    _                     -> err topT topT'
+    (Solved x, Solved x') | x == x' -> pure ()
+    (Top1 x  , Top1 x')   | x == x' -> pure ()
+    _                               -> err topT topT'
   {-# inline goUH #-}
 
-  goRec0 FNil           FNil                        = pure ()
-  goRec0 (FCons x a fs) (FCons x' a' fs') | x == x' = go1 a a' >> goRec0 fs fs'
-  goRec0 fs fs' = err (Rec0 fs) (Rec0 fs')
+  goRec0 fs fs' = case (fs, fs') of
+    (FNil, FNil) -> pure ()
+    (FCons x a fs, FCons x' a' fs') -> do
+      unless (x == x') $ throwIO $ UnifyInner cxt $ UnifyFieldName x x'
+      goRec0 fs fs'
+    (fs, fs') ->
+      err (Rec0 fs) (Rec0 fs')
 
   goRecCon1 FNil           FNil                        = pure ()
   goRecCon1 (FCons x a fs) (FCons x' a' fs') | x == x' = go1 a a' >> goRecCon1 fs fs'
@@ -497,7 +496,7 @@ unify1 cxt st t t' = let
     (FNil, FNil) ->
       pure ()
     (FCons x a as, FCons x' a' as') -> do
-      unifyEq cxt x x'
+      unless (x == x') $ throwIO $ UnifyInner cxt $ UnifyFieldName x x'
       unify1 cxt st (eval1 env a) (eval1 env' a')
       goRec1 (bind x cxt) (Close (Snoc1 env  (topVar cxt)) as )
                           (Close (Snoc1 env' (topVar cxt)) as')
@@ -522,8 +521,12 @@ unify1 cxt st t t' = let
       _       -> impossible
 
     -- rigid & canonical
-    (t@(Rigid h sp) , t'@(Rigid h' sp') ) -> unifyEq cxt h h' >> goSp t sp t' sp'
-    (Var1 x         , Var1 x'           ) -> unifyEq cxt x x'
+    (t@(Rigid h sp) , t'@(Rigid h' sp') ) -> case (h, h') of
+      (RHVar1 x       , RHVar1 x'        ) | x == x'              -> goSp t sp t' sp'
+      (RHTyCon x      , RHTyCon x'       ) | x == x'              -> goSp t sp t' sp'
+      (RHDataCon x ix , RHDataCon x' ix' ) | x == x' && ix == ix' -> goSp t sp t' sp'
+      _                                                           -> err t t'
+
     (Lift cv a      , Lift cv' a'       ) -> go1 cv cv' >> go1 a a'
     (Up t           , Up t'             ) -> go0 t t'
     (Pi x i a b     , Pi x' i' a' b'    ) -> go1 a a' >> goClose1 x b b'

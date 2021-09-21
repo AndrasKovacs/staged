@@ -112,28 +112,42 @@ lamBind x i = icit i brace id (name x)
 recCon0 :: [Name] -> Fields Tm0 -> ShowS
 recCon0 ns = \case
   FNil           -> id
-  FCons x t FNil -> name x . (" = "++). tm0 tmp ns t
-  FCons x t ts   -> name x . (" = "++). tm0 tmp ns t . (", "++) . recCon0 ns ts
+  FCons x t FNil
+    | NEmpty <- x -> tm0 tmp ns t
+    | True        -> name x . (" = "++). tm0 tmp ns t
+  FCons x t ts
+    | NEmpty <- x -> tm0 tmp ns t . (", "++) . recCon0 ns ts
+    | True        -> name x . (" = "++). tm0 tmp ns t . (", "++) . recCon0 ns ts
 
 recCon1 :: [Name] -> Fields Tm1 -> ShowS
 recCon1 ns = \case
   FNil           -> id
-  FCons x t FNil -> name x . (" = "++). tm1 tmp ns t
-  FCons x t ts   -> name x . (" = "++). tm1 tmp ns t . (", "++) . recCon1 ns ts
+  FCons x t FNil
+    | NEmpty <- x -> tm1 tmp ns t
+    | True        -> name x . (" = "++). tm1 tmp ns t
+  FCons x t ts
+    | NEmpty <- x -> tm1 tmp ns t . (", "++) . recCon1 ns ts
+    | True        -> name x . (" = "++). tm1 tmp ns t . (", "++) . recCon1 ns ts
 
 rec0 :: [Name] -> Fields Tm1 -> ShowS
 rec0 ns = \case
   FNil           -> id
-  FCons x t FNil -> name x . (" : "++). tm1 tmp ns t
-  FCons x t ts   -> name x . (" : "++). tm1 tmp ns t . (", "++) . rec0 ns ts
+  FCons x t FNil
+    | NEmpty <- x -> tm1 tmp ns t
+    | True        -> name x . (" : "++). tm1 tmp ns t
+  FCons x t ts
+    | NEmpty <- x -> tm1 tmp ns t . (", "++) . rec0 ns ts
+    | True        -> name x . (" : "++). tm1 tmp ns t . (", "++) . rec0 ns ts
 
 rec1 :: [Name] -> Fields Tm1 -> ShowS
 rec1 ns = \case
   FNil -> id
-  FCons (fresh ns -> x) t FNil ->
-    name x . (" : "++). tm1 tmp ns t
-  FCons (fresh ns -> x) t ts   ->
-    name x . (" : "++). tm1 tmp ns t . (", "++) . rec1 (x:ns) ts
+  FCons (fresh ns -> x) t FNil
+    | NEmpty <- x -> tm1 tmp ns t
+    | True        -> name x . (" : "++). tm1 tmp ns t
+  FCons (fresh ns -> x) t ts
+    | NEmpty <- x -> tm1 tmp ns t . (", "++) . rec1 (x:ns) ts
+    | True        -> name x . (" : "++). tm1 tmp ns t . (", "++) . rec1 (x:ns) ts
 
 -- var :: [Name] -> Ix -> ShowS
 -- var ns x = case ns !! coerce x of
@@ -174,15 +188,16 @@ tm0 p ns = \case
 
   Case{} -> ("CASE_TODO"++)
 
-  Down t       -> par p downp (('~':) . tm1 atomp ns t)
-  Field0 t x n -> par p projp $ tm0 projp ns t . ('.':) . name x
-  RecCon0 ts   -> bracket (recCon0 ns ts)
-  Sub t u      -> par p subp $ tm0 subp ns t . (" - "++) . tm0 addp ns u
-  Add t u      -> par p addp $ tm0 addp ns t . (" + "++) . tm0 mulp ns u
-  Mul t u      -> par p mulp $ tm0 mulp ns t . (" * "++) . tm0 appp ns u
-  App0 t u     -> par p appp $ tm0 appp ns t . (' ':) . tm0 projp ns u
-  IntLit n     -> (show n++)
-  Wk10 t       -> tm0 p (tail ns) t
+  Down t            -> par p downp (('~':) . tm1 atomp ns t)
+  Field0 t NEmpty n -> par p projp $ tm0 projp ns t . ('.':) . (show n++)
+  Field0 t x n      -> par p projp $ tm0 projp ns t . ('.':) . name x
+  RecCon0 ts        -> bracket (recCon0 ns ts)
+  Sub t u           -> par p subp $ tm0 subp ns t . (" - "++) . tm0 addp ns u
+  Add t u           -> par p addp $ tm0 addp ns t . (" + "++) . tm0 mulp ns u
+  Mul t u           -> par p mulp $ tm0 mulp ns t . (" * "++) . tm0 appp ns u
+  App0 t u          -> par p appp $ tm0 appp ns t . (' ':) . tm0 projp ns u
+  IntLit n          -> (show n++)
+  Wk10 t            -> tm0 p (tail ns) t
   -- Wk10 t       -> par p appp (("_wk_ "++).tm0 p (tail ns) t)
 
 piBind ns x Expl a = showParen True (name x . (" : "++) . tm1 tmp ns a)
@@ -231,7 +246,8 @@ tm1 p ns = \case
   Rec1 ts        -> bracket (rec1 ns ts)
   RecCon1 ts     -> bracket (recCon1 ns ts)
 
-  Field1 t x n   -> par p projp $ tm1 projp ns t . ('.':) . name x
+  Field1 t NEmpty n -> par p projp $ tm1 projp ns t . ('.':) . (show n++)
+  Field1 t x n      -> par p projp $ tm1 projp ns t . ('.':) . name x
 
   TyCon x        -> topVar x
 
@@ -263,8 +279,8 @@ unifyEx cxt = \case
     printf "Can't unify\n\n  %s\n\nwith\n\n  %s\n" (showVal0 cxt t) (showVal0 cxt u)
   Unify1 t u ->
     printf "Can't unify\n\n  %s\n\nwith\n\n  %s\n" (showVal1 cxt t) (showVal1 cxt u)
-  UnifyEq x y ->
-    printf "Can't unify\n\n  %s\n\nwith\n\n  %s\n" (show x) (show y)
+  UnifyFieldName x x' ->
+    printf "Record field name mismatch: can't unify\n\n  \"%s\"\n\nwith\n\n  \"%s\"\n" (show x) (show x')
   SolutionError t u e ->
     printf "%s\n\nwhile trying to unify\n\n  %s\n\nwith\n\n  %s\n"
       (solutionEx cxt e) (showVal1' cxt t) (showVal1' cxt u)
@@ -279,17 +295,22 @@ elabEx cxt = \case
       (unifyInner e)  (showVal1 cxt t) (showVal1 cxt u)
   NameNotInScope x ->
     "Name not in scope: " ++ show x ++ "\n"
-  NoSuchField ty x ->
+  NoSuchFieldName ty x ->
     "Record has no field with name " ++ show x ++ "\n\n" ++
     "inferred record type:\n\n  " ++ showTm1 cxt ty ++ "\n"
+  NoSuchFieldIx ty ix ->
+    "Record has no field with index " ++ show ix ++ "\n\n" ++
+    "inferred record type:\n\n  " ++ showTm1 cxt ty ++ "\n"
+  NegativeFieldIndex ->
+    "Invalid negative record field index\n"
   NoSuchArgument x ->
     "Function has no named argument with name " ++ show x ++ "\n"
   IcitMismatch i i' ->
-    printf "Icit mismatch: expected %s, inferred %s\n" (show i) (show i')
+    printf "Icit mismatch: expected %s, inferred: %s\n" (show i) (show i')
   NoImplicitLam0 ->
     "Implicit lambda expression are not supported at runtime stage\n"
   ExpectedVal ty ->
-    printf "Expected a value type, inferrred\n\n  %s\n" (showTm1 cxt ty)
+    printf "Expected a value type, inferred:\n\n  %s\n" (showTm1 cxt ty)
   FieldNameMismatch x x' ->
     printf "Record field name mismatch: expected %s, got %s\n" (show x) (show x')
   NoNamedLambdaInference ->
@@ -306,13 +327,13 @@ elabEx cxt = \case
   ExpectedNonEmptyRecCon ->
     "Expected non-empty record\n"
   ExpectedType ty ->
-    printf "Expected a type, inferred\n\n  %s\n" (showTm1 cxt ty)
+    printf "Expected a type, inferred:\n\n  %s\n" (showTm1 cxt ty)
   CantInferTuple ->
     "Can't infer type for tuple at unknown stage\n"
   ExpectedRecord ty ->
-    printf "Expected record type, inferred\n\n %s\n" (showTm1 cxt ty)
+    printf "Expected record type, inferred:\n\n %s\n" (showVal1 cxt ty)
   ExpectedRuntimeType ty ->
-    printf "Expected runtime type, inferred\n\n %s\n" (showTm1 cxt ty)
+    printf "Expected runtime type, inferred:\n\n %s\n" (showTm1 cxt ty)
   CantInferRec1 ->
     "Can't infer type for meta stage record\n"
 

@@ -9,3 +9,5 @@ Related videos:
 - https://www.youtube.com/watch?v=ai4vU1Naopk
 
 WIP. Doesn't work yet. Don't look hard at any part. This repo currently exist now mainly so that I can publicly link to some parts and documents.
+
+This project is on hiatus this summer, while I'm writing my thesis (on a different topic).

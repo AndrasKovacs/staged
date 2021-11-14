@@ -13,3 +13,5 @@ Related videos:
 WIP. Doesn't work yet. Don't look hard at any part. This repo currently exist now mainly so that I can publicly link to some parts and documents.
 
 This project is on hiatus this summer, while I'm writing my thesis (on a different topic).
+
+EDIT: as of 2021 november, it's still on hiatus. I won't likely get back to it until next year.

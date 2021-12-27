@@ -10,8 +10,6 @@ Related videos:
 - https://www.youtube.com/watch?v=WOd0ZFbJfQg
 - https://www.youtube.com/watch?v=ai4vU1Naopk
 
-WIP. Doesn't work yet. Don't look hard at any part. This repo currently exist now mainly so that I can publicly link to some parts and documents.
+WIP. This repo currently exist now mainly so that I can publicly link to some parts and documents.
 
-This project is on hiatus this summer, while I'm writing my thesis (on a different topic).
 
-EDIT: as of 2021 november, it's still on hiatus. I won't likely get back to it until next year.

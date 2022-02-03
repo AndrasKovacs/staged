@@ -1,5 +1,4 @@
 
-
 module Lexer where
 
 import FlatParse.Stateful hiding (Parser, runParser, string, char, cut, err)
@@ -26,7 +25,6 @@ data Error'
   | ExactIndent Int
   | IndentMore  Int
   | Imprecise [Expected]
-
   deriving Show
 
 data Error = Error !Pos !Error'

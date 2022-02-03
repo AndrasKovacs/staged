@@ -88,6 +88,7 @@ data Val1
   | Comp
   | Val
   | Int
+  | Irrelevant
   deriving Show
 
 pattern Var1 :: Lvl -> Val1

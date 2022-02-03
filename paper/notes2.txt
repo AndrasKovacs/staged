@@ -1,0 +1,214 @@
+
+naming questions:
+  - base TT      : maybe 𝔹? or ℂ? or 𝕆 for object theory?
+  - 2LTT syntax  : just 2LTT
+  - eval map     : ST, 𝕊for stage, 𝔼for eval?
+  - coloring to distinguish 3 syntaxes
+    - base
+    - 2ltt
+    - presheaves
+
+  - level names: "static" vs "runtime"   (inner/outer? object/meta?)
+
+  - use [_] for psh restriction
+  - Call Set̂ Û instead?
+
+Correctness of eval into psh model
+--------------------------------------------------------------------------------
+
+- B       : syntax of base theory
+- 2LTT    : syntax of 2LTT
+- BMod    : model of B
+- 2LTTMod : model of 2LTT
+- 2LTTᵒ   : models B by forgetting Ty₀ and Tm₀ from 2LTT
+
+- -^  : components of PSh B, e.g. Con̂, Tŷ, Set̂ , etc.
+- F   : 2LTT → PSh B, evaluation into PSh B model of 2LTT (strict morphism)
+- ⌜⌝  : B → 2LTTᵒ, embedding
+
+
+-- Logrel proof
+--------------------------------------------------------------------------------
+
+The idea is to have a straightforward logical relation between the staging map F
+and a suitably "syntactic" embedding morphism. It's an instance of gluing, but
+we don't do gluing because we like to have a clean & self-contained definition
+of the staging algorithm, and the gluing presentations either mash it together
+with its soundness (HKS gluing), or are way too magical (synthetic computability).
+
+Things in psh model:
+
+  Syntactic base types and terms.
+
+    TyB : Set̂
+    |TyB|ᵢ = TyB i
+
+    TmB : TyB → Set̂
+    |TmB|ᵢ A = TmB i A
+
+  Syntactic inner 2LTT types and terms.
+
+    Ty₀ : Set̂
+    |Ty₀|ᵢ = Ty₀ ⌜i⌝
+
+    Tm₀ : Ty₀ → Set̂
+    |Tm₀|ᵢ A = Tm₀ ⌜i⌝ A
+
+  Both closed under respective type formers
+
+  Embedding internally:
+
+     ⌜-⌝ : TyB → Ty₀
+     |⌜⌝|ᵢ (A : TyB i) = ⌜A⌝
+
+     ⌜-⌝ : TmB A → Tm₀ ⌜A⌝
+     |⌜⌝|ᵢ {A} (t : TmB i A) = ⌜t⌝
+
+  ⌜⌝ preserves all structure
+
+
+Syntactic embedding morphism from 2LTT syntax to psh model:
+
+  G is given as (⌜⌝* ∘ yoneda) on the outer cwf part ("nerve")
+
+    G (Γ : Con) : Set̂
+    |G Γ|i := Sub ⌜i⌝ Γ
+
+    G (σ : Sub Γ Δ) : GΓ → GΔ
+    |G σ|ᵢ (γ : Sub ⌜i⌝ Γ) := σ ∘ γ
+
+    G (A : Ty₁ Γ) : GΓ → Set̂
+    |G A|ᵢ γ := Tm₁ ⌜i⌝ A[γ]
+
+    G (t : Tm₁ Γ A) : (γ : GΓ) → GA γ
+    |G t|ᵢ γ := t[γ]
+
+  On the inner family:
+
+    G (A : Ty₀ Γ) : GΓ → Ty₀
+    |G A|ᵢ γ = A[γ]
+
+    G (t : Tm₀ Γ A) : (γ : GΓ) → Tm₀ (GA γ)
+    |G t|ᵢ γ = t[γ]
+
+  G preservation (outer preservation comes from HKS gluing)
+
+    - ∙, _▶_, Σ, ⊤, extensional identity, weak
+
+       G_∙  : G ∙         ≃ ⊤̂
+       G_▶₁ : G (Γ ▶₁ A)  ≃ (γ : G Γ) × G A γ
+       G_Σ  : G (Σ A B) γ ≃ (α : G A γ) × G B (G▶₁⁻¹(γ, α))
+       G_⊤  : G ⊤ γ       ≃ ⊤̂
+
+       Gp (G▶₁⁻¹(γ, α)) = γ
+       Gq (G▶₁⁻¹(γ, α)) = α
+       G(σ,t) γ         = G▶₁⁻¹(Gσ γ, Gt γ)
+
+    - Π, U lax
+
+      G_Π : G (Π A B) γ → ((α : G A γ) → G B (G▶⁻¹(γ, α)))
+      G_U : G U γ → Set̂
+
+    - positive inductive types oplax
+
+      G_ℕ : ℕ → G ℕ γ
+
+    - Action on Lift:
+
+      (↓,↑) : G (Lift A) γ ≃ Tm₀ (G A γ)
+      G (↑t) γ = ↑ (Gt γ)
+      G (↓t) γ = ↓ (Gt γ)
+
+    - Action on ▶₀
+       |G(Γ ▶₀ A)|ᵢ = Sub₁ ⌜i⌝ (Γ ▶₀ A)
+                    ≃ (σ : Sub₁ ⌜i⌝ Γ) × Tm₀ ⌜i⌝ A[σ]
+
+       hence:
+
+       G▶₀ : G(Γ ▶₀ A) ≃ (γ : G Γ) × Tm₀ (GA γ)
+
+       Gp₀    (G▶₀⁻¹(γ, α)) = γ
+       Gq₀    (G▶₀⁻¹(γ, α)) = α
+       G(σ,t) γ             = G▶₀⁻¹(Gσ γ,Gt γ)
+
+
+-- The relation
+--------------------------------------------------------------------------------
+
+- We work in the internal language of psh(B)
+  We convert implicitly to the following style:
+  - Con̂     --> Set̂                ("termification")
+  - Tŷ Γ    --> (Γ → Set̂)
+  - Sub̂ Γ Δ --> Γ → Δ → Set̂
+  - Tm̂ Γ A  --> (γ : Γ) → A γ
+- F goes into the psh model defined as above.
+   F (Γ : Con)     : Set̂
+   F (σ : Sub Γ Δ) : FΓ → FΔ
+   F (A : Ty₁ Γ)   : FΓ → Set̂
+   F (t : Tm₁ Γ A) : (γ : FΓ) → FA γ
+   F (A : Ty₀ Γ)   : FΓ → TyB
+   F (t : Tm₀ Γ A) : (γ : FΓ) → TmB (FA γ)
+
+
+-- Cat + 2 fam structures
+--------------------------------------------------------------------------------
+
+Motives
+  (Γ : Con)ᴿ     : FΓ → GΓ → Set̂
+  (σ : Sub Γ Δ)ᴿ : Γᴿ γ γ' → Δᴿ (Fσ γ) (Gσ γ')
+  (A : Ty₁ Γ)ᴿ   : Γᴿ γ γ' → FA γ → GA γ' → Set̂
+  (t : Tm₁ Γ A)ᴿ : (γᴿ : Γᴿ γ γ') → Aᴿ γᴿ (Ft γ) (Gt γ')
+  (A : Ty₀ Γ)ᴿ   : Γᴿ γ γ' → ⌜FA γ⌝ = GA γ'                   -- Ty₀ equations by UIP
+  (t : Tm₀ Γ A)ᴿ : (γᴿ : Γᴿ γ γ') → ⌜Ft γ⌝ = Gt γ'            -- Tm₀ equations by UIP
+
+Category
+  idᴿ γᴿ          := γᴿ
+  (σ ∘ δ)ᴿ γᴿ     := σᴿ (δᴿ γᴿ)
+  ∙ᴿ _ _          := ⊤^
+
+Outer family
+  (Γ ▶₁ A)ᴿ (γ, α) (G▶₁⁻¹(γ', α')) := (γᴿ : Γᴿ γ γ') × Aᴿ γᴿ α α'
+  (A[σ])ᴿ γᴿ α α' := Aᴿ (σᴿ γᴿ) α α'
+  (t[σ])ᴿ γᴿ      := tᴿ (σᴿ γᴿ)
+  (σ, t)ᴿ γᴿ      := (σᴿ γᴿ, tᴿ γᴿ)
+  pᴿ (γᴿ, tᴿ)     := γᴿ
+  qᴿ (γᴿ, tᴿ)     := tᴿ
+
+
+Inner family
+  (Γ ▶₀ A)ᴿ (γ, α) (G▶₀⁻¹(γ', α')) := (γᴿ : Γᴿ γ γ') × (⌜α⌝ = α')
+
+     A   : Ty₀ Γ
+     α   : TmB (FA γ)
+     ⌜α⌝ : Tm₀ ⌜FA γ⌝
+         : Tm₀ (GA γ')
+     α'  : Tm₀ (GA γ')
+
+  (A[σ])ᴿ γᴿ : ⌜F(A[σ]) γ⌝ = G(A[σ]) γ'
+             : ⌜FA (Fσ γ)⌝ = GA (Gσ γ')
+    by Aᴿ (σᴿ γᴿ)
+
+  (t[σ])ᴿ γᴿ : ⌜Ft (Fσ γ)⌝ = Gt (Gσ γ')
+    by tᴿ (σᴿ γᴿ)
+
+  (σ,t)ᴿ γᴿ : (Δ ▶₀ A)ᴿ (F(σ,t) γ)   (G(σ,t) γ')
+            : (Δ ▶₀ A)ᴿ (Fσ γ, Ft γ) (G▶₀⁻¹(Gσ γ', Gt γ'))
+	    : (δᴿ : Δᴿ (Fσ γ) (Gσ γ')) × ⌜Ft γ⌝ = Gt γ'
+	    := (σᴿ γᴿ, tᴿ γᴿ)
+
+   p₀ᴿ (γᴿ, αᴿ) := γᴿ
+   q₀ᴿ (γᴿ, αᴿ) := αᴿ
+
+
+-- Lifting structure
+--------------------------------------------------------------------------------
+
+(Lift A)ᴿ : Γᴿ γ γ' → F (Lift A) γ → G(Lift A) γ' → Set̂
+          : Γᴿ γ γ' → TmB (FA γ) → G (Lift A) γ' → Set̂
+          := λ γᴿ t t'. ⌜t⌝ = G_Lift t'
+
+(↑t)ᴿ : (γᴿ : Γᴿ γ γ') → (Lift A)ᴿ γᴿ (F(↑t) γ) (G(↑t) γ')
+      : (γᴿ : Γᴿ γ γ') → ⌜F(↑t) γ⌝ = G_Lift (G(↑t) γ')
+      : (γᴿ : Γᴿ γ γ') → ⌜F t γ⌝ = Gt γ'
+
+  tᴿ γᴿ :

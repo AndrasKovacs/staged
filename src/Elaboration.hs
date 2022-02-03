@@ -202,6 +202,10 @@ coe cxt topT t a a' = do
       throwIO $ UnifyInner (unifyCxt cxt)
                            (Unify1 (V.Rec1 (V.Close e as)) (V.Rec1 (V.Close e' as')))
 
+  refineRec0 :: Dbg => Cxt -> Fields S.Ty -> IO (Fields V.Ty)
+  refineRec0 cxt = \case
+    FNil         -> pure FNil
+    FCons x _ as -> FCons x <$!> (eval1 cxt <$!> freshMeta cxt (V.U0 V.Val)) <*!> refineRec0 cxt as
 
   go :: Dbg => Cxt -> S.Tm1 -> V.Ty -> V.Ty -> IO (Maybe S.Tm1)
   go cxt t a a' = do
@@ -279,17 +283,17 @@ coe cxt topT t a a' = do
         unify1 cxt topT a (V.Fun a1 a2 va2cv)
         go cxt t (V.Lift V.Comp (V.Fun a1 a2 va2cv)) (V.Pi x' Expl a' b')
 
-      -- TODO: same for non-empty Rec
+      (V.Rec1 (V.Close env as), V.Lift cv' a') -> do
+        unify1 cxt topT cv' V.Val
+        as' <- refineRec0 cxt as
+        unify1 cxt topT a' (V.Rec0 as')
+        go cxt t (V.Rec1 (V.Close env as)) (V.Lift V.Val (V.Rec0 as'))
 
-      (V.Rec1 (V.Close _ FNil), V.Lift cv a') -> do
+      (V.Lift cv a, V.Rec1 (V.Close env as)) -> do
         unify1 cxt topT cv V.Val
-        unify1 cxt topT a' (V.Rec0 FNil)
-        pure $! Just $! S.Up (S.RecCon0 FNil)
-
-      (V.Lift cv a, V.Rec1 (V.Close _ FNil)) -> do
-        unify1 cxt topT cv V.Val
-        unify1 cxt topT a (V.Rec0 FNil)
-        pure $! Just $! S.RecCon1 FNil
+        as' <- refineRec0 cxt as
+        unify1 cxt topT a (V.Rec0 as')
+        go cxt t (V.Lift V.Val (V.Rec0 as')) (V.Rec1 (V.Close env as))
 
       -- fallback
       ------------------------------------------------------------
@@ -336,7 +340,7 @@ checkRecCon1 cxt topT topA ts (V.Close env as) = case (ts, as) of
   ([], FNil) -> pure FNil
   ((spanToRawName cxt -> x, t):ts, FCons x' a as) -> do
     unless (NName x == x') $
-      elabError cxt topT (NoSuchFieldName (quote1 cxt topA) x)
+      elabError cxt topT (NoSuchFieldName topA x)
     let va = Eval.eval1 env a
         qa = Eval.quote1 (cxt^.lvl) UnfoldNone va
     t  <- check1 cxt t va
@@ -387,7 +391,7 @@ checkRecCon0 cxt topT cs topAs = go cs topAs where
   go ((x, t): ts) (FCons x' a as) = do
     let rn = spanToRawName cxt x
     unless (NName rn == x') $
-      elabError cxt topT (NoSuchFieldName (quote1 cxt (V.Rec0 topAs)) rn)
+      elabError cxt topT (NoSuchFieldName (V.Rec0 topAs) rn)
     t <- check0 cxt t a V.Val
     ts <- go ts as
     pure $! FCons x' t ts
@@ -418,28 +422,70 @@ ensureFun cxt topT a acv = case forceFU1 a of
     unify1 cxt topT a (V.Fun a' b' vb'cv)
     pure (a', b', vb'cv)
 
-coeToPi :: Dbg => Cxt -> P.Tm -> V.Ty -> Icit -> S.Tm1 -> IO (S.Tm1, Name, V.Ty, V.Close S.Ty)
-coeToPi cxt topT a i t = case forceFU1 a of
+apply1 :: Dbg => Cxt -> P.Tm -> V.Ty -> Icit -> S.Tm1 -> P.Tm -> IO TmU
+apply1 cxt topT a i t u = case forceFU1 a of
   V.Pi x i' a b -> do
-    when (i /= i) $ throwIO $ IcitMismatch i' i
-    pure (t, x, a, b)
+    when (i /= i') $ throwIO $ IcitMismatch i' i
+    u <- check1 cxt u a
+    pure $ Tm1 (S.App1 t u i) (b $$$ eval1 cxt u)
+  V.Lift _ (V.Fun a b bcv) -> do
+    when (i /= Expl) $ throwIO $ IcitMismatch i Expl
+    u <- check0 cxt u a V.Val
+    pure $ Tm0 (S.App0 (S.down t) u) b bcv
   a -> do
     a' <- freshMeta cxt V.U1
     let va' = eval1 cxt a'
     b' <- V.Close (cxt^.env) <$!> freshMeta (bind1' NX a' va' cxt) V.U1
     t  <- coe cxt topT t a (V.Pi NX i va' b')
-    pure (t, NX, va', b')
+    u  <- check1 cxt u (eval1 cxt a')
+    pure $ Tm1 (S.App1 t u i) (b' $$$ eval1 cxt u)
 
-coeToRec1 :: Dbg => Cxt -> P.Tm -> V.Ty -> S.Tm1 -> IO (S.Tm1, V.Close (Fields S.Ty))
-coeToRec1 cxt topT a t = case forceFU1 a of
-  V.Rec1 as -> do
-    pure (t, as)
-  V.Lift _ (V.Rec0 as) -> do
-    let a' = liftRec0 cxt as
-        t' = upRecCon0 cxt t as
-    pure $! (t', a')
-  a -> do
-    throwIO $! ElabError (unifyCxt cxt) topT $! ExpectedRecord a
+projIx1 :: Cxt -> P.Tm -> S.Tm1 -> V.Close (Fields S.Ty) -> Int -> IO TmU
+projIx1 cxt topT t topA@(V.Close env as) topIx = do
+  let go env ix FNil =
+        elabError cxt topT $ NoSuchFieldIx (V.Rec1 topA) topIx
+      go env ix (FCons x' a as)
+        | ix == 0 = pure $! Eval.eval1 env a
+        | ix <  0 = elabError cxt topT NegativeFieldIndex
+        | True    = go (V.Snoc1 env (eval1 cxt (S.Field1 t x' ix))) (ix - 1) as
+  a <- go env topIx as
+  pure $ Tm1 (S.Field1 t NEmpty topIx) a
+
+projName1 :: Cxt -> P.Tm -> S.Tm1 -> V.Close (Fields S.Ty) -> RawName -> IO TmU
+projName1 cxt topT t topA@(V.Close env as) x = do
+  let go env ix FNil = elabError cxt topT $ NoSuchFieldName (V.Rec1 topA) x
+      go env ix (FCons x' a as)
+        | NName x == x' = let va = Eval.eval1 env a in pure (va, ix)
+        | True          = go (V.Snoc1 env (eval1 cxt (S.Field1 t x' ix))) (ix + 1) as
+  (a, ix) <- go env 0 as
+  pure $ Tm1 (S.Field1 t (NName x) ix) a
+
+projIx0 :: Cxt -> P.Tm -> S.Tm0 -> Fields V.Ty -> Int -> IO TmU
+projIx0 cxt topT t as topIx = do
+  let go ix FNil = elabError cxt topT $ NoSuchFieldIx (V.Rec0 as) topIx
+      go ix (FCons x' a as)
+        | ix == 0 = pure a
+        | ix <  0 = elabError cxt topT NegativeFieldIndex
+        | True    = go (ix - 1) as
+  a <- go topIx as
+  pure $ Tm0 (S.Field0 t NEmpty topIx) a V.Val
+
+projName0 :: Cxt -> P.Tm -> S.Tm0 -> Fields V.Ty -> RawName -> IO TmU
+projName0 cxt topT t as x = do
+  let go ix FNil = elabError cxt topT $ NoSuchFieldName (V.Rec0 as) x
+      go ix (FCons x' a as)
+        | NName x == x' = pure (a, ix)
+        | True          = go (ix + 1) as
+  (a, ix) <- go 0 as
+  pure $ Tm0 (S.Field0 t (NName x) ix) a V.Val
+
+proj1 :: Cxt -> P.Tm -> S.Tm1 -> V.Close (Fields S.Ty) -> P.Proj -> IO TmU
+proj1 cxt topT t as (P.ProjIx _ ix) = projIx1   cxt topT t as ix
+proj1 cxt topT t as (P.ProjName x ) = projName1 cxt topT t as (spanToRawName cxt x)
+
+proj0 :: Cxt -> P.Tm -> S.Tm0 -> Fields V.Ty -> P.Proj -> IO TmU
+proj0 cxt topT t as (P.ProjIx _ ix) = projIx0   cxt topT t as ix
+proj0 cxt topT t as (P.ProjName x ) = projName0 cxt topT t as (spanToRawName cxt x)
 
 coeDown :: Dbg => Cxt -> P.Tm -> S.Tm1 -> V.Ty -> V.Ty -> V.CV -> IO S.Tm0
 coeDown cxt topT t a a' cv' = S.down <$!> coe cxt topT t a (V.Lift cv' a')
@@ -749,21 +795,24 @@ infer cxt topT = do
               u <- check0 cxt u a V.Val
               pure $ Tm0 (S.App0 t u) b bcv
             Tm1 t a -> do
-              (t, x, a, b) <- coeToPi cxt topT a Expl t
-              u            <- check1 cxt u a
-              pure $ Tm1 (S.App1 t u Expl) (b $$$ eval1 cxt u)
-
+              apply1 cxt topT a Expl t u
         P.NoName Impl -> do
-          (t, a)       <- infer1 cxt t
-          (t, x, a, b) <- coeToPi cxt topT a Impl t
-          u            <- check1 cxt u a
-          pure $ Tm1 (S.App1 t u Impl) (b $$$ eval1 cxt u)
+          (t, a) <- infer1 cxt t
+          apply1 cxt topT a Impl t u
+        P.Named (spanToRawName cxt -> x) -> do
+          (t, a) <- insertUntilName cxt t x $ infer1 cxt t
+          apply1 cxt topT a Impl t u
 
-        P.Named (spanToRawName cxt -> x)  -> do
-          (t, a)       <- insertUntilName cxt t x $ infer1 cxt t
-          (t, x, a, b) <- coeToPi cxt topT a Impl t
-          u            <- check1 cxt u a
-          pure $ Tm1 (S.App1 t u Impl) (b $$$ eval1 cxt u)
+    P.Field t proj -> do
+      t <- insertTmU cxt $ infer cxt t
+      case t of
+        Tm0 t a acv -> case forceFU1 a of
+          V.Rec0 as -> proj0 cxt topT t as proj
+          a         -> err $ ExpectedRecord a
+        Tm1 t a -> case forceFU1 a of
+          V.Rec1 as            -> proj1 cxt topT t as proj
+          V.Lift _ (V.Rec0 as) -> proj0 cxt topT (S.down t) as proj
+          a                    -> err $ ExpectedRecord a
 
     P.Lift _ t -> do
       cv <- freshCV cxt
@@ -823,60 +872,6 @@ infer cxt topT = do
     P.Tuple _ []     -> impossible
     P.Tuple _ (t:ts) -> err CantInferTuple
 
-    P.Field t (P.ProjIx _ topIx) -> do
-      t <- insertTmU cxt $ infer cxt t
-      case t of
-        Tm0 t a _ -> do
-          case forceFU1 a of
-            topA@(V.Rec0 as) -> do
-              let go ix FNil = err $ NoSuchFieldIx (quote1 cxt topA) topIx
-                  go ix (FCons x' a as)
-                    | ix == 0 = pure a
-                    | ix <  0 = err NegativeFieldIndex
-                    | True    = go (ix - 1) as
-              a <- go topIx as
-              pure $ Tm0 (S.Field0 t NEmpty topIx) a V.Val
-            topA ->
-              err $! ExpectedRecord topA
-        Tm1 t a -> do
-          (t, V.Close env as) <- coeToRec1 cxt topT a t
-          let topA = V.Rec1 (V.Close env as)
-          let go env ix FNil = err $ NoSuchFieldIx (quote1 cxt topA) topIx
-              go env ix (FCons x' a as)
-                | ix == 0 = pure $! Eval.eval1 env a
-                | ix <  0 = err NegativeFieldIndex
-                | True    = do
-                    go (V.Snoc1 env (eval1 cxt (S.Field1 t x' ix))) (ix - 1) as
-          a <- go env topIx as
-          pure $ Tm1 (S.Field1 t NEmpty topIx) a
-
-    P.Field t (P.ProjName (spanToRawName cxt -> x)) -> do
-      t <- insertTmU cxt $ infer cxt t
-      case t of
-        Tm0 t a _ -> do
-          case forceFU1 a of
-            topA@(V.Rec0 as) -> do
-              let go ix FNil = err $ NoSuchFieldName (quote1 cxt topA) x
-                  go ix (FCons x' a as)
-                    | NName x == x' = pure (a, ix)
-                    | True          = go (ix + 1) as
-              (a, ix) <- go 0 as
-              pure $ Tm0 (S.Field0 t (NName x) ix) a V.Val
-            topA ->
-              err $! ExpectedRecord topA
-
-        Tm1 t a -> do
-          (t, V.Close env as) <- coeToRec1 cxt topT a t
-          let topA = V.Rec1 (V.Close env as)
-          let go env ix FNil = err $ NoSuchFieldName (quote1 cxt topA) x
-              go env ix (FCons x' a as)
-                | NName x == x' = do
-                    let va = Eval.eval1 env a
-                    pure (va, ix)
-                | True = do
-                    go (V.Snoc1 env (eval1 cxt (S.Field1 t x' ix))) (ix + 1) as
-          (a, ix) <- go env 0 as
-          pure $ Tm1 (S.Field1 t (NName x) ix) a
 
     P.U0 _ cv -> do
       cv <- check1 cxt cv V.CV

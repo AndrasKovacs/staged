@@ -5,7 +5,6 @@ import Prelude hiding (pi)
 import Data.Foldable
 import FlatParse.Stateful hiding (Parser, runParser, string, cut)
 import qualified Data.ByteString as B
-import Data.Char (ord)
 
 import Lexer
 import Common
@@ -84,7 +83,7 @@ recOrRec l =
             (do t <- tm'
                 lvl >> $(switch [| case _ of
                   "," -> ws >> restOfTuple l t
-                  "]" -> ws >> pure t
+                  "]" -> do {r <- getPos; ws; pure (Tuple (Span l r) [t])}
                   |])) `cut` [",", "]"]))))
 
 restOfRec :: Pos -> Span -> Parser Tm
@@ -125,19 +124,14 @@ up l = do
   angleR'
   pure $ Up (Span l r) t
 
--- todo: speed up
+-- TODO: handle overflows
 intLit :: Parser (Span, Int)
-intLit = do
-  l      <- getPos
-  sign   <- ((-1) <$ $(char '-')) <|> pure 1
-  digits <- chainl
-    (flip (:)) ((:[]) <$!> satisfyASCII isDigit) (satisfyASCII isDigit)
-  r <- getPos
-  ws
-  let go place acc (d:ds) = go (place*10) (acc + (ord d - ord '0')*place) ds
-      go place acc []     = acc
-  let n = sign * go 1 0 digits
-  pure (Span l r, n)
+intLit = let
+  go = do
+    sign <- ((-1) <$ $(symbol "-")) <|> pure 1
+    n    <- readInt
+    pure $! n * sign
+  in spanned go (\n s -> pure (s, n))
 
 atomBase :: Parser Tm
 atomBase = do
@@ -187,12 +181,6 @@ down = do
 
 --------------------------------------------------------------------------------
 
--- goField :: Tm -> Either Span -> Tm
--- goField t x = _
-
--- goProj :: Parser Tm -> Parser Tm
--- goProj p = chainl  p (dot *> ident')
-
 goProj :: Tm -> Parser Tm
 goProj t =
   branch dot
@@ -239,7 +227,7 @@ add' :: Parser Tm
 add' = chainl Add mul' ($(symbol "+") *> mul')
 
 sub' :: Parser Tm
-sub' = chainl Sub add' ($(symbol "-") *> add')
+sub' = chainl Sub add' (notFollowedBy $(symbol "-") $(symbol ">") *> add')
 
 --------------------------------------------------------------------------------
 
@@ -431,8 +419,6 @@ top =  (exactLvl 0 >> (ident >>= topDef))
 
 src :: Parser TopLevel
 src = ws *> top
-
---------------------------------------------------------------------------------
 
 parse :: B.ByteString -> Result Error TopLevel
 parse = runParser src

@@ -1,16 +1,16 @@
 # Fdb version 3
-["bibtex prez"] 1623340413 "prez.aux" "prez.bbl" "prez" 1623340414
+["bibtex prez"] 1623340413 "prez.aux" "prez.bbl" "prez" 1642494162
   "/usr/share/texlive/texmf-dist/bibtex/bst/base/alpha.bst" 1292289607 23907 a5f93555796fb564b924339521f10a7c ""
-  "prez.aux" 1623340414 3641 fa3b6b8bc7f2b9fcbfc5f22e9de0bc63 "xelatex"
+  "prez.aux" 1642494162 3641 fa3b6b8bc7f2b9fcbfc5f22e9de0bc63 "xelatex"
   "references.bib" 1623009818 133223 47d88b21e1d56511c275d2e8e44297bb ""
   (generated)
-  "prez.bbl"
   "prez.blg"
-["xdvipdfmx"] 1623340414 "prez.xdv" "prez.pdf" "prez" 1623340414
-  "prez.xdv" 1623340414 217416 b6667ed68a8f1e364b36a815fc7ce652 "xelatex"
+  "prez.bbl"
+["xdvipdfmx"] 1642494162 "prez.xdv" "prez.pdf" "prez" 1642494162
+  "prez.xdv" 1642494162 217936 b128ebb46fe7ffc473f849a315762d57 "xelatex"
   (generated)
   "prez.pdf"
-["xelatex"] 1623340413 "prez.tex" "prez.xdv" "prez" 1623340414
+["xelatex"] 1642494161 "prez.tex" "prez.xdv" "prez" 1642494162
   "/etc/texmf/web2c/texmf.cnf" 1623069514 475 c0e671620eb5563b2130f56340a5fde8 ""
   "/usr/share/texlive/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/adobe/zapfding/pzdr.tfm" 1136768653 1528 f853c4d1b4e0550255e02831fdc8496f ""
@@ -234,18 +234,18 @@
   "/usr/share/texlive/texmf-dist/web2c/texmf.cnf" 1581979058 38841 ce3692aa899bb693b90b87eaa5d4d84e ""
   "/usr/share/texmf/web2c/texmf.cnf" 1581979058 38841 ce3692aa899bb693b90b87eaa5d4d84e ""
   "/var/lib/texmf/web2c/xetex/xelatex.fmt" 1623069573 4646405 9992a67de96a6b209cdcaf5e48fea56f ""
-  "prez.aux" 1623340414 3641 fa3b6b8bc7f2b9fcbfc5f22e9de0bc63 "xelatex"
+  "prez.aux" 1642494162 3641 fa3b6b8bc7f2b9fcbfc5f22e9de0bc63 "xelatex"
   "prez.bbl" 1623340413 400 473f60e080f7fb3bcca972d8d0e0cfcf "bibtex prez"
-  "prez.nav" 1623340414 1598 0b941ba4ed281d3576d8d21519a974f9 "xelatex"
-  "prez.out" 1623340414 0 d41d8cd98f00b204e9800998ecf8427e "xelatex"
-  "prez.tex" 1623340410 7943 3e0c7a1168213615f1a341dad293f0c0 ""
-  "prez.vrb" 1623340414 623 56878bdc1188f730acc163020b152b39 "xelatex"
+  "prez.nav" 1642494162 1598 0b941ba4ed281d3576d8d21519a974f9 "xelatex"
+  "prez.out" 1642494161 0 d41d8cd98f00b204e9800998ecf8427e "xelatex"
+  "prez.tex" 1642494138 7996 343d4bd648c9944fc8396bb8200eaed8 ""
+  "prez.vrb" 1642494162 623 56878bdc1188f730acc163020b152b39 "xelatex"
   (generated)
-  "prez.log"
   "prez.out"
+  "prez.nav"
+  "prez.vrb"
   "prez.toc"
   "prez.snm"
-  "prez.vrb"
+  "prez.log"
   "prez.xdv"
-  "prez.nav"
   "prez.aux"

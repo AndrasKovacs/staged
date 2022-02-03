@@ -50,6 +50,7 @@ data Tm1
   | Wk01 Tm1
   | Meta MetaVar
   | Int
+  | Irrelevant
   deriving Show
 
 data Locals

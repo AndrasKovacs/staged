@@ -33,8 +33,8 @@ data UnifyInner = UnifyInner Unif.Cxt UnifyEx
 -- | Exception thrown during elaboration
 data ElabEx
   = UnifyOuter V.Val1 V.Val1 UnifyInner
-  | NoSuchFieldName S.Tm1 RawName
-  | NoSuchFieldIx   S.Tm1 Int
+  | NoSuchFieldName V.Ty RawName
+  | NoSuchFieldIx   V.Ty Int
   | NoSuchArgument RawName
   | NameNotInScope RawName
   | IcitMismatch Icit Icit

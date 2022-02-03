@@ -1,4 +1,4 @@
-resolver: lts-16.31
+resolver: nightly-2021-12-22
 
 packages:
 - .
@@ -7,15 +7,11 @@ ghc-options:
   "$everything": -split-sections
 
 extra-deps:
-# - flatparse-0.2.0.0
-
-- git: https://github.com/AndrasKovacs/flatparse.git
-  commit: 21caeaf38a1ae1aef9d4397815c71ea214e49db8
-
-# - /home/kutta/home/Dropbox/src/flatparse/
-
+- flatparse-0.3.2.0
 - git: https://github.com/AndrasKovacs/dynamic-array.git
-  commit: 04fc3d5c99b8a4fed7f45c04ea047b57dede3aa5
+  commit: c6eb41ea663c7a97c479e5536a8ef39ec848bcfa
 - git: https://github.com/AndrasKovacs/primdata.git
-  commit: d050c16a088e973de879941aafb2c07c319a7a31
-- inspection-testing-0.4.3.0
+  commit: d0234da40ffcd6aecd2fc817e5c4e07c42d4edc8
+- bytestring-0.11.2.0
+- text-1.2.5.0@sha256:791f0f6c97ed96113f17ab520cf0efe1a3a4f883a8c85910a5660567c8241c40,7895
+- binary-0.8.9.0@sha256:9cac9a1d86bfa3e7f75cc8bffaa256f3967ebb6d76f67a42f9679384c5c5e18a,6523

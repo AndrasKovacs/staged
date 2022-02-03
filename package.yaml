@@ -8,6 +8,36 @@ author:      "András Kovács"
 maintainer:  "puttamalac@gmail.com"
 copyright:   "2021 András Kovács"
 
+flags:
+  dump:
+    description: dump core, stg and cmm to files
+    default: false
+    manual: true
+  llvm:
+    description: use llvm for codegen
+    default: false
+    manual: true
+  debug:
+    description: turn on debug info printing
+    default: false
+    manual: true
+
+when:
+  - condition: flag(dump)
+    ghc-options:
+      - -ddump-simpl
+      - -ddump-stg
+      - -ddump-cmm
+      - -dsuppress-all
+      - -dno-suppress-type-signatures
+      - -ddump-to-file
+  - condition: flag(llvm)
+    ghc-options:
+      - -fllvm
+  - condition: flag(debug)
+    cpp-options:
+      - -DDEBUG
+
 dependencies:
 - base >= 4.7 && < 5
 
@@ -15,6 +45,7 @@ default-extensions:
   - AllowAmbiguousTypes
   - BangPatterns
   - BlockArguments
+  - CPP
   - ConstraintKinds
   - DataKinds
   - DeriveFoldable
@@ -24,10 +55,12 @@ default-extensions:
   - ExplicitNamespaces
   - FlexibleContexts
   - FlexibleInstances
+  - FunctionalDependencies
   - GADTs
   - KindSignatures
   - LambdaCase
   - MagicHash
+  - MultiParamTypeClasses
   - OverloadedStrings
   - PatternSynonyms
   - PolyKinds
@@ -36,13 +69,10 @@ default-extensions:
   - StandaloneDeriving
   - Strict
   - TemplateHaskell
-  - TupleSections
   - TypeApplications
   - TypeFamilies
-  - UnboxedTuples
+  - UndecidableInstances
   - ViewPatterns
-  - MultiParamTypeClasses
-  - FunctionalDependencies
 
 ghc-options:
   - -Wall
@@ -52,15 +82,8 @@ ghc-options:
   - -Wno-missing-signatures
   - -Wno-unused-do-bind
   - -Wno-unticked-promoted-constructors
-  - -fplugin-opt=Test.Inspection.Plugin:skip-O0
-  - -O
-  - -fmax-worker-args=12
-  # - -ddump-simpl
-  # - -ddump-to-file
-  # - -dsuppress-all
-  # - -dno-suppress-type-signatures
-  # - -ddump-stg
-
+  - -O2
+  - -fmax-worker-args=20
 
 library:
   source-dirs:
@@ -68,27 +91,29 @@ library:
   dependencies:
     - bytestring
     - containers
-    - primdata
     - dynamic-array
     - flatparse
     - hashable
-    - inspection-testing
-    - template-haskell
-    - unordered-containers
     - microlens
     - microlens-th
+    - primdata
+    - template-haskell
+    - unordered-containers
 
 executables:
-  app:
+  staged:
     source-dirs:
-      - app
+      - staged
     main:
       Main.hs
     ghc-options:
-      # - -fllvm
-      # - -O2
       - -rtsopts
+      - -threaded
+      - -with-rtsopts= "-A64M -s -N8"
     dependencies:
       - staged-fp
       - dynamic-array
       - bytestring
+    when:
+    - condition: false
+      other-modules: Paths_smalltt

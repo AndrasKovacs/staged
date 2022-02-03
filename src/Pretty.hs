@@ -15,7 +15,6 @@ import Cxt.Fields
 import ElabState
 import Exceptions
 
-
 import qualified Values     as V
 import qualified Evaluation as Eval
 import qualified Presyntax  as P
@@ -30,10 +29,10 @@ showTm1 :: (HasNames cxt [Name]) => cxt -> Tm1 -> String
 showTm1 cxt t = tm1 tmp (cxt^.names) t []
 
 showVal0 :: (HasNames s [Name], HasLvl s Lvl) => s -> V.Val0 -> String
-showVal0 cxt t = showTm0 cxt $ Eval.quote0 (cxt^.lvl) UnfoldFlex t
+showVal0 cxt t = showTm0 cxt $ Eval.quote0 (cxt^.lvl) UnfoldMetas t
 
 showVal1 :: (HasNames s [Name], HasLvl s Lvl) => s -> V.Val1 -> String
-showVal1 cxt t = showTm1 cxt $ Eval.quote1 (cxt^.lvl) UnfoldFlex t
+showVal1 cxt t = showTm1 cxt $ Eval.quote1 (cxt^.lvl) UnfoldMetas t
 
 showVal1' :: (HasNames s [Name], HasLvl s Lvl) => s -> V.Val1 -> String
 showVal1' cxt t = showTm1 cxt $ Eval.quote1 (cxt^.lvl) UnfoldAll t
@@ -54,10 +53,10 @@ showTm1Top :: Tm1 -> String
 showTm1Top t = tm1 tmp [] t []
 
 showVal0Top :: V.Val0 -> String
-showVal0Top t = showTm0Top $ Eval.quote0 0 UnfoldFlex t
+showVal0Top t = showTm0Top $ Eval.quote0 0 UnfoldMetas t
 
 showVal1Top :: V.Val1 -> String
-showVal1Top t = showTm1Top $ Eval.quote1 0 UnfoldFlex t
+showVal1Top t = showTm1Top $ Eval.quote1 0 UnfoldMetas t
 
 --------------------------------------------------------------------------------
 
@@ -262,6 +261,7 @@ tm1 p ns = \case
   Meta m         -> (("?"++show m)++)
 
   Int            -> ("Int"++)
+  Irrelevant     -> ("Irrelevant"++)
 
 --------------------------------------------------------------------------------
 
@@ -297,10 +297,10 @@ elabEx cxt = \case
     "Name not in scope: " ++ show x ++ "\n"
   NoSuchFieldName ty x ->
     "Record has no field with name " ++ show x ++ "\n\n" ++
-    "inferred record type:\n\n  " ++ showTm1 cxt ty ++ "\n"
+    "inferred record type:\n\n  " ++ showVal1 cxt ty ++ "\n"
   NoSuchFieldIx ty ix ->
     "Record has no field with index " ++ show ix ++ "\n\n" ++
-    "inferred record type:\n\n  " ++ showTm1 cxt ty ++ "\n"
+    "inferred record type:\n\n  " ++ showVal1 cxt ty ++ "\n"
   NegativeFieldIndex ->
     "Invalid negative record field index\n"
   NoSuchArgument x ->
@@ -339,13 +339,17 @@ elabEx cxt = \case
 
 showElabError :: B.ByteString -> ElabError -> String
 showElabError src (ElabError cxt t e) = let
+
   ls         = FP.lines src
   Span pos _ = P.span t
   ns         = cxt^.names
-  [(l, c)]   = FP.posLineCols src [pos]
+  (l, c)     = case FP.posLineCols src [pos] of
+                 [lc] -> lc
+                 _    -> impossible
   line       = if l < length ls then ls !! l else ""
   linum      = show l
   lpad       = map (const ' ') linum
+
   in show l ++ ":" ++ show c ++ ":\n" ++
      lpad   ++ "|\n" ++
      linum  ++ "| " ++ line ++ "\n" ++

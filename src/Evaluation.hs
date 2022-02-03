@@ -1,7 +1,7 @@
 
 module Evaluation (
     ($$), ($$$), dive, dive2, diveN, up, down, eval0, eval1
-  , forceF0, forceFU0, forceF1, forceFU1
+  , force1, forceAll0, forceAll1
   , quote0, quote1, app1Sp, app1, nfNil0, nfNil1, field1
   )
   where
@@ -84,12 +84,14 @@ app1 t u i = case t of
   Flex h sp      -> Flex h (App1 sp u i)
   Unfold h sp t  -> Unfold h (App1 sp u i) (app1 t u i)
   Rigid h sp     -> Rigid h (App1 sp u i)
+  Irrelevant     -> Irrelevant
   _              -> impossible
 
 lookupField :: Dbg => Fields a -> Int -> a
-lookupField (FCons x a fs) 0 = a
-lookupField (FCons _ _ fs) n = lookupField fs (n - 1)
-lookupField _              _ = impossible
+lookupField fs x = case (fs, x) of
+  (FCons x a fs, 0) -> a
+  (FCons _ _ fs, n) -> lookupField fs (n - 1)
+  (_           , _) -> impossible
 
 field1 :: Dbg => Val1 -> Name -> Int -> Val1
 field1 t x n = case t of
@@ -98,6 +100,12 @@ field1 t x n = case t of
   Unfold h sp t -> Unfold h (Field1 sp x n) (field1 t x n)
   Rigid h sp    -> Rigid h (Field1 sp x n)
   _             -> impossible
+
+app1Sp :: Val1 -> Spine -> Val1
+app1Sp t = \case
+  Id            -> t
+  App1 sp u i   -> app1 (app1Sp t sp) u i
+  Field1 sp x n -> field1 (app1Sp t sp) x n
 
 appPruning :: Dbg => Env -> Val1 -> S.Pruning -> Val1
 appPruning env ~v pr = case (env, pr) of
@@ -151,46 +159,50 @@ eval1 env = \case
   S.CV              -> CV
   S.Comp            -> Comp
   S.Val             -> Val
+  S.Irrelevant      -> Irrelevant
 
 --------------------------------------------------------------------------------
 
-app1Sp :: Val1 -> Spine -> Val1
-app1Sp t = \case
-  Id            -> t
-  App1 sp u i   -> app1 (app1Sp t sp) u i
-  Field1 sp x n -> field1 (app1Sp t sp) x n
-
--- | Force Flex only.
-forceF1 :: Val1 -> Val1
-forceF1 = \case
-  Flex x sp -> runIO $ ES.readMeta x >>= \case
-    ES.Solved v _ -> pure $! forceF1 $! app1Sp v sp
-    _             -> pure $! Flex x sp
+-- | Convert solved Flex to Unfold.
+force1 :: Val1 -> Val1
+force1 = \case
+  top@(Flex x sp) -> runIO $ ES.readMeta x >>= \case
+    ES.Solved v _ -> pure $! Unfold (Solved x) Id (app1Sp v sp)
+    _             -> pure top
   v         -> v
 
--- | Force Flex only.
-forceF0 :: Val0 -> Val0
-forceF0 = \case
-  Down t -> case forceF1 t of
-              Up t -> forceF0 t
-              t    -> Down t
-  v      -> v
-
--- | Force Flex and Unfold.
-forceFU1 :: Val1 -> Val1
-forceFU1 = \case
-  Flex x sp    -> runIO $ ES.readMeta x >>= \case
-                    ES.Solved v _ -> pure $! forceFU1 $! app1Sp v sp
-                    _             -> pure $! Flex x sp
-  Unfold _ _ t -> forceFU1 t
+-- | Force all top unfoldings.
+forceAll1 :: Val1 -> Val1
+forceAll1 = \case
+  top@(Flex x sp) -> runIO $ ES.readMeta x >>= \case
+                    ES.Solved v _ -> pure $! forceAll1 $! app1Sp v sp
+                    _             -> pure top
+  Unfold _ _ t -> forceAll1 t
   v            -> v
 
--- | Force Flex and Unfold.
-forceFU0 :: Val0 -> Val0
-forceFU0 = \case
-  Down t -> case forceFU1 t of
-              Up t -> forceFU0 t
-              t    -> Down t
+-- | Force all top unfoldings.
+forceAll0 :: Val0 -> Val0
+forceAll0 = \case
+  top@(Down t) -> case forceAll1 t of
+              Up t -> forceAll0 t
+              t    -> top
+  v      -> v
+
+-- | Force + eliminate all top def unfolding from the head.
+forceMetas1 :: Val1 -> Val1
+forceMetas1 = \case
+  top@(Flex x sp) -> runIO $ ES.readMeta x >>= \case
+                    ES.Solved v _ -> pure $! forceMetas1 $! app1Sp v sp
+                    _             -> pure top
+  Unfold Solved{} sp v -> forceMetas1 v
+  t                    -> t
+
+-- | Force + eliminate all top def unfolding from the head.
+forceMetas0 :: Val0 -> Val0
+forceMetas0 = \case
+  top@(Down t) -> case forceMetas1 t of
+              Up t -> forceMetas0 t
+              t    -> top
   v      -> v
 
 --------------------------------------------------------------------------------
@@ -207,9 +219,10 @@ quote1 l st t = let
   go1  = quote1 l st; {-# inline go1 #-}
   goSp = quoteSp l st; {-# inline goSp #-}
 
-  force t = case st of UnfoldAll  -> forceFU1 t
-                       UnfoldFlex -> forceF1 t
-                       _          -> t
+  force t = case st of UnfoldAll   -> forceAll1 t
+                       UnfoldMetas -> forceMetas1 t
+                       UnfoldNone  -> force1 t
+                       LiftVars{}  -> force1 t
   {-# inline force #-}
 
   goUH :: UnfoldHead -> S.Tm1
@@ -252,6 +265,7 @@ quote1 l st t = let
     Comp          -> S.Comp
     Val           -> S.Val
     CV            -> S.CV
+    Irrelevant    -> S.Irrelevant
 
 quoteCases :: Dbg => Lvl -> QuoteOption -> Close (Cases S.Tm0) -> Cases S.Tm0
 quoteCases l st (Close env cs) = case cs of
@@ -267,9 +281,10 @@ quote0 l st t = let
   go1  = quote1 l st; {-# inline go1 #-}
   goSp = quoteSp l st; {-# inline goSp #-}
 
-  force t = case st of UnfoldAll  -> forceFU0 t
-                       UnfoldFlex -> forceF0 t
-                       _          -> t
+  force t = case st of UnfoldAll   -> forceAll0 t
+                       UnfoldMetas -> forceMetas0 t
+                       UnfoldNone  -> t
+                       LiftVars{}  -> t
   {-# inline force #-}
 
   goClose0 :: Close S.Tm0 -> S.Tm0

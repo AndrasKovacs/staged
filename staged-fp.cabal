@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.33.0.
+-- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 6fcb49d6069a59c7907c35adc6a03dfa34f24c976b1f5b77047f70fadef4ff1e
+-- hash: df7b3e9072c32910fc4e3978ebf9390cb961bc7c7838a3f5f5d65a88143ee782
 
 name:           staged-fp
 version:        0.1.0.0
@@ -17,6 +17,21 @@ license:        MIT
 license-file:   LICENSE
 build-type:     Simple
 
+flag debug
+  description: turn on debug info printing
+  manual: True
+  default: False
+
+flag dump
+  description: dump core, stg and cmm to files
+  manual: True
+  default: False
+
+flag llvm
+  description: use llvm for codegen
+  manual: True
+  default: False
+
 library
   exposed-modules:
       Common
@@ -28,7 +43,6 @@ library
       ElabState
       Evaluation
       Exceptions
-      FNV164
       InCxt
       Lexer
       LvlSet
@@ -43,8 +57,39 @@ library
       Paths_staged_fp
   hs-source-dirs:
       src
-  default-extensions: AllowAmbiguousTypes BangPatterns BlockArguments ConstraintKinds DataKinds DeriveFoldable DeriveFunctor DeriveTraversable DerivingVia ExplicitNamespaces FlexibleContexts FlexibleInstances GADTs KindSignatures LambdaCase MagicHash OverloadedStrings PatternSynonyms PolyKinds RankNTypes ScopedTypeVariables StandaloneDeriving Strict TemplateHaskell TupleSections TypeApplications TypeFamilies UnboxedTuples ViewPatterns MultiParamTypeClasses FunctionalDependencies
-  ghc-options: -Wall -Wno-name-shadowing -Wno-unused-binds -Wno-unused-matches -Wno-missing-signatures -Wno-unused-do-bind -Wno-unticked-promoted-constructors -fplugin-opt=Test.Inspection.Plugin:skip-O0 -O -fmax-worker-args=12
+  default-extensions:
+      AllowAmbiguousTypes
+      BangPatterns
+      BlockArguments
+      CPP
+      ConstraintKinds
+      DataKinds
+      DeriveFoldable
+      DeriveFunctor
+      DeriveTraversable
+      DerivingVia
+      ExplicitNamespaces
+      FlexibleContexts
+      FlexibleInstances
+      FunctionalDependencies
+      GADTs
+      KindSignatures
+      LambdaCase
+      MagicHash
+      MultiParamTypeClasses
+      OverloadedStrings
+      PatternSynonyms
+      PolyKinds
+      RankNTypes
+      ScopedTypeVariables
+      StandaloneDeriving
+      Strict
+      TemplateHaskell
+      TypeApplications
+      TypeFamilies
+      UndecidableInstances
+      ViewPatterns
+  ghc-options: -Wall -Wno-name-shadowing -Wno-unused-binds -Wno-unused-matches -Wno-missing-signatures -Wno-unused-do-bind -Wno-unticked-promoted-constructors -O2 -fmax-worker-args=20
   build-depends:
       base >=4.7 && <5
     , bytestring
@@ -52,25 +97,67 @@ library
     , dynamic-array
     , flatparse
     , hashable
-    , inspection-testing
     , microlens
     , microlens-th
     , primdata
     , template-haskell
     , unordered-containers
+  if flag(dump)
+    ghc-options: -ddump-simpl -ddump-stg -ddump-cmm -dsuppress-all -dno-suppress-type-signatures -ddump-to-file
+  if flag(llvm)
+    ghc-options: -fllvm
+  if flag(debug)
+    cpp-options: -DDEBUG
   default-language: Haskell2010
 
-executable app
+executable staged
   main-is: Main.hs
   other-modules:
       Paths_staged_fp
   hs-source-dirs:
-      app
-  default-extensions: AllowAmbiguousTypes BangPatterns BlockArguments ConstraintKinds DataKinds DeriveFoldable DeriveFunctor DeriveTraversable DerivingVia ExplicitNamespaces FlexibleContexts FlexibleInstances GADTs KindSignatures LambdaCase MagicHash OverloadedStrings PatternSynonyms PolyKinds RankNTypes ScopedTypeVariables StandaloneDeriving Strict TemplateHaskell TupleSections TypeApplications TypeFamilies UnboxedTuples ViewPatterns MultiParamTypeClasses FunctionalDependencies
-  ghc-options: -Wall -Wno-name-shadowing -Wno-unused-binds -Wno-unused-matches -Wno-missing-signatures -Wno-unused-do-bind -Wno-unticked-promoted-constructors -fplugin-opt=Test.Inspection.Plugin:skip-O0 -O -fmax-worker-args=12 -rtsopts
+      staged
+  default-extensions:
+      AllowAmbiguousTypes
+      BangPatterns
+      BlockArguments
+      CPP
+      ConstraintKinds
+      DataKinds
+      DeriveFoldable
+      DeriveFunctor
+      DeriveTraversable
+      DerivingVia
+      ExplicitNamespaces
+      FlexibleContexts
+      FlexibleInstances
+      FunctionalDependencies
+      GADTs
+      KindSignatures
+      LambdaCase
+      MagicHash
+      MultiParamTypeClasses
+      OverloadedStrings
+      PatternSynonyms
+      PolyKinds
+      RankNTypes
+      ScopedTypeVariables
+      StandaloneDeriving
+      Strict
+      TemplateHaskell
+      TypeApplications
+      TypeFamilies
+      UndecidableInstances
+      ViewPatterns
+  ghc-options: -Wall -Wno-name-shadowing -Wno-unused-binds -Wno-unused-matches -Wno-missing-signatures -Wno-unused-do-bind -Wno-unticked-promoted-constructors -O2 -fmax-worker-args=20 -rtsopts -threaded -with-rtsopts= "-A64M -s -N8"
   build-depends:
       base >=4.7 && <5
     , bytestring
     , dynamic-array
     , staged-fp
+  if flag(dump)
+    ghc-options: -ddump-simpl -ddump-stg -ddump-cmm -dsuppress-all -dno-suppress-type-signatures -ddump-to-file
+  if flag(llvm)
+    ghc-options: -fllvm
+  if flag(debug)
+    cpp-options: -DDEBUG
   default-language: Haskell2010

@@ -1,45 +1,64 @@
 
 module Common (
     module Common
-  , FlatParse.Stateful.Span(..)
+  , B.ByteString
   , FlatParse.Stateful.Pos(..)
-  , module Data.Coerce
+  , FlatParse.Stateful.Span(..)
+  , unpackUTF8
+  , packUTF8
+  , coerce
   , module Control.Monad
   , module Data.Kind
   , module Lens.Micro
   ) where
 
-import Data.Kind
-import Control.Monad
-import Data.Foldable
-import GHC.Exts
 import qualified Data.ByteString as B
+import Control.Monad
+import Data.Bits
+import Data.Coerce
+import Data.Foldable
+import Data.Kind
+import Data.List
+import FlatParse.Stateful
+import GHC.Exts
 import Lens.Micro
 
-import Data.Bits
-import Data.Hashable
-import FNV164
-import FlatParse.Stateful
-import Data.Coerce
--- import GHC.Stack
+#ifdef DEBUG
+import GHC.Stack
+#endif
 
-import qualified Debug.Trace as Trace
-
+-- Debug printing, toggled by "debug" cabal flag
 --------------------------------------------------------------------------------
 
-trace :: String -> a -> a
-trace = Trace.trace
+-- define DEBUG
 
-traceShow :: Show a => a -> b -> b
-traceShow = Trace.traceShow
+#ifdef DEBUG
+type Dbg = HasCallStack
 
-traceM :: Applicative m => String -> m ()
-traceM = Trace.traceM
--- traceM _ = pure ()
+debug :: [String] -> IO ()
+debug strs = U.io $ putStrLn (intercalate " | " strs ++ " END")
 
-traceShowM :: (Show a, Applicative f) => a -> f ()
-traceShowM a = Trace.traceShowM a
--- traceShowM a = pure ()
+debugging :: IO () -> IO ()
+debugging act = act
+{-# inline debugging #-}
+#else
+type Dbg = () :: Constraint
+
+debug :: [String] -> IO ()
+debug strs = pure ()
+{-# inline debug #-}
+
+debugging :: IO () -> IO ()
+debugging _ = pure ()
+{-# inline debugging #-}
+#endif
+
+debug' :: [String] -> IO ()
+debug' strs = putStrLn (intercalate " | " strs ++ " END")
+
+debugging' :: IO () -> IO ()
+debugging' act = act
+{-# inline debugging' #-}
 
 --------------------------------------------------------------------------------
 
@@ -116,11 +135,8 @@ instance Show a => Show (Cases a) where
 
 --------------------------------------------------------------------------------
 
-uf :: a
+uf :: Dbg => a
 uf = undefined
-
-type Dbg = () :: Constraint
--- type Dbg = HasCallStack
 
 impossible :: Dbg => a
 impossible = error "impossible"
@@ -141,43 +157,20 @@ infixl 4 <*!>
 
 --------------------------------------------------------------------------------
 
--- States for approximate scope/conversion checking
-newtype ConvState = ConvState# Int deriving Eq via Int
-pattern CSRigid :: ConvState
-pattern CSRigid = ConvState# 0
-pattern CSFlex :: ConvState
-pattern CSFlex = ConvState# 1
-pattern CSFull :: ConvState
-pattern CSFull = ConvState# 2
-{-# complete CSRigid, CSFlex, CSFull #-}
-
-instance Show ConvState where
-  show CSRigid = "Rigid"
-  show CSFlex  = "Flex"
-  show CSFull  = "Full"
-
+data ConvState = CSRigid | CSFlex | CSFull
+  deriving (Eq, Show)
 
 data QuoteOption
-  = UnfoldAll     -- ^ Unfold top defs and metas
-  | UnfoldFlex    -- ^ Unfold metas only
-  | UnfoldNone    -- ^ No unfolding
-  | LiftVars Lvl  -- ^ Don't unfold anything, but raise var below Lvl to level 1.
+  = UnfoldAll     -- ^ Unfold top defs and metas.
+  | UnfoldMetas   -- ^ Unfold metas only.
+  | UnfoldNone    -- ^ No unfolding.
+  | LiftVars Lvl  -- ^ Don't unfold anything, but raise vars to level 1.
                   --   Used for creating types for fresh metas (where we have to
                   --   move a type from an arbitrary context to a fully Lvl1 context).
   deriving Show
 
-newtype Icit = Icit# Int deriving Eq
-
-pattern Impl :: Icit
-pattern Impl = Icit# 0
-
-pattern Expl :: Icit
-pattern Expl = Icit# 1
-{-# complete Impl, Expl #-}
-
-instance Show Icit where
-  show Impl = "Impl"
-  show Expl = "Expl"
+data Icit = Impl | Expl
+  deriving (Eq, Show)
 
 icit :: Icit -> a -> a -> a
 icit Impl x y = x
@@ -200,18 +193,7 @@ lvlToIx (Lvl envl) (Lvl l) = Ix (envl - l - 1)
 -- names
 --------------------------------------------------------------------------------
 
-newtype RawName = RawName {unRawName :: B.ByteString}
-  deriving (Semigroup, Monoid, Eq) via B.ByteString
-
-instance IsString RawName where
-  fromString = RawName . packUTF8
-
-instance Show RawName where
-  show = unpackUTF8 . unRawName
-
-instance Hashable RawName where
-  hashWithSalt salt (RawName str) = fnv164 str salt
-  {-# inline hashWithSalt #-}
+type RawName = B.ByteString
 
 data Name
   = NName {-# unpack #-} RawName
@@ -221,8 +203,8 @@ data Name
 
 instance Show Name where
   show (NName x) = show x
-  show NEmpty = "_"
-  show NX = "x"
+  show NEmpty    = "_"
+  show NX        = "x"
 
 instance IsString Name where
   fromString = NName . fromString

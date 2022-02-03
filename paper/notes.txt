@@ -1,0 +1,307 @@
+
+I have 1 month + 2 day until deadline.
+I need to write 25 pg paper + refurbish impl, prep artifact
+
+ - Evaluation in the psh model yields staging.
+ - how easy is it to prove that the output of this is convertible to the input?
+ - Directly, by induction on syntax of 2ltt? Let's try it!
+
+If it works, then
+
+  - Intro
+  - Formal syntax, properties, ^ preservations
+  - Psh model, staging by evaluation, Yoneda, intensional analysis
+  - Correctness
+  - More efficient impls
+  - ? Full normalization, decidability of conversion
+
+  - "Eta expansion does the trick": cofibrancy
+  - Fusion
+  - Monomorphization
+  - Typed closures
+  - Practicalities (inference, code sharing)
+
+  - Related work
+    - usual staging
+    - PE, online/offline
+    - dependent staging
+    - try to search for stuff that would be bad to omit
+
+  - future research: depends on what goes in paper
+
+Artifact:
+  - Harmonize mstt impl with paper
+    - only 2 levels
+    - use closed evaluator for static level, usual for runtime level
+    - add docs, examples, clean up cruft use best practices
+
+--------------------------------------------------------------------------------
+
+Psh model reminder:
+
+  TyB : Con̂     (psh of object-level types)
+  TmB : Tŷ TyB  (displayed psh over types)
+
+  -- we have that   Sub̂ Γ Δ = Tm̂ Γ (K Δ)
+
+  Ty₀^ Γ   := Sub̂ Γ TyB
+  Tm₀^ Γ A := Tm̂ Γ (A[TmB])
+
+
+correctness of eval into psh model
+--------------------------------------------------------------------------------
+
+- B       : syntax of base theory
+- 2LTT    : syntax of 2LTT
+- BMod    : model of B
+- 2LTTMod : model of 2LTT
+- 2LTTᵒ   : models B by forgetting Ty₀ and Tm₀ from 2LTT
+
+- -^  : components of PSh B, e.g. Con̂, Tŷ, Set̂ , etc.
+- F   : 2LTT → PSh B, evaluation into PSh B model of 2LTT (strict morphism)
+- ⌜⌝  : B → 2LTTᵒ, embedding
+- ⌜⌝* : PSh 2LTT → PSh B
+- y   : 2LTT → PSh 2LTT, yoneda embedding
+- G   : 2LTT → PSh B, defined as ⌜⌝* ∘ y. Weak CwF morphism, because ⌜⌝* is strict and y is weak.
+
+
+        G∙ : G ∙       ≃ ⊤^
+	G▶ : G (Γ ▶ A) ≃ (γ : G Γ) × G A γ
+
+        - ∙, _▶_, ⊤, Σ preserved weakly
+	- Π and U preserved lax
+	- positive formers preserved oplax
+
+        GΠ : G (Π A B) γ → (a : G A) → G B (G▶⁻¹ (γ, a))
+	GU : G U γ → Set̂
+
+        GBool : ∀ (γ : G Γ) → Bool̂ → G Bool γ
+	GId   : ∀ (γ : G Γ) → Id̂ x y → G (Id t u) γ
+	...   :
+
+
+Options:
+  1. Define everything at the same time, simply by gluing over G.
+  2. Define a logical relation between F and G. It's a nicer, because F is the staging algorithm,
+     and we want to separate it from its correctness proof.
+  3. Do the gluing definition, but refer to some abstract equivalence of 1 and 2 to separate out F from it.
+     Do we have such equivalence?
+
+-- Logrel version
+--------------------------------------------------------------------------------
+
+-- logical relation internally to PSh B
+
+(Γ : Con)ᴿ     : F Γ → G Γ → Set̂
+(σ : Sub Γ Δ)ᴿ : Γᴿ γ γ' → Δᴿ (Fσ γ) (Gσ γ')
+(A : Ty₁ Γ)ᴿ   : Γᴿ γ γ' → FA γ → GA γ' → Set̂
+(t : Tm₁ Γ A)ᴿ : (γᴿ : Γᴿ γ γ') → Aᴿ γᴿ (Ft γ) (Gt γ')
+
+-- assume Ty₀ : Ty₁ Γ
+
+-- G is like yoneda, but embeds *2LTT* syntactic stuff that depend on *Base* contexts
+
+G (Γ : Con) : Con̂
+|G Γ| i := Sub ⌜i⌝ Γ
+
+G (A : Ty Γ) : Tŷ (G Γ)
+|G A| i (γ : Sub ⌜i⌝ Γ) := Tm ⌜i⌝ (A[γ])
+
+------------------------------
+
+GTy₀ : Con̂
+|GTy₀| i := Tm ⌜i⌝ Ty₀
+
+G Ty₀ _ = GTy₀
+
+
+|TyB| i = TyBase i
+
+A : TyBase i       ⌜A⌝ : Tm ⌜i⌝ Ty₀
+
+-- internal embedding on types! TODOO
+⌜_⌝ : TyB → GTy₀
+
+⌜_⌝ : Sub̂ TyB GTy₀
+|⌜_⌝| i (a : TyBase i) := ⌜a⌝ :  Tm ⌜i⌝ Ty₀   OK
+
+Ty₀ᴿ : Γᴿ γ γ' → F Ty₀ γ → G Ty₀ γ' → Set̂
+     : Γᴿ γ γ' → TyB → GTy₀ → Set̂
+Ty₀ᴿ γᴿ (A : TyB) (A' : G Ty₀ γ') := (⌜A⌝ = A')
+
+(Bool₀ : Tm Γ Ty₀)ᴿ γᴿ : Ty₀ᴿ γᴿ (FBool₀ γ) (GBool₀ γ')
+                       : ⌜FBool₀ γ⌝ = GBool₀ γ'
+		       :
+
+
+DO SOMETHING with G (Tm₀ a)
+
+TmB : TyB → Set̂
+F (Tm₀ A) γ = TmB (FA γ)
+
+|TmB (Fa γ)|ᵢ   = Tm i |Fa γ|ᵢ
+
+|G (Tm₀ a)|ᵢ γ' = Tm ⌜i⌝ (Tm₀ a[γ'])
+
+A : Ty Γ      ⌜A⌝ : Tm ⌜Γ⌝ Ty₀
+
+-- Tm i A    →   Tm ⌜i⌝ (Tm₀ ⌜A⌝)
+
+
+⌜⌝ : Sub (TmB (F a γ)) (G (Tm₀ a) γ')
+|⌜⌝| i (t : Tm i |F a γ|ᵢ) : Tm ⌜i⌝ (Tm₀ (a[γ']))
+
+
+|TmB A|ᵢ := Tm i |A|ᵢ
+
+a : Tm Γ Ty₀
+F a : F Γ → TyB
+
+(Tm₀ a)ᴿ : Γᴿ γ γ' → TmB (Fa γ) → G (Tm₀ a) γ' → Set̂
+(Tm₀ a)ᴿ γᴿ t t' =
+
+    a : Tm Γ Ty₀
+    aᴿ : (γᴿ : Γᴿ γ γ') → Ty₀ᴿ γᴿ (Fa γ) (Ga γ')
+       : (γᴿ : Γᴿ γ γ') → ⌜Fa γ⌝ = Ga γ'
+
+   Fa : F Γ → TyB
+   Fa γ    : TyB
+   ⌜ Fa γ ⌝ : GTy₀
+
+   Ga : G Γ → GTy₀
+   Ga γ' : GTy₀
+
+   t  : TmB (Fa γ)
+   t' : G (Tm₀ a) γ'
+
+   ⌜⌝ : TmB a → G (Tm₀
+
+-- Logrel version attempt 2
+--------------------------------------------------------------------------------
+
+Alternative Ty₀ and Tm₀ in the PSh model.
+
+  GTy₀ : Set̂             -- closed under all 0 type formers!
+  |GTy₀|ᵢ = Ty₀ ⌜i⌝
+
+  GTm₀ : GTy₀ → Set̂
+  |GTm₀ A|ᵢ := Tm₀ ⌜i⌝ |A|ᵢ
+
+There are two ways of presenting base syntax in psh, using actual base syntax, or using 2LTT syntax for base things
+
+G is a weak cwf morphism on the outer cwf part of 2LTT, but it diverges on the inner family structure
+
+G is given as ⌜⌝* ∘ yoneda on the outer cwf.
+
+    G (Γ : Con) : Set̂
+    |G Γ|i := Sub₁ ⌜i⌝ Γ
+
+    G (A : Ty₁ Γ) : GΓ → Set̂
+    |G A|i γ := Tm₁ ⌜i⌝ A[γ]
+
+On the inner family it's just inner family substitution
+    G (A : Ty₀ Γ) : GΓ → GTy₀
+    |G A|ᵢ γ = A[γ]
+
+    G (t : Tm₀ Γ A) : (γ : GΓ) → GTm₀ (GA γ)
+    |G t|ᵢ γ = t[γ]
+
+We have ⌜⌝ internally as well
+
+  ⌜-⌝ : TyB → GTy₀
+  |⌜⌝|ᵢ (A : TyB i) := ⌜A⌝ : Ty₀ ⌜i⌝
+
+  ⌜-⌝ : TmB A → GTm₀ ⌜A⌝
+  |⌜⌝|ᵢ {A : TyB i} (t : TmB i A) := ⌜t⌝ : Tm₀ ⌜i⌝ ⌜A⌝
+
+
+(Γ : Con)ᴿ     : FΓ → GΓ → Set̂
+(σ : Sub Γ Δ)ᴿ : Γᴿ γ γ' → Δᴿ (Fσ γ) (Gσ γ')
+(A : Ty₁ Γ)ᴿ   : Γᴿ γ γ' → FA γ → GA γ' → Set̂
+(t : Tm₁ Γ A)ᴿ : (γᴿ : Γᴿ γ γ') → Aᴿ γᴿ (Ft γ) (Gt γ')
+
+idᴿ γᴿ          := γᴿ
+(σ ∘ δ)ᴿ γᴿ     := σᴿ (δᴿ γᴿ)
+(A[σ])ᴿ γᴿ α α' := Aᴿ (σᴿ γᴿ) α α'
+(t[σ])ᴿ γᴿ      := tᴿ (σᴿ γᴿ)
+
+
+(A : Ty₀ Γ)ᴿ : Γᴿ γ γ' → ⌜FA γ⌝ = GA γ'     --  psh equality
+
+   FA γ   : TyB
+   ⌜FA γ⌝ : GTy₀
+   GA γ'  : GTy₀
+
+(t : Tm₀ Γ A)ᴿ : (γᴿ : Γᴿ γ γ') → ⌜Ft γ⌝ = Gt γ'
+
+     Ft : (γ : FΓ)  → TmB (FA γ)
+     Gt : (γ' : GΓ) → GTm₀ (GA γ')
+
+(Lift A)ᴿ : Γᴿ γ γ' → F(Lift A) γ → G(Lift A) γ' → Set̂
+          : Γᴿ γ γ' → TmB (FA γ) → G(Lift A) γ' → Set̂
+	  := λ γᴿ t t'. ⌜t⌝ = GLift t'
+
+   F (Lift A) γ = TmB (FA γ)
+
+   |G(Lift A)|ᵢ γ' = Tm₁ ⌜i⌝ (Lift A[γ'])
+                   ≃ Tm₀ ⌜i⌝ A[γ']
+
+     TODO to check:
+         GLift : G (Lift A) γ' ≃ GTm₀ (GA γ')
+
+   t   : TmB (FA γ)
+   ⌜t⌝ : GTm₀ ⌜FA γ⌝
+       : GTm₀ (GA γ')
+
+   t'       : G (Lift A) γ'
+   GLift t' : GTm₀ (GA γ')
+
+
+TODO from here, just to logrel...
+
+
+
+
+
+
+
+
+
+
+
+-- Gluing version, over G
+--------------------------------------------------------------------------------
+
+(Γ : Con)ᴾ     : G Γ → Set̂
+(σ : Sub Γ Δ)ᴾ : Γᴾ γ → Δᴾ (Gσ γ)
+(A : Ty₁ Γ)ᴾ   : Γᴾ γ → G A γ → Set̂
+(t : Tm₁ Γ A)ᴾ : (γᴾ : Γᴾ γ) → Aᴾ γᴾ (Gt γ)
+
+... same as in Kaposi, Huber, Sattler for static fragment
+
+-- (A : Ty₀ Γ)ᴾ : ?
+-- (t : Tm₀ Γ A)ᴾ : ?
+
+-- assume Ty₀ : Ty Γ
+
+-- (B : A → Set) ↦ (Σ A B : Set)
+-- in theory we could recover psh by taking the total model of one-step gluing...
+
+--------------------------------------------------------------------------------
+
+Conᴿ Γ       := E Γ → G Γ → Set
+Subᴿ Γᴿ Δᴿ σ := Γᴿ γ γ' → Δᴿ (E σ γ) (G σ γ')
+Tyᴿ Γᴿ A     := Γᴿ γ γ' → E A γ → G A γ' → Set
+Tmᴿ Γᴬ Aᴿ t  := (γᴿ : Γᴿ γ γ') → Aᴿ γᴿ (E t γ) (G t γ')
+
+
+
+-- Base map version
+--------------------------------------------------------------------------------
+
+(Γ : Con)ᵇ     : (b  : F Γ → G Γ)
+(σ : Sub Γ Δ)ᵇ : (bσ : G Γ → G Δ) × (∀ γ. b (Fσ γ) = bσ (b γ))
+(A : Ty Γ A)ᵇ  : (b  : ∀ γ → FA γ → GA (b γ))
+(t : Tm Γ A)ᵇ  : (bt : (γ' : G Γ) → GA γ') × (∀ γ. b (Ft γ) = bt (b γ))
+
+-- ehhh, not that nice

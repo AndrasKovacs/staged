@@ -1,4 +1,7 @@
 
+type formers
+  - outer: ⊥, ⊤, Π, Σ, U, ℕ
+
 naming questions:
   - base TT      : maybe 𝔹? or ℂ? or 𝕆 for object theory?
   - 2LTT syntax  : just 2LTT
@@ -38,7 +41,7 @@ with its soundness (HKS gluing), or are way too magical (synthetic computability
 
 Things in psh model:
 
-  Syntactic base types and terms.
+  Syntactic base types and terms. Closed under type formers, but we don't use that.
 
     TyB : Set̂
     |TyB|ᵢ = TyB i
@@ -54,7 +57,8 @@ Things in psh model:
     Tm₀ : Ty₀ → Set̂
     |Tm₀|ᵢ A = Tm₀ ⌜i⌝ A
 
-  Both closed under respective type formers
+  *Not* closed under proper type formers, because we can only abstract over
+  inner things in pshB.
 
   Embedding internally:
 
@@ -106,12 +110,18 @@ Syntactic embedding morphism from 2LTT syntax to psh model:
 
     - Π, U lax
 
-      G_Π : G (Π A B) γ → ((α : G A γ) → G B (G▶⁻¹(γ, α)))
-      G_U : G U γ → Set̂
+      G_app : G (Π A B) γ → ((α : G A γ) → G B (G▶⁻¹(γ, α)))
+      G_app (G (lam t) γ) α ≡ Gt G▶⁻¹(γ, α)
+
+
+      G_code : G U γ → Set̂
+      G_code (G(El a) γ) ≡ code (Ga γ) -- more precisely
+                         ≡ Ga γ        -- with Russell notation
 
     - positive inductive types oplax
 
       G_ℕ : ℕ → G ℕ γ
+      G_⊥ : ⊥ → G ⊥ γ
 
     - Action on Lift:
 
@@ -205,10 +215,46 @@ Inner family
 
 (Lift A)ᴿ : Γᴿ γ γ' → F (Lift A) γ → G(Lift A) γ' → Set̂
           : Γᴿ γ γ' → TmB (FA γ) → G (Lift A) γ' → Set̂
-          := λ γᴿ t t'. ⌜t⌝ = G_Lift t'
+          := λ γᴿ t t'. ⌜t⌝ = ↓t'
 
 (↑t)ᴿ : (γᴿ : Γᴿ γ γ') → (Lift A)ᴿ γᴿ (F(↑t) γ) (G(↑t) γ')
-      : (γᴿ : Γᴿ γ γ') → ⌜F(↑t) γ⌝ = G_Lift (G(↑t) γ')
-      : (γᴿ : Γᴿ γ γ') → ⌜F t γ⌝ = Gt γ'
+      : (γᴿ : Γᴿ γ γ') → ⌜F(↑t) γ⌝ = ↓ (G(↑t) γ')
+      : (γᴿ : Γᴿ γ γ') → ⌜Ft γ⌝ = Gt γ'
+  by tᴿ γᴿ
 
-  tᴿ γᴿ :
+(↓t)ᴿ : (γᴿ : Γᴿ γ γ') → ⌜F(↓t) γ⌝ = G(↓t) γ'
+      : (γᴿ : Γᴿ γ γ') → ⌜Ft γ⌝ = ↓(Gt γ')
+
+  by tᴿ γᴿ
+
+-- Outer types
+--------------------------------------------------------------------------------
+
+⊥ᴿ γᴿ : F⊥ γ → G⊥ γ' → Set̂
+      : ⊥̂  → G⊥ γ' → Set̂
+  vacuous
+
+⊤ᴿ γᴿ : ⊤^ → G⊤ γ' → Set̂
+ ⊤ᴿ γᴿ t t' := ⊤^
+
+ttᴿ γᴿ := tt
+
+(Σ A B)ᴿ γᴿ : ((α : FA γ) × FB (γ, α)) → G(Σ A B) γ' → Set̂
+  (Σ A B)ᴿ γᴿ (α, β) (GΣ⁻¹(α', β')) := (αᴿ : Aᴿ γᴿ α α') × Bᴿ (γᴿ, αᴿ) β β'
+
+  -- pairing & proj obvious
+
+(Π A B)ᴿ γᴿ : ((α : FA γ) → FB (γ, α)) → G(Π A B) γ' → Set̂
+  (Π A B)ᴿ γᴿ t t' :=
+    (α : FA γ)(α' : GA γ')(αᴿ : Aᴿ γᴿ α α') → Bᴿ (γᴿ, αᴿ) (t α) (G_app t' α')
+
+(lam t)ᴿ γᴿ : (Π A B)ᴿ γᴿ (F(lam t) γ) (G(lam t) γ')
+            : ∀ α α' (αᴿ : Aᴿ γᴿ α α') → Bᴿ (γᴿ, αᴿ) (Ft (γ, α)) (G_app (G(lam t) γ') α')
+	    : ∀ α α' (αᴿ : Aᴿ γᴿ α α') → Bᴿ (γᴿ, αᴿ) (Ft (γ, α)) (Gt G▶₁⁻¹(γ', α'))
+	    := λ α α' αᴿ. tᴿ (γᴿ, αᴿ) (Ft (γ, α)) (Gt G▶₁⁻¹(γ', α))
+
+
+ℕᴿ γᴿ : ℕ^ → G ℕ γ' → Set̂
+  ℕᴿ γᴿ t t' := (G_ℕ t = t')  -- weird
+
+zeroᴿ γᴿ : G_ℕ zerô =

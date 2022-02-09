@@ -79,7 +79,12 @@
 \newcommand{\zero}{\msf{zero}}
 \newcommand{\suc}{\msf{suc}}
 \renewcommand{\tt}{\msf{tt}}
+\newcommand{\fst}{\msf{fst}}
+\newcommand{\snd}{\msf{snd}}
+\newcommand{\mylet}{\msf{let}}
+\newcommand{\emptycon}{\scaleobj{.75}\bullet}
 
+\newcommand{\blank}{{\mathord{\hspace{1pt}\text{--}\hspace{1pt}}}}
 
 \theoremstyle{remark}
 \newtheorem{notation}{Notation}
@@ -254,6 +259,10 @@ three operations.
 \item \emph{Splicing:} for $A : \U_0$ and $t :\,\Lift A$, we have $\spl t : A$.
   During staging, the metaprogram in the splice is executed, and the resulting
   expression is inserted into the output.
+  \begin{notation} Splicing binds stronger than any operation, including function
+    application. For instance, $\spl f\,x$ is parsed as $(\spl f)\,x$.
+  \end{notation}
+
 \item Quoting and splicing are definitional inverses, i.e.\ we have $\spl\qut{t} = t$ and
   $\qut{\spl t}=t$ as definitional equalities.
 \end{itemize}
@@ -265,6 +274,15 @@ means computing all metaprograms and recursively replacing all splices in $t$ an
 with the resulting runtime expressions. The rules of 2LTT ensure that this is possible,
 and we always get a splice-free runtime program after staging.
 
+\paragraph{Remark}
+Why do we use the index $0$ for the runtime stage? The reason is that it is not
+difficult to generalize 2LTT to multi-level type theory, by allowing to lift
+types from $\U_i$ to $\U_{i+1}$. In the semantics, this can be modeled by
+having a 2LTT whose object theory is once again a 2LTT, and doing this in an
+iterated fashion. But there must be necessarily a bottom-most object theory;
+hence our stage indexing scheme. For now though, we leave the multi-level
+generalization to future work.
+
 \begin{notation} We may disambiguate type formers at different stages by using $0$ or $1$
 subscripts. For example, $\Nat_1 : \U_1$ is distinguished from $\Nat_0 : \U_0$,
 and likewise we may write $\zero_0 : \Nat_0$ and so on. For function and
@@ -275,7 +293,7 @@ function type former stays within a single stage. We may also omit stage annotat
 from $\lambda$ and pairing.
 \end{notation}
 
-\subsection{Basic Examples}
+\subsection{Staged Programming in 2LTT}
 
 In 2LTT, we may have several different polymorphic identity functions. First, we
 consider the usual identity functions at each stage:
@@ -295,10 +313,10 @@ has type $\Bool_0$. We can stage this expression as follows:
 There is another identity function, which computes at compile time, but which
 can be only used on runtime arguments:
 \begin{alignat*}{3}
-  & \mit{id_\Lift} : (A : \Lift\U_0) \to \Lift (\spl A) \to \Lift (\spl A)\\
+  & \mit{id_\Lift} : (A : \Lift\U_0) \to \Lift\,\spl A \to \Lift\,\spl A\\
   & \mit{id_\Lift} := \lambda\,A\,x.x
 \end{alignat*}
-Note that since $A : \Lift\U_0$, we have $\spl A : \U_0$, hence $\Lift (\spl A)
+Note that since $A : \Lift\U_0$, we have $\spl A : \U_0$, hence $\Lift\,\spl A
 : \U_1$.  Also, $\Lift\U_0 : \U_1$, so all function domain and codomain types in
 the type of $\mit{id_\Lift}$ are at the same stage. Now, we may write
 $\spl(\mit{id_\Lift}\,\qut{\Bool_0}\,\qut{\true_0})$ for a term which is staged
@@ -311,16 +329,190 @@ $\cons_0 : (A : \U_0) \to A \to \List_0\,A$ and $\msf{foldr}_0 : (A\,B : \U_0)
 \to (A \to B \to B) \to B \to \List_0\,A \to B$. We define a map function which
 ``inlines'' its function argument:
 \begin{alignat*}{3}
-  & \mit{map} : (A\,B : \Lift\U_0) \to ((\Lift(\spl A) \to \Lift(\spl B))
-      \to \Lift(\List_0\,(\spl A)) \to \Lift(\List_0\,(\spl B))\\
+  & \mit{map} : (A\,B : \Lift\U_0) \to (\Lift\,\spl A \to \Lift\,\spl B)
+      \to \Lift(\List_0\,\spl A) \to \Lift(\List_0\,\spl B)\\
   & \mit{map} := \lambda\,A\,B\,f\,\mit{as}.\,
       \qut{\msf{foldr}_0\,
-        (\spl A)\,(\spl B)\,
-        (\lambda\,a\,\mit{bs}.\, \cons_0\,(\spl B)\,(\spl(f\,\qut{a}))\,\mit{bs})\,
-        (\nil_0\,(\spl B))\,
-        (\spl as)
+        \spl A\,\spl B\,
+        (\lambda\,a\,\mit{bs}.\, \cons_0\,\spl B\,\spl(f\,\qut{a})\,\mit{bs})\,
+        (\nil_0\,\spl B)\,
+        \spl as
         }
 \end{alignat*}
+This $\mit{map}$ function works with quantification over $\Lift \U_0$ but not
+over $\U_1$, because $\List_0$ expects type parameters in $\U_0$, and there is
+no generic way to convert from $\U_1$ to $\U_0$. Now, assuming
+$\blank\!+_0\!\blank : \Nat_0 \to \Nat_0 \to \Nat_0$ and $\mit{ns} :
+\List_0\,\Nat_0$, we have the following staging behavior:
+\begin{alignat*}{3}
+  & &&\spl(\mit{map}\,\qut{\Nat_0}\,\qut{\Nat_0}\,(\lambda\,n.\,\qut{\spl n +_0 10})\,\qut{\mit{ns}})\\
+  & =\hspace{1em}&&\spl\qut{\msf{foldr}_0\,
+        \spl \qut{\Nat_0}\,\spl \qut{\Nat_0}\,
+        (\lambda\,a\,\mit{bs}.\, \cons_0\,\spl B\,\spl\qut{\spl\qut{a} +_0 10}\,\mit{bs})\,
+        (\nil_0\,\spl \qut{\Nat_0})\,
+        \spl\qut{\mit{ns}}}\\
+  & =\hspace{1em} &&\msf{foldr_0}\,\Nat_0\,\Nat_0\,\,(\lambda\,a\,bs.\,a +_0 10)\,(\nil_0\,\Nat_0)\,\mit{ns}
+\end{alignat*}
+
+By using meta-level functions and lifted types, we already have control over
+inlining. However, if we want to do more complicated meta-level computation, it
+is convenient to use recursion or induction on meta-level type formers. A
+classic example in staged compilation is the power function for natural numbers,
+which evaluates the exponent at compile time. We assume the iterator function
+$\msf{iter_1} : \{A : \U_1\} \to \Nat_1 \to (A \to A) \to A \to A$, and runtime
+multiplication as $\blank\!*_0\!\blank$.
+\begin{alignat*}{3}
+  &\mit{exp} : \Nat_1 \to \Lift \Nat_0 \to \Lift \Nat_0 \\
+  &\mit{exp} := \lambda\,x\,y.\,
+  \msf{iter}_1\,x\,(\lambda\,n.\,\qut{\spl y *_0 \spl n})\,\qut{1}
+\end{alignat*}
+Now, $\spl(\mit{exp}\,3\,\qut{n})$ stages to $n *_0 n *_0 n *_0 1$ by the computation rules
+of $\msf{iter_1}$ and the staging operations.
+
+We can also stage \emph{types}. Below, we use iteration to compute the type of
+vectors with static length, as a nested pair type.
+\begin{alignat*}{3}
+  &\mit{Vec} : \Nat_1 \to \Lift \U_0 \to \Lift \U_0\\
+  &\mit{Vec} := \lambda\,n\,A.\,\msf{iter}_1\,n\,(\lambda\,B.\,\qut{\spl A \times \spl B})\,\qut{\top_0}
+\end{alignat*}
+With this definition, $\spl(\mit{Vec}\,3\,\qut{\Nat_0})$ stages to $\Nat_0
+\times (\Nat_0 \times (\Nat_0 \times \top_0))$. Now, we can use \emph{induction}
+on $\Nat_1$ to implement a map function. For readability, we use an Agda-style
+pattern matching definition below (instead of the elimination principle).
+\begin{alignat*}{6}
+  &\hspace{-3em}\rlap{$\mit{map} : (n : \Nat_1) \to (\Lift\,\spl A \to \Lift\,\spl B) \to \Lift(\mit{Vec}\,n\,A) \to \Lift(\mit{Vec}\,n\,B)$}\\
+  &\hspace{-3em}\mit{map}\,&&\zero_1      && f\,&&\mit{as} := \qut{\tt_0}\\
+  &\hspace{-3em}\mit{map}\,&&(\suc_1\,n)\,&& f\,&&\mit{as} :=
+     \qut{(\spl(f\,\qut{\fst_0\,\spl\mit{as}}),\,\mit{map}\,n\,f\,\qut{\snd_0\,\spl \mit{as}})}
+\end{alignat*}
+This definition inlines the mapping function for each projected element of the
+vector. For instance, staging $\spl(\mit{map}\,2\,(\lambda\,n.\,\qut{\spl n +_0
+  10})\,\qut{\mit{ns}})$ yields $(\fst_0\,\mit{ns} +_0
+10,\,(\fst_0(\snd_0\,\mit{ns}) +_0 10,\,\tt_0))$. Sometimes, we do not want to
+duplicate the code of the mapping function. In such cases, we can use
+\emph{let-insertion} \cite{TODO}, a standard technique in staged compilation. If
+we bind a runtime expression to a runtime variable, and only use that variable
+in subsequent staging, only the variable itself can be duplicated, as an
+expression. One solution is to do an ad-hoc let-insertion:
+\begin{alignat*}{6}
+  &   && \mylet_0\,f := \lambda\,n.\, n +_0 10\,\,\msf{in}\,\,
+         \spl(\mit{map}\,2\,(\lambda\,n.\,\qut{f\,\spl n})\,\qut{\mit{ns}}) \\
+  & =\,\,&&  \mylet_0\,f := \lambda\,n.\, n +_0 10\,\,\msf{in}\,\,
+          (f\,(\fst_0\,\mit{ns}),\,(f\,(\fst_0(\snd_0\,\mit{ns})),\,\tt_0))
+\end{alignat*}
+ Alternatively, we can define $\mit{map}$ so that it performs let-insertion, and
+ we can switch between the two versions as needed.
+
+More generally, we are free to use dependent types at the meta-level, so we can
+reproduce more complicated staging examples. Any well-typed interpreter can be
+rephrased as a \emph{partial evaluator}, as long as we have sufficient type
+formers. For instance, we may write a partial evaluator for a simply typed
+lambda calculus. We sketch the implementation in the following. First, we
+inductively define contexts, types and terms:
+\begin{alignat*}{6}
+  & \Ty : \U_1  \hspace{2em} \Con : \U_1 \hspace{2em} \Tm : \Con \to \Ty \to \U_1
+\end{alignat*}
+Then we define the interpretation functions:
+\begin{alignat*}{6}
+  & \msf{EvalTy}  &&: \Ty \to \Lift \U_0 \\
+  & \msf{EvalCon} &&: \Con \to \U_1 \\
+  & \msf{EvalTm}  &&: \Tm\,\Gamma\,A \to \msf{EvalCon}\,\Gamma \to \Lift\,\spl(\msf{EvalTy}\,A)
+\end{alignat*}
+Types are necessarily computed to runtime types, since we can only stage to such types.
+Contexts are computed as follows:
+\begin{alignat*}{4}
+  &\msf{EvalCon}\,\,\msf{empty}                &&:= \top_1 \\
+  &\msf{EvalCon}\,\,(\msf{extend}\,\Gamma\,A) &&:= \msf{EvalCon}\,\Gamma \times (\Lift \spl(\msf{EvalTy}\,A))
+\end{alignat*}
+This is an nice example for the usage of \emph{partially static
+data}\cite{TODO}: semantic contexts are \emph{static} lists storing
+\emph{runtime} expressions. This allows us to completely eliminate environment
+lookups in the staging output: an embedded lambda expression is staged to the
+corresponding lambda expression in the runtime language. This is similar to the
+partial evaluator presented in Idris 1 \cite{TODO}. However, in contrast to
+2LTT, Idris 1 does not provide a formal guarantee that partial evaluation does
+not get stuck.
+
+\subsection{Properties of Lifting}
+
+preservation properties
+\\\\
+stage inference
+
+\subsection{Restricting the Object Language}
+
+monomorphization
+\\\\
+memory layout control
+\\\\
+typed closures
+
+\subsection{Fusion}
+2LTT is also a natural setting for a wide range of \emph{fusion
+optimizations}. We only describe here a simple example, \emph{foldr-build
+fusion} for lists, which is notably used in GHC Haskell \cite{TODO}. The idea is
+the following: we want to eliminate intermediate lists, e.g.\ fuse repeated
+mapping to a single traversal. For this, we exploit that there is an isomorphic
+\emph{meta-level} representation for runtime lists which supports more
+definitional equations. Starting from $\Lift (\List_0\,A)$, we can use
+Böhm-Berarducci encoding under the lifting to get
+\[ \Lift((L : \U_0) \to (A \to L \to L) \to L \to L) \]
+However, $\Lift$ preserves function types, so the above is definitionally
+isomorphic to
+\[ (L : \Lift\,U_0) \to (\Lift\,A \to \Lift\,\spl L \to \Lift\,\spl L)
+\to \Lift\,\spl L \to \Lift\,\spl L. \] Now, we may abbreviate the above type as
+$\msf{BBList}\,A$. We write fusible functions on $\msf{BBList}\,A$, and when we
+want to fuse a definition, we convert from $\Lift\,(\List_0\,A)$ to
+$\msf{BBList}\,A$, apply operations on that representation, then convert back in
+the end.
+
+Now, in 2LTT it is not provable that Böhm-Berarducci encoding is an isomorphism \cite{TODO},
+so it certainly does not hold that back-and forth conversion between the two
+representations is definitionally the identity function. In GHC Haskell, this
+equality is added as a \emph{rewrite rule}. This makes it possible to hide the
+back-and-forth conversions from library users, since inverse conversions will
+hopefully cancel out and cause no additional overhead. A similar mechanism could be
+used in 2LTT as well. However, such implicit conversions are not used in most
+languages which support fusion. For example, iterators in the Rust language
+\cite{TODO}, which use a form of stream fusion, require explicit conversion to
+iterators.
+
+We may compare GHC and 2LTT with respect to the implementation of fusion. In
+2LTT, fusion happens through meta-level $\beta$-reduction, which is formally
+guaranteed to go through, and which can be also computed very efficiently. In
+GHC, all of the necessary computation is realized by rewrite rules and
+general-purpose optimization passes. This is in practice very fragile and
+non-composable. It requires carefully tuning every individual collection of
+rewrite rules, and also ordering rule applications in specific ways, while
+keeping details of the compiler optimization passes in mind. And when fusion
+fails to go through, it is usually a performance \emph{pessimization}.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\subsection{Properties of Lifting}
+
+
+
+
+
+
+
+
+
 
 
 

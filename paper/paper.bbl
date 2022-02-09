@@ -2,7 +2,7 @@
 %%% Do NOT edit. File created by BibTeX with style
 %%% ACM-Reference-Format-Journals [18-Jan-2012].
 
-\begin{thebibliography}{0}
+\begin{thebibliography}{3}
 
 %%% ====================================================================
 %%% NOTE TO THE USER: you can override these defaults by providing
@@ -36,5 +36,41 @@
 \providecommand\bibinfo[2]{#2}
 \providecommand\natexlab[1]{#1}
 \providecommand\showeprint[2][]{arXiv:#2}
+
+\bibitem[Annenkov et~al\mbox{.}(2019)]%
+        {twolevel}
+\bibfield{author}{\bibinfo{person}{Danil Annenkov}, \bibinfo{person}{Paolo
+  Capriotti}, \bibinfo{person}{Nicolai Kraus}, {and} \bibinfo{person}{Christian
+  Sattler}.} \bibinfo{year}{2019}\natexlab{}.
+\newblock \showarticletitle{Two-Level Type Theory and Applications}.
+\newblock \bibinfo{journal}{\emph{ArXiv e-prints}} (\bibinfo{date}{may}
+  \bibinfo{year}{2019}).
+\newblock
+\urldef\tempurl%
+\url{http://arxiv.org/abs/1705.03307}
+\showURL{%
+\tempurl}
+
+
+\bibitem[Capriotti(2017)]%
+        {capriotti2017models}
+\bibfield{author}{\bibinfo{person}{Paolo Capriotti}.}
+  \bibinfo{year}{2017}\natexlab{}.
+\newblock \showarticletitle{Models of type theory with strict equality}.
+\newblock \bibinfo{journal}{\emph{arXiv preprint arXiv:1702.04912}}
+  (\bibinfo{year}{2017}).
+\newblock
+
+
+\bibitem[Voevodsky(2013)]%
+        {hts}
+\bibfield{author}{\bibinfo{person}{Vladimir Voevodsky}.}
+  \bibinfo{year}{2013}\natexlab{}.
+\newblock \bibinfo{title}{A simple type system with two identity types}.
+  (\bibinfo{year}{2013}).
+\newblock
+\newblock
+\shownote{Unpublished note}.
+
 
 \end{thebibliography}

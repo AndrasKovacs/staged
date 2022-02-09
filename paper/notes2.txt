@@ -1,20 +1,41 @@
 
+Assume Setω in metatheory, use that for cxt interpretation.
+
 type formers
-  - outer: ⊥, ⊤, Π, Σ, U, ℕ
+  - ⊤, Π, Σ, Uᵢ (Coquand style), Bool
+
+  U(i,j) : Ty(i,j+1) Γ
+  El     : Tm(i,j) U → Ty(i,j) U
+  code   : Ty(i,j) U → Tm(i,j) U   inverses
 
 naming questions:
-  - base TT      : maybe 𝔹? or ℂ? or 𝕆 for object theory?
-  - 2LTT syntax  : just 2LTT
-  - eval map     : ST, 𝕊for stage, 𝔼for eval?
-  - coloring to distinguish 3 syntaxes
-    - base
-    - 2ltt
-    - presheaves
-
-  - level names: "static" vs "runtime"   (inner/outer? object/meta?)
-
+  - base TT           : 𝕀
+  - 2LTT syntax       : just 2LTT
+  - eval map          : 𝔼
+  - inner restriction : ℝ
+  - level names: inner, outer
   - use [_] for psh restriction
   - Call Set̂ Û instead?
+
+-- Psh model
+--------------------------------------------------------------------------------
+
+F (A : Ty₀ Γ)   : Sub̂ FΓ TyB
+F (t : Tm₀ Γ A) : Tm̂ FΓ TmB[FA]
+
+F (^(A : Ty₀ Γ)) = TmB[FA]
+F <t> = Ft
+F ~t  = Ft
+
+F (Γ ▶₀ A) = Σ FΓ TmB[FA]
+
+...
+
+--------------------------------------------------------------------------------
+
+-- closed staging, yoneda etc
+
+
 
 Correctness of eval into psh model
 --------------------------------------------------------------------------------
@@ -30,7 +51,112 @@ Correctness of eval into psh model
 - ⌜⌝  : B → 2LTTᵒ, embedding
 
 
--- Logrel proof
+-- Stability
+--------------------------------------------------------------------------------
+
+(Γ : ConB)ᴾ     : |F⌜Γ⌝|Γ              -- generic environment
+(σ : SubB Γ Δ)ᴾ : Δᴾ[σ] = |F⌜σ⌝| Γᴾ
+(A : TyB Γ)ᴾ    : A = |F⌜A⌝| Γᴾ
+(t : TmB Γ A)ᴾ  : t = |F⌜t⌝| Γᴾ
+
+∙ᴾ : |F⌜∙⌝|∙
+   : ⊤
+∙ᴾ := tt
+
+(Γ ▶ A)ᴾ : |Σ^ F⌜Γ⌝ TmB[F⌜A⌝]| (Γ ▶ A)
+         : (γ : F⌜Γ⌝(Γ▶A)) × TmB (Γ ▶ A) (|F⌜A⌝| γ)
+(Γ ▶ A)ᴾ := (Γᴾ[p], q)
+
+   q : TmB (Γ ▶ A) (|F⌜A⌝| (Γᴾ[p]))
+     : TmB (Γ ▶ A) ((|F⌜A⌝| Γᴾ)[p])
+     : TmB (Γ ▶ A) (A[p])
+
+idᴾ : Γᴾ[id] = |F⌜id⌝| Γᴾ
+    : Γᴾ = Γᴾ OK
+
+(σ ∘ δ)ᴾ : Σᴾ[σ∘δ] = |F⌜σ∘δ⌝| Γᴾ
+         : Σᴾ[σ][δ] = |F⌜σ⌝| (|F⌜δ⌝| Γᴾ)
+	 : Σᴾ[σ][δ] = |F⌜σ⌝| Δᴾ[δ]
+	 : Σᴾ[σ][δ] = (|F⌜σ⌝| Δᴾ)[δ]
+	 : Σᴾ[σ][δ] = Σᴾ[σ][δ] OK
+
+(A[σ : Sub Γ Δ])ᴾ : A[σ] = |F⌜A[σ]⌝| Γᴾ
+                  : A[σ] = |F⌜A⌝[F⌜σ⌝]| Γᴾ
+		  : A[σ] = |F⌜A⌝| (|F⌜σ⌝| Γᴾ)
+		  : A[σ] = |F⌜A⌝| (Δᴾ[σ])
+		  : A[σ] = (|F⌜A⌝| Δᴾ)[σ]
+		  : A[σ] = A[σ] OK
+
+(t[σ])ᴾ : t[σ] = |F⌜t[σ]⌝| Γᴾ
+        : t[σ] = |F⌜t⌝| (|F⌜σ⌝| Γᴾ)
+        : t[σ] = |F⌜t⌝| (Δᴾ[σ])
+        : t[σ] = (|F⌜t⌝| Δᴾ)[σ]
+        : t[σ] = t[σ] OK
+
+(σ,t)ᴾ : (Δ▶A)ᴾ[σ,t] = |F⌜σ,t⌝| Γᴾ
+       : (Δᴾ[σ], t)  = |F⌜σ,t⌝| Γᴾ
+       : (Δᴾ[σ], t)  = (|F⌜σ⌝|Γᴾ, |F⌜t⌝| Γᴾ)
+       : (Δᴾ[σ], t)  = (Δᴾ[σ], t)  OK
+
+pᴾ : Γᴾ[p] = |F⌜p⌝| (Γ▶A)ᴾ
+   : Γᴾ[p] = |F⌜p⌝| (Γᴾ[p], q)
+   : Γᴾ[p] = Γᴾ[p] OK
+
+qᴾ : q = |F⌜q⌝| (Γ▶A)ᴾ
+   : q = |F⌜q⌝| (Γᴾ[p], q)
+   : q = q OK
+
+⊤ᴾ : ⊤ = |F⌜⊤⌝| Γᴾ
+   : ⊤ = ⊤ OK
+
+ttᴾ trivial
+
+Πᴾ : Π A B = |F(⌜Π A B⌝)| Γᴾ
+   : Π A B = Π (|F⌜A⌝| Γᴾ) (|F⌜B⌝| (Γᴾ[p], q))
+   : Π A B = Π (|F⌜A⌝| Γᴾ) (|F⌜B⌝| (Γ▶A)ᴾ)
+   : Π A B = Π A B OK
+
+(app t)ᴾ : app t = |F⌜app t⌝| (Γ▶A)ᴾ
+         : app t = |F⌜app t⌝| (Γᴾ[p], q)
+	 : app t = app (|F⌜t⌝| Γᴾ)
+	 : app t = app t OK
+
+(lam t)ᴾ : lam t = |F⌜lam t⌝| Γᴾ
+         : lam t = lam (|F⌜t⌝| (Γᴾ[p], q))
+	 : lam t = lam t OK
+
+Σᴾ likewise
+Boolᴾ likewise
+
+-- BoolElim : (B : Ty (Γ ▶ Bool))
+            → Tm Γ (B[id,true]) → Tm Γ (B[id,false]) → (b : Tm Γ Bool) → Tm Γ (B[id,b])
+
+(BoolElim B t f b)ᴾ :
+  BoolElim B t f b = |F⌜BoolElim B t f b⌝| Γᴾ
+  BoolElim B t f b = ...
+  OK
+
+(U j)ᴾ : U j = |F⌜U j⌝| Γᴾ
+       : U j = U j
+
+(code t)ᴾ : code t = |F⌜code t⌝| Γᴾ
+          : OK
+
+El likewise
+
+
+-- open staging
+--------------------------------------------------------------------------------
+
+
+Stage : Ty₀ ⌜Γ⌝ → TyB Γ
+Stage A := |F A| Γᴾ
+
+Stage : Tm₀ ⌜Γ⌝ ⌜A⌝ → TmB Γ A
+Stage t := |F t| Γᴾ
+
+
+-- Soundness
 --------------------------------------------------------------------------------
 
 The idea is to have a straightforward logical relation between the staging map F
@@ -87,7 +213,7 @@ Syntactic embedding morphism from 2LTT syntax to psh model:
     G (t : Tm₁ Γ A) : (γ : GΓ) → GA γ
     |G t|ᵢ γ := t[γ]
 
-  On the inner family:
+  On the inner family (preserves all structure)
 
     G (A : Ty₀ Γ) : GΓ → Ty₀
     |G A|ᵢ γ = A[γ]
@@ -255,6 +381,77 @@ ttᴿ γᴿ := tt
 
 
 ℕᴿ γᴿ : ℕ^ → G ℕ γ' → Set̂
-  ℕᴿ γᴿ t t' := (G_ℕ t = t')  -- weird
+  ℕᴿ γᴿ t t' := (G_ℕ t = t')
 
 zeroᴿ γᴿ : G_ℕ zerô =
+
+
+-- Inner types
+--------------------------------------------------------------------------------
+
+Bool₀ᴿ : Γᴿ γ γ' → ⌜F Bool₀ γ ⌝ = G Bool₀ γ'
+       : Γᴿ γ γ' → Bool₀ = Bool₀ OK
+
+true₀ᴿ γᴿ : ⌜F true₀ γ⌝ = G true₀ γ'
+          : true₀ = true₀ OK
+
+false₀ᴿ γᴿ ...
+
+BoolElim₀ᴿ γᴿ : ⌜F (BoolElim₀ B t f b) γ⌝ = G (BoolElim₀ B t f b) γ'
+       BoolElim₀ (⌜F B⌝ γ) (⌜F t⌝ γ) (⌜F f⌝ γ) (⌜F b⌝ γ)
+     = BoolElim₀ (G B γ') ....
+     OK
+
+etc...
+
+
+-- General soundness
+--------------------------------------------------------------------------------
+
+-- externalizing ᴿ:
+
+  for (Γ : Con)
+    |Γᴿ| : |F Γ|i → Sub ⌜i⌝ Γ → Set
+
+  for (A : Ty₀ Γ)
+    |Aᴿ| : |Γᴿ| γ γ' → ⌜FA γ⌝ = A[γ']
+
+  for (t : Tm₀ Γ A)
+    |tᴿ| : (γᴿ : |Γᴿ| γ γ') → ⌜Ft γ⌝ = t[γ']
+
+-- soundness of generic contexts
+
+(Γ : ConB)ᴾᴿ : |Γᴿ| Γᴾ (id : Sub ⌜Γ⌝ ⌜Γ⌝)
+
+∙ᴾᴿ : ⊤
+    := tt
+
+(Γ ▶ A)ᴾᴿ : |(Γ▶A)ᴿ| (Γ▶A)ᴾ     id
+          : |(Γ▶A)ᴿ| (Γᴾ[p], q) (p, q)
+	  : (γᴿ : |Γ|ᴿ (Γᴾ[p]) p) × (⌜q⌝ = q)
+
+  Γᴾᴿ : |Γᴿ| Γᴾ id   -- by stability of Γᴿ
+
+  Γᴾᴿ[p] : |Γ|ᴿ Γᴾ[p] id∘p
+         : OK
+
+
+--
+--------------------------------------------------------------------------------
+
+
+to show:
+
+  ⌜Stage A⌝  = A
+  ⌜|F A| Γᴾ⌝ = A
+
+    |Aᴿ| Γᴾᴿ : ⌜|F A| Γᴾ⌝ = A[id] = A OK
+
+  ⌜Stage t⌝ = t
+  ⌜|F t| Γᴾ⌝ = t
+
+    |tᴿ| Γᴾᴿ :  ⌜|F t| Γᴾ⌝ = t[id] = t OK
+
+thus
+  TyB Γ ≃ Ty₀ ⌜Γ⌝
+  TmB Γ A ≃ Tm₀ ⌜Γ⌝ ⌜A⌝

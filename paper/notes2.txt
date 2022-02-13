@@ -35,6 +35,13 @@ F (Γ ▶₀ A) = Σ FΓ TmB[FA]
 
 -- closed staging, yoneda etc
 
+Closed staging
+
+A : Ty₀ ∙
+|A| tt : TyB ∙
+
+t : Tm₀ ∙ A
+|t| tt : TmB ∙ (|A|tt)
 
 
 Correctness of eval into psh model
@@ -154,6 +161,9 @@ Stage A := |F A| Γᴾ
 
 Stage : Tm₀ ⌜Γ⌝ ⌜A⌝ → TmB Γ A
 Stage t := |F t| Γᴾ
+
+Stage' : Tm₀ ⌜Γ⌝ A → TmB Γ (Stage A)
+Stage' t := |F t| Γᴾ
 
 
 -- Soundness

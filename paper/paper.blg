@@ -11,6 +11,7 @@ Repeated entry---line 4327 of file references.bib
  :                             ,
 I'm skipping whatever remains of this entry
 Warning--I didn't find a database entry for "TODO"
+Warning--I didn't find a database entry for "cubicalnbe"
 Reallocated singl_function (elt_size=4) to 100 items from 50.
 Reallocated glb_str_ptr (elt_size=4) to 20 items from 10.
 Reallocated global_strs (elt_size=200001) to 20 items from 10.
@@ -22,7 +23,7 @@ Warning--no number and no volume in capriotti2017models
 Warning--page numbers missing in both pages and numpages fields in capriotti2017models
 You've used 3 entries,
             5981 wiz_defined-function locations,
-            1490 strings with 18266 characters,
+            1491 strings with 18276 characters,
 and the built_in function-call counts, 2838 in all, are:
 = -- 404
 > -- 73

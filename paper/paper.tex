@@ -1036,6 +1036,42 @@ out from a proof of stability for $\ev$.
 
 \subsection{Stability and Open Staging}
 
+Stability means that staging an object-level construction does nothing. However,
+it turns out that the induction motive for contexts is necessarily the existence
+of generic semantic contexts. We define a $\blank^P$ family of functions by
+induction on object syntax. The induction motives are as follows.
+\begin{alignat*}{4}
+  & (\Gamma : \Cono)^P                    &&: |\ev\,\emb{\Gamma}|\,\Gamma\\
+  & (\sigma : \Subo\,\Gamma\,\Delta)^P    &&: \Delta^P[\sigma] = |\ev\,\emb{\sigma}|\,\Gamma^P\\
+  & (A      : \Ty_{\mbbo j}\,\Gamma)^P      &&: A = |\ev\,\emb{A}|\,\Gamma^P\\
+  & (t      : \Tm_{\mbbo j}\,\Gamma\,A)^P   &&: t = |\ev\,\emb{t}|\,\Gamma^P
+\end{alignat*}
+The $\blank^P$ interpretation of all structure is straightforward. In
+particular, we do not have to show preservation of any definitional equality,
+since types, terms and substitutions are all interpreted as proof-irrelevant
+equations.
+
+TODO example
+
+\begin{definition} We define \textbf{open staging} as follows.
+\begin{alignat*}{4}
+  & \Stage : \Ty_{0,j}\,\emb{\Gamma} \to \Ty_{\mbbo j}\,\Gamma \hspace{2em} && \Stage : \Tm_{0,j}\,\emb{\Gamma}\,A \to \Tm_{\mbbo j}\,\Gamma\,(\Stage\,A) \\
+  & \Stage\,A := |\ev\,A|\,\Gamma^P && \Stage\,t := |\ev\,t|\,\Gamma^P
+\end{alignat*}
+\end{definition}
+
+\begin{theorem} Open staging is stable.
+\end{theorem}
+\begin{proof} For $A : \Ty_{\mbbo j}$, $\Stage\,\emb{A}$ is by definition $|\ev\,\emb{A}|\,\Gamma^P$,
+  hence by $A^P$ it is equal to $A$. Likewise, $\Stage\,\emb{t}$ is equal to $t$ by $t^P$.
+\end{proof}
+
+
+
+%% Δᴾ[σ] = |F⌜σ⌝| Γᴾ
+%% (A : TyB Γ)ᴾ    : A = |F⌜A⌝| Γᴾ
+%% (t : TmB Γ A)ᴾ  : t = |F⌜t⌝| Γᴾ
+
 \subsection{Algorithm Extraction and Efficiency}
 
 \section{Yoneda, Representability and Generativity}

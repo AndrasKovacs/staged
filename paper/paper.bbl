@@ -2,7 +2,7 @@
 %%% Do NOT edit. File created by BibTeX with style
 %%% ACM-Reference-Format-Journals [18-Jan-2012].
 
-\begin{thebibliography}{3}
+\begin{thebibliography}{4}
 
 %%% ====================================================================
 %%% NOTE TO THE USER: you can override these defaults by providing
@@ -60,6 +60,24 @@
 \newblock \bibinfo{journal}{\emph{arXiv preprint arXiv:1702.04912}}
   (\bibinfo{year}{2017}).
 \newblock
+
+
+\bibitem[Kaposi et~al\mbox{.}(2019)]%
+        {gluing}
+\bibfield{author}{\bibinfo{person}{Ambrus Kaposi}, \bibinfo{person}{Simon
+  Huber}, {and} \bibinfo{person}{Christian Sattler}.}
+  \bibinfo{year}{2019}\natexlab{}.
+\newblock \showarticletitle{Gluing for Type Theory}. In
+  \bibinfo{booktitle}{\emph{4th International Conference on Formal Structures
+  for Computation and Deduction, {FSCD} 2019, June 24-30, 2019, Dortmund,
+  Germany}} \emph{(\bibinfo{series}{LIPIcs}, Vol.~\bibinfo{volume}{131})},
+  \bibfield{editor}{\bibinfo{person}{Herman Geuvers}} (Ed.).
+  \bibinfo{publisher}{Schloss Dagstuhl - Leibniz-Zentrum f{\"{u}}r Informatik},
+  \bibinfo{pages}{25:1--25:19}.
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.4230/LIPIcs.FSCD.2019.25}
+\showDOI{\tempurl}
 
 
 \bibitem[Voevodsky(2013)]%

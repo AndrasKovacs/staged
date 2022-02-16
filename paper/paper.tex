@@ -118,11 +118,13 @@
 \newcommand{\Stage}{\msf{Stage}}
 \newcommand{\hato}{\bm\hat{\mbbo}}
 \newcommand{\ev}{\mbb{E}}
+\newcommand{\re}{\mbb{R}}
 
 \theoremstyle{remark}
 \newtheorem{notation}{Notation}
 
-
+\newcommand{\whset}{\wh{\Set}}
+\newcommand{\rexti}{\re_{\ext_1}^{-1}}
 
 
 %% --------------------------------------------------------------------------------
@@ -152,14 +154,14 @@
   we have guarantees about the well-formedness of code output, and we can also
   mix together object-level and meta-level code in a concise and convenient
   manner. In this work, we observe that two-level type theory (2LTT), a system
-  originally devised for the purpose of synthetic homotopy theory, also serves
-  as a system for staged compilation with dependent types. 2LTT has numerous good
-  properties for this use case: it has a concise specification, well-developed
-  algebraic and categorical model theory, and it supports a wide range of
-  language features both at the object and the meta level. First, we give an
-  overview of 2LTT's features and applications in staging. Then, we present a
-  staging algorithm and provide a proof of correctness. Our algorithm is
-  ``staging-by-evaluation'', analogously to the technique of
+  originally devised for the purpose of developing synthetic homotopy theory,
+  also serves as a system for staged compilation with dependent types. 2LTT has
+  numerous good properties for this use case: it has a concise specification,
+  well-developed algebraic and categorical model theory, and it supports a wide
+  range of language features both at the object and the meta level. First, we
+  give an overview of 2LTT's features and applications in staging. Then, we
+  present a staging algorithm and provide a proof of correctness. Our algorithm
+  is ``staging-by-evaluation'', analogously to the technique of
   normalization-by-evaluation, in that staging is given by the evaluation of
   2LTT syntax in a semantic domain. The staging algorithm together with its
   correctness proof constitutes a proof of strong conservativity of 2LLT over
@@ -286,15 +288,14 @@ will discuss setups with different languages at different stages in Seection
 
 \paragraph{Moving between stages}
 At this point, our system is rather limited, since there is no interaction
-between the stages. We enable such interaction through the following three
-operations.
+between the stages. We enable such interaction through the following operations.
 \begin{itemize}
 \item \emph{Lifting:} for $A : \U_0$, we have $\Lift A : \U_1$.  From the
   staging point of view, $\Lift A$ is the type of metaprograms which compute
-  to runtime expressions of type $A$.
+  runtime expressions of type $A$.
 \item \emph{Quoting:} for $A : \U_0$ and $t : A$, we have $\qut{t} :\,\Lift A$.
-  A quoted term $\qut{t}$ represents the metaprogram which immediately computes
-  to $t$.
+  A quoted term $\qut{t}$ represents the metaprogram which immediately yields
+  $t$.
 \item \emph{Splicing:} for $A : \U_0$ and $t :\,\Lift A$, we have $\spl t : A$.
   During staging, the metaprogram in the splice is executed, and the resulting
   expression is inserted into the output.
@@ -311,7 +312,7 @@ function types cannot cross between stages.
 Informally, if we have a closed program $t : A$ with $A : \U_0$, \emph{staging}
 means computing all metaprograms and recursively replacing all splices in $t$ and $A$
 with the resulting runtime expressions. The rules of 2LTT ensure that this is possible,
-and we always get a splice-free runtime program after staging.
+and we always get a splice-free object program after staging.
 
 \paragraph{Remark}
 Why do we use the index $0$ for the runtime stage? The reason is that it is not
@@ -464,7 +465,7 @@ Contexts are computed as follows:
   &\msf{EvalCon}\,\,\msf{empty}                &&:= \top_1 \\
   &\msf{EvalCon}\,\,(\msf{extend}\,\Gamma\,A) &&:= \msf{EvalCon}\,\Gamma \times (\Lift \spl(\msf{EvalTy}\,A))
 \end{alignat*}
-This is a nice example for the usage of \emph{partially static
+This is an example for the usage of \emph{partially static
 data}\cite{TODO}: semantic contexts are \emph{static} lists storing
 \emph{runtime} expressions. This allows us to completely eliminate environment
 lookups in the staging output: an embedded lambda expression is staged to the
@@ -493,7 +494,7 @@ definitionally equal to $f$, and also the other way around. Preservation maps
 for $\Sigma$ and $\top$ work analogously.
 
 By rewriting a 2LTT program left-to-right along preservation maps, we perform
-what is termed a \emph{binding time improvement} in the partial evaluation
+what is termed \emph{binding time improvement} in the partial evaluation
 literature \cite{TODO}. Note that the output of $\mit{pres}_{\to}$ uses a
 meta-level $\lambda$, while going the other way we introduce a runtime
 binder. Meta-level function and $\Sigma$ types support more computation during
@@ -626,10 +627,9 @@ setup.
 Despite the restriction to simple types at runtime, we can still write arbitrary
 higher-rank polymorphic functions in this setup, such as a function with type
 $((A : \Ty_0) \to \Lift\,\spl A \to \Lift \spl A) \to \Lift\,\Bool_0$. This
-function can be only applied to statically known arguments in runtime
-code, so the polymorphism can be staged away. The main restriction that
-programmers have to keep in mind is that polymorphic functions cannot be stored
-inside runtime data types.
+function can be only applied to statically known arguments, so the polymorphism
+can be staged away. The main restriction that programmers have to keep in mind
+is that polymorphic functions cannot be stored inside runtime data types.
 
 This setup is fairly similar to the well-known monomorphization models in the
 C++ and Rust programming languages. The evident difference is that in 2LTT we
@@ -665,13 +665,12 @@ flat memory representation, computed from the representations of the fields.
 
 In principle, it should be possible to have \emph{dependent memory layouts};
 this would be a more advanced variation on type-passing polymorphism
-\cite{TODO}, where layouts of objects may depend on runtime data. For
-example, length-prefixed flat arrays would not be a primitive notion, but simply
-defined as $(n : \Nat) \times \msf{Vec}\,n\,A$. However, it seems to be highly
-challenging to implement runtime systems and precise garbage collection
-generically over dependently typed memory layouts. See \texttt{sixten}
-\cite{TODO} for an experimental implementation with conservative garbage
-collection.
+\cite{TODO}, where layouts of objects may depend on runtime data. For example,
+length-prefixed flat arrays would not be a primitive notion, but simply defined
+as $(n : \Nat) \times \msf{Vec}\,n\,A$. However, it seems to be highly
+challenging to implement runtime systems and precise garbage collection in this
+setting. See \texttt{sixten} \cite{TODO} for an experimental implementation of
+dependent memory layouts.
 
 \section{Formal 2LTT}
 
@@ -737,12 +736,12 @@ The following notions are derivable in any model:
   indices. In general, the $n$-th De Bruijn index is defined as $\q[\p^{n}]$,
   where $\p^{n}$ denotes $n$-fold composition.
 \item
-  By moving right-to-left along $\Sub\,\Gamma\,(\Delta\ext A) \simeq
-  ((\sigma : \Sub\,\Gamma\,\Delta) \times \Tm_{i,j}\,\Gamma\,(A[\sigma]))$, we
-  recover the operation which extends a morphism with a term. In the syntax
-  (initial model), this justifies the view of $\Sub$ as a list of terms, i.e.\ a
-  parallel substitution. We denote the extension operation as $(\sigma,\,t)$ for
-  $\sigma : \Sub\,\Gamma\,\Delta$.
+  By moving right-to-left along $\Sub\,\Gamma\,(\Delta\ext A) \simeq ((\sigma :
+  \Sub\,\Gamma\,\Delta) \times \Tm_{i,j}\,\Gamma\,(A[\sigma]))$, we recover the
+  operation which extends a morphism with a term. In the syntax (initial model),
+  this justifies the view of $\Sub$ as a type of lists of terms, i.e.\ a
+  parallel substitutions. We denote the extension operation as $(\sigma,\,t)$
+  for $\sigma : \Sub\,\Gamma\,\Delta$.
 \end{itemize}
 
 \begin{notation}
@@ -793,7 +792,7 @@ natural, i.e.\ stable under substitution.
     & \NatElim\,P\,z\,s\,\zero_{i,j}     &&= z \\
     & \NatElim\,P\,z\,s\,(\suc_{i,j}\,t) &&= s[n \mapsto t,\,\mit{pn} \mapsto \NatElim\,P\,z\,s\,t]
   \end{alignat*}
-  Note that we can eliminate from a $j$ level to any $k$ level.
+  Note that we can eliminate from a level $j$ to any level $k$.
 \end{itemize}
 \end{definition}
 
@@ -842,7 +841,7 @@ hierarchy with its type formers.
 A \textbf{model of the object theory} is a category-with-families, with types and
 terms indexed over $j \in \mbb{N}$, supporting Coquand-style universes $\U_j$,
 type formers $\Pi$, $\Sigma$ and $\Nat_j$, with elimination from $\Nat_j$ to
-any $k$ level.
+any level $k$.
 \end{definition}
 
 \begin{definition}
@@ -896,7 +895,7 @@ algebraic setup, since \emph{all} functions definable in the metatheory must
 respect definitional equality.
 
 Second, note that soundness and stability together is the statement that
-embedding is invertible on types and terms. This is a statement of
+embedding is a bijection on types and terms. This is a statement of
 \emph{conservativity} of 2LTT over the object theory. In \cite{TODO} a
 significantly weaker conservativity theorem is shown, which expresses that there
 exists a function from $\Tm_{0,j}\,\emb{\Gamma}\,\emb{A}$ to $\Tm_{\mbbo
@@ -925,7 +924,7 @@ contexts and substitutions in the presheaf model.
 \subsubsection{The syntactic category and the meta-level fragment}
 
 \begin{definition} $\bs{\wh{\Con} : \Set_{\omega+1}}$ is defined as the set of presheaves
-over $\mbbo$. A $\Gamma : \widehat{\Con}$ has an action on objects $|\Gamma| :
+over $\mbbo$. $\Gamma : \wh{\Con}$ has an action on objects $|\Gamma| :
 \Cono \to \Set_\omega$ and an action on morphisms $\blank[\blank] : |\Gamma|\,b
 \to \Subo\,a\,b \to |\Gamma|\,a$, such that $\gamma[\id] = \gamma$ and
 $\gamma[f\circ g] = \gamma[f][g]$.
@@ -936,8 +935,8 @@ and $|\Delta|\,a$ respectively.
 \end{notation}
 \end{definition}
 \begin{definition} $\bs{\hSub\,\Gamma\,\Delta : \Set_\omega}$ is the set of natural transformations
-from $\Gamma$ to $\Delta$. A $\sigma : \hSub\,\Gamma\,\Delta$, has an action on
-objects $|\sigma| : \{a : \Cono\} \to |\Gamma|\,a \to |\Delta|\,a$ such that
+from $\Gamma$ to $\Delta$. $\sigma : \hSub\,\Gamma\,\Delta$ has action
+$|\sigma| : \{a : \Cono\} \to |\Gamma|\,a \to |\Delta|\,a$ such that
 $|\sigma|\,(\gamma[f]) = (|\sigma|\,\gamma)[f]$.
 \end{definition}
 
@@ -950,15 +949,18 @@ $|A| : \{a : \Cono\} \to |\Gamma|\,a \to \Set_j$ and an action on
 morphisms $\blank[\blank] : |A|\,\gamma \to (f : \Subo\,a\,b) \to
 |A|\,(\gamma[f])$, such that $\alpha[\id] = \alpha$ and $\alpha[f \circ g] = \alpha[f][g]$.
 
-\begin{notation} We write $\alpha$ and $\beta$ respectively for elements of $|A|\,\gamma$ and $|B|\,\gamma$.
+\begin{notation}
+  We write $\alpha$ and $\beta$ respectively for elements of $|A|\,\gamma$ and
+  $|B|\,\gamma$.
 \end{notation}
 \end{definition}
 
 \begin{definition}
   $\bs{\hTm_{1,j}\,\Gamma\,A : \Set_\omega}$ is the set of sections of the
-  displayed presheaf $A$. This can be viewed as a dependently typed analogue of a natural transformation.
-  A $t : \hTm_{1,j}\,\Gamma\,A$ has an action on objects $|t| : \{a\} \to (\gamma : |\Gamma|\,a) \to |A|\,\gamma$,
-  such that $|t|\,(\gamma[f]) = (|t|\,\gamma)[f]$.
+  displayed presheaf $A$. This can be viewed as a dependently typed analogue of
+  a natural transformation.  A $t : \hTm_{1,j}\,\Gamma\,A$ has action $|t| :
+  \{a\} \to (\gamma : |\Gamma|\,a) \to |A|\,\gamma$ such that $|t|\,(\gamma[f])
+  = (|t|\,\gamma)[f]$.
 \end{definition}
 
 %% \begin{definition}
@@ -968,6 +970,19 @@ morphisms $\blank[\blank] : |A|\,\gamma \to (f : \Subo\,a\,b) \to
 %% this definition, since by unfolding $\hTy_{1,j}\,(\y\,a)$ we can show that it
 %% is in $\Set_j$.
 %% \end{definition}
+
+We also look at he empty context and context extension with meta-level types,
+as these will appear in subsequent definitions.
+
+\begin{definition}
+$\bs{{\widehat{\emptycon}} : \hCon}$ is defined as the presheaf
+which is constantly $\top$, i.e.\ $|\wh{\emptycon}|\,\_ = \top$.
+\end{definition}
+
+\begin{definition} For $A : \hTy_{1,j}\,\Gamma$, we define $\bs{\Gamma\,\,\wh{\ext}\,A}$
+pointwise by $|\Gamma\,\,\wh{\ext}\,A|\,a := (\gamma : |\Gamma|\,a) \times |A|\,\gamma$
+and $(\gamma,\,\alpha)[f] := (\gamma[f],\,\alpha[f])$.
+\end{definition}
 
 Using the above definitions, we can model the syntactic category of 2LTT, and
 also the meta-level family structure and all meta-level type formers. For an
@@ -993,9 +1008,18 @@ context to a syntactic object-level type. Likewise, for $t :
 \hTm_{0,j}\,\Gamma\,A$, we have $|t| : (\gamma : |\Gamma|\,a) \to \Tm_{\mbbo
   j}\,a\,(|A|\,\gamma)$, so we get a syntactic object-level term as output.
 
+\begin{definition} For $A : \Ty_{0,j}\,\Gamma$, we define $\bs{\Gamma\,\,\wh{\ext}\,A}$
+as $|\Gamma\,\,\wh{\ext}\,A|\,a := (\gamma : |\Gamma|\,a) \times \Tm_{\mbbo
+  j}\,a\,(|A|\,\gamma)$ and $(\gamma,\,t)[f] := (\gamma[f],\,t[f])$. Thus,
+extending a semantic context with an object-level type appends an object-level
+term.
+\end{definition}
+
+
 Using the above definitions and following \cite{TODO}, we can model all type
-formers in $\hTy_{0,j}$. Intuitively, that is because $\hTy_{0,j}$ and $\hTm_{0,j}$
-return types and terms, so we can reuse the types and terms in the object theory.
+formers in $\hTy_{0,j}$. Intuitively, that is because $\hTy_{0,j}$ and
+$\hTm_{0,j}$ return types and terms, so we can reuse the type and term formers
+in the object theory.
 
 \subsubsection{Lifting}
 
@@ -1006,10 +1030,10 @@ $\bs{\wh{\Lift} A : \hTy_{1,j}\,\Gamma}$ is defined as $\Tm_{\mbbo j}[A]$. With
   splicing as identity functions in the model.
 \end{definition}
 
-\subsection{Staging by Evaluation}
+\subsection{Closed Staging}
 
 \begin{definition} The \textbf{evaluation morphism, denoted $\bs{\ev}$} is
-a model morphism from the syntax of 2LTT to $\hato$, arising from the initiality
+a 2LTT model morphism from the syntax of 2LTT to $\hato$, arising from the initiality
 of the syntax. In other words, $\ev$ is defined by recursion on the syntax and
 strictly preserves all structure.
 \end{definition}
@@ -1030,28 +1054,52 @@ This is well-typed, since $|\ev\,A|\{\emptycon\} : |\ev\,\emptycon|\,\emptycon \
 
 What about general (open) staging though? Given $A : \Ty_{0,j}\,\emb{\Gamma}$,
 we get $|\ev\,A|\,\{\Gamma\} : |\emb{\Gamma}|\,\Gamma \to \Ty_{\mbbo j}$. We
-need a semantic context with type $|\emb{\Gamma}|\,\Gamma$, in order to extract
-an object-level type. It turns out that such ``generic'' semantic contexts fall
-out from a proof of stability for $\ev$.
+need an element of $|\emb{\Gamma}|\,\Gamma$, in order to extract an object-level
+type. Such ``generic'' semantic contexts should be possible to construct, because
+elements of $|\emb{\Gamma}|\,\Gamma$ are essentially lists of object-level terms
+in $\Gamma$, by Definition \ref{TODO}, so $|\emb{\Gamma}|\,\Gamma$ should be
+isomorphic to $\Subo\,\Gamma\,\Gamma$.  It turns out that this falls out from
+the stability proof of $\ev$.
 
 \subsection{Stability and Open Staging}
 
-Stability means that staging an object-level construction does nothing. However,
-it turns out that the induction motive for contexts is necessarily the existence
-of generic semantic contexts. We define a $\blank^P$ family of functions by
-induction on object syntax. The induction motives are as follows.
+Stability means that staging an object-level construction does nothing. We
+define a family of functions $\blank^P$ by induction on object syntax. The
+induction motives are as follows.
 \begin{alignat*}{4}
   & (\Gamma : \Cono)^P                    &&: |\ev\,\emb{\Gamma}|\,\Gamma\\
   & (\sigma : \Subo\,\Gamma\,\Delta)^P    &&: \Delta^P[\sigma] = |\ev\,\emb{\sigma}|\,\Gamma^P\\
   & (A      : \Ty_{\mbbo j}\,\Gamma)^P      &&: A = |\ev\,\emb{A}|\,\Gamma^P\\
   & (t      : \Tm_{\mbbo j}\,\Gamma\,A)^P   &&: t = |\ev\,\emb{t}|\,\Gamma^P
 \end{alignat*}
-The $\blank^P$ interpretation of all structure is straightforward. In
-particular, we do not have to show preservation of any definitional equality,
-since types, terms and substitutions are all interpreted as proof-irrelevant
-equations.
+We look at the interpretation of contexts.
+\begin{itemize}
+\item  For $\emptycon^P$, we need an element of $|\ev\,\emb{\emptycon}|\,\emptycon$, hence
+  an element of $\top$, so we define $\emptycon^P$ as $\tt$.
+\item
+  For $(\Gamma \ext A)^P$, we need an element of
+    \[(\gamma : |\ev{\emb{\Gamma}}|\,(\Gamma\ext A)) \times \Tm_{\mbbo j}\,(\Gamma \ext A)\,(|\ev\emb{A}|\,\gamma).\]
+  We have $\Gamma^P : |\ev{\emb{\Gamma}}|\,\Gamma$, which we can weaken as
+  $\Gamma^P[\p] : |\ev{\emb{\Gamma}}|\,(\Gamma \ext A)$, so we set the first
+  projection of the result as $\Gamma^P[\p]$. For the second projection, the
+  goal type can be simplified as follows:
+  \begin{alignat*}{4}
+    &       &&\Tm_{\mbbo j}\,(\Gamma \ext A)\,(|\ev\emb{A}|\,(\Gamma^P[\p])) && \\
+    & =\,\, &&\Tm_{\mbbo j}\,(\Gamma \ext A)\,((|\ev\emb{A}|\,\Gamma^P)[\p]) &&\hspace{2em} \text{by naturality of $\ev\emb{A}$}\\
+    & =\,\, &&\Tm_{\mbbo j}\,(\Gamma \ext A)\,(A[\p])                        &&\hspace{2em} \text{by $A^P$}
+  \end{alignat*}
+  We have the zero de Bruijn variable $\q : \Tm_{\mbbo j}\,(\Gamma \ext
+  A)\,(A[\p])$.  Hence, we define $(\Gamma \ext A)^P$ as $(\Gamma^P[\p],\,\q)$.
+\end{itemize}
 
-TODO example
+Thus, a generic semantic context $\Gamma^P : |\ev\emb{\Gamma}|\,\Gamma$ is just
+a list of variables, corresponding to the identity substitution $\id :
+\Subo\,\Gamma\,\Gamma$ which maps each variable to itself.
+
+The rest of the $\blank^P$ interpretation is straightforward and we omit it
+here. In particular, we do not have to show preservation of any definitional
+equality, since types, terms and substitutions are all interpreted as
+proof-irrelevant equations.
 
 \begin{definition} We define \textbf{open staging} as follows.
 \begin{alignat*}{4}
@@ -1066,30 +1114,250 @@ TODO example
   hence by $A^P$ it is equal to $A$. Likewise, $\Stage\,\emb{t}$ is equal to $t$ by $t^P$.
 \end{proof}
 
+\subsection{Implementation and Efficiency}
 
+We have defined staging in a constructive metatheory, so it is possible to
+extract an implementation from it. We discuss its operational behavior and
+potential optimizations in the following. First, consider the computational
+part of evaluation:
+\begin{alignat*}{3}
+  & |\blank| \circ \ev : \Ty_{1 j}\,\Gamma \to \{\Delta : \Cono\} \to |\ev\,\Gamma|\,\Delta \to \Set_j\\
+  & |\blank| \circ \ev : \Ty_{0 j}\,\Gamma \to \{\Delta : \Cono\} \to |\ev\,\Gamma|\,\Delta \to \Ty_{\mbbo j}\,\Delta\\
+  & |\blank| \circ \ev : \Tm_{1 j}\,\Gamma\,A \to \{\Delta : \Cono\} \to (\gamma : |\ev\,\Gamma|\,\Delta) \to
+    |\ev\,A|\,\gamma \\
+  & |\blank| \circ \ev : \Tm_{0 j}\,\Gamma\,A \to \{\Delta : \Cono\} \to (\gamma : |\ev\,\Gamma|\,\Delta) \to
+    \Tm_{\mbbo\,j}\,\Delta\,(|\ev\,A|\,\gamma)
+\end{alignat*}
+Operationally, we interpret syntactic types or terms in a semantic environment
+$\gamma : |\ev\,\Gamma|\,\Delta$. These environments are lists containing
+object-level terms and semantic values. The meta-level semantic values are
+represented using meta-level inductive types and the function space of the
+metatheory.
+\begin{itemize}
+  \item $|\Nat_1|\,\_$ is simply the set of meta-level natural numbers.
+  \item $|\Sigma_1\,A\,B|\,\gamma$ is simply a set of pairs of values.
+  \item In the non-dependent case, a function type $A\,\wh{\to}\,B$ is defined as the presheaf
+        exponential \cite{TODO}. The computational part of $|A\,\wh{\to}\,B|\,\{\Delta\}\,\gamma$
+        is given by a function with type
+        \[ (\Theta : \Cono) \to (\sigma : \Subo\,\Theta\,\Delta) \to |A|\,(\gamma[\sigma]) \to |B|\,(\gamma[\sigma])        \]
+        This may be also familiar as the semantic implication from the Kripke
+        semantics of intuitionistic logics. Whenever we evaluate a function
+        application, we supply an extra $\id : \Subo\,\Delta\,\Delta$. This may
+        incur cost via the $\gamma[\id]$ restrictions in a naive
+        implementation, but this is easy to optimize, by introducing a formal
+        representation of $\id$, such that $\gamma[\id]$ immediately computes to
+        $\gamma$. The dependent case is analogous operationally.
+\end{itemize}
+In summary, in the meta-level fragment of 2LTT, $\ev$ yields a reasonably efficient
+computation of closed values, which reuses functions from the ambient
+metatheory. Alternatively, instead of using ambient functions, we could use our
+own implementation of function closures during staging.
 
-%% Δᴾ[σ] = |F⌜σ⌝| Γᴾ
-%% (A : TyB Γ)ᴾ    : A = |F⌜A⌝| Γᴾ
-%% (t : TmB Γ A)ᴾ  : t = |F⌜t⌝| Γᴾ
+In contrast, we have a bit of an efficiency problem in the handling of object-level
+terms and binders: whenever we go under an object-level binder we have to weaken
+the current semantic context. In other words, when moving from $\Delta$ to
+$\Delta \ext A$, we have to shift $\gamma : |\ev\,\Gamma|\,\Delta$ to
+$\gamma[\p] : |\ev\,\Gamma|\,(\Delta \ext A)$. This cannot be avoided by an easy
+optimization trick.
 
-\subsection{Algorithm Extraction and Efficiency}
+The exact same efficiency issue occurs in formal presheaf-based
+normalization-by-evaluation \cite{TODO}. However, in practical implementations
+\cite{TODO} this issue can be fully solved by using De Bruijn \emph{levels} in
+the semantic domain, thus arranging that weakening has no operational cost on
+semantic values. This corresponds to Abel's ``liftable terms'' presentation
+\cite{TODO}. We can use the same solution in staging, by using de Bruijn levels
+and delayed weakenings in object-level terms during staging. It is a somewhat
+unfortunate mismatch that indices are far more convenient in formalization, but
+levels are more efficient in practice.
+
+In our prototype implementation, we use the above optimization with De Bruijn
+levels, and we also switch to \emph{syntax-directed} staging. In the formal
+staging algorithm, since types are tracked, quotes and splices have no
+operational significance; recall that they are interpreted as identity functions
+in Definition \ref{TODO}. However, it seems more efficient to not compute types
+at all and instead rely on quotes and splices to keep track of the current
+stage.
+
+\subsubsection{Caching} In a production-strength implementation we would need some
+caching mechanism, to avoid excessive duplication of function code. For example,
+if we use the staged $\mit{map}$ function multiple times with the same type and
+function arguments, we do not want to generate separate code for each
+usage. De-duplicating object-level code with \emph{function types} is
+usually safe, since function bodies become closed top-level code after closure
+conversion. We leave this to future work.
 
 \section{Yoneda, Representability and Generativity}
 
 \section{Soundness of Staging}
 
-%% \subsection{Internal Language \& Features}
-%% \subsection{The Logical Relation}
-%% \subsection{Externalization \& Soundness}
+In this section we prove soundness of staging. We build a proof-relevant logical
+relation between the evaluation morphism $\ev$ and a \emph{restriction}
+morphism, which restricts 2LTT syntax to object-level contexts. The relational
+interpretations of $\Ty_{0,j}$ and $\Tm_{0,j}$ will yield the soundness
+property.
 
-%% \section{Related Work}
+\subsection{Working in $\hat{\mbbo}$}
 
-%% Igarashi, Kiselyov et al, MetaML, MetaOCaml, Carette, TH, Scala ppl (?)
-%% PE lit ?
-%% 2LTT, Voevodsky,
+We have seen that 2LTT can be modeled in the presheaf topos
+$\hato$. Additionally, $\hato$ supports all type formers of extensional type
+theory \cite{TODO}, and certain other structures which are stable under
+object-level substitution. Since almost all constructions in this section must
+be stable under object-level substitution, it makes sense to work internally to
+$\hato$. This technique has been previously used in normalization proofs
+\cite{TODO} and also in the metatheory of cubical type theories \cite{TODO}.
 
-%% \section{Future Work \& Conclusions}
+When we work internally in a model of a type theory, we do not explicitly refer
+to contexts, types, and substitutions. For example, when working in Agda, we do
+not refer to Agda's typing contexts. Instead, we only work with terms, and use
+functions and universes to abstract over types and semantic contexts. Hence, we
+have to convert along certain isomorphisms when we switch between the internal
+and external views. In the following, we summarize features in $\hato$ and also
+the internal-external conversions.
 
+We write $\whset_j$ for ordinal-indexed Russell-style universes. Formally, we
+have Coquand-style universes, but for the sake of brevity we omit $\El$ and
+$\Code$ from internal syntax. Universes are cumulative, and closed under $\Pi$,
+$\Sigma$, extensional identity $\blank\!=\!\blank$ and inductive types. We use
+the same conventions as in Notation \ref{TODO}.
+
+\noindent The basic scheme for internalization is as follows:
+\begin{alignat*}{3}
+  & \Gamma : \hCon                  && \hspace{1em}\text{is internalized as}\hspace{1em} \Gamma : \whset_\omega\\
+  & \sigma : \hSub\,\Gamma\,\Delta  && \hspace{1em}\text{is internalized as}\hspace{1em} \sigma : \Gamma \to \Delta\\
+  & A : \hTy_{1,j}\,\Gamma           && \hspace{1em}\text{is internalized as}\hspace{1em} A      : \Gamma \to \whset_j \\
+  & t : \hTm_{1,j}\,\Gamma\,A        && \hspace{1em}\text{is internalized as}\hspace{1em} t      : (\gamma : \Gamma) \to A\,\gamma
+\end{alignat*}
+We internalize object-level types and terms as $\Ty_{\mbbo j} : \whset_0$ and
+$\Tm_{\mbbo j} : \Ty_{\mbbo j} \to \whset_0$.  We also use an internal view of
+$\ev$ which maps 2LTT syntax to internal values; i.e.\ we compose $\ev$ with
+internalization. Below, note that the input to $\ev$ is \emph{external}, so we
+mark $\ev$ as being parametrized by external input.
+\begin{alignat*}{3}
+  &\ev\,(\Gamma &&: \Con)                      &&: \whset_\omega \\
+  &\ev\,(\sigma &&: \Sub\,\Gamma\,\Delta)      &&: \ev\,\Gamma \to \ev\,\Delta \\
+  &\ev\,(A      &&: \Ty_{1,j}\,\Gamma)          &&: \ev\,\Gamma \to \whset_j\\
+  &\ev\,(t      &&: \Tm_{1,j}\,\Gamma)          &&: (\gamma : \ev\,\Gamma) \to \ev\,A\,\gamma\\
+  &\ev\,(A      &&: \Ty_{0,j}\,\Gamma)          &&: \ev\,\Gamma \to \Ty_{\mbbo_j}\\
+  &\ev\,(t      &&: \Tm_{0,j}\,\Gamma\,A)       &&: (\gamma : \ev\,\Gamma) \to \Tm_{\mbbo j}\,(\ev\,A\,\gamma)
+\end{alignat*}
+The purely object-level syntactic fragment of 2LTT can be internalized as
+follows. We define externally the presheaf of object-level types as
+$|\Ty_{0,j}|\,a := \Ty_{0,j}\,\emb{a}$, and the displayed presheaf of
+object-level terms over $\Ty_{0,j}$ as $|\Tm_{0,j}|\,\{a\}\,A :=
+  \Tm_{0,j}\,\emb{a}\,A$. Hence, internally we have $\Ty_{0,j} : \whset_0$ and
+  $\Tm_{0,j} : \Ty_{0,j} \to \whset_0$.
+
+Now, the embedding operation $\emb{\blank}$ can be also internalized on types
+and terms, as $\emb{\blank} : \Ty_{\mbbo j} \to \Ty_{0,j}$, and $\emb{\blank}
+:\Tm_{\mbbo\,j}\,A \to \Tm_{0,j}\,\emb{A}$.
+
+\subsection{The Restriction Morphism}
+
+We define a family of functions $\re$ from the 2LTT syntax to objects in
+$\hato$. This will be related to the evaluation morphism $\ev$ subsequently, in
+the relational interpretation. In short, $\re$ restricts 2LTT syntax so that it
+can only depend on object-level contexts, i.e.\ contexts given as
+$\emb{\Gamma}$. Below, we specify the types of the $\re$ operations internally,
+and the $|\blank|$ components of the operations externally. The naturality of
+$|\blank|$ is straightforward in each case.
+\begin{alignat*}{5}
+  & \re\,(\Gamma : \Con) : \whset_0 && \re\,(\sigma : \Sub\,\Gamma\,\Delta) : \re\,\Gamma \to \re\,\Delta \\
+  & |\re\,\Gamma|\,a := \Sub\,\emb{a}\,\Gamma && |\re\,\sigma|\,\gamma := \sigma \circ \gamma \\
+  & \\
+  & \re\,(A : \Ty_{1,j}\,\Gamma) : \re\,\gamma \to \whset_0 && \re\,(t : \Tm_{1,j}\,\Gamma\,A) : (\gamma : \re\,\Gamma) \to \re\,A\,\gamma \\
+  & |\re\,A|\,\{a\}\,\gamma := \Tm_{1,j}\,\emb{a}\,(A[\gamma])\hspace{2em} && |\re\,t|\,\gamma := t[\gamma]\\
+  & \\
+  & \ev\,(A : \Ty_{0,j}\,\Gamma) : \re\,\Gamma \to \Ty_{0,j}\hspace{2em} && \ev\,(t : \Tm_{0,j}\,\Gamma\,A) : (\gamma : \re\,\Gamma) \to \Tm_{0,j}\,(\re\,A\,\gamma)\\
+  & |\ev\,A|\,\gamma := A[\gamma] && |\ev\,t|\,\gamma := t[\gamma]
+\end{alignat*}
+
+\subsubsection{Preservation properties of $\re$}
+First, we note that $\re$ strictly preserves $\id$, $\blank\circ\blank$ and
+type/term substitution, and it preserves $\emptycon$ and $\blank\ext_1\blank$ up
+to isomorphism. We have the following isomorphisms internally to $\hato$:
+\begin{alignat*}{3}
+  & \re_{\emptycon} &&: \re\,\emptycon \simeq \top \\
+  & \re_{\ext_1}   &&: \re\,(\Gamma \ext_1 A) \simeq ((\gamma : \re\,\Gamma) \times \re\,A\,\gamma)
+\end{alignat*}
+\begin{notation}
+  When we have an isomorphism $f : A \simeq B$, we may write $f$ for the
+  function in $A \to B$, and $f^{-1} : B \to A$ for its inverse.
+\end{notation}
+The above preservation properties mean that $\re$ is a \emph{pseudomorphism} in
+the sense of \cite{gluing}, between the syntactic cwf given by
+$(\Ty_{1,j},\,\Tm_{1,j})$ and the corresponding cwf structure in $\hato$. In
+ibid.\ there is an analysis of such cwf morphisms, from which we obtain the
+following additional preservation properties:
+\begin{itemize}
+\item Meta-level negative type formers are preserved up to isomorphism. In particular, we have
+  \[ \re_{\Sigma} : \re\,(\Sigma\,A\,B)\,\gamma
+  \simeq ((\alpha : \re\,A) \times \re\,B\,(\rexti\,(\gamma,\,\alpha))). \]
+  To provide a higher-level explanation, $\re\,(\Sigma\,A\,B)\,\gamma$ is
+  essentially the presheaf of 2LTT terms with type $\Sigma_1\,A\,B$, but the
+  terms are restricted to object-level contexts. However, we can still perform
+  pairing and projection on such restricted terms; hence the preservation property.
+
+\item Meta-level $\Pi$ types and universes are preserved in a lax way. For $\Pi$, we have
+  \[ \re_{\app} : \re\,(\Pi\,A\,B)\,\gamma \to (\alpha : \re\,A\,\gamma) \to \re\,B\,(\rexti\,(\gamma,\,\alpha))
+  \]
+  such that $\re_{\app}\,(\re\,(\lam\,t)\,\gamma)\,\alpha =
+  \re\,t\,(\rexti\,(\gamma,\,\alpha))$. In this case, we can apply a restricted
+  term with a $\Pi$-type to a restricted term, but we cannot do
+  lambda-abstraction, because that would require extending the context with a
+  meta-level binder.  For $\U_{1,j}$, we have
+  \[
+    \re_{\Code} : \re\,\U_{1,j}\,\gamma \to \whset_j
+  \]
+  such that $\re_{\Code}\,(\re\,(\El\,t)\,\gamma) = \re\,t\,\gamma$. We skip
+  $\Code$ on the right hand side here, since we assume Russell-style notation
+  internally to $\hato$, i.e.\ we omit $\Code$ and $\El$. Here, we only
+  have lax preservation simply because $\whset_j$ is much larger than
+  the the set of syntactic 2LTT types, so not every semantic $\whset_j$
+  have a syntactic representation.
+
+\item Meta-level positive (inductive) types are preserved in an oplax way. In the case of
+  natural numbers, we have
+  \[ \re_{\mbb{N}} : \mbb{N} \to \re\,\Nat_1\,\gamma. \]
+  This is a ``serialization'' map: from a metatheoretic natural number we
+  compute a numeral as a closed 2LTT term. This works analogously for any
+  inductive type. The restriction to object-level contexts is irrelevant when
+  computing closed terms.
+\end{itemize}
+\paragraph{Action on lifting} We have an isomorphism $\re\,(\Lift\,A)\,\gamma \simeq
+\Tm_{0,j}\,(\re\,A\,\gamma)$. This is given by quoting and splicing: we convert
+between restricted meta-level terms with type $\Lift\,A$ and restricted
+object-level terms with type $A$. Hence, we simply write the components of this
+isomorphism as $\spl\blank$ and $\qut{\blank}$, as internal analogues of the
+external operations. With this, we also have $\re\,\qut{t}\,\gamma =
+\qut{\re\,t\,\gamma}$ and $\re\,\spl\,t\,\gamma = \spl(\re\,t\,\gamma)$.
+
+\paragraph{Action on $\blank\ext_0\blank$} Lastly, $\blank\ext_0\blank$ is preserved
+up to isomorphism:
+\[
+  \re_{\ext_0} : \re\,(\Gamma \ext_0 A) \simeq ((\gamma : \re\,\Gamma)\times \Tm_{0,j}\,(\re\,A\,\gamma))
+\]
+This is because substitutions targeting $\Gamma \ext_0 A$ are the same as
+pairs of substitutions and terms, by the specification of $\blank\ext_0\blank$.
+
+\subsection{The Logical Relation}
+
+Internally to $\hato$, we define by induction on the syntax of 2LTT a
+proof-relevant logical relation interpretation, called $\blank^R$. The induction
+motives are specified as follows.
+\begin{alignat*}{5}
+  &(\Gamma &&: \Con)^R && : \ev\,\Gamma \to \re\,\Gamma \to \whset_\omega\\
+  &(\sigma &&: \Sub\,\Gamma\,\Delta)^R &&: \Gamma^R\,\gamma\,\gamma' \to \Delta^R\,(\ev\,\sigma\,\gamma)\,(\re\,\sigma\,\gamma')\\
+  &(A      &&: \Ty_{1,j}\,\Gamma)^R &&: \Gamma^R\,\gamma\,\gamma' \to \ev\,A\,\gamma \to \re\,A\,\gamma' \to \whset_j\\
+  &(t      &&: \Tm_{1,j}\,\Gamma\,A)^R &&: (\gamma^R : \Gamma^R\,\gamma\,\gamma') \to A^R\,\gamma^R\,(\ev\,t\,\gamma)\,(\re\,t\,\gamma')\\
+  &(A      &&: \Ty_{0,j}\,\Gamma)^R &&: \Gamma^R\,\gamma\,\gamma' \to \emb{\ev\,A\,\gamma} = \re\,A\,\gamma' \\
+  &(t      &&: \Tm_{0,j}\,\Gamma\,A)^R &&: \Gamma^R\,\gamma\,\gamma' \to \emb{\ev\,t\,\gamma} = \re\,t\,\gamma'
+\end{alignat*}
+For $\Con$, $\Sub$, and meta-level types and terms, this is a fairly standard
+logical relation interpretation: contexts are mapped to relations, types to
+dependent relations, and substitutions and terms respect relations. For
+object-level types and terms, we get soundness statements: evaluation via $\ev$
+followed by embedding back to 2LTT is the same as restricting 2LTT syntax to
+object-level contexts.
 
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{references}

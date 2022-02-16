@@ -251,7 +251,6 @@ Syntactic embedding morphism from 2LTT syntax to psh model:
       G_app : G (Π A B) γ → ((α : G A γ) → G B (G▶⁻¹(γ, α)))
       G_app (G (lam t) γ) α ≡ Gt G▶⁻¹(γ, α)
 
-
       G_code : G U γ → Set̂
       G_code (G(El a) γ) ≡ code (Ga γ) -- more precisely
                          ≡ Ga γ        -- with Russell notation
@@ -321,7 +320,6 @@ Outer family
   (σ, t)ᴿ γᴿ      := (σᴿ γᴿ, tᴿ γᴿ)
   pᴿ (γᴿ, tᴿ)     := γᴿ
   qᴿ (γᴿ, tᴿ)     := tᴿ
-
 
 Inner family
   (Γ ▶₀ A)ᴿ (γ, α) (G▶₀⁻¹(γ', α')) := (γᴿ : Γᴿ γ γ') × (⌜α⌝ = α')

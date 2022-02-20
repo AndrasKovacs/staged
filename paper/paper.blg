@@ -19,48 +19,55 @@ Reallocated glb_str_end (elt_size=4) to 20 items from 10.
 Reallocated singl_function (elt_size=4) to 100 items from 50.
 Warning--no number and no volume in twolevel
 Warning--page numbers missing in both pages and numpages fields in twolevel
+Warning--empty address in scrap-your-inefficient-engine
 Warning--no number and no volume in capriotti2017models
 Warning--page numbers missing in both pages and numpages fields in capriotti2017models
+Warning--empty address in stream-fusion
+Warning--empty address in Dybjer96internaltype
+Warning--empty address in short-cut
+Warning--empty address in intensional-poly
+Warning--empty address in partial-evaluation
 Warning--empty address in gluing
-You've used 4 entries,
+Warning--empty address in licata2018internal
+You've used 18 entries,
             5981 wiz_defined-function locations,
-            1502 strings with 18643 characters,
-and the built_in function-call counts, 4166 in all, are:
-= -- 557
-> -- 108
+            1623 strings with 22259 characters,
+and the built_in function-call counts, 20316 in all, are:
+= -- 2682
+> -- 548
 < -- 0
-+ -- 34
-- -- 36
-* -- 274
-:= -- 391
-add.period$ -- 22
-call.type$ -- 4
-change.case$ -- 25
-chr.to.int$ -- 4
-cite$ -- 9
-duplicate$ -- 366
-empty$ -- 263
-format.name$ -- 44
-if$ -- 1018
++ -- 178
+- -- 194
+* -- 1358
+:= -- 1908
+add.period$ -- 93
+call.type$ -- 18
+change.case$ -- 113
+chr.to.int$ -- 18
+cite$ -- 30
+duplicate$ -- 1835
+empty$ -- 1290
+format.name$ -- 246
+if$ -- 4964
 int.to.chr$ -- 2
 int.to.str$ -- 1
-missing$ -- 13
-newline$ -- 79
-num.names$ -- 30
-pop$ -- 141
+missing$ -- 65
+newline$ -- 227
+num.names$ -- 140
+pop$ -- 651
 preamble$ -- 1
-purify$ -- 57
+purify$ -- 257
 quote$ -- 0
-skip$ -- 128
+skip$ -- 689
 stack$ -- 0
-substring$ -- 288
-swap$ -- 27
+substring$ -- 1610
+swap$ -- 185
 text.length$ -- 0
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 92
-warning$ -- 5
-while$ -- 24
+type$ -- 427
+warning$ -- 12
+while$ -- 137
 width$ -- 0
-write$ -- 123
+write$ -- 437
 (There was 1 error message)

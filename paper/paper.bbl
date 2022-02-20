@@ -2,7 +2,7 @@
 %%% Do NOT edit. File created by BibTeX with style
 %%% ACM-Reference-Format-Journals [18-Jan-2012].
 
-\begin{thebibliography}{4}
+\begin{thebibliography}{18}
 
 %%% ====================================================================
 %%% NOTE TO THE USER: you can override these defaults by providing
@@ -52,6 +52,38 @@
 \tempurl}
 
 
+\bibitem[B{\"{o}}hm and Berarducci(1985)]%
+        {boehm-berarducci}
+\bibfield{author}{\bibinfo{person}{Corrado B{\"{o}}hm} {and}
+  \bibinfo{person}{Alessandro Berarducci}.} \bibinfo{year}{1985}\natexlab{}.
+\newblock \showarticletitle{Automatic Synthesis of Typed Lambda-Programs on
+  Term Algebras}.
+\newblock \bibinfo{journal}{\emph{Theor. Comput. Sci.}}  \bibinfo{volume}{39}
+  (\bibinfo{year}{1985}), \bibinfo{pages}{135--154}.
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.1016/0304-3975(85)90135-5}
+\showDOI{\tempurl}
+
+
+\bibitem[Brady and Hammond(2010)]%
+        {scrap-your-inefficient-engine}
+\bibfield{author}{\bibinfo{person}{Edwin~C. Brady} {and} \bibinfo{person}{Kevin
+  Hammond}.} \bibinfo{year}{2010}\natexlab{}.
+\newblock \showarticletitle{Scrapping your inefficient engine: using partial
+  evaluation to improve domain-specific language implementation}. In
+  \bibinfo{booktitle}{\emph{Proceeding of the 15th {ACM} {SIGPLAN}
+  international conference on Functional programming, {ICFP} 2010, Baltimore,
+  Maryland, USA, September 27-29, 2010}},
+  \bibfield{editor}{\bibinfo{person}{Paul Hudak} {and}
+  \bibinfo{person}{Stephanie Weirich}} (Eds.). \bibinfo{publisher}{{ACM}},
+  \bibinfo{pages}{297--308}.
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.1145/1863543.1863587}
+\showDOI{\tempurl}
+
+
 \bibitem[Capriotti(2017)]%
         {capriotti2017models}
 \bibfield{author}{\bibinfo{person}{Paolo Capriotti}.}
@@ -60,6 +92,141 @@
 \newblock \bibinfo{journal}{\emph{arXiv preprint arXiv:1702.04912}}
   (\bibinfo{year}{2017}).
 \newblock
+
+
+\bibitem[Coutts et~al\mbox{.}(2007)]%
+        {stream-fusion}
+\bibfield{author}{\bibinfo{person}{Duncan Coutts}, \bibinfo{person}{Roman
+  Leshchinskiy}, {and} \bibinfo{person}{Don Stewart}.}
+  \bibinfo{year}{2007}\natexlab{}.
+\newblock \showarticletitle{Stream fusion: from lists to streams to nothing at
+  all}. In \bibinfo{booktitle}{\emph{Proceedings of the 12th {ACM} {SIGPLAN}
+  International Conference on Functional Programming, {ICFP} 2007, Freiburg,
+  Germany, October 1-3, 2007}}, \bibfield{editor}{\bibinfo{person}{Ralf Hinze}
+  {and} \bibinfo{person}{Norman Ramsey}} (Eds.). \bibinfo{publisher}{{ACM}},
+  \bibinfo{pages}{315--326}.
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.1145/1291151.1291199}
+\showDOI{\tempurl}
+
+
+\bibitem[Danvy et~al\mbox{.}(1996)]%
+        {eta-expansion-trick}
+\bibfield{author}{\bibinfo{person}{Olivier Danvy}, \bibinfo{person}{Karoline
+  Malmkj{\ae}r}, {and} \bibinfo{person}{Jens Palsberg}.}
+  \bibinfo{year}{1996}\natexlab{}.
+\newblock \showarticletitle{Eta-Expansion Does The Trick}.
+\newblock \bibinfo{journal}{\emph{{ACM} Trans. Program. Lang. Syst.}}
+  \bibinfo{volume}{18}, \bibinfo{number}{6} (\bibinfo{year}{1996}),
+  \bibinfo{pages}{730--751}.
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.1145/236114.236119}
+\showDOI{\tempurl}
+
+
+\bibitem[developers(2022)]%
+        {agdadocs}
+\bibfield{author}{\bibinfo{person}{Agda developers}.}
+  \bibinfo{year}{2022}\natexlab{}.
+\newblock \bibinfo{title}{Agda documentation}.
+\newblock
+\newblock
+\urldef\tempurl%
+\url{https://agda.readthedocs.io/en/v2.6.2.1/}
+\showURL{%
+\tempurl}
+
+
+\bibitem[Dybjer(1995)]%
+        {Dybjer96internaltype}
+\bibfield{author}{\bibinfo{person}{Peter Dybjer}.}
+  \bibinfo{year}{1995}\natexlab{}.
+\newblock \showarticletitle{Internal Type Theory}. In
+  \bibinfo{booktitle}{\emph{Types for Proofs and Programs, International
+  Workshop TYPES'95, Torino, Italy, June 5-8, 1995, Selected Papers}}
+  \emph{(\bibinfo{series}{Lecture Notes in Computer Science},
+  Vol.~\bibinfo{volume}{1158})}, \bibfield{editor}{\bibinfo{person}{Stefano
+  Berardi} {and} \bibinfo{person}{Mario Coppo}} (Eds.).
+  \bibinfo{publisher}{Springer}, \bibinfo{pages}{120--134}.
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.1007/3-540-61780-9\_66}
+\showDOI{\tempurl}
+
+
+\bibitem[Fredriksson(2022)]%
+        {sixten}
+\bibfield{author}{\bibinfo{person}{Olle Fredriksson}.}
+  \bibinfo{year}{2022}\natexlab{}.
+\newblock \bibinfo{title}{The Sixten Programming Language}.
+\newblock
+\newblock
+\urldef\tempurl%
+\url{https://github.com/ollef/sixten}
+\showURL{%
+\tempurl}
+
+
+\bibitem[Gill et~al\mbox{.}(1993)]%
+        {short-cut}
+\bibfield{author}{\bibinfo{person}{Andrew~John Gill}, \bibinfo{person}{John
+  Launchbury}, {and} \bibinfo{person}{Simon L.~Peyton Jones}.}
+  \bibinfo{year}{1993}\natexlab{}.
+\newblock \showarticletitle{A Short Cut to Deforestation}. In
+  \bibinfo{booktitle}{\emph{Proceedings of the conference on Functional
+  programming languages and computer architecture, {FPCA} 1993, Copenhagen,
+  Denmark, June 9-11, 1993}}, \bibfield{editor}{\bibinfo{person}{John
+  Williams}} (Ed.). \bibinfo{publisher}{{ACM}}, \bibinfo{pages}{223--232}.
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.1145/165180.165214}
+\showDOI{\tempurl}
+
+
+\bibitem[Harper and Morrisett(1995)]%
+        {intensional-poly}
+\bibfield{author}{\bibinfo{person}{Robert Harper} {and}
+  \bibinfo{person}{J.~Gregory Morrisett}.} \bibinfo{year}{1995}\natexlab{}.
+\newblock \showarticletitle{Compiling Polymorphism Using Intensional Type
+  Analysis}. In \bibinfo{booktitle}{\emph{Conference Record of POPL'95: 22nd
+  {ACM} {SIGPLAN-SIGACT} Symposium on Principles of Programming Languages, San
+  Francisco, California, USA, January 23-25, 1995}},
+  \bibfield{editor}{\bibinfo{person}{Ron~K. Cytron} {and}
+  \bibinfo{person}{Peter Lee}} (Eds.). \bibinfo{publisher}{{ACM} Press},
+  \bibinfo{pages}{130--141}.
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.1145/199448.199475}
+\showDOI{\tempurl}
+
+
+\bibitem[Jones et~al\mbox{.}(1993)]%
+        {partial-evaluation}
+\bibfield{author}{\bibinfo{person}{Neil~D. Jones}, \bibinfo{person}{Carsten~K.
+  Gomard}, {and} \bibinfo{person}{Peter Sestoft}.}
+  \bibinfo{year}{1993}\natexlab{}.
+\newblock \bibinfo{booktitle}{\emph{Partial evaluation and automatic program
+  generation}}.
+\newblock \bibinfo{publisher}{Prentice Hall}.
+\newblock
+\showISBNx{978-0-13-020249-9}
+
+
+\bibitem[Kameyama et~al\mbox{.}(2011)]%
+        {staging-with-delimited-control}
+\bibfield{author}{\bibinfo{person}{Yukiyoshi Kameyama}, \bibinfo{person}{Oleg
+  Kiselyov}, {and} \bibinfo{person}{Chung{-}chieh Shan}.}
+  \bibinfo{year}{2011}\natexlab{}.
+\newblock \showarticletitle{Shifting the stage - Staging with delimited
+  control}.
+\newblock \bibinfo{journal}{\emph{J. Funct. Program.}} \bibinfo{volume}{21},
+  \bibinfo{number}{6} (\bibinfo{year}{2011}), \bibinfo{pages}{617--662}.
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.1017/S0956796811000256}
+\showDOI{\tempurl}
 
 
 \bibitem[Kaposi et~al\mbox{.}(2019)]%
@@ -77,6 +244,52 @@
 \newblock
 \urldef\tempurl%
 \url{https://doi.org/10.4230/LIPIcs.FSCD.2019.25}
+\showDOI{\tempurl}
+
+
+\bibitem[Licata et~al\mbox{.}(2018)]%
+        {licata2018internal}
+\bibfield{author}{\bibinfo{person}{Daniel~R. Licata}, \bibinfo{person}{Ian
+  Orton}, \bibinfo{person}{Andrew~M. Pitts}, {and} \bibinfo{person}{Bas
+  Spitters}.} \bibinfo{year}{2018}\natexlab{}.
+\newblock \showarticletitle{Internal Universes in Models of Homotopy Type
+  Theory}. In \bibinfo{booktitle}{\emph{3rd International Conference on Formal
+  Structures for Computation and Deduction, {FSCD} 2018, July 9-12, 2018,
+  Oxford, {UK}}} \emph{(\bibinfo{series}{LIPIcs}, Vol.~\bibinfo{volume}{108})},
+  \bibfield{editor}{\bibinfo{person}{H{\'{e}}l{\`{e}}ne Kirchner}} (Ed.).
+  \bibinfo{publisher}{Schloss Dagstuhl - Leibniz-Zentrum f{\"{u}}r Informatik},
+  \bibinfo{pages}{22:1--22:17}.
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.4230/LIPIcs.FSCD.2018.22}
+\showDOI{\tempurl}
+
+
+\bibitem[Sheard and Jones(2002)]%
+        {template-haskell}
+\bibfield{author}{\bibinfo{person}{Tim Sheard} {and} \bibinfo{person}{Simon
+  L.~Peyton Jones}.} \bibinfo{year}{2002}\natexlab{}.
+\newblock \showarticletitle{Template meta-programming for Haskell}.
+\newblock \bibinfo{journal}{\emph{{ACM} {SIGPLAN} Notices}}
+  \bibinfo{volume}{37}, \bibinfo{number}{12} (\bibinfo{year}{2002}),
+  \bibinfo{pages}{60--75}.
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.1145/636517.636528}
+\showDOI{\tempurl}
+
+
+\bibitem[Taha and Sheard(2000)]%
+        {metaml}
+\bibfield{author}{\bibinfo{person}{Walid Taha} {and} \bibinfo{person}{Tim
+  Sheard}.} \bibinfo{year}{2000}\natexlab{}.
+\newblock \showarticletitle{MetaML and multi-stage programming with explicit
+  annotations}.
+\newblock \bibinfo{journal}{\emph{Theor. Comput. Sci.}} \bibinfo{volume}{248},
+  \bibinfo{number}{1-2} (\bibinfo{year}{2000}), \bibinfo{pages}{211--242}.
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.1016/S0304-3975(00)00053-0}
 \showDOI{\tempurl}
 
 

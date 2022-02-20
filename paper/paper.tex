@@ -1,7 +1,7 @@
 %% build: latexmk -pdf -pvc paper.tex
 
 \documentclass[acmsmall]{acmart}
-%% \raggedbottom
+\raggedbottom
 
 %% \BibTeX command to typeset BibTeX logo in the docs
 \AtBeginDocument{%
@@ -125,6 +125,8 @@
 
 \newcommand{\whset}{\wh{\Set}}
 \newcommand{\rexti}{\re_{\ext_1}^{-1}}
+
+\newcommand{\rel}{^{\approx}}
 
 
 %% --------------------------------------------------------------------------------
@@ -869,8 +871,8 @@ strictly preserves all structure.
 
 \section{The Staging Algorithm}
 
-In this section we specify what we mean by staging, then define a staging
-algorithm.
+In this section we specify what we mean by a staging algorithm, then proceed to
+define one.
 
 \begin{definition}
 A \textbf{staging algorithm} consists of two functions:
@@ -911,9 +913,9 @@ instead called ``idempotence''.
 We observe that the presheaf model described in \cite[Section~2.5.3]{twolevel}
 immediately yields a closed staging algorithm, by evaluation of 2LTT types and
 terms in the model. In this model, contexts are presheaves over the syntactic
-category of the object theory. We call the model $\hato$ and denote its
-components by putting hats on 2LTT components. We summarize the key components
-in the following.
+category of the object theory. We denote the components of the model by putting
+hats on 2LTT components, e.g.\ as in $\hCon$. We summarize the key components in
+the following.
 
 \begin{notation}
 In this section, we switch to naming elements of $\Cono$ as $a$, $b$ and $c$,
@@ -928,11 +930,13 @@ over $\mbbo$. $\Gamma : \wh{\Con}$ has an action on objects $|\Gamma| :
 \Cono \to \Set_\omega$ and an action on morphisms $\blank[\blank] : |\Gamma|\,b
 \to \Subo\,a\,b \to |\Gamma|\,a$, such that $\gamma[\id] = \gamma$ and
 $\gamma[f\circ g] = \gamma[f][g]$.
+
 \begin{notation}
-We reuse the substitution notation $\blank[\blank]$ for the action on morphisms.
-Also, we use lowercase $\gamma$ and $\delta$ to denote elements of $|\Gamma|\,a$
-and $|\Delta|\,a$ respectively.
+Above, we reused the substitution notation $\blank[\blank]$ for the action on
+morphisms.  Also, we use lowercase $\gamma$ and $\delta$ to denote elements of
+$|\Gamma|\,a$ and $|\Delta|\,a$ respectively.
 \end{notation}
+
 \end{definition}
 \begin{definition} $\bs{\hSub\,\Gamma\,\Delta : \Set_\omega}$ is the set of natural transformations
 from $\Gamma$ to $\Delta$. $\sigma : \hSub\,\Gamma\,\Delta$ has action
@@ -1097,9 +1101,9 @@ a list of variables, corresponding to the identity substitution $\id :
 \Subo\,\Gamma\,\Gamma$ which maps each variable to itself.
 
 The rest of the $\blank^P$ interpretation is straightforward and we omit it
-here. In particular, we do not have to show preservation of any definitional
-equality, since types, terms and substitutions are all interpreted as
-proof-irrelevant equations.
+here. In particular, preservation of definitional equalities is automatic, since
+types, terms and substitutions are all interpreted as proof-irrelevant
+equations.
 
 \begin{definition} We define \textbf{open staging} as follows.
 \begin{alignat*}{4}
@@ -1227,8 +1231,15 @@ the same conventions as in Notation \ref{TODO}.
   & A : \hTy_{1,j}\,\Gamma           && \hspace{1em}\text{is internalized as}\hspace{1em} A      : \Gamma \to \whset_j \\
   & t : \hTm_{1,j}\,\Gamma\,A        && \hspace{1em}\text{is internalized as}\hspace{1em} t      : (\gamma : \Gamma) \to A\,\gamma
 \end{alignat*}
-We internalize object-level types and terms as $\Ty_{\mbbo j} : \whset_0$ and
-$\Tm_{\mbbo j} : \Ty_{\mbbo j} \to \whset_0$.  We also use an internal view of
+\subsubsection{Object-theoretic syntax} The syntax of the object theory is clearly
+fully stable under object-theoretic substitution, so we can internalize all of
+its type and term formers. We internalize object-level types and terms as
+$\Ty_{\mbbo j} : \whset_0$ and $\Tm_{\mbbo j} : \Ty_{\mbbo j} \to
+\whset_0$. $\Ty_{\mbbo j}$ is closed under type formers. For instance, we have
+\[ \Nat_j : \Ty_{\mbbo j}\hspace{1.5em}\zero_j : \Tm_{\mbbo j}\,\Nat_j\hspace{1.5em}
+    \suc_j : \Tm_{\mbbo j}\,\Nat_j \to \Tm_{\mbbo j}\,\Nat_j \]
+together with $\NatElim$, and likewise we have all other type formers.
+\subsubsection{Internal $\ev$} We also use an internal view of
 $\ev$ which maps 2LTT syntax to internal values; i.e.\ we compose $\ev$ with
 internalization. Below, note that the input to $\ev$ is \emph{external}, so we
 mark $\ev$ as being parametrized by external input.
@@ -1240,36 +1251,41 @@ mark $\ev$ as being parametrized by external input.
   &\ev\,(A      &&: \Ty_{0,j}\,\Gamma)          &&: \ev\,\Gamma \to \Ty_{\mbbo_j}\\
   &\ev\,(t      &&: \Tm_{0,j}\,\Gamma\,A)       &&: (\gamma : \ev\,\Gamma) \to \Tm_{\mbbo j}\,(\ev\,A\,\gamma)
 \end{alignat*}
+\subsubsection{Object-level fragment of 2LTT}
 The purely object-level syntactic fragment of 2LTT can be internalized as
 follows. We define externally the presheaf of object-level types as
 $|\Ty_{0,j}|\,a := \Ty_{0,j}\,\emb{a}$, and the displayed presheaf of
 object-level terms over $\Ty_{0,j}$ as $|\Tm_{0,j}|\,\{a\}\,A :=
-  \Tm_{0,j}\,\emb{a}\,A$. Hence, internally we have $\Ty_{0,j} : \whset_0$ and
-  $\Tm_{0,j} : \Ty_{0,j} \to \whset_0$.
+\Tm_{0,j}\,\emb{a}\,A$. Hence, internally we have $\Ty_{0,j} : \whset_0$ and
+$\Tm_{0,j} : \Ty_{0,j} \to \whset_0$. $\Ty_{0,j}$ is closed under all type formers,
+analogously as we have seen for $\Ty_{\mbbo j}$.
 
+\subsubsection{Embedding}
 Now, the embedding operation $\emb{\blank}$ can be also internalized on types
 and terms, as $\emb{\blank} : \Ty_{\mbbo j} \to \Ty_{0,j}$, and $\emb{\blank}
-:\Tm_{\mbbo\,j}\,A \to \Tm_{0,j}\,\emb{A}$.
+:\Tm_{\mbbo\,j}\,A \to \Tm_{0,j}\,\emb{A}$. Embedding strictly preserves all structure.
 
 \subsection{The Restriction Morphism}
 
 We define a family of functions $\re$ from the 2LTT syntax to objects in
-$\hato$. This will be related to the evaluation morphism $\ev$ subsequently, in
-the relational interpretation. In short, $\re$ restricts 2LTT syntax so that it
-can only depend on object-level contexts, i.e.\ contexts given as
-$\emb{\Gamma}$. Below, we specify the types of the $\re$ operations internally,
-and the $|\blank|$ components of the operations externally. The naturality of
-$|\blank|$ is straightforward in each case.
+$\hato$. This will be related to the evaluation morphism $\ev$ in the relational
+interpretation. In short, $\re$ restricts 2LTT syntax so that it can only depend
+on object-level contexts, i.e.\ contexts given as $\emb{\Gamma}$.
+
+\begin{definition} We specify the types of the \textbf{restriction operations} internally, and the $|\blank|$
+components of the operations externally. The naturality of $|\blank|$ is
+straightforward in each case.
 \begin{alignat*}{5}
   & \re\,(\Gamma : \Con) : \whset_0 && \re\,(\sigma : \Sub\,\Gamma\,\Delta) : \re\,\Gamma \to \re\,\Delta \\
-  & |\re\,\Gamma|\,a := \Sub\,\emb{a}\,\Gamma && |\re\,\sigma|\,\gamma := \sigma \circ \gamma \\
+  & |\re\,\Gamma|\,\Delta := \Sub\,\emb{\Delta}\,\Gamma && |\re\,\sigma|\,\gamma := \sigma \circ \gamma \\
   & \\
   & \re\,(A : \Ty_{1,j}\,\Gamma) : \re\,\gamma \to \whset_0 && \re\,(t : \Tm_{1,j}\,\Gamma\,A) : (\gamma : \re\,\Gamma) \to \re\,A\,\gamma \\
-  & |\re\,A|\,\{a\}\,\gamma := \Tm_{1,j}\,\emb{a}\,(A[\gamma])\hspace{2em} && |\re\,t|\,\gamma := t[\gamma]\\
+  & |\re\,A|\,\{\Delta\}\,\gamma := \Tm_{1,j}\,\emb{\Delta}\,(A[\gamma])\hspace{2em} && |\re\,t|\,\gamma := t[\gamma]\\
   & \\
-  & \ev\,(A : \Ty_{0,j}\,\Gamma) : \re\,\Gamma \to \Ty_{0,j}\hspace{2em} && \ev\,(t : \Tm_{0,j}\,\Gamma\,A) : (\gamma : \re\,\Gamma) \to \Tm_{0,j}\,(\re\,A\,\gamma)\\
-  & |\ev\,A|\,\gamma := A[\gamma] && |\ev\,t|\,\gamma := t[\gamma]
+  & \re\,(A : \Ty_{0,j}\,\Gamma) : \re\,\Gamma \to \Ty_{0,j}\hspace{2em} && \re\,(t : \Tm_{0,j}\,\Gamma\,A) : (\gamma : \re\,\Gamma) \to \Tm_{0,j}\,(\re\,A\,\gamma)\\
+  & |\re\,A|\,\gamma := A[\gamma] && |\re\,t|\,\gamma := t[\gamma]
 \end{alignat*}
+\end{definition}
 
 \subsubsection{Preservation properties of $\re$}
 First, we note that $\re$ strictly preserves $\id$, $\blank\circ\blank$ and
@@ -1279,85 +1295,325 @@ to isomorphism. We have the following isomorphisms internally to $\hato$:
   & \re_{\emptycon} &&: \re\,\emptycon \simeq \top \\
   & \re_{\ext_1}   &&: \re\,(\Gamma \ext_1 A) \simeq ((\gamma : \re\,\Gamma) \times \re\,A\,\gamma)
 \end{alignat*}
-\begin{notation}
-  When we have an isomorphism $f : A \simeq B$, we may write $f$ for the
+
+\begin{notation} When we have an isomorphism $f : A \simeq B$, we may write $f$ for the
   function in $A \to B$, and $f^{-1} : B \to A$ for its inverse.
 \end{notation}
+
+\begin{notation}
+  We can use a pattern matching notation on isomorphisms. For example, if $f : A
+  \simeq B$, then we may write $(\lambda\,(f\,a).\,t) : B \to C$, and likewise
+  $(\lambda\,(f^{-1}\,b).\,t) : A \to C$, where the function bodies can refer to
+  the bound $a : A$ and $b : B$ variables.
+\end{notation}
+
 The above preservation properties mean that $\re$ is a \emph{pseudomorphism} in
 the sense of \cite{gluing}, between the syntactic cwf given by
 $(\Ty_{1,j},\,\Tm_{1,j})$ and the corresponding cwf structure in $\hato$. In
 ibid.\ there is an analysis of such cwf morphisms, from which we obtain the
 following additional preservation properties:
 \begin{itemize}
-\item Meta-level negative type formers are preserved up to isomorphism. In particular, we have
+\item Meta-level $\Sigma$ types are preserved up to isomorphism, so we have
   \[ \re_{\Sigma} : \re\,(\Sigma\,A\,B)\,\gamma
   \simeq ((\alpha : \re\,A) \times \re\,B\,(\rexti\,(\gamma,\,\alpha))). \]
-  To provide a higher-level explanation, $\re\,(\Sigma\,A\,B)\,\gamma$ is
-  essentially the presheaf of 2LTT terms with type $\Sigma_1\,A\,B$, but the
-  terms are restricted to object-level contexts. However, we can still perform
-  pairing and projection on such restricted terms; hence the preservation property.
-
+  The semantic values of $\re\,(\Sigma\,A\,B)\,\gamma$
+  are 2LTT terms with type $(\Sigma\,A\,B)[\gamma]$, restricted to object-level contexts.
+  We can still perform pairing and projection with such restricted terms; hence
+  the preservation property.
 \item Meta-level $\Pi$ types and universes are preserved in a lax way. For $\Pi$, we have
   \[ \re_{\app} : \re\,(\Pi\,A\,B)\,\gamma \to (\alpha : \re\,A\,\gamma) \to \re\,B\,(\rexti\,(\gamma,\,\alpha))
   \]
-  such that $\re_{\app}\,(\re\,(\lam\,t)\,\gamma)\,\alpha =
-  \re\,t\,(\rexti\,(\gamma,\,\alpha))$. In this case, we can apply a restricted
-  term with a $\Pi$-type to a restricted term, but we cannot do
+  such that $\re_{\app}\,(\re\,t\,\gamma)\,\alpha =
+  \re\,(\app\,t)\,(\rexti\,(\gamma,\,\alpha))$. In this case, we can apply a
+  restricted term with a $\Pi$-type to a restricted term, but we cannot do
   lambda-abstraction, because that would require extending the context with a
-  meta-level binder.  For $\U_{1,j}$, we have
+  meta-level binder. For $\U_{1,j}$, we have
   \[
-    \re_{\Code} : \re\,\U_{1,j}\,\gamma \to \whset_j
+    \re_{\El} : \re\,\U_{1,j}\,\gamma \to \whset_j
   \]
-  such that $\re_{\Code}\,(\re\,(\El\,t)\,\gamma) = \re\,t\,\gamma$. We skip
-  $\Code$ on the right hand side here, since we assume Russell-style notation
-  internally to $\hato$, i.e.\ we omit $\Code$ and $\El$. Here, we only
-  have lax preservation simply because $\whset_j$ is much larger than
-  the the set of syntactic 2LTT types, so not every semantic $\whset_j$
-  have a syntactic representation.
+  such that $\re_{\El}\,(\re\,t\,\gamma) = \re\,(\El\,t)\,\gamma$. Here, we only
+  have lax preservation simply because $\whset_j$ is much larger than the the
+  set of syntactic 2LTT types, so not every semantic $\whset_j$ has a syntactic
+  representation.
 
 \item Meta-level positive (inductive) types are preserved in an oplax way. In the case of
   natural numbers, we have
-  \[ \re_{\mbb{N}} : \mbb{N} \to \re\,\Nat_1\,\gamma. \]
+  \[ \re_{\mbb{N}} : \mbb{N} \to \re\,\Nat_{1,j}\,\gamma. \]
   This is a ``serialization'' map: from a metatheoretic natural number we
-  compute a numeral as a closed 2LTT term. This works analogously for any
-  inductive type. The restriction to object-level contexts is irrelevant when
-  computing closed terms.
+  compute a numeral as a closed 2LTT term. This works analogously for other
+  inductive types, including parameterized ones. For an example, from a semantic
+  list of restricted terms we would get a syntactic term with list type,
+  containing the same restricted terms.
 \end{itemize}
-\paragraph{Action on lifting} We have an isomorphism $\re\,(\Lift\,A)\,\gamma \simeq
+\subsubsection{Action on lifting} We have an isomorphism $\re\,(\Lift\,A)\,\gamma \simeq
 \Tm_{0,j}\,(\re\,A\,\gamma)$. This is given by quoting and splicing: we convert
 between restricted meta-level terms with type $\Lift\,A$ and restricted
-object-level terms with type $A$. Hence, we simply write the components of this
-isomorphism as $\spl\blank$ and $\qut{\blank}$, as internal analogues of the
-external operations. With this, we also have $\re\,\qut{t}\,\gamma =
+object-level terms with type $A$. Hence, we write components of this isomorphism
+as $\spl\blank$ and $\qut{\blank}$, as internal analogues of the external
+operations. With this, we also have $\re\,\qut{t}\,\gamma =
 \qut{\re\,t\,\gamma}$ and $\re\,\spl\,t\,\gamma = \spl(\re\,t\,\gamma)$.
 
-\paragraph{Action on $\blank\ext_0\blank$} Lastly, $\blank\ext_0\blank$ is preserved
-up to isomorphism:
+\subsubsection{Action on $\blank\ext_0\blank$} We have preservation up to isomorphism:
 \[
   \re_{\ext_0} : \re\,(\Gamma \ext_0 A) \simeq ((\gamma : \re\,\Gamma)\times \Tm_{0,j}\,(\re\,A\,\gamma))
 \]
 This is because substitutions targeting $\Gamma \ext_0 A$ are the same as
 pairs of substitutions and terms, by the specification of $\blank\ext_0\blank$.
 
+\subsubsection{Action on object-level types and terms} $\re$ preserves all structure
+in the object-level fragment of 2LTT. This follows from the $\re$ specification:
+an external type $A : \Ty_{0,j}\,\Gamma$ is directly internalized as an element
+of $\Ty_{0,j}$, and the same happens for $t : \Tm_{0,j}\,\Gamma\,A$.
+
+
 \subsection{The Logical Relation}
 
 Internally to $\hato$, we define by induction on the syntax of 2LTT a
-proof-relevant logical relation interpretation, called $\blank^R$. The induction
+proof-relevant logical relation interpretation, written as $\blank^{\approx}$. The induction
 motives are specified as follows.
 \begin{alignat*}{5}
-  &(\Gamma &&: \Con)^R && : \ev\,\Gamma \to \re\,\Gamma \to \whset_\omega\\
-  &(\sigma &&: \Sub\,\Gamma\,\Delta)^R &&: \Gamma^R\,\gamma\,\gamma' \to \Delta^R\,(\ev\,\sigma\,\gamma)\,(\re\,\sigma\,\gamma')\\
-  &(A      &&: \Ty_{1,j}\,\Gamma)^R &&: \Gamma^R\,\gamma\,\gamma' \to \ev\,A\,\gamma \to \re\,A\,\gamma' \to \whset_j\\
-  &(t      &&: \Tm_{1,j}\,\Gamma\,A)^R &&: (\gamma^R : \Gamma^R\,\gamma\,\gamma') \to A^R\,\gamma^R\,(\ev\,t\,\gamma)\,(\re\,t\,\gamma')\\
-  &(A      &&: \Ty_{0,j}\,\Gamma)^R &&: \Gamma^R\,\gamma\,\gamma' \to \emb{\ev\,A\,\gamma} = \re\,A\,\gamma' \\
-  &(t      &&: \Tm_{0,j}\,\Gamma\,A)^R &&: \Gamma^R\,\gamma\,\gamma' \to \emb{\ev\,t\,\gamma} = \re\,t\,\gamma'
+  &(\Gamma &&: \Con)\rel && : \ev\,\Gamma \to \re\,\Gamma \to \whset_\omega\\
+  &(\sigma &&: \Sub\,\Gamma\,\Delta)\rel &&: \Gamma\rel\,\gamma\,\gamma' \to \Delta\rel\,(\ev\,\sigma\,\gamma)\,(\re\,\sigma\,\gamma')\\
+  &(A      &&: \Ty_{1,j}\,\Gamma)\rel &&: \Gamma\rel\,\gamma\,\gamma' \to \ev\,A\,\gamma \to \re\,A\,\gamma' \to \whset_j\\
+  &(t      &&: \Tm_{1,j}\,\Gamma\,A)\rel &&: (\gamma\rel : \Gamma\rel\,\gamma\,\gamma') \to A\rel\,\gamma\rel\,(\ev\,t\,\gamma)\,(\re\,t\,\gamma')\\
+  &(A      &&: \Ty_{0,j}\,\Gamma)\rel &&: \Gamma\rel\,\gamma\,\gamma' \to \emb{\ev\,A\,\gamma} = \re\,A\,\gamma' \\
+  &(t      &&: \Tm_{0,j}\,\Gamma\,A)\rel &&: \Gamma\rel\,\gamma\,\gamma' \to \emb{\ev\,t\,\gamma} = \re\,t\,\gamma'
 \end{alignat*}
 For $\Con$, $\Sub$, and meta-level types and terms, this is a fairly standard
 logical relation interpretation: contexts are mapped to relations, types to
-dependent relations, and substitutions and terms respect relations. For
-object-level types and terms, we get soundness statements: evaluation via $\ev$
-followed by embedding back to 2LTT is the same as restricting 2LTT syntax to
-object-level contexts.
+dependent relations, and substitutions and terms respect relations. We will only have
+modest complications in meta-level type formers, because we will need to sometimes use
+the lax/oplax preservations properties of $\re$. For object-level types and
+terms, we get soundness statements: evaluation via $\ev$ followed by embedding
+back to 2LTT is the same as restriction to object-level contexts. We summarize
+the $\blank\rel$ interpretation in the following.
+
+\subsubsection{Syntactic category and terminal object}
+Here, we simply have $\id\rel\,\gamma\rel := \gamma\rel$ and $(\sigma \circ
+\delta)\rel\,\gamma\rel := \sigma\rel\,(\delta\rel\,\gamma\rel)$. The terminal
+object is interpreted as $\emptycon\rel\,\gamma\,\gamma' := \top$.
+
+\subsubsection{Meta-level family structure}
+We interpret context extension and type/term substitution as follows. Note the
+usage of the pattern matching notation on the $\rexti$ isomorphism.
+\begin{alignat*}{4}
+  & (\Gamma \ext_1 A)\rel\,(\gamma,\,\alpha)\,(\rexti(\gamma',\,\alpha')) && :=
+    (\gamma\rel : \Gamma\rel\,\gamma\,\gamma') \times A\rel\,\gamma\rel\,\alpha\,\alpha'\\
+  & (A[\sigma])\rel\,\gamma\rel\,\alpha\,\alpha' && := A\rel\,(\sigma\rel\,\gamma\rel)\,\alpha\,\alpha'\\
+  & (t[\sigma])\rel\,\gamma\rel\                 && := t\rel\,(\sigma\rel\,\gamma\rel)
+\end{alignat*}
+It is enough to specify the $\blank\rel$ action on extended substitutions
+$(\sigma,\,t) : \Sub\,\Gamma\,(\Delta\ext A)$, $\p : \Sub\,(\Gamma\ext
+A)\,\Gamma$, $\p : \Sub\,(\Gamma\ext A)\,\Gamma$ and $\q : \Tm_{1,j}\,(\Gamma
+\ext A)\,(A[\p])$. The category-with-families equations hold evidently.
+\begin{alignat*}{4}
+  & (\sigma,\,t)\rel\,\gamma\rel                 && := (\sigma\rel\,\gamma\rel,\,t\rel\,\gamma\rel)\\
+  & \p\rel\,(\gamma\rel,\,t\rel)                 && := \gamma\rel\\
+  & \q\rel\,(\gamma\rel,\,t\rel)                 && := t\rel
+\end{alignat*}
+
+\subsubsection{Meta-level natural numbers} First, we have to define a relation:
+\begin{alignat*}{4}
+  & (\Nat_{1,j})\rel : \Gamma\rel\,\gamma\,\gamma' \to \mbb{N} \to \re\,\Nat_{1,j}\,\gamma' \to \whset_j\\
+  & (\Nat_{1,j})\rel\,\gamma\rel\,n\,n' := (\re_{\mbb{N}}\,n = n')
+\end{alignat*}
+Note that evaluation sends $\Nat_{1,j}$ to the semantic type of natural numbers,
+i.e.\ $\ev\,\Nat_{1,j} = \mbb{N}$. We refer to the serialization map
+$\re_{\mbb{N}} : \mbb{N} \to \re\,\Nat_{1,j}\,\gamma'$ above. In short,
+$(\Nat_{1,j})\rel$ expresses \emph{canonicity}: $n'$ is canonical precisely if
+it is of the form $\re_{\mbb{N}}\,n$ for some $n$, hence a finite successor of
+zero.
+
+For $\zero\rel$ and $\suc\rel$, we need to show that serialization respects
+$\zero$ and $\suc$ respectively, which is evident.
+
+Let us look at elimination. We need to define the following:
+\begin{alignat*}{4}
+  &(\msf{NatElim}\,P\,z\,s\,n)\rel\,\gamma\rel :
+  P\rel\,(\gamma\rel,\,n\rel\,\gamma\rel)\,(\ev\,(\msf{NatElim}\,P\,z\,s\,n)\,\gamma)\,
+                                           (\re\,(\msf{NatElim}\,P\,z\,s\,n)\,\gamma')
+\end{alignat*}
+Unfolding $\ev$, we can further compute this to the following:
+\begin{alignat*}{4}
+  &(\msf{NatElim}\,P\,z\,s\,n)\rel\,\gamma\rel : \\
+  &\hspace{2em}P\rel\,(\gamma\rel,\,n\rel\,\gamma\rel)\,
+  (\msf{NatElim}\,(\lambda\,n.\,\ev\,P\,(\gamma,\,n))\,
+                  (\ev\,z\,\gamma)\,
+                  (\lambda\,n\,\mit{pn}.\,\ev\,s\,((\gamma,\,n),\,\mit{pn}))
+                  (\ev\,n\,\gamma))\\
+  &\hspace{8em}(\re\,(\msf{NatElim}\,P\,z\,s\,n)\,\gamma')
+\end{alignat*}
+In short, we need to show that $\msf{NatElim}$ preserves relations. Here we
+switch to the external view temporarily. By Definition \ref{TODO}, we know that
+\[
+   |\re\,(\msf{NatElim}\,P\,z\,s\,n)|\,\gamma' = (\msf{NatElim}\,P\,z\,s\,n))[\gamma'].
+\]
+At the same time, we have $n\rel\,\gamma\rel : \re_{\mbb{N}}\,(\ev\,n\,\gamma) =
+\re\,n\,\gamma'$, hence we know externally that $|\ev\,n|\,\gamma = n[\gamma']$.
+In other words, $n[\gamma']$ is canonical and is obtained as the serialization
+of $\ev\,n\,\gamma$. Therefore, $(\msf{NatElim}\,P\,z\,s\,n))[\gamma']$ is
+definitionally equal to $|\ev\,n|\,\gamma$-many applications of $s$ to
+$z$, and we can use $|\ev\,n|\,\gamma$-many applications of $s\rel$ to $z\rel$
+to witness the preservation. The $\beta$-rules for $\msf{NatElim}$ are also respected
+by this definition.
+
+\subsubsection{Meta-level $\Sigma$-types} We define relatedness pointwise. Pairing and projection
+are interpreted as meta-level pairing and projection.
+\begin{alignat*}{3}
+  &(\Sigma\,A\,B)\rel\,\gamma\rel : ((\alpha : \ev\,A\,\gamma) \times \ev\,B\,(\gamma,\,\alpha))
+             \to \re\,(\Sigma\,A\,B)\,\gamma' \to \whset_j\\
+  &(\Sigma\,A\,B)\rel\,\gamma\rel\,(\alpha,\,\beta)\,(\re_{\Sigma}^{-1}(\alpha',\,\beta')) :=
+             (\alpha\rel : A\rel\,\gamma\rel\,\alpha\,\alpha') \times B\rel\,(\gamma\rel,\,\alpha\rel)\,\beta\,\beta'
+\end{alignat*}
+
+\subsubsection{Meta-level $\Pi$-types} We again use a pointwise definition. Note that we need to use
+$\re_{\app}$ to apply $t' : \re\,(\Pi\,A\,B)\,\gamma'$ to $\alpha'$.
+\begin{alignat*}{3}
+  &(\Pi\,A\,B)\rel\,\gamma\rel : ((\alpha : \ev\,A\,\gamma) \to \ev\,B\,(\gamma,\,\alpha))
+             \to \re\,(\Pi\,A\,B)\,\gamma' \to \whset_j\\
+  &(\Pi\,A\,B)\rel\,\gamma\rel\,t\,t' :=
+    (\alpha : \ev\,A\,\gamma)(\alpha' : \re\,A\,\gamma')(\alpha\rel : A\rel\,\gamma\rel\,\alpha\,\alpha') \to
+    B\rel\,(\gamma\rel,\,\alpha\rel)\,(t\,\alpha)\,(\re_{\app}\,t'\,\alpha')
+\end{alignat*}
+For abstraction and application, we use a curry-uncurry definition:
+\begin{alignat*}{4}
+  &(\lam\,t)\rel\,\gamma\rel                &&:= \lambda\,\alpha\,\alpha'\,\alpha\rel.\,t\rel\,(\gamma\rel,\,\alpha\rel)\\
+  &(\app\,t)\rel\,(\gamma\rel,\,\alpha\rel) &&:= t\rel\,\gamma\rel\,\alpha\,\alpha'\,\alpha\rel
+\end{alignat*}
+
+\subsubsection{Meta-level universes} We interpret $\U_{1,j}$ as a semantic relation space:
+\begin{alignat*}{3}
+  &(\U_{1,j})\rel\,\gamma\rel : \whset_j \to \re\,\U_{1,j}\,\gamma' \to \whset_{j+1} \\
+  &(\U_{1,j})\rel\,\gamma\rel\,t\,t' := t \to \re_{\El}\,t' \to \whset_{j}
+\end{alignat*}
+Note that we have
+\begin{alignat*}{3}
+  & (\El\,t)\rel   &&: (\gamma\rel : \Gamma\rel\,\gamma\,\gamma') \to \ev\,t\,\gamma \to \re\,(\El\,t)\,\gamma' \to \whset_j\\
+  & (\Code\,t)\rel &&: (\gamma\rel : \Gamma\rel\,\gamma\,\gamma') \to \ev\,t\,\gamma \to \re\,(\El\,t)\,\gamma' \to \whset_j.
+\end{alignat*}
+The types coincide because of the equation $\re\,(\El\,t)\,\gamma' =
+\re_{\El}\,(\re\,t\,\gamma')$. Therefore we can interpret $\El$ and $\Code$ as
+identity maps, as $(\El\,t)\rel := t\rel$ and $(\Code\,t)\rel := t\rel$.
+
+\subsubsection{Object-level family structure} We interpret extended contexts as follows.
+\begin{alignat*}{3}
+  & (\Gamma \ext_0 A)\rel\,(\gamma,\,\alpha)\,(\rexti\,(\gamma',\,\alpha')) := (\gamma\rel : \Gamma\rel\,\gamma\,\gamma') \times (\emb{\alpha} = \alpha')
+\end{alignat*}
+Note that $\alpha : \Tm_{\mbbo j}\,(\ev\,A\,\gamma)$, so $\emb{\alpha} :
+\Tm_{0,j}\,\emb{\ev\,A\,\gamma}$, but since $A\rel\,\gamma\rel :
+\emb{\ev\,A\,\gamma} = \re\,A\,\gamma'$, we also have $\emb{\alpha} :
+\Tm_{0,j}\,(\re\,A\,\gamma')$. Thus, the equation $\emb{\alpha} = \alpha'$ is
+well-typed. For type substitution, we need
+\[
+  (A[\sigma])\rel\,\gamma\rel : \emb{\ev\,(A[\sigma])\,\gamma} = \re\,(A[\sigma])\,\gamma'.
+\]
+The goal type computes to $\emb{\ev\,A\,(\ev\,\sigma\,\gamma)} =
+\re\,A\,(\re\,\sigma\,\gamma')$. This is obtained directly from
+$A\rel\,(\sigma\rel\,\gamma\rel)$.  Similarly, we have
+\begin{alignat*}{4}
+  & (t[\sigma])\rel\,\gamma\rel &&:= t\rel\,(\sigma\rel\,\gamma\rel) \\
+  & (\sigma,\,t)\rel\,\gamma\rel &&:= (\sigma\rel\,\gamma\rel,\,t\rel\,\gamma\rel) \\
+  & \p\rel\,(\gamma\rel,\,\alpha\rel) &&:= \gamma\rel \\
+  & \q\rel\,(\gamma\rel,\,\alpha\rel) &&:= \alpha\rel. \\
+\end{alignat*}
+
+\subsubsection{Lifting structure}
+\begin{alignat*}{3}
+  &(\Lift\,A)\rel : \Gamma\rel\,\gamma\,\gamma' \to \Tm_{\mbbo j}\,(\ev\,A\,\gamma) \to \re\,(\Lift\,A)\,\gamma' \to \whset_j\\
+  &(\Lift\,A)\rel\,\gamma\rel\,t\,t' := (\emb{t} = \spl t')
+\end{alignat*}
+This is well-typed by $A\rel\,\gamma\rel : \emb{\ev\,A\,\gamma} = \re\,A\,\gamma'$, which implies
+that $\emb{t} : \Tm_{\mbbo j}\,(\re\,A\,\gamma')$. For $\qut{t}$, we need
+\[  \qut{t}\rel\,\gamma\rel : \emb{\ev\,\qut{t}\,\gamma} = \spl(\re\,\qut{t}\,\gamma'). \]
+The goal type can be further computed to $\emb{\ev\,t\,\gamma} = \re\,t\,\gamma'$, which we prove
+by $t\rel\,\gamma\rel$. For splicing, we need
+\[
+  (\spl t)\rel\,\gamma\rel : \emb{\ev\,\spl t\,\gamma} = \re\,\spl t\,\gamma'
+\]
+where the goal type computes to $\emb{F\,t\,\gamma} = \spl(\re\,t\,\gamma')$,
+but this again follows directly from $t\rel\,\gamma\rel$.
+
+\subsubsection{Object-level type formers}
+Lastly, object-level type formers are straightforward. For types, we need
+$\emb{\ev\,A\,\gamma} = \re\,A\,\gamma'$, and for terms, we need
+$\emb{\ev\,A\,\gamma} = \re\,A\,\gamma'$. Note that $\ev$ and $\emb{\blank}$
+preserve all structure, and $\re$ preserves all structure on object-level types
+and terms. Hence, each object-level $A$ and $t$ case in $\blank\rel$ trivially
+follows from induction hypotheses.
+
+This concludes the definition of the $\blank\rel$ interpretation.
+
+\subsection{Soundness}
+
+\begin{definition} First, we introduce shorthands for
+external operations that can be extracted from $\blank\rel$.
+\begin{itemize}
+  \item For $\Gamma : \Con$, we get $|\Gamma\rel| : \{\Delta : \Cono\} \to |\ev\,\Gamma|\,\Delta \to
+    \Sub\,\emb{\Delta}\,\Gamma \to \Set_j$.
+  \item For $A : \Ty_{0,j}\,\Gamma$, we get $|A\rel| : |\Gamma\rel|\,\gamma\,\gamma' \to \emb{\ev\,A\,\gamma} = A[\gamma']$.
+  \item For $t : \Tm_{0,j}\,\Gamma\,A$, we get $|t\rel| : |\Gamma\rel|\,\gamma\,\gamma' \to \emb{\ev\,t\,\gamma} = t[\gamma']$.
+\end{itemize}
+Since $\blank\rel$ was defined in $\hato$, we also know that the above are all
+stable under object-theoretic substitution.
+\end{definition}
+
+\begin{theorem}[Soundness for generic contexts]
+For each $\Gamma : \Cono$, we have ${\Gamma^P}\rel : |\Gamma\rel|\,\Gamma^P\,\id$.
+\end{theorem}
+\begin{proof}
+We define ${\blank^P}\rel$ by induction on object-theoretic contexts.
+${\emptycon^P}\rel : \top$ is defined trivially as $\tt$. For ${(\Gamma \ext
+  A)^P}\rel$, we need $(\gamma\rel : |\Gamma|\rel\,(\Gamma^P[\p])\,\p) \times
+(\emb{\q} = \q)$. We get ${\Gamma^P}\rel : |\Gamma\rel|\,\Gamma^P\,\id$. Because
+of the naturality of $|\Gamma\rel|$, this can be weakened to ${\Gamma^P}\rel[\p]
+: |\Gamma\rel|\,(\Gamma^P[\p])\,\p$. Also, $\emb{\q} = \q$ holds immediately.
+\end{proof}
+
+\begin{theorem}[Soundness of staging] The open staging algorithm from Definition \ref{TODO} is sound.
+\end{theorem}
+\begin{proof}
+\mbox{}
+\begin{itemize}
+\item For $A : \Ty_{0,j}\,\emb{\Gamma}$, we have that $\emb{\Stage\,A} =
+\emb{|\ev\,A|\,\Gamma^P}$ by the definition of $\Stage$, and moreover we have
+$|A\rel|\,{\Gamma^P}\rel : \emb{|\ev\,A|\,\Gamma^P} = A[\id]$, hence $\emb{\Stage\,A} = A$.
+
+\item For $t : \Tm_{0,j}\,\emb{\Gamma}\,A$, using $|t\rel|\,{\Gamma^P}\rel : \emb{|\ev\,t|\,\Gamma^P} = t[\id]$, we likewise
+  have $\emb{\Stage\,t} = \emb{|\ev\,t|\,\Gamma^P} = t[\id] = t$.
+\end{itemize}
+\end{proof}
+
+\begin{corollary}[Conservativity of 2LTT]
+From the soundness and stability of staging, we get that $\emb{\blank}$ is
+bijective on types and terms, i.e.\ $\Ty_{\mbbo j}\,\Gamma \simeq \Ty_{0,j}\,\emb{\Gamma}$ and
+$\Tm_{\mbbo j}\,\Gamma\,A \simeq \Tm_{0,j}\,\emb{\Gamma}\,\emb{A}$.
+\end{corollary}
+
+
+
+%% \begin{alignat*}{3}
+%%   & \hspace{1em} \emb{\Stage\,A} \hspace{2em}&& \\
+%%   & = \emb{|\ev\,A|\,\Gamma^P}   \hspace{2em}&& \text{by the definition of $\Stage$} \\
+%%   & = A                          \hspace{2em}&& \text{by $|A\rel|\,{\Gamma^P}\rel : \emb{|\ev\,A|\,\Gamma^P} = A[\id]$}
+%% \end{alignat*}
+
+%% to show:
+
+%%   ⌜Stage A⌝  = A
+%%   ⌜|F A| Γᴾ⌝ = A
+
+%%     |Aᴿ| Γᴾᴿ : ⌜|F A| Γᴾ⌝ = A[id] = A OK
+
+%%   ⌜Stage t⌝ = t
+%%   ⌜|F t| Γᴾ⌝ = t
+
+%%     |tᴿ| Γᴾᴿ :  ⌜|F t| Γᴾ⌝ = t[id] = t OK
+
+
+
+
+
+
 
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{references}

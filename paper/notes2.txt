@@ -366,6 +366,8 @@ Inner family
 -- Outer types
 --------------------------------------------------------------------------------
 
+
+
 ⊥ᴿ γᴿ : F⊥ γ → G⊥ γ' → Set̂
       : ⊥̂  → G⊥ γ' → Set̂
   vacuous
@@ -378,22 +380,27 @@ ttᴿ γᴿ := tt
 (Σ A B)ᴿ γᴿ : ((α : FA γ) × FB (γ, α)) → G(Σ A B) γ' → Set̂
   (Σ A B)ᴿ γᴿ (α, β) (GΣ⁻¹(α', β')) := (αᴿ : Aᴿ γᴿ α α') × Bᴿ (γᴿ, αᴿ) β β'
 
+(t,u)ᴿ γᴿ := (tᴿ γᴿ, uᴿ γᴿ)
+(fst t)ᴿ γᴿ := fst (tᴿ γᴿ)
+
   -- pairing & proj obvious
 
 (Π A B)ᴿ γᴿ : ((α : FA γ) → FB (γ, α)) → G(Π A B) γ' → Set̂
   (Π A B)ᴿ γᴿ t t' :=
     (α : FA γ)(α' : GA γ')(αᴿ : Aᴿ γᴿ α α') → Bᴿ (γᴿ, αᴿ) (t α) (G_app t' α')
 
+
+t : Tm (Γ ▶ A) B
+tᴿ :
+
+
 (lam t)ᴿ γᴿ : (Π A B)ᴿ γᴿ (F(lam t) γ) (G(lam t) γ')
             : ∀ α α' (αᴿ : Aᴿ γᴿ α α') → Bᴿ (γᴿ, αᴿ) (Ft (γ, α)) (G_app (G(lam t) γ') α')
 	    : ∀ α α' (αᴿ : Aᴿ γᴿ α α') → Bᴿ (γᴿ, αᴿ) (Ft (γ, α)) (Gt G▶₁⁻¹(γ', α'))
-	    := λ α α' αᴿ. tᴿ (γᴿ, αᴿ) (Ft (γ, α)) (Gt G▶₁⁻¹(γ', α))
+	    := λ α α' αᴿ. tᴿ (γᴿ, αᴿ)
 
+t : Tm Γ (Π A B)
 
-ℕᴿ γᴿ : ℕ^ → G ℕ γ' → Set̂
-  ℕᴿ γᴿ t t' := (G_ℕ t = t')
-
-zeroᴿ γᴿ : G_ℕ zerô =
 
 
 -- Inner types
@@ -413,6 +420,8 @@ BoolElim₀ᴿ γᴿ : ⌜F (BoolElim₀ B t f b) γ⌝ = G (BoolElim₀ B t f b
      OK
 
 etc...
+
+Π₀ᴿ : Γᴿ γ γ' → ⌜F (Π₀ A B) γ⌝ = G (Π₀ A B) γ'   -- G preserves all Ty₀ and Tm₀ !!!
 
 
 -- General soundness
@@ -440,7 +449,7 @@ etc...
           : |(Γ▶A)ᴿ| (Γᴾ[p], q) (p, q)
 	  : (γᴿ : |Γ|ᴿ (Γᴾ[p]) p) × (⌜q⌝ = q)
 
-  Γᴾᴿ : |Γᴿ| Γᴾ id   -- by stability of Γᴿ
+  Γᴾᴿ : |Γᴿ| Γᴾ id           -- by stability of Γᴿ
 
   Γᴾᴿ[p] : |Γ|ᴿ Γᴾ[p] id∘p
          : OK

@@ -2,7 +2,7 @@
 %%% Do NOT edit. File created by BibTeX with style
 %%% ACM-Reference-Format-Journals [18-Jan-2012].
 
-\begin{thebibliography}{18}
+\begin{thebibliography}{39}
 
 %%% ====================================================================
 %%% NOTE TO THE USER: you can override these defaults by providing
@@ -37,6 +37,73 @@
 \providecommand\natexlab[1]{#1}
 \providecommand\showeprint[2][]{arXiv:#2}
 
+\bibitem[Abel and Coquand(2007)]%
+        {untypedtc}
+\bibfield{author}{\bibinfo{person}{Andreas Abel} {and} \bibinfo{person}{Thierry
+  Coquand}.} \bibinfo{year}{2007}\natexlab{}.
+\newblock \showarticletitle{Untyped Algorithmic Equality for Martin-L{\"{o}}f's
+  Logical Framework with Surjective Pairs}.
+\newblock \bibinfo{journal}{\emph{Fundam. Informaticae}} \bibinfo{volume}{77},
+  \bibinfo{number}{4} (\bibinfo{year}{2007}), \bibinfo{pages}{345--395}.
+\newblock
+\urldef\tempurl%
+\url{http://content.iospress.com/articles/fundamenta-informaticae/fi77-4-05}
+\showURL{%
+\tempurl}
+
+
+\bibitem[Abel et~al\mbox{.}(2011)]%
+        {modulartc}
+\bibfield{author}{\bibinfo{person}{Andreas Abel}, \bibinfo{person}{Thierry
+  Coquand}, {and} \bibinfo{person}{Miguel Pagano}.}
+  \bibinfo{year}{2011}\natexlab{}.
+\newblock \showarticletitle{A Modular Type-checking algorithm for Type Theory
+  with Singleton Types and Proof Irrelevance}.
+\newblock \bibinfo{journal}{\emph{Log. Methods Comput. Sci.}}
+  \bibinfo{volume}{7}, \bibinfo{number}{2} (\bibinfo{year}{2011}).
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.2168/LMCS-7(2:4)2011}
+\showDOI{\tempurl}
+
+
+\bibitem[Altenkirch et~al\mbox{.}(1995)]%
+        {altenkirch1995categorical}
+\bibfield{author}{\bibinfo{person}{Thorsten Altenkirch},
+  \bibinfo{person}{Martin Hofmann}, {and} \bibinfo{person}{Thomas Streicher}.}
+  \bibinfo{year}{1995}\natexlab{}.
+\newblock \showarticletitle{Categorical reconstruction of a reduction free
+  normalization proof}. In \bibinfo{booktitle}{\emph{Category Theory and
+  Computer Science}}. Springer, \bibinfo{pages}{182--199}.
+\newblock
+
+
+\bibitem[Altenkirch and Kaposi(2016)]%
+        {altenkirch2016normalisation}
+\bibfield{author}{\bibinfo{person}{Thorsten Altenkirch} {and}
+  \bibinfo{person}{Ambrus Kaposi}.} \bibinfo{year}{2016}\natexlab{}.
+\newblock \showarticletitle{Normalisation by evaluation for dependent types}.
+  In \bibinfo{booktitle}{\emph{LIPIcs-Leibniz International Proceedings in
+  Informatics}}, Vol.~\bibinfo{volume}{52}. Schloss Dagstuhl-Leibniz-Zentrum
+  fuer Informatik.
+\newblock
+
+
+\bibitem[Altenkirch and Kaposi(2017)]%
+        {kaposinbe}
+\bibfield{author}{\bibinfo{person}{Thorsten Altenkirch} {and}
+  \bibinfo{person}{Ambrus Kaposi}.} \bibinfo{year}{2017}\natexlab{}.
+\newblock \showarticletitle{{Normalisation by Evaluation for Type Theory, in
+  Type Theory}}.
+\newblock \bibinfo{journal}{\emph{{Logical Methods in Computer Science}}}
+  \bibinfo{volume}{{Volume 13, Issue 4}} (\bibinfo{date}{Oct.}
+  \bibinfo{year}{2017}).
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.23638/LMCS-13(4:1)2017}
+\showDOI{\tempurl}
+
+
 \bibitem[Annenkov et~al\mbox{.}(2019)]%
         {twolevel}
 \bibfield{author}{\bibinfo{person}{Danil Annenkov}, \bibinfo{person}{Paolo
@@ -50,6 +117,17 @@
 \url{http://arxiv.org/abs/1705.03307}
 \showURL{%
 \tempurl}
+
+
+\bibitem[Bocquet et~al\mbox{.}(2021)]%
+        {bocquet2021relative}
+\bibfield{author}{\bibinfo{person}{Rafa{\"e}l Bocquet}, \bibinfo{person}{Ambrus
+  Kaposi}, {and} \bibinfo{person}{Christian Sattler}.}
+  \bibinfo{year}{2021}\natexlab{}.
+\newblock \showarticletitle{Relative induction principles for type theories}.
+\newblock \bibinfo{journal}{\emph{arXiv preprint arXiv:2102.11649}}
+  (\bibinfo{year}{2021}).
+\newblock
 
 
 \bibitem[B{\"{o}}hm and Berarducci(1985)]%
@@ -92,6 +170,51 @@
 \newblock \bibinfo{journal}{\emph{arXiv preprint arXiv:1702.04912}}
   (\bibinfo{year}{2017}).
 \newblock
+
+
+\bibitem[Cavallo et~al\mbox{.}(2020)]%
+        {DBLP:conf/csl/CavalloMS20}
+\bibfield{author}{\bibinfo{person}{Evan Cavallo}, \bibinfo{person}{Anders
+  M{\"{o}}rtberg}, {and} \bibinfo{person}{Andrew~W. Swan}.}
+  \bibinfo{year}{2020}\natexlab{}.
+\newblock \showarticletitle{Unifying Cubical Models of Univalent Type Theory}.
+  In \bibinfo{booktitle}{\emph{28th {EACSL} Annual Conference on Computer
+  Science Logic, {CSL} 2020, January 13-16, 2020, Barcelona, Spain}}
+  \emph{(\bibinfo{series}{LIPIcs}, Vol.~\bibinfo{volume}{152})},
+  \bibfield{editor}{\bibinfo{person}{Maribel Fern{\'{a}}ndez} {and}
+  \bibinfo{person}{Anca Muscholl}} (Eds.). \bibinfo{publisher}{Schloss Dagstuhl
+  - Leibniz-Zentrum f{\"{u}}r Informatik}, \bibinfo{pages}{14:1--14:17}.
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.4230/LIPIcs.CSL.2020.14}
+\showDOI{\tempurl}
+
+
+\bibitem[Coquand(1996)]%
+        {coquand1996algorithm}
+\bibfield{author}{\bibinfo{person}{Thierry Coquand}.}
+  \bibinfo{year}{1996}\natexlab{}.
+\newblock \showarticletitle{An Algorithm for Type-Checking Dependent Types}.
+\newblock \bibinfo{journal}{\emph{Sci. Comput. Program.}} \bibinfo{volume}{26},
+  \bibinfo{number}{1-3} (\bibinfo{year}{1996}), \bibinfo{pages}{167--177}.
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.1016/0167-6423(95)00021-6}
+\showDOI{\tempurl}
+
+
+\bibitem[Coquand(2019)]%
+        {coquand2018canonicity}
+\bibfield{author}{\bibinfo{person}{Thierry Coquand}.}
+  \bibinfo{year}{2019}\natexlab{}.
+\newblock \showarticletitle{Canonicity and normalization for dependent type
+  theory}.
+\newblock \bibinfo{journal}{\emph{Theor. Comput. Sci.}}  \bibinfo{volume}{777}
+  (\bibinfo{year}{2019}), \bibinfo{pages}{184--191}.
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.1016/j.tcs.2019.01.015}
+\showDOI{\tempurl}
 
 
 \bibitem[Coutts et~al\mbox{.}(2007)]%
@@ -202,6 +325,26 @@
 \showDOI{\tempurl}
 
 
+\bibitem[Hofmann(1997)]%
+        {Hofmann97syntaxand}
+\bibfield{author}{\bibinfo{person}{Martin Hofmann}.}
+  \bibinfo{year}{1997}\natexlab{}.
+\newblock \showarticletitle{Syntax and Semantics of Dependent Types}. In
+  \bibinfo{booktitle}{\emph{Semantics and Logics of Computation}}.
+  \bibinfo{publisher}{Cambridge University Press}, \bibinfo{pages}{79--130}.
+\newblock
+
+
+\bibitem[Huber(2016)]%
+        {huber-thesis}
+\bibfield{author}{\bibinfo{person}{Simon Huber}.}
+  \bibinfo{year}{2016}\natexlab{}.
+\newblock \emph{\bibinfo{title}{Cubical Interpretations of Type Theory}}.
+\newblock \bibinfo{thesistype}{Ph.\,D. Dissertation}.
+  \bibinfo{school}{University of Gothenburg}.
+\newblock
+
+
 \bibitem[Jones et~al\mbox{.}(1993)]%
         {partial-evaluation}
 \bibfield{author}{\bibinfo{person}{Neil~D. Jones}, \bibinfo{person}{Carsten~K.
@@ -229,11 +372,11 @@
 \showDOI{\tempurl}
 
 
-\bibitem[Kaposi et~al\mbox{.}(2019)]%
+\bibitem[Kaposi et~al\mbox{.}(2019a)]%
         {gluing}
 \bibfield{author}{\bibinfo{person}{Ambrus Kaposi}, \bibinfo{person}{Simon
   Huber}, {and} \bibinfo{person}{Christian Sattler}.}
-  \bibinfo{year}{2019}\natexlab{}.
+  \bibinfo{year}{2019}\natexlab{a}.
 \newblock \showarticletitle{Gluing for Type Theory}. In
   \bibinfo{booktitle}{\emph{4th International Conference on Formal Structures
   for Computation and Deduction, {FSCD} 2019, June 24-30, 2019, Dortmund,
@@ -244,6 +387,56 @@
 \newblock
 \urldef\tempurl%
 \url{https://doi.org/10.4230/LIPIcs.FSCD.2019.25}
+\showDOI{\tempurl}
+
+
+\bibitem[Kaposi et~al\mbox{.}(2019b)]%
+        {kaposi2019constructing}
+\bibfield{author}{\bibinfo{person}{Ambrus Kaposi},
+  \bibinfo{person}{Andr{\'{a}}s Kov{\'{a}}cs}, {and} \bibinfo{person}{Thorsten
+  Altenkirch}.} \bibinfo{year}{2019}\natexlab{b}.
+\newblock \showarticletitle{Constructing quotient inductive-inductive types}.
+\newblock \bibinfo{journal}{\emph{Proc. {ACM} Program. Lang.}}
+  \bibinfo{volume}{3}, \bibinfo{number}{{POPL}} (\bibinfo{year}{2019}),
+  \bibinfo{pages}{2:1--2:24}.
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.1145/3290315}
+\showDOI{\tempurl}
+
+
+\bibitem[Kawata and Igarashi(2019)]%
+        {multi-stage-calculus}
+\bibfield{author}{\bibinfo{person}{Akira Kawata} {and} \bibinfo{person}{Atsushi
+  Igarashi}.} \bibinfo{year}{2019}\natexlab{}.
+\newblock \showarticletitle{A Dependently Typed Multi-stage Calculus}. In
+  \bibinfo{booktitle}{\emph{Programming Languages and Systems - 17th Asian
+  Symposium, {APLAS} 2019, Nusa Dua, Bali, Indonesia, December 1-4, 2019,
+  Proceedings}} \emph{(\bibinfo{series}{Lecture Notes in Computer Science},
+  Vol.~\bibinfo{volume}{11893})},
+  \bibfield{editor}{\bibinfo{person}{Anthony~Widjaja Lin}} (Ed.).
+  \bibinfo{publisher}{Springer}, \bibinfo{pages}{53--72}.
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.1007/978-3-030-34175-6\_4}
+\showDOI{\tempurl}
+
+
+\bibitem[Kiselyov(2014)]%
+        {kiselyov14metaocaml}
+\bibfield{author}{\bibinfo{person}{Oleg Kiselyov}.}
+  \bibinfo{year}{2014}\natexlab{}.
+\newblock \showarticletitle{The Design and Implementation of {BER} MetaOCaml -
+  System Description}. In \bibinfo{booktitle}{\emph{Functional and Logic
+  Programming - 12th International Symposium, {FLOPS} 2014, Kanazawa, Japan,
+  June 4-6, 2014. Proceedings}} \emph{(\bibinfo{series}{Lecture Notes in
+  Computer Science}, Vol.~\bibinfo{volume}{8475})},
+  \bibfield{editor}{\bibinfo{person}{Michael Codish} {and}
+  \bibinfo{person}{Eijiro Sumii}} (Eds.). \bibinfo{publisher}{Springer},
+  \bibinfo{pages}{86--102}.
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.1007/978-3-319-07151-0\_6}
 \showDOI{\tempurl}
 
 
@@ -265,6 +458,69 @@
 \showDOI{\tempurl}
 
 
+\bibitem[Mac~Lane(1998)]%
+        {maclane98categories}
+\bibfield{author}{\bibinfo{person}{Saunders Mac~Lane}.}
+  \bibinfo{year}{1998}\natexlab{}.
+\newblock \bibinfo{booktitle}{\emph{{Categories for the Working Mathematician}}
+  (\bibinfo{edition}{2nd} ed.)}.
+\newblock \bibinfo{publisher}{Springer}.
+\newblock
+\showISBNx{0387984038}
+\urldef\tempurl%
+\url{http://www.amazon.com/exec/obidos/redirect?tag=citeulike07-20\&path=ASIN/0387984038}
+\showURL{%
+\tempurl}
+
+
+\bibitem[Orton and Pitts(2016)]%
+        {orton_et_al:LIPIcs:2016:6564}
+\bibfield{author}{\bibinfo{person}{Ian Orton} {and} \bibinfo{person}{Andrew~M.
+  Pitts}.} \bibinfo{year}{2016}\natexlab{}.
+\newblock \showarticletitle{{Axioms for Modelling Cubical Type Theory in a
+  Topos}}. In \bibinfo{booktitle}{\emph{25th EACSL Annual Conference on
+  Computer Science Logic (CSL 2016)}} \emph{(\bibinfo{series}{Leibniz
+  International Proceedings in Informatics (LIPIcs)},
+  Vol.~\bibinfo{volume}{62})}, \bibfield{editor}{\bibinfo{person}{Jean-Marc
+  Talbot} {and} \bibinfo{person}{Laurent Regnier}} (Eds.).
+  \bibinfo{publisher}{Schloss Dagstuhl--Leibniz-Zentrum fuer Informatik},
+  \bibinfo{address}{Dagstuhl, Germany}, \bibinfo{pages}{24:1--24:19}.
+\newblock
+\showISBNx{978-3-95977-022-4}
+\showISSN{1868-8969}
+\urldef\tempurl%
+\url{https://doi.org/10.4230/LIPIcs.CSL.2016.24}
+\showDOI{\tempurl}
+
+
+\bibitem[Palmgren and Vickers(2007)]%
+        {partialhorn}
+\bibfield{author}{\bibinfo{person}{Erik Palmgren} {and}
+  \bibinfo{person}{Steven~J. Vickers}.} \bibinfo{year}{2007}\natexlab{}.
+\newblock \showarticletitle{Partial Horn logic and cartesian categories}.
+\newblock \bibinfo{journal}{\emph{Ann. Pure Appl. Log.}} \bibinfo{volume}{145},
+  \bibinfo{number}{3} (\bibinfo{year}{2007}), \bibinfo{pages}{314--353}.
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.1016/j.apal.2006.10.001}
+\showDOI{\tempurl}
+
+
+\bibitem[P{\'{e}}drot and Tabareau(2020)]%
+        {fire-triangle}
+\bibfield{author}{\bibinfo{person}{Pierre{-}Marie P{\'{e}}drot} {and}
+  \bibinfo{person}{Nicolas Tabareau}.} \bibinfo{year}{2020}\natexlab{}.
+\newblock \showarticletitle{The fire triangle: how to mix substitution,
+  dependent elimination, and effects}.
+\newblock \bibinfo{journal}{\emph{Proc. {ACM} Program. Lang.}}
+  \bibinfo{volume}{4}, \bibinfo{number}{{POPL}} (\bibinfo{year}{2020}),
+  \bibinfo{pages}{58:1--58:28}.
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.1145/3371126}
+\showDOI{\tempurl}
+
+
 \bibitem[Sheard and Jones(2002)]%
         {template-haskell}
 \bibfield{author}{\bibinfo{person}{Tim Sheard} {and} \bibinfo{person}{Simon
@@ -276,6 +532,30 @@
 \newblock
 \urldef\tempurl%
 \url{https://doi.org/10.1145/636517.636528}
+\showDOI{\tempurl}
+
+
+\bibitem[Sterling(2021)]%
+        {sterlingthesis}
+\bibfield{author}{\bibinfo{person}{Jonathan Sterling}.}
+  \bibinfo{year}{2021}\natexlab{}.
+\newblock \emph{\bibinfo{title}{First Steps in Synthetic Tait Computability}}.
+\newblock \bibinfo{thesistype}{Ph.\,D. Dissertation}. \bibinfo{school}{Carnegie
+  Mellon University Pittsburgh, PA}.
+\newblock
+
+
+\bibitem[Sterling and Angiuli(2021)]%
+        {cubicalnbe}
+\bibfield{author}{\bibinfo{person}{Jonathan Sterling} {and}
+  \bibinfo{person}{Carlo Angiuli}.} \bibinfo{year}{2021}\natexlab{}.
+\newblock \showarticletitle{Normalization for Cubical Type Theory}. In
+  \bibinfo{booktitle}{\emph{36th Annual {ACM/IEEE} Symposium on Logic in
+  Computer Science, {LICS} 2021, Rome, Italy, June 29 - July 2, 2021}}.
+  \bibinfo{publisher}{{IEEE}}, \bibinfo{pages}{1--15}.
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.1109/LICS52264.2021.9470719}
 \showDOI{\tempurl}
 
 
@@ -302,6 +582,23 @@
 \newblock
 \newblock
 \shownote{Unpublished note}.
+
+
+\bibitem[Xie et~al\mbox{.}(2022)]%
+        {typed-th}
+\bibfield{author}{\bibinfo{person}{Ningning Xie}, \bibinfo{person}{Matthew
+  Pickering}, \bibinfo{person}{Andres L{\"{o}}h}, \bibinfo{person}{Nicolas Wu},
+  \bibinfo{person}{Jeremy Yallop}, {and} \bibinfo{person}{Meng Wang}.}
+  \bibinfo{year}{2022}\natexlab{}.
+\newblock \showarticletitle{Staging with class: a specification for typed
+  template Haskell}.
+\newblock \bibinfo{journal}{\emph{Proc. {ACM} Program. Lang.}}
+  \bibinfo{volume}{6}, \bibinfo{number}{{POPL}} (\bibinfo{year}{2022}),
+  \bibinfo{pages}{1--30}.
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.1145/3498723}
+\showDOI{\tempurl}
 
 
 \end{thebibliography}

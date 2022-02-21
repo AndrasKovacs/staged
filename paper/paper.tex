@@ -97,6 +97,8 @@
 \newcommand{\Bool}{\msf{Bool}}
 \newcommand{\true}{\msf{true}}
 \newcommand{\false}{\msf{false}}
+\newcommand{\True}{\msf{True}}
+\newcommand{\False}{\msf{False}}
 \newcommand{\List}{\msf{List}}
 \newcommand{\nil}{\msf{nil}}
 \newcommand{\cons}{\msf{cons}}
@@ -134,6 +136,7 @@
 
 %%
 %% end of the preamble, start of the body of the document source.
+\hypersetup{draft}
 \begin{document}
 
 \title{Staged Compilation With Two-Level Type Theory}
@@ -160,7 +163,7 @@
   originally devised for the purpose of developing synthetic homotopy theory,
   also serves as a system for staged compilation with dependent types. 2LTT has
   numerous good properties for this use case: it has a concise specification,
-  well-developed model theory, and it supports a wide range of language features
+  well-behaved model theory, and it supports a wide range of language features
   both at the object and the meta level. First, we give an overview of 2LTT's
   features and applications in staging. Then, we present a staging algorithm and
   provide a proof of correctness. Our algorithm is ``staging-by-evaluation'',
@@ -168,7 +171,7 @@
   is given by the evaluation of 2LTT syntax in a semantic domain. The staging
   algorithm together with its correctness proof constitutes a proof of strong
   conservativity of 2LLT over the object theory. To our knowledge, this is the
-  first system for staged compilation which supports full dependent types and
+  first description of staged compilation which supports full dependent types and
   unrestricted staging for types.
 \end{abstract}
 
@@ -203,7 +206,7 @@ metaprogramming convenience: 2LTT can be directly and effectively employed
 in staged compilation. Moreover, semantic ideas underlying 2LTT are also
 directly applicable to the theory of staging.
 
-\subsection{Overview \& Contributions}
+\subsection{Overview \& Contributions}\label{sec:overview}
 
 \begin{itemize}
   \item In Section \ref{sec:tour-of-2ltt} we present an informal syntax of two-level
@@ -339,7 +342,7 @@ function type former stays within a single stage. We may also omit stage annotat
 from $\lambda$ and pairing.
 \end{notation}
 
-\subsection{Staged Programming in 2LTT}
+\subsection{Staged Programming in 2LTT}\label{sec:staged-programming}
 
 In 2LTT, we may have several different polymorphic identity functions. First, we
 consider the usual identity functions at each stage:
@@ -614,7 +617,7 @@ compile it.
 %% extended languages with abstraction facilities, through metaprogramming. We
 %% look at several setups with restricted object languages.
 
-\subsubsection{Monomorphization}
+\subsubsection{Monomorphization}\label{sec:monomorphization}
 
 In this case, the object language is simply typed, so every type is known
 statically. This makes it easy to assign different memory layouts to different
@@ -700,9 +703,9 @@ We use an algebraic specification for models, and specify the syntax as the
 initial model. We only handle well-formed syntactic objects and only define
 operations which respect syntactic definitional equality; in fact, we identify
 definitional equality with metatheoretic equality. First, we define the
-structural scaffolding of 2LTT without type formers. The following specification
-is agnostic about the sizes of $\Set$-s involved, i.e.\ we can model underlying
-sorts using any metatheoretic $\Set_j$.
+structural scaffolding of 2LTT without type formers, mostly following
+\cite{twolevel}. The specification is agnostic about the sizes of sets involved,
+i.e.\ we can model underlying sorts using any metatheoretic $\Set_j$.
 
 \begin{definition} A model of \textbf{basic 2LTT} consists of the following.
 \begin{itemize}
@@ -783,7 +786,7 @@ formers in the following. We assume that all type formers are natural,
 i.e.\ stable under substitution.
 \begin{itemize}
 \item \emph{Universes}. For each $i$ and $j$, we have a Coquand-style universe
-  \cite{TODO} in $\Ty_{i,j}$. This consists of $\U_{i,j} : \Ty_{i,j+1}\,\Gamma$,
+  \cite{coquand2018canonicity} in $\Ty_{i,j}$. This consists of $\U_{i,j} : \Ty_{i,j+1}\,\Gamma$,
   together with $\El : \Tm_{i,j+1}\,\Gamma\,\U_{i,j} \to \Ty_{i,j}\,\Gamma$ and $\Code$, where $\Code$
   and $\El$ are inverses.
 \item \emph{$\Sigma$-types}. We have $\Sigma\,(x : A)\,B : \Ty_{i,j}\,\Gamma$ for $A : \Ty_{i,j}\,\Gamma$
@@ -818,18 +821,18 @@ The \textbf{syntax of 2LTT} is defined to be the initial model of 2LTT, where
 all underlying sets are in $\Set_0$. The syntax can be assumed to exist, since
 the notion of model is algebraic; the specification can be expressed using a
 suitable notion of algebraic signatures, such as one for essentially algebraic
-theories \cite{TODO} or as a finitary quotient inductive-inductive signature
-\cite{TODO}. The initiality of syntax directly yields a notion of
-\emph{recursion on syntax}, and it can be shown that initiality also implies an
-\emph{induction principle} \cite{TODO}.
+theories \cite{partialhorn} or as a finitary quotient inductive-inductive
+signature \cite{kaposi2019constructing}. The initiality of syntax directly
+yields a notion of \emph{recursion on syntax}, and it can be shown that
+initiality also implies an \emph{induction principle}.
 \end{definition}
 
-The examples in Section \ref{TODO} can be faithfully represented in the formal
-syntax. The only notable difference is that the formal syntax uses Coquand-style
-universes instead of Russell-style ones. We use the former because it is much
-easier to model in the semantics in Section \ref{TODO}. We note though that it
-is straightforward to elaborate from a Russell-style surface syntax to the
-formal version, by inserting $\El$ and $\Code$ as required.
+The examples in Section \ref{sec:tour-of-2ltt} can be faithfully represented in
+the formal syntax. The only notable difference is that the formal syntax uses
+Coquand-style universes instead of Russell-style ones. We use the former because
+it is much easier to model in the semantics in Section \ref{sec:staging-algorithm}. We note
+though that it is straightforward to elaborate from a Russell-style surface
+syntax to the formal version, by inserting $\El$ and $\Code$ as required.
 
 \subsubsection{Comparison to Annekov et al.}
 Comparing our models to the primary reference on 2LTT \cite{twolevel}, the main
@@ -881,8 +884,7 @@ of the following functions:
   & \emb{\blank} : \Ty_{\mbbo j}\,\Gamma \to \Ty_{0,j}\,\emb{\Gamma}\\
   & \emb{\blank} : \Tm_{\mbbo j}\,\Gamma\,A \to \Tm_{0,j}\,\emb{\Gamma}\,\emb{A}
 \end{alignat*}
-Embedding maps all type and term formers to the corresponding ones in 2LTT, and
-strictly preserves all structure.
+Embedding strictly preserves all structure.
 \end{definition}
 
 \section{The Staging Algorithm}\label{sec:staging-algorithm}
@@ -890,7 +892,7 @@ strictly preserves all structure.
 In this section we specify what we mean by a staging algorithm, then proceed to
 define one.
 
-\begin{definition}
+\begin{definition}\label{def:staging}
 A \textbf{staging algorithm} consists of two functions:
   \begin{alignat*}{3}
     & \Stage : \Ty_{0,j}\,\emb{\Gamma} \to \Ty_{\mbbo j}\,\Gamma \\
@@ -902,11 +904,11 @@ terms.
 \end{definition}
 \begin{definition}
   A staging algorithm $\Stage$ is \textbf{correct} if the following properties hold:
-  \begin{itemize}
+  \begin{enumerate}
   \item \emph{Soundness:} $\emb{\Stage\,A} = A$ and $\emb{\Stage\,t} = t$.
   \item \emph{Completeness:} staging respects definitional equality.
   \item \emph{Stability:} $\Stage\,\emb{A} = A$ and $\Stage\,\emb{t} = t$.
-  \end{itemize}
+  \end{enumerate}
 \end{definition}
 We make some remarks on correctness. First, we get completeness for free in our
 algebraic setup, since \emph{all} functions definable in the metatheory must
@@ -914,24 +916,29 @@ respect definitional equality.
 
 Second, note that soundness and stability together is the statement that
 embedding is a bijection on types and terms. This is a statement of
-\emph{conservativity} of 2LTT over the object theory. In \cite{TODO} a
+\emph{conservativity} of 2LTT over the object theory. In \cite{twolevel} a
 significantly weaker conservativity theorem is shown, which expresses that there
 exists a function from $\Tm_{0,j}\,\emb{\Gamma}\,\emb{A}$ to $\Tm_{\mbbo
   j}\,\Gamma\,A$.
 
 Lastly, we note that the correctness terminology is borrowed from previous works
 on normalization-by-evaluation, where the soundness-completeness-stability trio
-has been used several times \cite{TODO}. In \cite{cubicalnbe}, stability is
-instead called ``idempotence''.
+has been used \cite{altenkirch1995categorical,altenkirch2016normalisation}. In
+\cite{cubicalnbe}, stability is instead called ``idempotence''.
 
 \subsection{The Presheaf Model}
 
 We review the presheaf model described in \cite[Section~2.5.3]{twolevel}.  This
 will directly yield a closed staging algorithm, by evaluation of 2LTT types and
-terms in the model. Here, contexts are presheaves over the syntactic category of
-the object theory. We denote the components of the model by putting hats on 2LTT
-components, e.g.\ as in $\hCon$. We summarize the key components in the
-following.
+terms in the model. First, we give a higher-level overview of this semantics.
+
+TODO explanation here.
+%% Here, contexts are presheaves over the syntactic category of
+%% the object theory.
+
+We proceed to summarize the key components of the model in a bit more detail. We
+denote the components of the model by putting hats on 2LTT components, e.g.\ as
+in $\hCon$. We summarize the key components in the following.
 
 \begin{notation}
 In this section, we switch to naming elements of $\Cono$ as $a$, $b$ and $c$,
@@ -961,13 +968,14 @@ $|\sigma|\,(\gamma[f]) = (|\sigma|\,\gamma)[f]$.
 \end{definition}
 
 \begin{definition}
-$\bs{\hTy_{1,j}\,\Gamma : \Set_\omega}$ is the set of \emph{displayed presheaves}
-over $\Gamma$; see e.g.\ \cite{TODO}. This is equivalent to the set of
-presheaves over the category of elements of $\Gamma$, but it is usually more
-convenient in calculations. An $A : \hTy\,\Gamma$ has an action on objects
-$|A| : \{a : \Cono\} \to |\Gamma|\,a \to \Set_j$ and an action on
-morphisms $\blank[\blank] : |A|\,\gamma \to (f : \Subo\,a\,b) \to
-|A|\,(\gamma[f])$, such that $\alpha[\id] = \alpha$ and $\alpha[f \circ g] = \alpha[f][g]$.
+$\bs{\hTy_{1,j}\,\Gamma : \Set_\omega}$ is the set of \emph{displayed
+presheaves} over $\Gamma$; see e.g.\ \cite[Chapter~1.2]{huber-thesis}. This is
+equivalent to the set of presheaves over the category of elements of $\Gamma$,
+but it is usually more convenient in calculations. An $A : \hTy\,\Gamma$ has
+an action on objects $|A| : \{a : \Cono\} \to |\Gamma|\,a \to \Set_j$ and an
+action on morphisms $\blank[\blank] : |A|\,\gamma \to (f : \Subo\,a\,b) \to
+|A|\,(\gamma[f])$, such that $\alpha[\id] = \alpha$ and $\alpha[f \circ g] =
+\alpha[f][g]$.
 
 \begin{notation}
   We write $\alpha$ and $\beta$ respectively for elements of $|A|\,\gamma$ and
@@ -983,30 +991,23 @@ morphisms $\blank[\blank] : |A|\,\gamma \to (f : \Subo\,a\,b) \to
   = (|t|\,\gamma)[f]$.
 \end{definition}
 
-%% \begin{definition}
-%% $\bs{\wh{\U}_{1,j} : \hTy_{1,j+1}\,\Gamma}$ is defined by
-%% $|\wh{\U}_{1,j}|\,\{a\}\,\_ = \hTy_{1,j}\,(\y\,a)$, and defining action on
-%% morphisms by $\hTy$ substitution. Note that the universe levels check out in
-%% this definition, since by unfolding $\hTy_{1,j}\,(\y\,a)$ we can show that it
-%% is in $\Set_j$.
-%% \end{definition}
-
 We also look at he empty context and context extension with meta-level types,
 as these will appear in subsequent definitions.
 
-\begin{definition}
+\begin{definition}\label{def:psh-emptycon}
 $\bs{{\widehat{\emptycon}} : \hCon}$ is defined as the presheaf
 which is constantly $\top$, i.e.\ $|\wh{\emptycon}|\,\_ = \top$.
 \end{definition}
 
-\begin{definition} For $A : \hTy_{1,j}\,\Gamma$, we define $\bs{\Gamma\,\,\wh{\ext}\,A}$
+\begin{definition}\label{def:psh-ext} For $A : \hTy_{1,j}\,\Gamma$, we define $\bs{\Gamma\,\,\wh{\ext}\,A}$
 pointwise by $|\Gamma\,\,\wh{\ext}\,A|\,a := (\gamma : |\Gamma|\,a) \times |A|\,\gamma$
 and $(\gamma,\,\alpha)[f] := (\gamma[f],\,\alpha[f])$.
 \end{definition}
 
 Using the above definitions, we can model the syntactic category of 2LTT, and
-also the meta-level family structure and all meta-level type formers. For an
-exposition in previous literature, see \cite{TODO} and \cite{TODO}.
+also the meta-level family structure and all meta-level type formers. For
+expositions in previous literature, see \cite[Chapter~1.2]{huber-thesis} and
+\cite[Section~4.1]{Hofmann97syntaxand}.
 
 \subsubsection{The object-level fragment}
 
@@ -1035,15 +1036,14 @@ extending a semantic context with an object-level type appends an object-level
 term.
 \end{definition}
 
-
-Using the above definitions and following \cite{TODO}, we can model all type
+Using the above definitions and following \cite{twolevel}, we can model all type
 formers in $\hTy_{0,j}$. Intuitively, that is because $\hTy_{0,j}$ and
 $\hTm_{0,j}$ return types and terms, so we can reuse the type and term formers
 in the object theory.
 
 \subsubsection{Lifting}
 
-\begin{definition}
+\begin{definition}\label{def:psh-lifting}
 $\bs{\wh{\Lift} A : \hTy_{1,j}\,\Gamma}$ is defined as $\Tm_{\mbbo j}[A]$. With
   this, we get that $\hTm_{0,j}\,\Gamma\,A$ is equal to
   $\hTm_{1,j}\,\Gamma\,(\wh{\Lift}\,A)$. Hence, we can define both quoting and
@@ -1052,7 +1052,7 @@ $\bs{\wh{\Lift} A : \hTy_{1,j}\,\Gamma}$ is defined as $\Tm_{\mbbo j}[A]$. With
 
 \subsection{Closed Staging}
 
-\begin{definition} The \textbf{evaluation morphism, denoted $\bs{\ev}$} is
+\begin{definition} The \textbf{evaluation morphism, denoted $\bs{\ev}$}, is
 a 2LTT model morphism from the syntax of 2LTT to $\hato$, arising from the initiality
 of the syntax. In other words, $\ev$ is defined by recursion on the syntax and
 strictly preserves all structure.
@@ -1077,9 +1077,10 @@ we get $|\ev\,A|\,\{\Gamma\} : |\emb{\Gamma}|\,\Gamma \to \Ty_{\mbbo j}$. We
 need an element of $|\emb{\Gamma}|\,\Gamma$, in order to extract an object-level
 type. Such ``generic'' semantic contexts should be possible to construct, because
 elements of $|\emb{\Gamma}|\,\Gamma$ are essentially lists of object-level terms
-in $\Gamma$, by Definition \ref{TODO}, so $|\emb{\Gamma}|\,\Gamma$ should be
+in $\Gamma$, by Definitions \ref{def:psh-ext} and \ref{def:psh-emptycon}, so $|\emb{\Gamma}|\,\Gamma$ should be
 isomorphic to $\Subo\,\Gamma\,\Gamma$.  It turns out that this falls out from
 the stability proof of $\ev$.
+
 
 \subsection{Stability and Open Staging}
 
@@ -1121,7 +1122,7 @@ here. In particular, preservation of definitional equalities is automatic, since
 types, terms and substitutions are all interpreted as proof-irrelevant
 equations.
 
-\begin{definition} We define \textbf{open staging} as follows.
+\begin{definition}\label{def:open-staging} We define \textbf{open staging} as follows.
 \begin{alignat*}{4}
   & \Stage : \Ty_{0,j}\,\emb{\Gamma} \to \Ty_{\mbbo j}\,\Gamma \hspace{2em} && \Stage : \Tm_{0,j}\,\emb{\Gamma}\,A \to \Tm_{\mbbo j}\,\Gamma\,(\Stage\,A) \\
   & \Stage\,A := |\ev\,A|\,\Gamma^P && \Stage\,t := |\ev\,t|\,\Gamma^P
@@ -1156,7 +1157,7 @@ using metatheoretic inductive types and function types.
   \item $|\Nat_1|\,\_$ is simply the set of natural numbers $\mbb{N}$.
   \item $|\Sigma_1\,A\,B|\,\gamma$ is simply a set of pairs of values.
   \item In the non-dependent case, a function type $A\,\wh{\to}\,B$ is defined as the presheaf
-        exponential \cite{TODO}. The computational part of $|A\,\wh{\to}\,B|\,\{\Delta\}\,\gamma$
+        exponential. The computational part of $|A\,\wh{\to}\,B|\,\{\Delta\}\,\gamma$
         is given by a function with type
         \[ (\Theta : \Cono) \to (\sigma : \Subo\,\Theta\,\Delta) \to |A|\,(\gamma[\sigma]) \to |B|\,(\gamma[\sigma])        \]
         This may be also familiar as the semantic implication from the Kripke
@@ -1180,20 +1181,21 @@ $\gamma[\p] : |\ev\,\Gamma|\,(\Delta \ext A)$. This cannot be avoided by an easy
 optimization trick.
 
 The exact same efficiency issue occurs in formal presheaf-based
-normalization-by-evaluation \cite{TODO}. However, in practical implementations
-\cite{TODO} this issue can be fully solved by using De Bruijn \emph{levels} in
-the semantic domain, thus arranging that weakening has no operational cost on
-semantic values. This corresponds to Abel's ``liftable terms'' presentation
-\cite{TODO}. We can use the same solution in staging, by using de Bruijn levels
-and delayed weakenings in object-level terms during staging. It is a somewhat
-unfortunate mismatch that indices are far more convenient in formalization, but
-levels are more efficient in practice.
+normalization-by-evaluation, such as in \cite{kaposinbe} and
+\cite{coquand2018canonicity}. However, in practical implementations this issue
+can be fully solved by using De Bruijn \emph{levels} in the semantic domain,
+thus arranging that weakening has no operational cost on semantic values; see
+\cite{coquand1996algorithm}, \cite{modulartc} and \cite{untypedtc} for
+implementations in this style. We can use the same solution in staging, by using
+de Bruijn levels and delayed weakenings in object-level terms during staging. It
+is a somewhat unfortunate mismatch that indices are far more convenient in
+formalization, but levels are more efficient in practice.
 
 In our prototype implementation, we use the above optimization with De Bruijn
 levels, and we also switch to \emph{syntax-directed} staging. In the formal
 staging algorithm, since types are tracked, quotes and splices have no
 operational significance; recall that they are interpreted as identity functions
-in Definition \ref{TODO}. However, it seems more efficient to not compute types
+in Definition \ref{def:psh-lifting}. However, it seems more efficient to not compute types
 at all and instead rely on quotes and splices to keep track of the current
 stage.
 
@@ -1217,11 +1219,12 @@ property.
 
 We have seen that 2LTT can be modeled in the presheaf topos
 $\hato$. Additionally, $\hato$ supports all type formers of extensional type
-theory \cite{TODO}, and certain other structures which are stable under
-object-level substitution. As all constructions in this section must be stable,
-it makes sense to work internally to $\hato$. This style has been previously
-used in normalization proofs \cite{TODO} and also in the metatheory of cubical
-type theories \cite{TODO}.
+theory, and certain other structures which are stable under object-level
+substitution. As all constructions in this section must be stable, it makes
+sense to work internally to $\hato$. This style has been previously used in
+normalization proofs \cite{coquand2018canonicity} and also in the metatheory of
+cubical type theories
+\cite{licata2018internal,orton_et_al:LIPIcs:2016:6564,DBLP:conf/csl/CavalloMS20}.
 
 When we work internally in a model of a type theory, we do not explicitly refer
 to contexts, types, and substitutions. For example, when working in Agda, we do
@@ -1235,7 +1238,7 @@ We write $\whset_j$ for ordinal-indexed Russell-style universes. Formally, we
 have Coquand-style universes, but for the sake of brevity we omit $\El$ and
 $\Code$ from internal syntax. Universes are cumulative, and closed under $\Pi$,
 $\Sigma$, extensional identity $\blank\!=\!\blank$ and inductive types. We use
-the same conventions as in Notation \ref{TODO}.
+the same conventions as in Notation \ref{basic-notation}.
 
 \noindent The basic scheme for internalization is as follows:
 \begin{alignat*}{3}
@@ -1285,7 +1288,7 @@ $\hato$. This will be related to the evaluation morphism $\ev$ in the relational
 interpretation. In short, $\re$ restricts 2LTT syntax so that it can only depend
 on object-level contexts, i.e.\ contexts given as $\emb{\Gamma}$.
 
-\begin{definition} We specify the types of the \textbf{restriction operations} internally, and the $|\blank|$
+\begin{definition}\label{def:restriction} We specify the types of the \textbf{restriction operations} internally, and the $|\blank|$
 components of the operations externally. The naturality of $|\blank|$ is
 straightforward in each case.
 \begingroup
@@ -1459,7 +1462,7 @@ Unfolding $\ev$, we can further compute this to the following:
   &\hspace{8em}(\re\,(\msf{NatElim}\,P\,z\,s\,n)\,\gamma')
 \end{alignat*}
 In short, we need to show that $\msf{NatElim}$ preserves relations. Here we
-switch to the external view temporarily. By Definition \ref{TODO}, we know that
+switch to the external view temporarily. By Definition \ref{def:restriction}, we know that
 \[
    |\re\,(\msf{NatElim}\,P\,z\,s\,n)|\,\gamma' = (\msf{NatElim}\,P\,z\,s\,n))[\gamma'].
 \]
@@ -1582,7 +1585,8 @@ of the naturality of $|\Gamma\rel|$, this can be weakened to ${\Gamma^P}\rel[\p]
 : |\Gamma\rel|\,(\Gamma^P[\p])\,\p$. Also, $\emb{\q} = \q$ holds immediately.
 \end{proof}
 
-\begin{theorem}[Soundness of staging] The open staging algorithm from Definition \ref{TODO} is sound.
+\begin{theorem}[Soundness of staging]
+The open staging algorithm from Definition \ref{def:open-staging} is sound.
 \end{theorem}
 \begin{proof}
 \mbox{}
@@ -1596,7 +1600,7 @@ $|A\rel|\,{\Gamma^P}\rel : \emb{|\ev\,A|\,\Gamma^P} = A[\id]$, hence $\emb{\Stag
 \end{itemize}
 \end{proof}
 
-\begin{corollary}[Conservativity of 2LTT]
+\begin{corollary}[Conservativity of 2LTT]\label{conservativity}
 From the soundness and stability of staging, we get that $\emb{\blank}$ is
 bijective on types and terms, i.e.\ $\Ty_{\mbbo j}\,\Gamma \simeq \Ty_{0,j}\,\emb{\Gamma}$ and
 $\Tm_{\mbbo j}\,\Gamma\,A \simeq \Tm_{0,j}\,\emb{\Gamma}\,\emb{A}$.
@@ -1609,9 +1613,9 @@ well, not just $\mbbo$ substitutions. This amounts to working in a \emph{modal}
 internal language, where modalities control the interaction of the different base
 categories.
 \begin{itemize}
-\item Using \emph{synthetic Tait computability} \cite{TODO}, we work in the internal language
+\item Using \emph{synthetic Tait computability} \cite{sterlingthesis}, we work in the internal language
       of presheaves over the glued category $\msf{Id}_{\hato}\downarrow \re$.
-\item Using \emph{relative induction} \cite{TODO}, we work in the modal type theory
+\item Using \emph{relative induction} \cite{bocquet2021relative}, we work in the modal type theory
       obtained from the dependent right adjoint functor $\re^* : \wh{\msf{2LTT}} \to \hato$,
       where $\wh{\msf{2LTT}}$ denotes presheaves over the syntactic category of 2LTT.
 \end{itemize}
@@ -1620,7 +1624,7 @@ the author of the paper is not sufficiently familiar with the above
 techniques. Second, the task at hand is not too technically difficult, so using
 advanced techniques is not essential. Compare e.g.\ normalization for cubical
 type theories, which is infeasible to handle without the more synthetic
-presentations \cite{TODO}.
+presentations \cite{cubicalnbe}.
 
 \section{Intensional Analysis}\label{sec:intensional-analysis}
 
@@ -1631,7 +1635,7 @@ in implementations, for example in MetaML \cite{metaml}.
 
 If we have sufficiently expressive inductive types in the meta-level language,
 it is possible to simply use inductive deeply embedded syntaxes, which can be
-analyzed; our example in Section \ref{TODO} for partially evaluating simply
+analyzed; our example in Section \ref{sec:staged-programming} for partially evaluating simply
 typed lambda calculus is like this. However, native metaprogramming features
 could be more concise and convenient than deep embeddings. Hence, intensional
 analysis could provide additional convenience.
@@ -1648,7 +1652,8 @@ if it is isomorphic to a Yoneda-embedded context.
 \end{definition}
 
 \begin{lemma}[Yoneda lemma]
-We have $\hSub\,(\msf{y}\Gamma)\,\Delta \simeq |\Delta|\,\Gamma$, and also
+We have $\hSub\,(\msf{y}\Gamma)\,\Delta \simeq |\Delta|\,\Gamma$
+\cite[Section~III.2]{maclane98categories}. Also, we have
 $\hTm_{1,j}\,(\msf{y}\Gamma)\,A \simeq |A|\,\id$, where $\id :
 \Subo\,\Gamma\,\Gamma$.
 \end{lemma}
@@ -1701,14 +1706,14 @@ there. We need a substitution operation to describe dependent elimination or
 polymorphic instantiation.
 
 However, this is still sufficient for many practical use cases, for example the
-monomorphization setup in Section \ref{TODO}. Here, it makes sense to only
+monomorphization setup in Section \ref{sec:monomorphization}. Here, it makes sense to only
 having weakening in the object theory, but no $\beta\eta$-rules. We care about
 the intension of the staging output; presumably we are doing monomorphization
 because we care about code performance, so in 2LTT we do not want to
 definitionally equate object-level programs with different performance
 characteristics.
 
-\subsubsection{Closed modalities}
+\subsubsection{Closed modalities}\label{sec:closed-modalities}
 Another option is to add a \emph{closed} or \emph{crisp} modality
 \cite{licata2018internal} for tracking object-level values which will become
 closed terms after staging. Since closed terms are not affected by substitution,
@@ -1717,7 +1722,7 @@ internalization of canonicity for closed object-level terms. For example, a
 closed $\Bool_0$ term will be either $\true_0$ or $\false_0$ after staging, so
 it makes sense to be able to eliminate from it to $\Bool_1$. This can be also
 viewed as a safe implementation of a \emph{run} function in the style of MetaML
-\cite{TODO}, where \emph{scope extrusion} is prevented by the closed modality.
+\cite{metaml}, where \emph{scope extrusion} is prevented by the closed modality.
 
 C-style \emph{function pointers} could be also an interesting use case, since
 these have to become closed after staging (as they cannot capture closure
@@ -1725,19 +1730,79 @@ environments).
 
 \section{Related Work}\label{sec:related-work}
 
-2LTT
+The work Annekov et al.\ on two-level type theory \cite{twolevel}, building on
+the thesis of Capriotti \cite{capriotti2017models} and ideas from Voevodsky
+\cite{hts}, is the foremost inspiration in the current work. Interestingly, the
+above works do mention metaprogramming as a source of intuition for 2LTT, but
+they only briefly touch on this aspect, and in \cite{twolevel} the main focus is
+on extensions of basic 2LTT which do not have staging semantics
+anymore. Ibid.\ conjectures the strong conservativity of 2LTT in Proposition
+2.18, and suggests categorical glueing as proof strategy. In this work, we do
+essentially that: our presheaf model and the logical relation model could be
+merged into a single instance of gluing along the $\re$ morphism; this merges
+staging and its soundness proof. We split this construction to two parts in order
+to get a self-contained presentation of the staging algorithm.
 
-PE and staging
+Our notation for quoting and splicing is borrowed from MetaML \cite{metaml}.  In
+the following, we compare 2LTT to MetaML, MetaOCaml \cite{kiselyov14metaocaml}
+and typed Template Haskell \cite{typed-th}.
 
-We don't do binding time analysis
+The main difference is the explicit stage tracking via universes. Existing
+systems all support type lifting (usually called $\msf{Code}$), quoting and
+splicing, but lifting does not change the universe of types. For example, we can
+write a function with type $\Bool \to \msf{Code}\,\Bool$, and the two $\Bool$
+occurrences refer to the exact same type.
 
-Two-level LC is a fragment of 2LTT
+This yields some semantic and operational confusion down the line, and some
+additional disambiguation is needed for stages of binders. For example, in typed
+Template Haskell, top-level binders behave as runtime binders when used under a
+quote, but behave as static binders otherwise. Given a top-level definition $b =
+\True$, if we write a top-level definition $\msf{expr} = [||\,b\,||]$, then $b$
+is a \emph{variable} in the staging output, but if we write $\msf{expr} =
+\msf{if}\,b\,\msf{then}\,[||\,\True\,||]\,\msf{else}\,[||\,\False\,||]$, then
+$b$ is considered to be a static value. In contrast, 2LTT does not distinguish
+top-level and local binders, and in fact it has no syntactic or scope-based
+restrictions; everything is enforced by typing.
 
-Igarashi
+In MetaML and MetaOCaml, there is a \emph{run} function for evaluating closed
+object-level terms: as we mentioned in Section \ref{sec:closed-modalities}, we
+believe that the proper way to implement it in 2LTT would be to use a closed
+modality. This use case is closely related to \cite{licata2018internal}. In
+ibid.\ a semantics is sketched for this modality in a presheaf topos, and we
+could quite directly adapt it to our presheaf model of 2LTT. That said, working
+out the practical details of this modality remains future work.
 
+
+Many existing staged systems also support \emph{side effects} at compile time,
+while our version of 2LTT does not. Here, general considerations about the
+mixing of dependent types and effects should apply; see
+e.g.\ \cite{fire-triangle}. However, it should be possible to use standard
+effect systems such as monads at the meta level.
+
+Additionally, 2LTT only supports two stages, while the other systems all
+allow countable stages. It remains future work to develop NLTT (N-level type
+theory), but this extension does appear to be straightforward. In the
+specification of NLTT, we would simply need to move from $i \in \{0,1\}$ to
+$i \in \mbb{N}$, although in the semantics there could be more subtleties.
+
+The multi-stage calculus of Kawata and Igarashi \cite{multi-stage-calculus}
+supports staging operations and some type dependencies. However, there are major
+differences to the current work. First, ibid.\ does not have universes or large
+elimination, nor does it allow staged manipulation of type expressions. Second,
+it does not support staging in the sense of Definition \ref{def:staging};
+rather, it is a system for runtime code manipulation and evaluation. In other
+words, programs may freely manipulate code fragments during execution, in more
+liberal ways than in 2LTT, but there is no judgment which ensures that a purely
+``object-level'' program can be extracted from a multi-stage program.
+
+We emphasize that a distinction exists between staged compilation and staged
+computation. For the former, we expect staging in the sense of Definition
+\ref{def:staging}; this is essential if we want to use staging as a lowering
+step in a compilation pipeline. Staged computation on the other hand may support
+runtime code construction and evaluation, but may not guarantee that these
+features can be computed away.
 
 \section{Conclusions and Future Work}\label{sec:conclusions}
-
 
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{references}

@@ -6,68 +6,77 @@ Reallocated singl_function (elt_size=4) to 100 items from 50.
 Reallocated singl_function (elt_size=4) to 100 items from 50.
 Reallocated wiz_functions (elt_size=4) to 6000 items from 3000.
 Database file #1: references.bib
-Repeated entry---line 4327 of file references.bib
- : @article{capriotti2017models
- :                             ,
-I'm skipping whatever remains of this entry
-Warning--I didn't find a database entry for "TODO"
-Warning--I didn't find a database entry for "cubicalnbe"
 Reallocated singl_function (elt_size=4) to 100 items from 50.
 Reallocated glb_str_ptr (elt_size=4) to 20 items from 10.
 Reallocated global_strs (elt_size=200001) to 20 items from 10.
 Reallocated glb_str_end (elt_size=4) to 20 items from 10.
 Reallocated singl_function (elt_size=4) to 100 items from 50.
+Warning--page numbers missing in both pages and numpages fields in modulartc
+Warning--empty publisher in altenkirch1995categorical
+Warning--empty address in altenkirch1995categorical
+Warning--empty publisher in altenkirch2016normalisation
+Warning--empty address in altenkirch2016normalisation
+Warning--page numbers missing in both pages and numpages fields in altenkirch2016normalisation
+Warning--page numbers missing in both pages and numpages fields in kaposinbe
 Warning--no number and no volume in twolevel
 Warning--page numbers missing in both pages and numpages fields in twolevel
+Warning--no number and no volume in bocquet2021relative
+Warning--page numbers missing in both pages and numpages fields in bocquet2021relative
 Warning--empty address in scrap-your-inefficient-engine
 Warning--no number and no volume in capriotti2017models
 Warning--page numbers missing in both pages and numpages fields in capriotti2017models
+Warning--empty address in DBLP:conf/csl/CavalloMS20
 Warning--empty address in stream-fusion
 Warning--empty address in Dybjer96internaltype
 Warning--empty address in short-cut
 Warning--empty address in intensional-poly
+Warning--empty address in Hofmann97syntaxand
 Warning--empty address in partial-evaluation
 Warning--empty address in gluing
+Warning--empty address in multi-stage-calculus
+Warning--empty address in kiselyov14metaocaml
 Warning--empty address in licata2018internal
-You've used 18 entries,
+Warning--empty address in maclane98categories
+Warning--empty address in cubicalnbe
+You've used 39 entries,
             5981 wiz_defined-function locations,
-            1623 strings with 22259 characters,
-and the built_in function-call counts, 20316 in all, are:
-= -- 2682
-> -- 548
+            1778 strings with 27040 characters,
+and the built_in function-call counts, 43879 in all, are:
+= -- 5924
+> -- 1152
 < -- 0
-+ -- 178
-- -- 194
-* -- 1358
-:= -- 1908
-add.period$ -- 93
-call.type$ -- 18
-change.case$ -- 113
-chr.to.int$ -- 18
-cite$ -- 30
-duplicate$ -- 1835
-empty$ -- 1290
-format.name$ -- 246
-if$ -- 4964
-int.to.chr$ -- 2
++ -- 381
+- -- 425
+* -- 2907
+:= -- 4088
+add.period$ -- 201
+call.type$ -- 39
+change.case$ -- 242
+chr.to.int$ -- 38
+cite$ -- 66
+duplicate$ -- 3970
+empty$ -- 2794
+format.name$ -- 532
+if$ -- 10830
+int.to.chr$ -- 3
 int.to.str$ -- 1
-missing$ -- 65
-newline$ -- 227
-num.names$ -- 140
-pop$ -- 651
+missing$ -- 147
+newline$ -- 437
+num.names$ -- 294
+pop$ -- 1418
 preamble$ -- 1
-purify$ -- 257
+purify$ -- 551
 quote$ -- 0
-skip$ -- 689
+skip$ -- 1463
 stack$ -- 0
-substring$ -- 1610
-swap$ -- 185
+substring$ -- 3459
+swap$ -- 392
 text.length$ -- 0
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 427
-warning$ -- 12
-while$ -- 137
+type$ -- 899
+warning$ -- 27
+while$ -- 306
 width$ -- 0
-write$ -- 437
-(There was 1 error message)
+write$ -- 892
+(There were 27 warnings)

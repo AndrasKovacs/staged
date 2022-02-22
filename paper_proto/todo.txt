@@ -1,0 +1,16 @@
+
+- 2ltt
+- No stage ambiguity possible, explicit runtime vs meta let-defs
+- Coercive subtyping
+- Input program is a single runtime expression
+- Don't print inserted meta spines.
+- Specialize printing for top-level let-s and lambdas
+- options:
+  - elab
+  - stage
+  - nf
+  + toggleable implicit printing in all cases
+    - implicits on  prints meta solution + implicit lambda/app
+    - implicits off prints none of that
+
+- have docs

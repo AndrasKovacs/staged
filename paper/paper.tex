@@ -1,6 +1,7 @@
 %% build: latexmk -pdf -pvc paper.tex
 
 \documentclass[acmsmall]{acmart}
+%% \documentclass[nonacm,acmsmall]{acmart}
 %% \raggedbottom
 
 %% \BibTeX command to typeset BibTeX logo in the docs
@@ -13,17 +14,19 @@
 %% values in them; it is your responsibility as an author to replace
 %% the commands and values with those provided to you when you
 %% complete the rights form.
+
 \setcopyright{acmcopyright}
 \copyrightyear{2018}
 \acmYear{2018}
 \acmDOI{XXXXXXX.XXXXXXX}
 
 %% These commands are for a JOURNAL article.
-\acmJournal{JACM}
-\acmVolume{37}
-\acmNumber{4}
-\acmArticle{111}
-\acmMonth{8}
+
+%% \acmJournal{JACM}
+%% \acmVolume{37}
+%% \acmNumber{4}
+%% \acmArticle{111}
+%% \acmMonth{8}
 
 %%
 %% Submission ID.
@@ -1803,13 +1806,13 @@ Our notation for quoting and splicing is borrowed from MetaML \cite{metaml}.  In
 the following, we compare 2LTT to MetaML, MetaOCaml \cite{kiselyov14metaocaml}
 and typed Template Haskell \cite{typed-th}.
 
-2LTT explicitly track stages of types, in contrast to the mentioned
+2LTT explicitly tracks stages of types, in contrast to the mentioned
 systems. There, we have type lifting (usually called $\msf{Code}$), quoting and
 splicing, but lifting does not change the universe of types. We can write a
 function with type $\Bool \to \msf{Code}\,\Bool$, and the two $\Bool$
 occurrences refer to the exact same type.
 
-This yields some operational confusion down the line, and additional
+This causes some operational confusion down the line, and additional
 disambiguation is needed for stages of binders. For example, in typed Template
 Haskell, top-level binders behave as runtime binders when used under a quote,
 but behave as static binders otherwise. Given a top-level definition $b =

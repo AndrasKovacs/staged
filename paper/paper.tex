@@ -136,7 +136,7 @@
 
 %%
 %% end of the preamble, start of the body of the document source.
-\hypersetup{draft}
+%% \hypersetup{draft}
 \begin{document}
 
 \title{Staged Compilation With Two-Level Type Theory}
@@ -221,7 +221,7 @@ directly applicable to the theory of staging.
     category of the object theory.  We show that evaluation in this model yields
     a staging algorithm for closed types and terms. We then prove stability for
     staging, which means that staging the output of staging has no action. Then,
-    we extend staging to open types and terms which may depend on object-level
+    we extend staging to open types and terms, which may depend on object-level
     contexts.
   \item
     In Section \ref{sec:soundness} we show soundness of staging, which means that
@@ -235,6 +235,8 @@ directly applicable to the theory of staging.
   \item
     In Section \ref{sec:intensional-analysis}, we discuss possible interpretations
     of intensional code analysis in the presheaf model.
+  \item We provide a small prototype implementation which we briefly discuss in
+    Section \ref{sec:implementation}.
   \item To our knowledge, this is the first account of staged compilation in the
     presence of full-blown dependent types, with universes and large
     elimination. In particular, we allow unrestricted staging for types, so that
@@ -642,8 +644,7 @@ is that polymorphic functions cannot be stored inside runtime data types.
 
 This setup is fairly similar to the well-known monomorphization models in the
 C++ and Rust programming languages. The evident difference is that in 2LTT we
-can use a full type theory at compile time, as opposed to languages which are
-less expressive and less principled. Additionally, we will see in Section
+can use a full type theory at compile time. Additionally, we will see in Section
 \ref{sec:intensional-analysis} that this setup is compatible with an induction principle for
 $\Ty_0$, so that we can analyze the structure of runtime types.
 
@@ -930,11 +931,42 @@ has been used \cite{altenkirch1995categorical,altenkirch2016normalisation}. In
 
 We review the presheaf model described in \cite[Section~2.5.3]{twolevel}.  This
 will directly yield a closed staging algorithm, by evaluation of 2LTT types and
-terms in the model. First, we give a higher-level overview of this semantics.
+terms in the model.
 
-TODO explanation here.
-%% Here, contexts are presheaves over the syntactic category of
-%% the object theory.
+We give a higher-level overview first. Presheaves can be viewed as a
+generalization of sets, as ``variable sets'' which may vary over a base
+category. A set-based model of 2LTT yields a standard interpreter, where every
+syntactic object is mapped to the obvious semantic counterpart. The presheaf
+model over the category of contexts and substitutions in $\mbbo$ generalizes
+this to an interpreter where semantic values may depend on object-theoretic
+contexts. This allows us to handle object-theoretic \emph{types and terms}
+during interpretation, since these necessarily depend on their contexts.
+
+In the presheaf model, every semantic construction must be \emph{stable} under
+object-level substitution, or using alternative terminology, must be
+\emph{natural} with respect to substitution. Semantic values can be viewed as
+runtime objects during interpretation, and naturality means that
+object-theoretic substitutions can be \emph{applied} to such runtime objects,
+acting on embedded object-theoretic types and terms. Stability captures the core
+idea of staging:
+\begin{itemize}
+\item On one hand, every syntactic rule and construction in 2LTT must
+      be stable, which restricts the range of metaprograms
+      that can be written in 2LTT. For example, we cannot make decisions
+      based on sizes of the object-theoretic scopes, since these sizes may be changed
+      by substitution.
+\item On the other hand, if only stable constructions are possible, we never
+      have to \emph{prove} stability, or even explicitly mention object-theoretic
+      contexts, substitutions and variables. The tedious details of deep embeddings
+      can be replaced with a handful of staging operations and typing rules.
+\end{itemize}
+In principle, the base category in a 2LTT can be any category with finite
+products; it is not required that it is a category of contexts and substitutions.
+If the base category has more structure, we get more interesting object
+theories, but at the same time stability becomes more onerous, because we must
+be stable under \emph{more} morphisms. If the base category is simpler, with
+fewer morphisms, then the requirement of stability is less restrictive. In
+Section \ref{sec:intensional-analysis}, we will look at a concrete example for this.
 
 We proceed to summarize the key components of the model in a bit more detail. We
 denote the components of the model by putting hats on 2LTT components, e.g.\ as
@@ -1270,9 +1302,9 @@ mark $\ev$ as being parametrized by external input.
 \subsubsection{Object-level fragment of 2LTT}
 The purely object-level syntactic fragment of 2LTT can be internalized as
 follows. We define externally the presheaf of object-level types as
-$|\Ty_{0,j}|\,a := \Ty_{0,j}\,\emb{a}$, and the displayed presheaf of
-object-level terms over $\Ty_{0,j}$ as $|\Tm_{0,j}|\,\{a\}\,A :=
-\Tm_{0,j}\,\emb{a}\,A$. Hence, internally we have $\Ty_{0,j} : \whset_0$ and
+$|\Ty_{0,j}|\,\Gamma := \Ty_{0,j}\,\emb{\Gamma}$, and the displayed presheaf of
+object-level terms over $\Ty_{0,j}$ as $|\Tm_{0,j}|\,\{\Gamma\}\,A :=
+\Tm_{0,j}\,\emb{\Gamma}\,A$. Hence, internally we have $\Ty_{0,j} : \whset_0$ and
 $\Tm_{0,j} : \Ty_{0,j} \to \whset_0$. $\Ty_{0,j}$ is closed under all type formers,
 analogously as we have seen for $\Ty_{\mbbo j}$.
 
@@ -1286,7 +1318,7 @@ and terms, as $\emb{\blank} : \Ty_{\mbbo j} \to \Ty_{0,j}$, and $\emb{\blank}
 We define a family of functions $\re$ from the 2LTT syntax to objects in
 $\hato$. This will be related to the evaluation morphism $\ev$ in the relational
 interpretation. In short, $\re$ restricts 2LTT syntax so that it can only depend
-on object-level contexts, i.e.\ contexts given as $\emb{\Gamma}$.
+on object-level contexts, contexts given as $\emb{\Gamma}$.
 
 \begin{definition}\label{def:restriction} We specify the types of the \textbf{restriction operations} internally, and the $|\blank|$
 components of the operations externally. The naturality of $|\blank|$ is
@@ -1551,11 +1583,10 @@ but this again follows directly from $t\rel\,\gamma\rel$.
 
 \subsubsection{Object-level type formers}
 Lastly, object-level type formers are straightforward. For types, we need
-$\emb{\ev\,A\,\gamma} = \re\,A\,\gamma'$, and for terms, we need
-$\emb{\ev\,A\,\gamma} = \re\,A\,\gamma'$. Note that $\ev$ and $\emb{\blank}$
-preserve all structure, and $\re$ preserves all structure on object-level types
-and terms. Hence, each object-level $A$ and $t$ case in $\blank\rel$ trivially
-follows from induction hypotheses.
+$\emb{\ev\,A\,\gamma} = \re\,A\,\gamma'$, and likewise for terms. Note that
+$\ev$ and $\emb{\blank}$ preserve all structure, and $\re$ preserves all
+structure on object-level types and terms. Hence, each object-level $A$ and $t$
+case in $\blank\rel$ trivially follows from induction hypotheses.
 
 This concludes the definition of the $\blank\rel$ interpretation.
 
@@ -1635,10 +1666,12 @@ in implementations, for example in MetaML \cite{metaml}.
 
 If we have sufficiently expressive inductive types in the meta-level language,
 it is possible to simply use inductive deeply embedded syntaxes, which can be
-analyzed; our example in Section \ref{sec:staged-programming} for partially evaluating simply
-typed lambda calculus is like this. However, native metaprogramming features
-could be more concise and convenient than deep embeddings. Hence, intensional
-analysis could provide additional convenience.
+analyzed; our example in Section \ref{sec:staged-programming} for partially
+evaluating simply typed lambda calculus is like this. However, native
+metaprogramming features could be more concise and convenient than deep
+embeddings, similarly to how staged programming is more convenient than code
+generation with deeply embedded syntaxes. Hence, intensional analysis could
+provide additional convenience.
 
 In the following, we look at the semantics of intensional analysis in the
 standard presheaf models. We only discuss basic semantics here, and leave
@@ -1679,10 +1712,10 @@ definitional equality} for object-level Boolean expressions.
 \[
   \msf{decEq} : (x\,y : \Lift\,\Bool_0) \to (x =_1 y) +_1 (x \neq_1 y)
 \]
-However, Yoneda lemma says that $\msf{decEq}$ cannot actually decide
-definitional equality. We expect that $\msf{decEq}$ allows us to define
-non-constant maps from $\Lift\,\Bool_0$ to $\Bool_1$, but the Yoneda lemma says
-that we only have two terms with distinct semantics in $\Tm_1\,(\emptycon \ext_0
+However, the Yoneda lemma says that $\msf{decEq}$ cannot actually decide
+definitional equality. We expect that $\msf{decEq}$ lets us define non-constant
+maps from $\Lift\,\Bool_0$ to $\Bool_1$, but the Yoneda lemma implies that we
+only have two terms with distinct semantics in $\Tm_1\,(\emptycon \ext_0
 \Bool_0)\,\Bool_1$.
 
 A more direct way to show infeasibility of $\msf{decEq}$ in $\hato$ is to note
@@ -1707,7 +1740,7 @@ polymorphic instantiation.
 
 However, this is still sufficient for many practical use cases, for example the
 monomorphization setup in Section \ref{sec:monomorphization}. Here, it makes sense to only
-having weakening in the object theory, but no $\beta\eta$-rules. We care about
+have weakening in the object theory, but no $\beta\eta$-rules. We care about
 the intension of the staging output; presumably we are doing monomorphization
 because we care about code performance, so in 2LTT we do not want to
 definitionally equate object-level programs with different performance
@@ -1717,15 +1750,15 @@ characteristics.
 Another option is to add a \emph{closed} or \emph{crisp} modality
 \cite{licata2018internal} for tracking object-level values which will become
 closed terms after staging. Since closed terms are not affected by substitution,
-we are free to analyze their intension. Such analysis can be viewed as an
-internalization of canonicity for closed object-level terms. For example, a
-closed $\Bool_0$ term will be either $\true_0$ or $\false_0$ after staging, so
-it makes sense to be able to eliminate from it to $\Bool_1$. This can be also
-viewed as a safe implementation of a \emph{run} function in the style of MetaML
-\cite{metaml}, where \emph{scope extrusion} is prevented by the closed modality.
+we are free to analyze them. Such analysis can be viewed as an internalization
+of canonicity for closed object-level terms. For example, a closed $\Bool_0$
+term will be either $\true_0$ or $\false_0$ after staging, so it makes sense to
+be able to eliminate from it to $\Bool_1$. This can be also viewed as a safe
+implementation of a \emph{run} function in the style of MetaML \cite{metaml}.
+In our case \emph{scope extrusion} would be prevented by the closed modality.
 
 C-style \emph{function pointers} could be also an interesting use case, since
-these have to become closed after staging (as they cannot capture closure
+these must become closed after staging (as they cannot capture closure
 environments).
 
 \section{Related Work}\label{sec:related-work}
@@ -1737,26 +1770,49 @@ above works do mention metaprogramming as a source of intuition for 2LTT, but
 they only briefly touch on this aspect, and in \cite{twolevel} the main focus is
 on extensions of basic 2LTT which do not have staging semantics
 anymore. Ibid.\ conjectures the strong conservativity of 2LTT in Proposition
-2.18, and suggests categorical glueing as proof strategy. In this work, we do
+2.18, and suggests categorical gluing as proof strategy. In this work, we do
 essentially that: our presheaf model and the logical relation model could be
 merged into a single instance of gluing along the $\re$ morphism; this merges
 staging and its soundness proof. We split this construction to two parts in order
 to get a self-contained presentation of the staging algorithm.
 
+The multi-stage calculus of Kawata and Igarashi \cite{multi-stage-calculus}
+supports staging operations and type dependencies. However, there are major
+differences to the current work. First, ibid.\ does not have universes or large
+elimination, nor does it allow staged manipulation of type expressions. Second,
+it does not support staging in the sense of Definition \ref{def:staging};
+rather, it is a system for runtime code manipulation and evaluation. In other
+words, programs may manipulate code fragments during execution, in more liberal
+ways than in 2LTT, but there is no judgment which ensures that a purely
+``object-level'' program can be extracted from a multi-stage program. We make a
+disctinction between staged compilation and staged computation. For the former,
+we expect staging in the sense of Definition \ref{def:staging}; this is
+essential if we want to use staging as a lowering step in a compilation
+pipeline. Staged computation on the other hand may support runtime code
+construction and evaluation, but may not guarantee that these features can be
+entirely computed away.
+
+Idris 1 supports compile-time partial evaluation, through \texttt{static}
+annotations on function arguments \cite{scrap-your-inefficient-engine}. This can
+be used for dependently typed code generation, but Idris 1 does not guarantee
+that partial evaluation adequately progresses. For example, we can pass a neutral
+value as static argument in Idris 1, while in 2LTT static function arguments
+are always canonical during staging.
+
 Our notation for quoting and splicing is borrowed from MetaML \cite{metaml}.  In
 the following, we compare 2LTT to MetaML, MetaOCaml \cite{kiselyov14metaocaml}
 and typed Template Haskell \cite{typed-th}.
 
-The main difference is the explicit stage tracking via universes. Existing
-systems all support type lifting (usually called $\msf{Code}$), quoting and
-splicing, but lifting does not change the universe of types. For example, we can
-write a function with type $\Bool \to \msf{Code}\,\Bool$, and the two $\Bool$
+2LTT explicitly track stages of types, in contrast to the mentioned
+systems. There, we have type lifting (usually called $\msf{Code}$), quoting and
+splicing, but lifting does not change the universe of types. We can write a
+function with type $\Bool \to \msf{Code}\,\Bool$, and the two $\Bool$
 occurrences refer to the exact same type.
 
-This yields some semantic and operational confusion down the line, and some
-additional disambiguation is needed for stages of binders. For example, in typed
-Template Haskell, top-level binders behave as runtime binders when used under a
-quote, but behave as static binders otherwise. Given a top-level definition $b =
+This yields some operational confusion down the line, and additional
+disambiguation is needed for stages of binders. For example, in typed Template
+Haskell, top-level binders behave as runtime binders when used under a quote,
+but behave as static binders otherwise. Given a top-level definition $b =
 \True$, if we write a top-level definition $\msf{expr} = [||\,b\,||]$, then $b$
 is a \emph{variable} in the staging output, but if we write $\msf{expr} =
 \msf{if}\,b\,\msf{then}\,[||\,\True\,||]\,\msf{else}\,[||\,\False\,||]$, then
@@ -1764,14 +1820,27 @@ $b$ is considered to be a static value. In contrast, 2LTT does not distinguish
 top-level and local binders, and in fact it has no syntactic or scope-based
 restrictions; everything is enforced by typing.
 
+2LTT supports staging for types and dependent types, while to our knowledge no
+previous system for staged compilation does the same. It appears to the author
+that the main missing component in previous systems is \emph{dependent types at
+the meta level}, rather than staging operations; staging operations in 2LTT and
+MetaML are already quite similar. For example, any interesting operation on
+the static-length vectors in Section \ref{sec:staged-programming} requires
+meta-level dependent types, even if the object language is simply typed.
+
 In MetaML and MetaOCaml, there is a \emph{run} function for evaluating closed
 object-level terms: as we mentioned in Section \ref{sec:closed-modalities}, we
 believe that the proper way to implement it in 2LTT would be to use a closed
 modality. This use case is closely related to \cite{licata2018internal}. In
 ibid.\ a semantics is sketched for this modality in a presheaf topos, and we
-could quite directly adapt it to our presheaf model of 2LTT. That said, working
+could directly adapt it to our presheaf model of 2LTT. That said, working
 out the practical details of this modality remains future work.
 
+Additionally, 2LTT only supports two stages, while the other noted systems allow
+countable stages. It remains future work to develop NLTT (N-level type theory),
+but this extension does appear to be straightforward. In the specification of
+NLTT, we would simply need to move from $i \in \{0,1\}$ to $i \in \mbb{N}$,
+although in the semantics there could be more subtleties.
 
 Many existing staged systems also support \emph{side effects} at compile time,
 while our version of 2LTT does not. Here, general considerations about the
@@ -1779,32 +1848,15 @@ mixing of dependent types and effects should apply; see
 e.g.\ \cite{fire-triangle}. However, it should be possible to use standard
 effect systems such as monads at the meta level.
 
-Additionally, 2LTT only supports two stages, while the other systems all
-allow countable stages. It remains future work to develop NLTT (N-level type
-theory), but this extension does appear to be straightforward. In the
-specification of NLTT, we would simply need to move from $i \in \{0,1\}$ to
-$i \in \mbb{N}$, although in the semantics there could be more subtleties.
-
-The multi-stage calculus of Kawata and Igarashi \cite{multi-stage-calculus}
-supports staging operations and some type dependencies. However, there are major
-differences to the current work. First, ibid.\ does not have universes or large
-elimination, nor does it allow staged manipulation of type expressions. Second,
-it does not support staging in the sense of Definition \ref{def:staging};
-rather, it is a system for runtime code manipulation and evaluation. In other
-words, programs may freely manipulate code fragments during execution, in more
-liberal ways than in 2LTT, but there is no judgment which ensures that a purely
-``object-level'' program can be extracted from a multi-stage program.
-
-We emphasize that a distinction exists between staged compilation and staged
-computation. For the former, we expect staging in the sense of Definition
-\ref{def:staging}; this is essential if we want to use staging as a lowering
-step in a compilation pipeline. Staged computation on the other hand may support
-runtime code construction and evaluation, but may not guarantee that these
-features can be computed away.
+\section{Implementation}\label{sec:implementation}
 
 \section{Conclusions and Future Work}\label{sec:conclusions}
 
+TODO: psh explain, intro overview upd, conclusion, implementation description, related work type staging
+
+
 \bibliographystyle{ACM-Reference-Format}
+\interlinepenalty=10000
 \bibliography{references}
 
 \end{document}

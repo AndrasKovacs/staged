@@ -22,7 +22,11 @@ ws :: Parser ()
 ws = L.space C.space1 (L.skipLineComment "--") (L.skipBlockComment "{-" "-}")
 
 withPos :: Parser Tm -> Parser Tm
-withPos p = SrcPos <$> getSourcePos <*> p
+withPos p = do
+  pos <- getSourcePos
+  p >>= \case
+    t@Pos{} -> pure t
+    t       -> pure $ Pos (coerce pos) t
 
 lexeme     = L.lexeme ws
 symbol s   = lexeme (C.string s)
@@ -33,7 +37,7 @@ pArrow     = symbol "→" <|> symbol "->"
 pBind      = pIdent <|> symbol "_"
 
 keyword :: String -> Bool
-keyword x = x == "let" || x == "λ" || x == "U"
+keyword x = x == "let" || x == "λ" || x == "U0" || x == "U1"
 
 pIdent :: Parser Name
 pIdent = try $ do
@@ -48,9 +52,12 @@ pKeyword kw = do
 
 pAtom :: Parser Tm
 pAtom  =
-      withPos (    (Var <$> pIdent)
-               <|> (U <$ char 'U')
-               <|> (Hole <$ char '_'))
+      withPos (    (Var    <$> pIdent)
+               <|> (U S0   <$  symbol "U0")
+               <|> (U S1   <$  symbol "U1")
+               <|> (Hole   <$  char '_')
+               <|> (Quote  <$> (char '<' *> pTm <* char '>'))
+               <|> (Splice <$> (char '[' *> pTm <* char ']')))
   <|> parens pTm
 
 pArg :: Parser (Either Name Icit, Tm)
@@ -58,17 +65,24 @@ pArg =  (try $ braces $ do {x <- pIdent; char '='; t <- pTm; pure (Left x, t)})
     <|> ((Right Impl,) <$> (char '{' *> pTm <* char '}'))
     <|> ((Right Expl,) <$> pAtom)
 
-pSpine :: Parser Tm
-pSpine = do
+pApps :: Parser Tm
+pApps = do
   h <- pAtom
   args <- many pArg
   pure $ foldl (\t (i, u) -> App t u i) h args
 
-pLamBinder :: Parser (Name, Either Name Icit)
+pLift :: Parser Tm
+pLift = Lift <$> (char '^' *> pAtom)
+
+pSpine :: Parser Tm
+pSpine = pLift <|> pApps
+
+pLamBinder :: Parser (Name, Maybe Tm, Either Name Icit)
 pLamBinder =
-      ((,Right Expl) <$> pBind)
-  <|> try ((,Right Impl) <$> braces pBind)
-  <|> braces (do {x <- pIdent; char '='; y <- pBind; pure (y, Left x)})
+      ((,Nothing,Right Expl) <$> pBind)
+  <|> parens ((,,Right Expl) <$> pBind <*> optional (char ':' *> pTm))
+  <|> try ((,,Right Impl) <$> braces pBind <*> optional (char ':' *> pTm))
+  <|> braces (do {x <- pIdent; char '='; y <- pBind; pure (y, Nothing, Left x)})
 
 pLam :: Parser Tm
 pLam = do
@@ -76,7 +90,7 @@ pLam = do
   xs <- some pLamBinder
   char '.'
   t <- pTm
-  pure $ foldr (uncurry Lam) t xs
+  pure $ foldr (\(x, ann, ni) t -> Lam x ann ni t) t xs
 
 pPiBinder :: Parser ([Name], Tm, Icit)
 pPiBinder =
@@ -101,13 +115,13 @@ pFunOrSpine = do
 pLet :: Parser Tm
 pLet = do
   pKeyword "let"
-  x <- pIdent
-  ann <- optional (char ':' *> pTm)
-  char '='
-  t <- pTm
+  x   <- pIdent
+  ann <- optional (try (char ':' *> notFollowedBy (char '=')) *> pTm)
+  st  <- (S0 <$ symbol ":=") <|> (S1 <$ symbol "=")
+  t   <- pTm
   symbol ";"
-  u <- pTm
-  pure $ Let x (maybe Hole id ann) t u
+  u   <- pTm
+  pure $ Let st x ann t u
 
 pTm :: Parser Tm
 pTm = withPos (pLam <|> pLet <|> try pPi <|> pFunOrSpine)

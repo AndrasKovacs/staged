@@ -20,8 +20,8 @@ revPruning = RevPruning . reverse
 -- | A "context zipper", used for efficiently creating types for fresh metas.
 data Path
   = Here
-  | Define Path Name ~Ty ~Tm
-  | Bind Path Name ~Ty
+  | Define Path Name ~Ty Stage ~Tm
+  | Bind Path Name ~Ty Stage
   deriving Show
 
 -- | Convert type in context to a closed iterated Pi type.  Note: we need `Tm`
@@ -30,17 +30,24 @@ data Path
 --   anything.
 closeTy :: Path -> Ty -> Ty
 closeTy mcl b = case mcl of
-  Here             -> b
-  Bind mcl x a     -> closeTy mcl (Pi x Expl a b)
-  Define mcl x a t -> closeTy mcl (Let x a t b)
+  Here               -> b
+  Bind mcl x a s     -> closeTy mcl (Pi x Expl a b)
+  Define mcl x a s t -> closeTy mcl (Let s x a t b)
 
 data Tm
   = Var Ix
-  | Lam Name Icit Tm
+  | Lam Name Icit Tm Tm
   | App Tm Tm Icit
-  | AppPruning Tm Pruning  -- ^ Used for applying an inserted or pruned meta to a mask of the scope.
-  | U
+  | AppPruning Tm Pruning  -- ^ Used for applying a pruned meta to a mask of the scope.
+  | InsertedMeta MetaVar Pruning
   | Pi Name Icit Ty Ty
-  | Let Name Ty Tm Tm
+  | Let Stage Name Ty Tm Tm
   | Meta MetaVar
+
+  | U Stage
+  | Quote Tm
+  | Splice Tm
+  | Lift Ty
+
+  | Wk Tm -- ^ Explicit weakening, used in subtyping coercions
   deriving Show

@@ -11,18 +11,18 @@ import Value
 --------------------------------------------------------------------------------
 
 data MetaEntry
-  = Solved Val ~VTy  -- ^ Solution, type.
-  | Unsolved ~VTy    -- ^ Type.
+  = Solved Val ~VTy Stage  -- ^ Solution, type.
+  | Unsolved ~VTy Stage    -- ^ Type.
 
 nextMetaVar :: IORef MetaVar
 nextMetaVar = unsafeDupablePerformIO $ newIORef 0
 {-# noinline nextMetaVar #-}
 
-newMeta :: VTy -> IO MetaVar
-newMeta ~a = do
+newMeta :: VTy -> Stage -> IO MetaVar
+newMeta ~a st = do
   m <- readIORef nextMetaVar
   writeIORef nextMetaVar $! m + 1
-  modifyIORef mcxt $ IM.insert (coerce m) (Unsolved a)
+  modifyIORef mcxt $ IM.insert (coerce m) (Unsolved a st)
   pure m
 
 type MCxt = IM.IntMap MetaEntry

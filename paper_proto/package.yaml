@@ -16,11 +16,13 @@ default-extensions:
 - EmptyCase
 - FlexibleContexts
 - GeneralizedNewtypeDeriving
+- ConstraintKinds
 - LambdaCase
 - OverloadedStrings
 - PatternSynonyms
 - ScopedTypeVariables
 - StandaloneDeriving
+- StandaloneKindSignatures
 - Strict
 - TupleSections
 - ViewPatterns

@@ -1,5 +1,5 @@
 
-module Pretty (prettyTm, showTm0, displayMetas) where
+module Pretty (showTm0, showTm, showTopTm, displayMetas) where
 
 import Control.Monad
 import Data.IORef
@@ -30,70 +30,109 @@ letp  = 0  :: Int -- let, lambda
 par :: Int -> Int -> ShowS -> ShowS
 par p p' = showParen (p' < p)
 
-prettyTm :: Int -> [Name] -> Tm -> ShowS
-prettyTm prec = go prec where
+braces :: ShowS -> ShowS
+braces s = ('{':).s.('}':)
 
-  bracket :: ShowS -> ShowS
-  bracket ss = ('{':).ss.('}':)
+assign :: Stage -> ShowS
+assign = \case S0 -> (":="++); _ -> ("="++)
 
-  piBind ns x Expl a = showParen True ((x++) . (" : "++) . go letp ns a)
-  piBind ns x Impl a = bracket        ((x++) . (" : "++) . go letp ns a)
+piBind ns x Expl a = ('(':) . (x++) . (" : "++) . go letp ns a .(')':)
+piBind ns x Impl a = braces  ((x++) . (" : "++) . go letp ns a)
 
-  lamBind x Impl = bracket (x++)
-  lamBind x Expl = (x++)
+lamBind x Impl = braces (x++)
+lamBind x Expl = (x++)
 
-  goPr :: Int -> [Name] -> [Name] -> Tm -> Pruning -> ShowS
-  goPr p topNs ns t pr = goPr' p ns pr (0 :: Int) where
-    goPr' p ns pr x = case (ns, pr) of
-      ([]      , []           ) -> go p topNs t
-      (ns :> n , pr :> Just i ) -> par p appp $ goPr' appp ns pr (x + 1) . (' ':)
-                                   . icit i bracket id (case n of "_" -> (("@"++show x)++); n -> (n++))
-      (ns :> n , pr :> Nothing) -> goPr' appp ns pr (x + 1)
-      _                         -> impossible
+goPr :: Int -> [Name] -> [Name] -> Tm -> Pruning -> ShowS
+goPr p topNs ns t pr = goPr' p ns pr (0 :: Int) where
+  goPr' p ns pr x = case (ns, pr) of
+    ([]      , []           ) -> go p topNs t
+    (ns :> n , pr :> Just i ) -> par p appp $ goPr' appp ns pr (x + 1) . (' ':)
+                                 . icit i braces id (case n of "_" -> (("@"++show x)++); n -> (n++))
+    (ns :> n , pr :> Nothing) -> goPr' appp ns pr (x + 1)
+    _                         -> impossible
 
-  goIx :: [Name] -> Ix -> ShowS
-  goIx ns topIx = go ns topIx where
-    go [] _ = impossible
-    go ("_":ns) 0 = (("@"++show topIx)++)
-    go (n:ns)   0 = (n++)
-    go (n:ns)   x = go ns (x - 1)
+goIx :: [Name] -> Ix -> ShowS
+goIx ns topIx = go ns topIx where
+  go [] _ = impossible
+  go ("_":ns) 0 = (("@"++show topIx)++)
+  go (n:ns)   0 = (n++)
+  go (n:ns)   x = go ns (x - 1)
 
-  go :: Int -> [Name] -> Tm -> ShowS
-  go p ns = \case
-    Var x                     -> goIx ns x
+go :: Int -> [Name] -> Tm -> ShowS
+go p ns = \case
+  Var x                       -> goIx ns x
 
-    App t u Expl              -> par p appp $ go appp ns t . (' ':) . go atomp ns u
-    App t u Impl              -> par p appp $ go appp ns t . (' ':) . bracket (go letp ns u)
+  App t u Expl                -> par p appp $ go appp ns t . (' ':) . go atomp ns u
+  App t u Impl                -> par p appp $ go appp ns t . (' ':) . braces (go letp ns u)
 
-    Lam (fresh ns -> x) i t   -> par p letp $ ("λ "++) . lamBind x i . goLam (ns:>x) t where
-                                   goLam ns (Lam (fresh ns -> x) i t) =
+  Lam (fresh ns -> x) i _ t   -> par p letp $ ("λ "++) . lamBind x i . goLam (ns:>x) t where
+                                   goLam ns (Lam (fresh ns -> x) i _ t) =
                                      (' ':) . lamBind x i . goLam (ns:>x) t
                                    goLam ns t =
                                      (". "++) . go letp ns t
 
-    U                         -> ("U"++)
+  U S0                        -> ("U0"++)
+  U S1                        -> ("U1"++)
 
-    Pi "_" Expl a b           -> par p pip $ go appp ns a . (" → "++) . go pip (ns:>"_") b
+  Pi "_" Expl a b             -> par p pip $ go appp ns a . (" → "++) . go pip (ns:>"_") b
 
-    Pi (fresh ns -> x) i a b  -> par p pip $ piBind ns x i a . goPi (ns:>x) b where
+  Pi (fresh ns -> x) i a b    -> par p pip $ piBind ns x i a . goPi (ns:>x) b where
                                    goPi ns (Pi (fresh ns -> x) i a b)
                                      | x /= "_" = piBind ns x i a . goPi (ns:>x) b
                                    goPi ns b = (" → "++) . go pip ns b
 
-    Let (fresh ns -> x) a t u -> par p letp $ ("let "++) . (x++) . (" : "++) . go letp ns a
-                                 . ("\n  = "++) . go letp ns t . (";\n\n"++) . go letp (ns:>x) u
+  Let s (fresh ns -> x) a t u -> par p letp $ ("let "++) . (x++) . (" : "++) . go letp ns a
+                                 . ("\n  "++).assign s .(' ':). go letp ns t . (";\n\n"++)
+                                 . go letp (ns:>x) u
 
-    Meta m                    -> (("?"++show m)++)
-    AppPruning t pr           -> goPr p ns ns t pr
+
+  Meta m                      -> (("?"++show m)++)
+  AppPruning t pr             -> goPr p ns ns t pr
+
+  Quote t                     -> ('<':).go p ns t.('>':)
+  Splice t                    -> ('[':).go p ns t.(']':)
+  Lift a                      -> par p appp $ ("^"++) . go atomp ns a
+  -- Wk t                        -> par p appp (("_wk_ "++).go p (tail ns) t)
+  Wk t                        -> go p (tail ns) t
+
+  InsertedMeta m pr           -> par p appp (("?"++show m++"(..)")++)
+
+top :: String -> String -> [Name] -> Tm -> ShowS
+top pre post ns (Lam (fresh ns -> x) i a t) =
+    (pre++)
+  . icit i braces (showParen True) (
+         ((if null x then "_" else x)++) . (" : "++) . go letp ns a)
+  . top "\n " ".\n\n" (x:ns) t
+top pre post ns (Let st (fresh ns -> x) a t u) =
+    (post++)
+  . ("let "++).(x++).(" : "++). go letp ns a . ("\n    "++).assign st.(' ':)
+  . go letp ns t . (";\n\n"++) . top "\nλ" "" (x:ns) u
+top pre post ns (Splice t) =
+    (post++)
+  . ("["++) . top "\nλ" "" ns t . ("]"++)
+top pre post ns (Quote t) =
+    (post++)
+  . ("<"++) . top "\nλ" "" ns t . (">"++)
+top pre post ns t =
+  (post++) . go letp ns t
 
 showTm0 :: Tm -> String
-showTm0 t = prettyTm 0 [] t []
+showTm0 t = go 0 [] t []
 -- showTm0 = show
+
+showTopTm :: Tm -> String
+showTopTm t = top "λ" "" [] t []
+
+showTm :: [Name] -> Tm -> String
+showTm ns t = go 0 ns t []
+
 
 displayMetas :: IO ()
 displayMetas = do
   ms <- readIORef mcxt
   forM_ (IM.toList ms) $ \(m, e) -> case e of
-    Unsolved a -> printf "let ?%s : %s = ?;\n"  (show m) (showTm0 $ quote 0 a)
-    Solved v a -> printf "let ?%s : %s = %s;\n" (show m) (showTm0 $ quote 0 a) (showTm0 $ quote 0 v)
+    Unsolved a S0 -> printf "let ?%s : %s := ?;\n"  (show m) (showTm0 $ quote 0 a)
+    Solved v a S0 -> printf "let ?%s : %s := %s;\n" (show m) (showTm0 $ quote 0 a) (showTm0 $ quote 0 v)
+    Unsolved a S1 -> printf "let ?%s : %s = ?;\n"  (show m) (showTm0 $ quote 0 a)
+    Solved v a S1 -> printf "let ?%s : %s = %s;\n" (show m) (showTm0 $ quote 0 a) (showTm0 $ quote 0 v)
   putStrLn ""

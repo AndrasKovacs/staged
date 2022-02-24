@@ -1,3 +1,4 @@
+{-# options_ghc -Wno-unused-imports #-}
 
 module Common (
     module Common
@@ -12,8 +13,12 @@ import Text.Megaparsec
 import GHC.Stack
 import Debug.Trace
 import Data.Coerce
+import GHC.Exts
 
-type Dbg = HasCallStack
+type Dbg :: Constraint
+
+-- type Dbg = HasCallStack
+type Dbg = ()
 
 impossible :: Dbg => a
 impossible = error "impossible"
@@ -29,6 +34,15 @@ icit Expl _ b = b
 instance Show Icit where
   show Impl = "implicit"
   show Expl = "explicit"
+
+newtype DontShow a = DontShow a
+
+instance Show (DontShow a) where
+  showsPrec _ _ str = str
+
+-- | Stages.
+data Stage = S0 | S1
+  deriving (Eq, Show, Ord, Enum)
 
 -- | De Bruijn index.
 newtype Ix  = Ix {unIx :: Int} deriving (Eq, Show, Num) via Int

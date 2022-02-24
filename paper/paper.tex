@@ -1093,17 +1093,15 @@ of the syntax. In other words, $\ev$ is defined by recursion on the syntax and
 strictly preserves all structure.
 \end{definition}
 
-Note that $\wh{\emptycon}$ is defined as the terminal presheaf, which is
-constantly $\top$. This leads us to the following definition.
-
 \begin{definition} \textbf{Closed staging} is defined as follows.
 \begin{alignat*}{4}
   & \Stage : \Ty_{0,j}\,\emptycon \to \Ty_{\mbbo j}\,\emptycon \hspace{2em} && \Stage : \Tm_{0,j}\,\emptycon\,A \to \Tm_{\mbbo j}\,\emptycon\,(\Stage\,A) \\
   & \Stage\,A := |\ev\,A|\,\{\emptycon\}\,\tt && \Stage\,t := |\ev\,t|\,\{\emptycon\}\,\tt
 \end{alignat*}
-This is well-typed, since $|\ev\,A|\{\emptycon\} : |\ev\,\emptycon|\,\emptycon \to \Ty_{\mbbo
-  j}\,\emptycon$, so $|\ev\,A|\{\emptycon\} : \top \to \Ty_{\mbbo
-  j}\,\emptycon$, and $|\ev\,t|\,\{\emptycon\} : \top \to \Tm_{\mbbo
+Note that $\wh{\emptycon}$ is defined as the terminal presheaf, which is
+constantly $\top$. Also, $|\ev\,A|\{\emptycon\} : |\ev\,\emptycon|\,\emptycon \to \Ty_{\mbbo
+  j}\,\emptycon$, therefore $|\ev\,A|\{\emptycon\} : \top \to \Ty_{\mbbo
+  j}\,\emptycon$ and $|\ev\,t|\,\{\emptycon\} : \top \to \Tm_{\mbbo
   j}\,\emptycon\,(|\ev\,A|\,\tt)$.
 \end{definition}
 
@@ -1119,7 +1117,7 @@ the stability proof of $\ev$.
 
 \subsection{Stability and Open Staging}
 
-Stability means that staging an object-level construction does nothing. We
+Stability means that staging an object-level type or term does nothing. We
 define a family of functions $\blank^P$ by induction on object syntax. The
 induction motives are as follows.
 \begin{alignat*}{4}
@@ -1191,7 +1189,7 @@ using metatheoretic inductive types and function types.
 \begin{itemize}
   \item $|\Nat_1|\,\_$ is simply the set of natural numbers $\mbb{N}$.
   \item $|\Sigma_1\,A\,B|\,\gamma$ is simply a set of pairs of values.
-  \item In the non-dependent case, a function type $A\,\wh{\to}\,B$ is defined as the presheaf
+  \item A non-dependent function type $A\,\wh{\to}\,B$ is defined as the presheaf
         exponential. The computational part of $|A\,\wh{\to}\,B|\,\{\Delta\}\,\gamma$
         is given by a function with type
         \[ (\Theta : \Cono) \to (\sigma : \Subo\,\Theta\,\Delta) \to |A|\,(\gamma[\sigma]) \to |B|\,(\gamma[\sigma])        \]
@@ -1201,7 +1199,7 @@ using metatheoretic inductive types and function types.
         incur cost via the $\gamma[\id]$ restrictions in a naive
         implementation, but this is easy to optimize, by introducing a formal
         representation of $\id$, such that $\gamma[\id]$ immediately computes to
-        $\gamma$. The dependent case is analogous operationally.
+        $\gamma$. The case of dependent functions is analogous operationally.
 \end{itemize}
 In summary, in the meta-level fragment of 2LTT, $\ev$ yields a reasonably efficient
 computation of closed values, which reuses functions from the ambient

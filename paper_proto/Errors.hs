@@ -19,6 +19,7 @@ data ElabError
   | InferNamedLam
   | NoNamedImplicitArg Name
   | IcitMismatch Icit Icit
+  | InferStage
   deriving (Show, Exception)
 
 data Error = Error Cxt ElabError
@@ -35,9 +36,9 @@ displayError file (Error cxt e) = do
           "Name not in scope: " ++ x
         CantUnify t t'   ->
           ("Cannot unify expected type\n\n" ++
-           "  " ++ showTm cxt t ++ "\n\n" ++
+           "  " ++ showTm cxt t' ++ "\n\n" ++
            "with inferred type\n\n" ++
-           "  " ++ showTm cxt t')
+           "  " ++ showTm cxt t)
         InferNamedLam ->
           "Cannot infer type for lambda with named argument"
         NoNamedImplicitArg name ->
@@ -45,6 +46,8 @@ displayError file (Error cxt e) = do
         IcitMismatch i i' -> printf (
           "Function icitness mismatch: expected %s, got %s.")
           (show i) (show i')
+        InferStage ->
+          "Cannot infer stage"
 
   printf "%s:%d:%d:\n" path linum colnum
   printf "%s |\n"    lpad

@@ -16,8 +16,10 @@ import Syntax
 
 fresh :: [Name] -> Name -> Name
 fresh ns "_" = "_"
-fresh ns x | elem x ns = fresh ns (x ++ "'")
-           | otherwise = x
+fresh ns x   = if elem x ns then x else go (1::Int)
+  where go n | elem (x ++ show n) ns = go (n + 1)
+             | True                  = x ++ show n
+
 
 -- printing precedences
 atomp = 3  :: Int -- U, var
@@ -82,15 +84,15 @@ go p ns = \case
                                    goPi ns b = (" → "++) . go pip ns b
 
   Let s (fresh ns -> x) a t u -> par p letp $ ("let "++) . (x++) . (" : "++) . go letp ns a
-                                 . ("\n  "++).assign s .(' ':). go letp ns t . (";\n\n"++)
+                                 . (" "++).assign s .(' ':). go letp ns t . ("; "++)
                                  . go letp (ns:>x) u
 
 
   Meta m                      -> (("?"++show m)++)
   AppPruning t pr             -> goPr p ns ns t pr
 
-  Quote t                     -> ('<':).go p ns t.('>':)
-  Splice t                    -> ('[':).go p ns t.(']':)
+  Quote t                     -> ('<':).go letp ns t.('>':)
+  Splice t                    -> ('[':).go letp ns t.(']':)
   Lift a                      -> par p appp $ ("^"++) . go atomp ns a
   -- Wk t                        -> par p appp (("_wk_ "++).go p (tail ns) t)
   Wk t                        -> go p (tail ns) t
@@ -105,7 +107,7 @@ top pre post ns (Lam (fresh ns -> x) i a t) =
   . top "\n " ".\n\n" (x:ns) t
 top pre post ns (Let st (fresh ns -> x) a t u) =
     (post++)
-  . ("let "++).(x++).(" : "++). go letp ns a . ("\n    "++).assign st.(' ':)
+  . ("let "++).(x++).(" : "++). go letp ns a . ("\n  "++).assign st.(' ':)
   . go letp ns t . (";\n\n"++) . top "\nλ" "" (x:ns) u
 top pre post ns (Splice t) =
     (post++)
@@ -131,8 +133,10 @@ displayMetas :: IO ()
 displayMetas = do
   ms <- readIORef mcxt
   forM_ (IM.toList ms) $ \(m, e) -> case e of
-    Unsolved a S0 -> printf "let ?%s : %s := ?;\n"  (show m) (showTm0 $ quote 0 a)
-    Solved v a S0 -> printf "let ?%s : %s := %s;\n" (show m) (showTm0 $ quote 0 a) (showTm0 $ quote 0 v)
-    Unsolved a S1 -> printf "let ?%s : %s = ?;\n"  (show m) (showTm0 $ quote 0 a)
-    Solved v a S1 -> printf "let ?%s : %s = %s;\n" (show m) (showTm0 $ quote 0 a) (showTm0 $ quote 0 v)
+    -- Unsolved a S0 -> printf "let ?%s : %s := ?;\n"  (show m) (showTm0 $ quote 0 a)
+    -- Solved v a S0 -> printf "let ?%s : %s := %s;\n" (show m) (showTm0 $ quote 0 a) (showTm0 $ quote 0 v)
+    -- Unsolved a S1 -> printf "let ?%s : %s = ?;\n"  (show m) (showTm0 $ quote 0 a)
+    -- Solved v a S1 -> printf "let ?%s : %s = %s;\n" (show m) (showTm0 $ quote 0 a) (showTm0 $ quote 0 v)
+    Unsolved a _ -> printf "?%s = ?;\n"  (show m)
+    Solved v a _ -> printf "?%s = %s;\n" (show m) (showTm0 $ quote 0 v)
   putStrLn ""

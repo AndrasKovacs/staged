@@ -7,18 +7,20 @@ module Common (
   , unPos
   , module Debug.Trace
   , module Data.Coerce
+  , module Data.Foldable
   , initialPos) where
 
-import Text.Megaparsec
-import GHC.Stack
-import Debug.Trace
 import Data.Coerce
+import Data.Foldable
+import Debug.Trace
 import GHC.Exts
+import GHC.Stack
+import Text.Megaparsec
 
 type Dbg :: Constraint
 
--- type Dbg = HasCallStack
-type Dbg = ()
+type Dbg = HasCallStack
+-- type Dbg = ()
 
 impossible :: Dbg => a
 impossible = error "impossible"

@@ -107,6 +107,44 @@ ex3 = main' "elab" $ unlines [
 
   ]
 
+inferenceTest = main' "elab" $ unlines [
+  "let the  : (A : U1) → A → A = λ _ x. x;",
+  "let the0 : (A : U0) → A → A := λ _ x. x;",
+
+  "let Eq : {A : U1} → A → A → U1",
+  "    = λ {A} x y. (P : A → U1) → P x → P y;",
+
+  "let refl : {A : U1}{x : A} → Eq {A} x x",
+  "    = λ _ px. px;",
+
+  "let Eq0 : {A : U0} → A → A → U0",
+  "    := λ {A} x y. (P : A → U0) → P x → P y;",
+
+  "let refl0 : {A : U0}{x : A} → Eq0 {A} x x",
+  "    := λ _ px. px;",
+
+  -- pruning <A> from m2
+  "let m1 : U1 = _;",
+  "let m2 : ^U0 → U1 = _;",
+  "let test := λ (A : U0). let foo : Eq {U1} m1 (U1 → m2 <A>) = refl {U1}{m1}; A;",
+
+  -- pruning [A] from m2
+  "let m1 : U0 := _;",
+  "let m2 : U0 → U0 := _;",
+  "let test = λ (A : ^U0). let foo : Eq0 {U0} m1 (U0 → m2 [A]) := refl0 {U0}{m1}; A;",
+
+  -- expand splice in pruning
+  "let m1 : U0 := _;",
+  "let m2 : ^U0 → ^U0 = _;",
+  "let test = λ (A : ^U0). let foo : Eq0 {U0} m1 (U0 → [m2 A]) := refl0 {U0}{m1}; A;",
+
+  -- expand splice in solution spines
+  "let m1 : ^U0 → ^U0 = _;",
+  "let test = λ (A : ^U0). let foo : Eq0 {U0} [m1 A] A := refl0 {U0}{[m1 A]}; A;",
+
+  "U0"
+  ]
+
 
 ex2 :: IO ()
 ex2 = main' "elab" $ unlines [
@@ -124,23 +162,23 @@ ex2 = main' "elab" $ unlines [
   "-- inline type annotation",
   "let the : (A : U1) → A → A = λ _ x. x;",
 
-  "-- 1. Solvable non-linear spine: (m a a =? λ x y. y) is solvable, because m's type does not",
-  "--    depend on the non-linear arguments, and the rhs also does not depend on them.",
-  "let m : (A : U1)(B : U1) → U1 → U1 → U1 = _;",
-  "let test : U1 = Eq (m U1 U1) (λ x y. y);",
+  -- "-- 1. Solvable non-linear spine: (m a a =? λ x y. y) is solvable, because m's type does not",
+  -- "--    depend on the non-linear arguments, and the rhs also does not depend on them.",
+  -- "let m : (A : U1)(B : U1) → U1 → U1 → U1 = _;",
+  -- "let test : U1 = Eq (m U1 U1) (λ x y. y);",
 
-  -- "-- 2. U1nsolvable non-linear spine: m's type depends on non-linear args.",
+  -- "-- 2. Unsolvable non-linear spine: m's type depends on non-linear args.",
   -- "-- let m : (A : U1)(B : U1) → A → B → B = _;",
   -- "-- let test = λ a b. the (Eq (m a a) (λ x y. y)) refl;",
 
-  "-- 3. Intersection solution: first & second args pruned from m.",
-  "let m : U1 → U1 → U1 → U1 = _;",
-  "let test = λ a b c. the (Eq (m a b a) (m c b c)) refl;",
+  -- "-- 3. Intersection solution: first & third args pruned from m.",
+  -- "let m : U1 → U1 → U1 → U1 = _;",
+  -- "let test = λ a b c. the (Eq (m a b c) (m c b a)) refl;",
 
-  "-- 4. Examples requiring pruning",
-  "let pr1 = λ f x. f x;",
-  "let pr2 = λ f x y. f x y;",
-  "let pr3 = λ f. f U1;",
+  -- "-- 4. Examples requiring pruning",
+  -- "let pr1 = λ f x. f x;",
+  -- "let pr2 = λ f x y. f x y;",
+  -- "let pr3 = λ f. f U1;",
 
   "U0"
   ]

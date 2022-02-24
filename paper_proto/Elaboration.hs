@@ -10,26 +10,12 @@ import Common
 import Cxt
 import Errors
 import Evaluation
-import Metacontext
 import Syntax
 import Unification
 import Value
 
 import qualified Presyntax as P
 
---------------------------------------------------------------------------------
-
-freshMeta :: Cxt -> VTy -> Stage -> IO Tm
-freshMeta cxt a st = do
-  let ~closed = eval [] $ closeTy (path cxt) (quote (lvl cxt) a)
-  m <- newMeta closed st
-  pure $ InsertedMeta m (pruning cxt)
-
-unifyCatch :: Cxt -> Val -> Val -> IO ()
-unifyCatch cxt t t' =
-  unify (lvl cxt) t t'
-  `catch` \UnifyError ->
-    throwIO $ Error cxt $ CantUnify (quote (lvl cxt) t) (quote (lvl cxt) t')
 
 
 -- Implicit insertion
@@ -184,8 +170,8 @@ check cxt t a st = case (t, force a) of
   (P.Quote t, VLift a) -> do
     Quote <$> check cxt t a S0
 
-  (t, VLift a) -> do
-    Quote <$> check cxt t a S0
+  -- (t, VLift a) -> do
+  --   Quote <$> check cxt t a S0
 
   (P.Let st' x a t u, a') | st == st' -> do
     (a, va, t, vt) <- case a of

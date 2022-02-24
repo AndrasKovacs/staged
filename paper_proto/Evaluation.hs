@@ -15,6 +15,8 @@ vApp t ~u i = case t of
   VLam _ _ _ t -> t $$ u
   VFlex  m sp  -> VFlex m  (SApp sp u i)
   VRigid x sp  -> VRigid x (SApp sp u i)
+  VQuote{}     -> error "apply to quote"
+
   _            -> impossible
 
 vAppSp :: Val -> Spine -> Val

@@ -1,5 +1,5 @@
 
-module Unification (unify) where
+module Unification (unify, unifyCatch, freshMeta) where
 
 import Control.Monad
 import Control.Exception
@@ -13,15 +13,25 @@ import Evaluation
 import Metacontext
 import Syntax
 import Value
+import Cxt
 
 -- TODO :
---   - invert quote, splice in spines!
---   - eta expand splices before pruning/inversion
---   - note: we *can't* curry quotes away before pruning!
---       usual curry : m : (A, B) -> C     -->    m : A -> B -> C
---             here  : m : Lift A -> B     -->    m : A -> ??
---       but probably we can prune vars inside quote! Which is even easier.
+--   prune quote + splice
+--   invert quote + splice
+--   expand away splices
 
+--------------------------------------------------------------------------------
+
+freshMeta :: Cxt -> VTy -> Stage -> IO Tm
+freshMeta cxt a st = do
+  let ~closed = eval [] $ closeTy (path cxt) (quote (lvl cxt) a)
+  m <- newMeta closed st
+  pure $ InsertedMeta m (pruning cxt)
+
+readUnsolved :: MetaVar -> IO (VTy, Stage)
+readUnsolved m = readMeta m >>= \case
+  Unsolved a s -> pure (a, s)
+  _            -> error "unsolved meta"
 
 --------------------------------------------------------------------------------
 
@@ -54,12 +64,12 @@ invert gamma sp = do
             True  -> pure (dom + 1, domvars,             IM.delete x ren,     Nothing : pr, False   )
             False -> pure (dom + 1, IS.insert x domvars, IM.insert x dom ren, Just i  : pr, isLinear)
           _ -> throwIO UnifyError
+
       go SSplice{} =
-        throwIO UnifyError -- TODO handle splice expansion
+        impossible
 
   (dom, domvars, ren, pr, isLinear) <- go sp
   pure (PRen Nothing dom gamma ren, pr <$ guard isLinear)
-
 
 -- | Remove some arguments from a closed iterated Pi type.
 pruneTy :: RevPruning -> VTy -> IO Ty
@@ -74,52 +84,87 @@ pruneTy (RevPruning pr) a = go pr (PRen Nothing 0 0 mempty) a where
 -- | Prune arguments from a meta, return new meta.
 pruneMeta :: Pruning -> MetaVar -> IO MetaVar
 pruneMeta pruning m = do
-
-  (mty, mst) <- readMeta m >>= \case
-    Unsolved a st -> pure (a, st)
-    _             -> impossible
-
-  prunedty <- eval [] <$> pruneTy (revPruning pruning) mty
-  m' <- newMeta prunedty mst
-
+  (mty, mst) <- readUnsolved m
+  prunedty   <- eval [] <$> pruneTy (revPruning pruning) mty
+  m'         <- newMeta prunedty mst
   let solution = eval [] $ lams (Lvl $ length pruning) mty $ AppPruning (Meta m') pruning
   modifyIORef' mcxt $ IM.insert (coerce m) (Solved solution mty mst)
   pure m'
 
 
+-- | Eta expand an unsolved meta. This removes splicing from spines of the meta.
+etaExpandMeta :: MetaVar -> IO ()
+etaExpandMeta m = do
+  (a, s) <- readUnsolved m
+
+  let go :: Cxt -> VTy -> Stage -> IO Tm
+      go cxt a s = case force a of
+        VPi x i a b -> Lam x i (quote (lvl cxt) a) <$> go (bind cxt x a s) (b $$ VVar (lvl cxt)) s
+        VLift a     -> Quote <$> go cxt a S0
+        a           -> freshMeta cxt a s
+
+  let cxt0 = emptyCxt (initialPos "")
+  t <- go cxt0 a s
+  modifyIORef' mcxt $ IM.insert (coerce m) (Solved (eval [] t) a s)
+
+etaExpandVFlex :: MetaVar -> Spine -> IO (MetaVar, Spine)
+etaExpandVFlex m sp = do
+  let hasSplice SId           = False
+      hasSplice (SApp sp _ _) = hasSplice sp
+      hasSplice SSplice{}     = True
+  if hasSplice sp then do
+    etaExpandMeta m
+    VFlex m sp <- pure $! force (VFlex m sp)
+    pure (m, sp)
+  else do
+    pure (m, sp)
+
 data SpinePruneStatus
-  = OKRenaming    -- ^ Valid spine which is a renaming
-  | OKNonRenaming -- ^ Valid spine but not a renaming (has a non-var entry)
-  | NeedsPruning  -- ^ A spine which is a renaming and has out-of-scope var entries
+  = OKRenaming     -- ^ Valid spine which is a renaming
+  | OKNonRenaming  -- ^ Valid spine but not a renaming (has a non-var entry)
+  | NeedsPruning   -- ^ A spine which is a renaming and has out-of-scope var entries
 
 -- | Prune illegal var occurrences from a meta + spine.
 --   Returns: renamed + pruned term.
 pruneVFlex :: PartialRenaming -> MetaVar -> Spine -> IO Tm
 pruneVFlex pren m sp = do
 
+  -- eta-expand splices if necessary
+  (m, sp) <- etaExpandVFlex m sp
+
+  -- rename spine while computing the required pruning, if there's one
   (sp :: [(Maybe Tm, Icit)], status :: SpinePruneStatus) <- let
+
+    go :: Spine -> IO ([(Maybe Tm, Icit)], SpinePruneStatus)
     go SId           = pure ([], OKRenaming)
     go (SApp sp t i) = do
+
       (sp, status) <- go sp
+
+      let varCase x = case (IM.lookup (coerce x) (ren pren), status) of
+            (Just x , _            ) -> pure ((Just (Var (lvl2Ix (dom pren) x)), i):sp, status)
+            (Nothing, OKNonRenaming) -> throwIO UnifyError
+            (Nothing, _            ) -> pure ((Nothing, i):sp, NeedsPruning)
+
       case force t of
-        VVar x -> case (IM.lookup (coerce x) (ren pren), status) of
-                    (Just x , _            ) -> pure ((Just (Var (lvl2Ix (dom pren) x)), i):sp, status)
-                    (Nothing, OKNonRenaming) -> throwIO UnifyError
-                    (Nothing, _            ) -> pure ((Nothing, i):sp, NeedsPruning)
-        t      -> case status of
-                    NeedsPruning -> throwIO UnifyError
-                    _            -> do {t <- rename pren t; pure ((Just t, i):sp, OKNonRenaming)}
-    go SSplice{} =
-      throwIO UnifyError
+        VVar x                 -> varCase x
+        VRigid x (SSplice SId) -> varCase x
+        VQuote (VVar x)        -> varCase x
+
+        t -> case status of
+          NeedsPruning -> throwIO UnifyError
+          _            -> do {t <- rename pren t; pure ((Just t, i):sp, OKNonRenaming)}
+
+    go SSplice{} = impossible
 
     in go sp
 
   m' <- case status of
-    OKRenaming    -> readMeta m >>= \case Unsolved{} -> pure m; _ -> impossible
-    OKNonRenaming -> readMeta m >>= \case Unsolved{} -> pure m; _ -> impossible
+    OKRenaming    -> readUnsolved m >> pure m
+    OKNonRenaming -> readUnsolved m >> pure m
     NeedsPruning  -> pruneMeta (map (\(mt, i) -> i <$ mt) sp) m
 
-  let t = foldr (\(mu, i) t -> maybe t (\u -> App t u i) mu) (Meta m') sp
+  let t = foldr' (\(mu, i) t -> maybe t (\u -> App t u i) mu) (Meta m') sp
   pure t
 
 renameSp :: PartialRenaming -> Tm -> Spine -> IO Tm
@@ -158,6 +203,7 @@ lams l a t = go a (0 :: Lvl) where
 -- | Solve (Γ ⊢ m spine =? rhs)
 solve :: Lvl -> MetaVar -> Spine -> Val -> IO ()
 solve gamma m sp rhs = do
+  (m, sp) <- etaExpandVFlex m sp
   pren <- invert gamma sp
   solveWithPRen m pren rhs
 
@@ -165,9 +211,7 @@ solve gamma m sp rhs = do
 solveWithPRen :: MetaVar -> (PartialRenaming, Maybe Pruning) -> Val -> IO ()
 solveWithPRen m (pren, pruneNonlinear) rhs = do
 
-  (mty, mst) <- readMeta m >>= \case
-    Unsolved a mst -> pure (a, mst)
-    _              -> impossible
+  (mty, mst) <- readUnsolved m
 
   -- if the spine was non-linear, we check that the non-linear arguments
   -- can be pruned from the meta type (i.e. that the pruned solution will
@@ -190,12 +234,14 @@ unifySp l sp sp' = case (sp, sp') of
   (SSplice sp , SSplice sp'  )  -> unifySp l sp sp'
   _                             -> throwIO UnifyError -- rigid mismatch error
 
-
 -- | Solve (Γ ⊢ m spine =? m' spine').
 flexFlex :: Dbg => Lvl -> MetaVar -> Spine -> MetaVar -> Spine -> IO ()
-flexFlex gamma m sp m' sp' = try (invert gamma sp) >>= \case
-  Left UnifyError -> solve gamma m' sp' (VFlex m sp)
-  Right pren      -> solveWithPRen m pren (VFlex m' sp')
+flexFlex gamma m sp m' sp' = do
+  (m,  sp)  <- etaExpandVFlex m sp
+  (m', sp') <- etaExpandVFlex m' sp'
+  try (invert gamma sp) >>= \case
+    Left UnifyError -> solve gamma m' sp' (VFlex m sp)
+    Right pren      -> solveWithPRen m pren (VFlex m' sp')
 
 unify :: Lvl -> Val -> Val -> IO ()
 unify l t u = case (force t, force u) of
@@ -209,9 +255,15 @@ unify l t u = case (force t, force u) of
   (t           , VLam _ i _ t'  ) -> unify (l + 1) (vApp t (VVar l) i) (t' $$ VVar l)
   (VLam _ i _ t, t'             ) -> unify (l + 1) (t $$ VVar l) (vApp t' (VVar l) i)
 
-  (VFlex m sp  , VFlex m' sp'   ) | m == m' -> unifySp l sp sp' -- TODO: intersect
+  (VFlex m sp  , VFlex m' sp'   ) | m == m' -> unifySp l sp sp'
                                   | True    -> flexFlex l m sp m' sp'
   (VFlex m sp  , t'             ) -> solve l m sp t'
   (t           , VFlex m' sp'   ) -> solve l m' sp' t
 
   _                               -> throwIO UnifyError  -- rigid mismatch error
+
+unifyCatch :: Cxt -> Val -> Val -> IO ()
+unifyCatch cxt t t' =
+  unify (lvl cxt) t t'
+  `catch` \UnifyError ->
+    throwIO $ Error cxt $ CantUnify (quote (lvl cxt) t) (quote (lvl cxt) t')

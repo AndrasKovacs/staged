@@ -1,0 +1,144 @@
+
+-- Typed static evaluator for an embedded simply-typed lambda calculus
+
+
+-- Meta-level library
+--------------------------------------------------------------------------------
+
+-- type annotations
+let the0 : (A : U0) → A → A = λ _ x. x;
+let the1 : (A : U1) → A → A = λ _ x. x;
+
+let Pair : U1 → U1 → U1
+  = λ A B. (Pair : U1)(pair : A → B → Pair) → Pair;
+
+let pair : {A B : U1} → A → B → Pair A B
+  = λ a b Pair pair. pair a b;
+
+let fst : {A B : U1} → Pair A B → A
+  = λ p. p _ (λ a b. a);
+
+let snd : {A B : U1} → Pair A B → B
+  = λ p. p _ (λ a b. b);
+
+let Top : U1
+  = (Top : U1)(tt : Top) → Top;
+
+let tt : Top
+  = λ Top tt. tt;
+
+
+-- Runtime library
+--------------------------------------------------------------------------------
+
+let Bot0 : U0
+  := (Bot0 : U0) → Bot0;
+
+
+-- Church-coded meta-level STLC syntax
+--------------------------------------------------------------------------------
+
+let Ty : U1
+  = (Ty : U1)(ι : Ty)(fun : Ty → Ty → Ty) → Ty;
+
+let ι : Ty
+  = λ Ty ι fun. ι;
+
+let fun : Ty → Ty → Ty
+  = λ A B Ty ι fun. fun (A Ty ι fun) (B Ty ι fun);
+
+let Con : U1
+  = (Con : U1)(nil : Con)(snoc : Con → Ty → Con)→ Con;
+
+let nil : Con
+  = λ Con nil snoc. nil;
+
+let snoc : Con → Ty → Con
+  = λ Γ A Con nil snoc. snoc (Γ Con nil snoc) A;
+
+let Var : Con → Ty → U1
+  = λ Γ A. (Var : Con → Ty → U1)
+           (vz  : {Γ A} → Var (snoc Γ A) A)
+           (vs  : {Γ A B} → Var Γ A → Var (snoc Γ B) A)
+           → Var Γ A;
+
+let vz : {Γ A} → Var (snoc Γ A) A
+  = λ Var vz vs. vz;
+
+let vs : {Γ A B} → Var Γ A → Var (snoc Γ B) A
+  = λ x Var vz vs. vs (x Var vz vs);
+
+let Tm : Con → Ty → U1
+  = λ Γ A. (Tm  : Con → Ty → U1)
+           (var : {Γ A} → Var Γ A → Tm Γ A)
+           (lam : {Γ A B} → Tm (snoc Γ A) B → Tm Γ (fun A B))
+           (app : {Γ A B} → Tm Γ (fun A B) → Tm Γ A → Tm Γ B)
+           → Tm Γ A;
+
+let var : {Γ A} → Var Γ A → Tm Γ A
+  = λ x Tm var lam app. var x;
+
+let lam : {Γ A B} → Tm (snoc Γ A) B → Tm Γ (fun A B)
+  = λ t Tm var lam app. lam (t Tm var lam app);
+
+let app : {Γ A B} → Tm Γ (fun A B) → Tm Γ A → Tm Γ B
+  = λ t u Tm var lam app. app (t Tm var lam app) (u Tm var lam app);
+
+
+-- Evaluator from meta-level syntax to runtime values
+--------------------------------------------------------------------------------
+
+let EvalTy : Ty → U0
+  = λ A. A
+    _
+    Bot0             -- ι
+    (λ A B. A → B);  -- fun A B
+
+let EvalCon : Con → U1
+  = λ Γ. Γ
+    _
+    Top                         -- nil
+    (λ Γ A. Pair Γ (EvalTy A)); -- snoc Γ A
+
+let EvalVar : {Γ A} → Var Γ A → EvalCon Γ → EvalTy A
+  = λ x. x
+    (λ Γ A. EvalCon Γ → EvalTy A)
+    (λ env. snd env)                  -- vz
+    (λ evalx env. evalx (fst env));   -- vs x
+
+let EvalTm : {Γ A} → Tm Γ A → EvalCon Γ → EvalTy A
+  = λ t. t
+    (λ Γ A. EvalCon Γ → EvalTy A)
+    (λ x env. EvalVar x env)                      -- var x
+    (λ evalt env v. evalt (pair env v))           -- lam t
+    (λ evalt evalu env. (evalt env) (evalu env)); -- app t u
+
+let EvalClosedTm : {A} → Tm nil A → EvalTy A
+  = λ t. EvalTm t tt;
+
+
+-- Statically evaluating expressions to runtime terms
+--------------------------------------------------------------------------------
+
+let v0 : {Γ A} → Tm (snoc Γ A) A
+  = var vz;
+
+let v1 : {Γ A B} → Tm (snoc (snoc Γ A) B) A
+  = var (vs vz);
+
+let v2 : {Γ A B C} → Tm (snoc (snoc (snoc Γ A) B) C) A
+  = var (vs (vs vz));
+
+let exp1 : Tm nil (fun (fun ι ι) (fun ι ι))
+  = lam (lam (app v1 v0));
+
+let exp1val : (Bot0 → Bot0) → (Bot0 → Bot0)
+  := EvalClosedTm exp1;
+
+let exp2 : Tm nil (fun (fun ι ι) (fun ι ι))
+  = lam (lam (app v1 (app v1 (app v1 (app v1 (app v1 v0))))));
+
+let exp2val : (Bot0 → Bot0) → (Bot0 → Bot0)
+  := EvalClosedTm exp2;
+
+U0

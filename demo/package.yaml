@@ -1,0 +1,50 @@
+
+name:                2ltt
+version:             0.1.0.0
+# license:
+# author:
+# maintainer:
+# copyright:
+category:            Language
+
+description:         "Small implementation of a two-level type theory, for demonstrating staged compilation"
+
+default-extensions:
+- BangPatterns
+- ConstraintKinds
+- ConstraintKinds
+- DeriveAnyClass
+- DerivingVia
+- EmptyCase
+- FlexibleContexts
+- GeneralizedNewtypeDeriving
+- LambdaCase
+- OverloadedStrings
+- PatternSynonyms
+- ScopedTypeVariables
+- StandaloneDeriving
+- StandaloneKindSignatures
+- Strict
+- TupleSections
+- ViewPatterns
+
+ghc-options:
+- -Wall
+- -Wno-name-shadowing
+- -Wno-missing-signatures
+- -Wno-unused-do-bind
+- -Wno-unused-matches
+
+dependencies:
+- base >= 4.7 && < 5
+- containers
+- megaparsec
+
+source-dirs: .
+
+executable:
+  main: Main.hs
+  ghc-options:
+  - -O
+  - -rtsopts
+  - -with-rtsopts= "-A64M"

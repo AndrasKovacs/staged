@@ -29,7 +29,6 @@ Warning--empty address in DBLP:conf/csl/CavalloMS20
 Warning--empty address in stream-fusion
 Warning--empty address in Dybjer96internaltype
 Warning--empty address in short-cut
-Warning--empty address in intensional-poly
 Warning--empty address in Hofmann97syntaxand
 Warning--empty address in partial-evaluation
 Warning--empty address in gluing
@@ -38,45 +37,45 @@ Warning--empty address in kiselyov14metaocaml
 Warning--empty address in licata2018internal
 Warning--empty address in maclane98categories
 Warning--empty address in cubicalnbe
-You've used 39 entries,
+You've used 37 entries,
             5981 wiz_defined-function locations,
-            1778 strings with 27040 characters,
-and the built_in function-call counts, 43879 in all, are:
-= -- 5924
-> -- 1152
+            1765 strings with 26585 characters,
+and the built_in function-call counts, 41867 in all, are:
+= -- 5700
+> -- 1096
 < -- 0
-+ -- 381
-- -- 425
-* -- 2907
-:= -- 4088
-add.period$ -- 201
-call.type$ -- 39
-change.case$ -- 242
-chr.to.int$ -- 38
-cite$ -- 66
-duplicate$ -- 3970
-empty$ -- 2794
-format.name$ -- 532
-if$ -- 10830
++ -- 362
+- -- 402
+* -- 2783
+:= -- 3884
+add.period$ -- 191
+call.type$ -- 37
+change.case$ -- 231
+chr.to.int$ -- 36
+cite$ -- 63
+duplicate$ -- 3777
+empty$ -- 2659
+format.name$ -- 505
+if$ -- 10371
 int.to.chr$ -- 3
 int.to.str$ -- 1
-missing$ -- 147
-newline$ -- 437
-num.names$ -- 294
-pop$ -- 1418
+missing$ -- 142
+newline$ -- 415
+num.names$ -- 278
+pop$ -- 1348
 preamble$ -- 1
-purify$ -- 551
+purify$ -- 524
 quote$ -- 0
-skip$ -- 1463
+skip$ -- 1383
 stack$ -- 0
-substring$ -- 3459
-swap$ -- 392
+substring$ -- 3301
+swap$ -- 374
 text.length$ -- 0
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 899
-warning$ -- 27
-while$ -- 306
+type$ -- 839
+warning$ -- 26
+while$ -- 288
 width$ -- 0
-write$ -- 892
-(There were 27 warnings)
+write$ -- 847
+(There were 26 warnings)

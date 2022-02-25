@@ -676,14 +676,14 @@ representations. This is a way to reconcile dependent types with control over
 memory layouts.  The unboxed flavor of $\Sigma$ ends up with a statically known
 flat memory representation, computed from the representations of the fields.
 
-In principle, it should be possible to have \emph{dependent memory layouts};
-this would be a more advanced variation on type-passing polymorphism
-\cite{intensional-poly}, where layouts of objects may depend on runtime data. For example,
-length-prefixed flat arrays would not be a primitive notion, but simply defined
-as $(n : \Nat) \times \msf{Vec}\,n\,A$. However, it seems to be highly
-challenging to implement runtime systems and precise garbage collection in this
-setting. See \texttt{sixten} \cite{sixten} for an experimental implementation of
-dependent memory layouts.
+%% In principle, it should be possible to have \emph{dependent memory layouts};
+%% this would be a more advanced variation on type-passing polymorphism
+%% \cite{intensional-poly}, where layouts of objects may depend on runtime data. For example,
+%% length-prefixed flat arrays would not be a primitive notion, but simply defined
+%% as $(n : \Nat) \times \msf{Vec}\,n\,A$. However, it seems to be highly
+%% challenging to implement runtime systems and precise garbage collection in this
+%% setting. See \texttt{sixten} \cite{sixten} for an experimental implementation of
+%% dependent memory layouts.
 
 \section{Formal 2LTT}\label{sec:formal-2ltt}
 
@@ -973,7 +973,7 @@ Section \ref{sec:intensional-analysis}, we will look at a concrete example for t
 
 We proceed to summarize the key components of the model in a bit more detail. We
 denote the components of the model by putting hats on 2LTT components, e.g.\ as
-in $\hCon$. We summarize the key components in the following.
+in $\hCon$.
 
 \begin{notation}
 In this section, we switch to naming elements of $\Cono$ as $a$, $b$ and $c$,
@@ -1781,17 +1781,20 @@ The multi-stage calculus of Kawata and Igarashi \cite{multi-stage-calculus}
 supports staging operations and type dependencies. However, there are major
 differences to the current work. First, ibid.\ does not have universes or large
 elimination, nor does it allow staged manipulation of type expressions. Second,
-it does not support staging in the sense of Definition \ref{def:staging};
-rather, it is a system for runtime code manipulation and evaluation. In other
-words, programs may manipulate code fragments during execution, in more liberal
-ways than in 2LTT, but there is no judgment which ensures that a purely
-``object-level'' program can be extracted from a multi-stage program. We make a
-disctinction between staged compilation and staged computation. For the former,
-we expect staging in the sense of Definition \ref{def:staging}; this is
-essential if we want to use staging as a lowering step in a compilation
-pipeline. Staged computation on the other hand may support runtime code
-construction and evaluation, but may not guarantee that these features can be
-entirely computed away.
+it does not support staged compilation in the sense of Definition
+\ref{def:staging}; rather, it is a system for runtime code manipulation and
+evaluation (which we may call staged \emph{computation}). In other words,
+programs may manipulate code fragments during execution, in more liberal ways
+than in 2LTT, but there is no judgment which ensures that a purely
+``object-level'' program can be extracted from a multi-stage program.
+
+%% We make a
+%% disctinction between staged compilation and staged computation. For the former,
+%% we expect staging in the sense of Definition \ref{def:staging}; this is
+%% essential if we want to use staging as a lowering step in a compilation
+%% pipeline. Staged computation on the other hand may support runtime code
+%% construction and evaluation, but may not guarantee that these features can be
+%% entirely computed away.
 
 Idris 1 supports compile-time partial evaluation, through \texttt{static}
 annotations on function arguments \cite{scrap-your-inefficient-engine}. This can

@@ -2,7 +2,7 @@
 %%% Do NOT edit. File created by BibTeX with style
 %%% ACM-Reference-Format-Journals [18-Jan-2012].
 
-\begin{thebibliography}{39}
+\begin{thebibliography}{37}
 
 %%% ====================================================================
 %%% NOTE TO THE USER: you can override these defaults by providing
@@ -279,19 +279,6 @@
 \showDOI{\tempurl}
 
 
-\bibitem[Fredriksson(2022)]%
-        {sixten}
-\bibfield{author}{\bibinfo{person}{Olle Fredriksson}.}
-  \bibinfo{year}{2022}\natexlab{}.
-\newblock \bibinfo{title}{The Sixten Programming Language}.
-\newblock
-\newblock
-\urldef\tempurl%
-\url{https://github.com/ollef/sixten}
-\showURL{%
-\tempurl}
-
-
 \bibitem[Gill et~al\mbox{.}(1993)]%
         {short-cut}
 \bibfield{author}{\bibinfo{person}{Andrew~John Gill}, \bibinfo{person}{John
@@ -305,23 +292,6 @@
 \newblock
 \urldef\tempurl%
 \url{https://doi.org/10.1145/165180.165214}
-\showDOI{\tempurl}
-
-
-\bibitem[Harper and Morrisett(1995)]%
-        {intensional-poly}
-\bibfield{author}{\bibinfo{person}{Robert Harper} {and}
-  \bibinfo{person}{J.~Gregory Morrisett}.} \bibinfo{year}{1995}\natexlab{}.
-\newblock \showarticletitle{Compiling Polymorphism Using Intensional Type
-  Analysis}. In \bibinfo{booktitle}{\emph{Conference Record of POPL'95: 22nd
-  {ACM} {SIGPLAN-SIGACT} Symposium on Principles of Programming Languages, San
-  Francisco, California, USA, January 23-25, 1995}},
-  \bibfield{editor}{\bibinfo{person}{Ron~K. Cytron} {and}
-  \bibinfo{person}{Peter Lee}} (Eds.). \bibinfo{publisher}{{ACM} Press},
-  \bibinfo{pages}{130--141}.
-\newblock
-\urldef\tempurl%
-\url{https://doi.org/10.1145/199448.199475}
 \showDOI{\tempurl}
 
 

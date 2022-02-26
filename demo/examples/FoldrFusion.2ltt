@@ -28,24 +28,11 @@ let false : Bool
 let case : {A} → Bool → A → A → A
   := λ b. b _;
 
-
--- Runtime Nat
+-- Runtime Nat functions
 ------------------------------------------------------------
 
-let Nat : U0
-  := (N : U0)(suc : N → N)(zero : N) → N;
-
-let zero : Nat
-  := λ _ _ z. z;
-
-let suc : Nat → Nat
-  := λ a N s z. s (a N s z);
-
-let add : Nat → Nat → Nat
-  := λ a b N s z. a N s (b N s z);
-
-let iter : {A} → Nat → (A → A) → A → A
-  := λ n. n _;
+let iter0 : {A} → Nat0 → (A → A) → A → A
+  := λ {A} n f a. NatElim0 (λ _. A) (λ _. f) a n;
 
 
 -- Runtime lists
@@ -102,13 +89,13 @@ let down : {A : U0} → FList A → List A
 -- fusion examples
 ------------------------------------------------------------
 
-let f1 : List Nat → List Nat
+let f1 : List Nat0 → List Nat0
   := λ xs. down (fmap suc (fmap suc (up xs)));
 
-let f2 : List Nat → List Nat
+let f2 : List Nat0 → List Nat0
   := λ as. down (ffilter (λ _. true) (fmap suc (up as)));
 
-let f3 : List Nat → List Nat
+let f3 : List Nat0 → List Nat0
   := λ as. down (fappend (fmap suc (up as)) (fmap (comp suc suc) (up as)));
 
 

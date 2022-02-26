@@ -12,6 +12,7 @@ data Spine
   = SId
   | SApp Spine ~Val Icit Verbosity
   | SSplice Spine
+  | SNatElim Stage Val Val Val Spine
   deriving Show
 
 data Val
@@ -22,6 +23,9 @@ data Val
   | VU Stage
   | VLift Val
   | VQuote Val
+  | VNat Stage
+  | VZero Stage
+  | VSuc Stage Val
   deriving Show
 
 pattern VVar :: Lvl -> Val

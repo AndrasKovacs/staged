@@ -49,6 +49,10 @@ goIx ns topX = go ns topX topX where
   go (n:ns)   x wkx = go ns (x - 1) wkx
   go _        _ _   = impossible
 
+stage S0 = ('0':)
+stage S1 = ('1':)
+ws = (' ':)
+
 goTm :: Verbosity -> Int -> [Name] -> Tm -> ShowS
 goTm v = go where
 
@@ -61,8 +65,9 @@ goTm v = go where
   goPr p topNs ns t pr = goPr' p ns pr (0 :: Int) where
     goPr' p ns pr x = case (ns, pr) of
       ([]      , []           ) -> go p topNs t
-      (ns :> n , pr :> Just i ) -> par p appp $ goPr' appp ns pr (x + 1) . (' ':)
-                                   . icit i braces id (case n of "_" -> (("@"++show x)++); n -> (n++))
+      (ns :> n , pr :> Just i ) -> par p appp $ goPr' appp ns pr (x + 1) . ws
+                                   . icit i braces id (case n of "_" -> (("@"++show x)++);
+                                                                 n  -> (n++))
       (ns :> n , pr :> Nothing) -> goPr' appp ns pr (x + 1)
       _                         -> impossible
 
@@ -70,13 +75,13 @@ goTm v = go where
   go p ns = \case
     Var x                       -> goIx ns x
 
-    App t u Expl _              -> par p appp $ go appp ns t . (' ':) . go atomp ns u
+    App t u Expl _              -> par p appp $ go appp ns t . ws . go atomp ns u
     App t u Impl o              -> verbose o
-                                     (par p appp $ go appp ns t . (' ':) . braces (go letp ns u))
+                                     (par p appp $ go appp ns t . ws . braces (go letp ns u))
                                      (go p ns t)
 
     Lam (fresh ns -> x) i _ t o -> let goLam ns (Lam (fresh ns -> x) i _ t o) =
-                                         verbose o ((' ':) . lamBind x i) id . goLam (ns:>x) t
+                                         verbose o (ws . lamBind x i) id . goLam (ns:>x) t
                                        goLam ns t =
                                          (". "++) . go letp ns t
                                    in verbose o
@@ -94,7 +99,7 @@ goTm v = go where
                                      goPi ns b = (" → "++) . go pip ns b
 
     Let s (fresh ns -> x) a t u -> par p letp $ ("let "++) . (x++) . (" : "++) . go letp ns a
-                                   . (" "++).assign s .(' ':). go letp ns t . ("; "++)
+                                   . ws . assign s . ws . go letp ns t . ("; "++)
                                    . go letp (ns:>x) u
 
 
@@ -109,6 +114,15 @@ goTm v = go where
 
     InsertedMeta m pr           -> verbose V1 (("?"++show m++"(..)")++) ('_':)
 
+    Zero s                      -> ("zero"++).stage s
+    Suc s t                     -> par p appp $ ("suc"++) . stage s . ws . go atomp ns t
+    Nat s                       -> ("Nat"++).stage s
+    NatElim st pr s z t         -> par p appp $ ("NatElim "++)
+                                  . go atomp ns pr . ws
+                                  . go atomp ns s  . ws
+                                  . go atomp ns z  . ws
+                                  . go atomp ns z
+
 goTopTm :: Verbosity -> String -> String -> [Name] -> Tm -> ShowS
 goTopTm v = top where
 
@@ -122,7 +136,7 @@ goTopTm v = top where
     . top "\n " ".\n\n" (x:ns) t
   top pre post ns (Let st (fresh ns -> x) a t u) =
       (post++)
-    . ("let "++).(x++).(" : "++). go letp ns a . ("\n  "++).assign st.(' ':)
+    . ("let "++).(x++).(" : "++). go letp ns a . ("\n  "++).assign st.ws
     . go letp ns t . (";\n\n"++) . top "\nλ" "" (x:ns) u
   top pre post ns (Splice t) =
       (post++)

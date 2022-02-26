@@ -50,6 +50,11 @@ data Tm
   | Lift Ty
 
   | Wk Tm -- ^ Explicit weakening, used in subtyping coercions
+
+  | Nat Stage
+  | Zero Stage
+  | Suc Stage Tm
+  | NatElim Stage Tm Tm Tm Tm
   deriving Show
 
 tQuote :: Tm -> Tm

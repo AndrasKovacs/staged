@@ -2,7 +2,6 @@
 module Parser (parseString, parseStdin) where
 
 import Control.Applicative hiding (many, some)
-import Control.Monad
 import Data.Char
 import Data.Void
 import System.Exit
@@ -37,13 +36,26 @@ pArrow     = symbol "→" <|> symbol "->"
 pBind      = pIdent <|> symbol "_"
 
 keyword :: String -> Bool
-keyword x = x == "let" || x == "λ" || x == "U0" || x == "U1"
+keyword x = x == "let"
+         || x == "λ"
+         || x == "U0"
+         || x == "U1"
+         || x == "Nat1"
+         || x == "zero1"
+         || x == "suc1"
+         || x == "NatElim1"
+         || x == "Nat0"
+         || x == "zero0"
+         || x == "suc0"
+         || x == "NatElim0"
 
 pIdent :: Parser Name
 pIdent = try $ do
+  o <- getOffset
   x <- takeWhile1P Nothing isAlphaNum
-  guard (not (keyword x))
-  x <$ ws
+  if keyword x
+    then do {setOffset o; fail $ "unexpected keyword: " ++ x}
+    else x <$ ws
 
 pKeyword :: String -> Parser ()
 pKeyword kw = do
@@ -57,7 +69,11 @@ pAtom  =
                <|> (U S1   <$  symbol "U1")
                <|> (Hole   <$  char '_')
                <|> (Quote  <$> (char '<' *> pTm <* char '>'))
-               <|> (Splice <$> (char '[' *> pTm <* char ']')))
+               <|> (Splice <$> (char '[' *> pTm <* char ']'))
+               <|> (Nat S0  <$ pKeyword "Nat0")
+               <|> (Zero S0 <$ pKeyword "zero0")
+               <|> (Nat S1  <$ pKeyword "Nat1")
+               <|> (Zero S1 <$ pKeyword "zero1"))
   <|> parens pTm
 
 pArg :: Parser (Either Name Icit, Tm)
@@ -71,11 +87,14 @@ pApps = do
   args <- many pArg
   pure $ foldl (\t (i, u) -> App t u i) h args
 
-pLift :: Parser Tm
-pLift = Lift <$> (char '^' *> pAtom)
-
 pSpine :: Parser Tm
-pSpine = pLift <|> pApps
+pSpine =
+      (Lift       <$> (char '^' *> pAtom))
+  <|> (Suc S0     <$> (pKeyword "suc0" *> pAtom))
+  <|> (Suc S1     <$> (pKeyword "suc1" *> pAtom))
+  <|> (NatElim S0 <$> (pKeyword "NatElim0" *> pAtom) <*> pAtom <*> pAtom <*> pAtom)
+  <|> (NatElim S1 <$> (pKeyword "NatElim1" *> pAtom) <*> pAtom <*> pAtom <*> pAtom)
+  <|> pApps
 
 pLamBinder :: Parser (Name, Maybe Tm, Either Name Icit)
 pLamBinder =

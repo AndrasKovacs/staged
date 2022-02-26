@@ -331,3 +331,36 @@ infer cxt = \case
     (!t, !a) <- inferS cxt t S1
     (!t, !a) <- adjustStage cxt t a S1 S0
     pure (t, a, S0)
+
+  P.Nat st ->
+    pure (Nat st, VU st, st)
+
+  P.Zero st ->
+    pure (Zero st, VNat st, st)
+
+  P.Suc st t -> do
+    t <- check cxt t (VNat st) st
+    pure (Suc st t, VNat st, st)
+
+  P.NatElim st p s z t -> do
+
+    let pty = VPi "" Expl (VNat st) (Closure [] (U st))
+
+    p <- check cxt p pty st
+
+    let sty = eval (env cxt) $
+              Pi "n" Expl (Nat st) $
+              Pi "pn" Expl (App (Wk p) (Var 0) Expl V0) $
+              App (Wk (Wk p)) (Suc st (Var 1)) Expl V0
+
+    s <- check cxt s sty st
+
+    let zty = eval (env cxt) $ App p (Zero st) Expl V0
+
+    z <- check cxt z zty st
+
+    t <- check cxt t (VNat st) st
+
+    let resty = eval (env cxt) $ App p t Expl V0
+
+    pure (NatElim st p s z t, resty, st)

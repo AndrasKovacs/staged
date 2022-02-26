@@ -90,7 +90,35 @@ main' mode src = mainWith (pure [mode]) ((,src) <$> parseString src)
 verbosityTest = main' "elab" $ unlines [
   "let id : {A : U0} → A → A := λ x. x;",
   "id U0"
+  ]
 
+natTest = main' "nf" $ unlines [
+  "let foo := zero0;",
+  "let bar := λ x. suc0 x;",
+  "let x = zero1;",
+  "let y = λ x. suc1 x;",
+
+  "let iter0 : {A : U0} → Nat0 → (A → A) → A → A",
+  "  := λ {A} n f a. NatElim0 (λ _. A) (λ _. f) a n;",
+
+  "let add0 : Nat0 → Nat0 → Nat0",
+  "  := λ a b. iter0 a (λ x. suc0 x) b;",
+
+  "let n5₀ := suc0 (suc0 (suc0 (suc0 (suc0 zero0))));",
+  "let n10₀ := add0 n5₀ n5₀;",
+
+  "let iter1 : {A : U1} → Nat1 → (A → A) → A → A",
+  "  = λ {A} n f a. NatElim1 (λ _. A) (λ _. f) a n;",
+
+  "let add1 : Nat1 → Nat1 → Nat1",
+  "  = λ a b. iter1 a (λ x. suc1 x) b;",
+
+  "let n5₁ = suc1 (suc1 (suc1 (suc1 (suc1 zero1))));",
+  "let n10₁ = add1 n5₁ n5₁;",
+
+  "let Nat0 = U0;",
+
+  "U0"
   ]
 
 ex1 :: IO ()
@@ -117,7 +145,7 @@ ex3 = main' "elab" $ unlines [
 
   ]
 
-inferenceTest = main' "elab" $ unlines [
+inferenceTest = main' "elab-verbose" $ unlines [
 
   "let Eq : {A : U1} → A → A → U1",
   "    = λ {A} x y. (P : A → U1) → P x → P y;",
@@ -163,7 +191,7 @@ inferenceTest = main' "elab" $ unlines [
 
 
 ex2 :: IO ()
-ex2 = main' "elab" $ unlines [
+ex2 = main' "elab-verbose" $ unlines [
 
   "-- Examples for unification with ordered metacontext & pruning",
   "--------------------------------------------------------------------------------",
@@ -199,7 +227,7 @@ ex2 = main' "elab" $ unlines [
   "U0"
   ]
 
-ex5 = main' "stage" $ unlines [
+ex5 = main' "elab-verbose" $ unlines [
   "λ (Bool  : U0)",
   "  (true  : Bool)",
   "  (false : Bool)",

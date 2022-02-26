@@ -1,24 +1,20 @@
 
-module Evaluation (($$), quote, eval, nf, force, lvl2Ix, vApp, vAppSp, zonk) where
+module Evaluation (quote, eval, nf, force, lvl2Ix, vApp, vAppSp, zonk, vAppE0) where
 
 import Common
 import Metacontext
 import Syntax
 import Value
 
-infixl 8 $$
-($$) :: Closure -> Val -> Val
-($$) (Closure env t) ~u = eval (env :> u) t
-
 vApp :: Val -> Val -> Icit -> Verbosity -> Val
 vApp t ~u i o = case t of
-  VLam _ _ _ t o -> t $$ u
+  VLam _ _ _ t o -> t u
   VFlex  m sp    -> VFlex m  (SApp sp u i o)
   VRigid x sp    -> VRigid x (SApp sp u i o)
   _              -> impossible
 
 vAppE0 :: Val -> Val -> Val
-vAppE0 t u = vApp t u Expl V0
+vAppE0 t ~u = vApp t u Expl V0
 
 vAppSp :: Val -> Spine -> Val
 vAppSp t = \case
@@ -65,25 +61,36 @@ vNatElim st p s z n = case n of
   VRigid x sp -> VRigid x (SNatElim st p s z sp)
   _           -> impossible
 
+vNatElimClosure :: Stage -> Val
+vNatElimClosure st =
+  vlamE0 "p" (VNat st ==> VU S0) \p ->
+  vlamE0 "s" (vpiE "n" (VNat st) \n -> p `vAppE0` n ==> p `vAppE0` (VSuc st n)) \s ->
+  vlamE0 "z" (p `vAppE0` VZero st) \z ->
+  vlamE0 "n" (VNat st) \n ->
+  vNatElim st p s z n
+
+evalBind :: Env -> Tm -> Val -> Val
+evalBind env t u = eval (env:>u) t
+
 eval :: Env -> Tm -> Val
 eval env = \case
-  Var x              -> vVar env x
-  App t u i o        -> vApp (eval env t) (eval env u) i o
-  Lam x i a t o      -> VLam x i (eval env a) (Closure env t) o
-  Pi x i a b         -> VPi x i (eval env a) (Closure env b)
-  Let _ _ _ t u      -> eval (env :> eval env t) u
-  U s                -> VU s
-  Meta m             -> vMeta m
-  AppPruning t pr    -> vAppPruning env (eval env t) pr
-  InsertedMeta m pr  -> vAppPruning env (vMeta m) pr
-  Quote t            -> vQuote (eval env t)
-  Splice t           -> vSplice (eval env t)
-  Lift t             -> VLift (eval env t)
-  Wk t               -> eval (tail env) t
-  Nat s              -> VNat s
-  Zero s             -> VZero s
-  Suc s t            -> VSuc s (eval env t)
-  NatElim st p s z t -> vNatElim st (eval env p) (eval env s) (eval env z) (eval env t)
+  Var x             -> vVar env x
+  App t u i o       -> vApp (eval env t) (eval env u) i o
+  Lam x i a t o     -> VLam x i (eval env a) (evalBind env t) o
+  Pi x i a b        -> VPi x i (eval env a) (evalBind env b)
+  Let _ _ _ t u     -> eval (env :> eval env t) u
+  U s               -> VU s
+  Meta m            -> vMeta m
+  AppPruning t pr   -> vAppPruning env (eval env t) pr
+  InsertedMeta m pr -> vAppPruning env (vMeta m) pr
+  Quote t           -> vQuote (eval env t)
+  Splice t          -> vSplice (eval env t)
+  Lift t            -> VLift (eval env t)
+  Wk t              -> eval (tail env) t
+  Nat s             -> VNat s
+  Zero s            -> VZero s
+  Suc s             -> vlamE0 "n" (VNat s) (VSuc s)
+  NatElim st        -> vNatElimClosure st
 
 force :: Val -> Val
 force = \case
@@ -98,20 +105,20 @@ quoteSp l t = \case
   SId                  -> t
   SApp sp u i o        -> App (quoteSp l t sp) (quote l u) i o
   SSplice sp           -> Splice (quoteSp l t sp)
-  SNatElim st p s z sp -> NatElim st (quote l p) (quote l s) (quote l z) (quoteSp l t sp)
+  SNatElim st p s z sp -> tNatElim st (quote l p) (quote l s) (quote l z) (quoteSp l t sp)
 
 quote :: Lvl -> Val -> Tm
 quote l t = case force t of
   VFlex m sp     -> quoteSp l (Meta m) sp
   VRigid x sp    -> quoteSp l (Var (lvl2Ix l x)) sp
-  VLam x i a t o -> Lam x i (quote l a) (quote (l + 1) (t $$ VVar l)) o
-  VPi x i a b    -> Pi x i (quote l a) (quote (l + 1) (b $$ VVar l))
+  VLam x i a t o -> Lam x i (quote l a) (quote (l + 1) (t (VVar l))) o
+  VPi x i a b    -> Pi x i (quote l a) (quote (l + 1) (b (VVar l)))
   VU s           -> U s
   VLift t        -> Lift (quote l t)
   VQuote t       -> Quote (quote l t)
   VNat s         -> Nat s
   VZero s        -> Zero s
-  VSuc s t       -> Suc s (quote l t)
+  VSuc s t       -> tSuc s (quote l t)
 
 
 nf :: Env -> Tm -> Tm
@@ -159,5 +166,5 @@ zonk vs l t = go t where
     Splice t           -> Splice (go t)
     Nat s              -> Nat s
     Zero s             -> Zero s
-    Suc s t            -> Suc s (go t)
-    NatElim st p s z t -> NatElim st (go p) (go s) (go z) (go t)
+    Suc s              -> Suc s
+    NatElim s          -> NatElim s

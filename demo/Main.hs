@@ -92,6 +92,20 @@ verbosityTest = main' "elab" $ unlines [
   "id U0"
   ]
 
+natUnifyTest = main' "elab-verbose" $ unlines [
+  "let Eq : {A : U1} → A → A → U1",
+  "  = λ {A} x y. (P : A → U1) → P x → P y;",
+
+  "let refl : {A : U1}{x : A} → Eq {A} x x",
+  "  = λ _ px. px;",
+
+  "let meta : Nat1 → Nat1 = _;",
+  "let test : (n : Nat1) → Eq {Nat1} (meta n) (NatElim1 (λ _. Nat1) (λ _ x. x) zero1 n)",
+  "  = λ n. refl ;",
+
+  "U0"
+  ]
+
 natTest = main' "nf" $ unlines [
   "let foo := zero0;",
   "let bar := λ x. suc0 x;",
@@ -116,9 +130,7 @@ natTest = main' "nf" $ unlines [
   "let n5₁ = suc1 (suc1 (suc1 (suc1 (suc1 zero1))));",
   "let n10₁ = add1 n5₁ n5₁;",
 
-  "let Nat0 = U0;",
-
-  "U0"
+  "n10₀"
   ]
 
 ex1 :: IO ()

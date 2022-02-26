@@ -40,14 +40,14 @@ keyword x = x == "let"
          || x == "λ"
          || x == "U0"
          || x == "U1"
-         || x == "Nat1"
-         || x == "zero1"
-         || x == "suc1"
-         || x == "NatElim1"
          || x == "Nat0"
          || x == "zero0"
          || x == "suc0"
          || x == "NatElim0"
+         || x == "Nat1"
+         || x == "zero1"
+         || x == "suc1"
+         || x == "NatElim1"
 
 pIdent :: Parser Name
 pIdent = try $ do
@@ -64,17 +64,22 @@ pKeyword kw = do
 
 pAtom :: Parser Tm
 pAtom  =
-      withPos (    (Var    <$> pIdent)
-               <|> (U S0   <$  symbol "U0")
+      parens pTm
+  <|> withPos (    (U S0   <$  symbol "U0")
                <|> (U S1   <$  symbol "U1")
                <|> (Hole   <$  char '_')
                <|> (Quote  <$> (char '<' *> pTm <* char '>'))
                <|> (Splice <$> (char '[' *> pTm <* char ']'))
-               <|> (Nat S0  <$ pKeyword "Nat0")
-               <|> (Zero S0 <$ pKeyword "zero0")
-               <|> (Nat S1  <$ pKeyword "Nat1")
-               <|> (Zero S1 <$ pKeyword "zero1"))
-  <|> parens pTm
+               <|> (Nat     S0 <$ (pKeyword "Nat0"    ))
+               <|> (Zero    S0 <$ (pKeyword "zero0"   ))
+               <|> (Suc     S0 <$ (pKeyword "suc0"    ))
+               <|> (NatElim S0 <$ (pKeyword "NatElim0"))
+               <|> (Nat     S1 <$ (pKeyword "Nat1"    ))
+               <|> (Zero    S1 <$ (pKeyword "zero1"   ))
+               <|> (Suc     S1 <$ (pKeyword "suc1"    ))
+               <|> (NatElim S1 <$ (pKeyword "NatElim1"))
+               <|> (Var <$> (takeWhile1P Nothing isAlphaNum <* ws)))
+
 
 pArg :: Parser (Either Name Icit, Tm)
 pArg =  (try $ braces $ do {x <- pIdent; char '='; t <- pTm; pure (Left x, t)})
@@ -89,11 +94,7 @@ pApps = do
 
 pSpine :: Parser Tm
 pSpine =
-      (Lift       <$> (char '^' *> pAtom))
-  <|> (Suc S0     <$> (pKeyword "suc0" *> pAtom))
-  <|> (Suc S1     <$> (pKeyword "suc1" *> pAtom))
-  <|> (NatElim S0 <$> (pKeyword "NatElim0" *> pAtom) <*> pAtom <*> pAtom <*> pAtom)
-  <|> (NatElim S1 <$> (pKeyword "NatElim1" *> pAtom) <*> pAtom <*> pAtom <*> pAtom)
+      (Lift <$> (char '^' *> pAtom))
   <|> pApps
 
 pLamBinder :: Parser (Name, Maybe Tm, Either Name Icit)

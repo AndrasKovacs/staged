@@ -1,5 +1,7 @@
 
--- Typed static evaluator for an embedded simply-typed lambda calculus
+
+-- Typed static evaluator for an embedded simply-typed lambda calculus.
+
 
 -- Meta-level library
 --------------------------------------------------------------------------------

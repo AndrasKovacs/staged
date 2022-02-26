@@ -1,17 +1,13 @@
 
+-- Demonstration of basic staged foldr/build fusion
+--------------------------------------------------------------------------------
+
 
 let id : {A} → A → A
   = λ x. x;
 
 let comp : {A B C} → (B → C) → (A → B) → A → C
   = λ f g x. f (g x);
-
-let Eq : {A} → A → A → U0
-  := λ {A} x y. (P : A → U0) → P x → P y;
-
-let refl : {A x} → Eq {A} x x
-  := λ P px. px;
-
 
 -- Runtime Bool
 ------------------------------------------------------------
@@ -34,6 +30,8 @@ let case : {A} → Bool → A → A → A
 let iter0 : {A} → Nat0 → (A → A) → A → A
   := λ {A} n f a. NatElim0 (λ _. A) (λ _. f) a n;
 
+let add0 : Nat0 → Nat0 → Nat0
+  := λ a b. iter0 a suc0 b;
 
 -- Runtime lists
 ------------------------------------------------------------
@@ -63,6 +61,9 @@ let fnil : {A : U0} → FList A
 let fcons : {A : U0} → A → FList A → FList A
   = λ a as L c n. c a (as L c n);
 
+let fpure : {A : U0} → A → FList A
+  = λ a. fcons a fnil;
+
 let fmap : {A B : U0} → (A → B) → FList A → FList B
   = λ f as L c n. as L (λ a bs. c (f a) bs) n;
 
@@ -90,13 +91,16 @@ let down : {A : U0} → FList A → List A
 ------------------------------------------------------------
 
 let f1 : List Nat0 → List Nat0
-  := λ xs. down (fmap suc (fmap suc (up xs)));
+  := λ xs. down (fmap id (fmap suc0 (fmap suc0 (up xs))));
 
 let f2 : List Nat0 → List Nat0
-  := λ as. down (ffilter (λ _. true) (fmap suc (up as)));
+  := λ as. down (fappend (fmap suc0 (up as)) (fmap (comp suc0 suc0) (up as)));
 
 let f3 : List Nat0 → List Nat0
-  := λ as. down (fappend (fmap suc (up as)) (fmap (comp suc suc) (up as)));
-
+  := λ as. down (
+    fmap (add0 (suc0 zero0)) (
+      fbind (up as) (λ x.
+      fbind (up as) (λ y.
+      fpure (add0 x y)))));
 
 U0

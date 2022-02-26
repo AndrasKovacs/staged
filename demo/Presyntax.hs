@@ -5,7 +5,7 @@ import Common
 
 data Tm
   = Var Name                                   -- x
-  | Lam Name (Maybe Tm) (Either Name Icit)Tm   -- \x. t  |  \{x}. t  |  \{x = y}. t
+  | Lam Name (Maybe Tm) (Either Name Icit) Tm  -- \x. t  |  \{x}. t  |  \{x = y}. t
   | App Tm Tm (Either Name Icit)               -- t u  |  t {u}  |  t {x = u}
   | U Stage                                    -- U i
   | Pi Name Icit Tm Tm                         -- (x : A) -> B  |  {x : A} -> B
@@ -18,7 +18,6 @@ data Tm
 
   | Nat Stage
   | Zero Stage
-  | Suc Stage Tm
-  | NatElim Stage Tm Tm Tm Tm
-
+  | Suc Stage
+  | NatElim Stage
   deriving Show

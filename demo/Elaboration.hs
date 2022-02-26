@@ -26,7 +26,7 @@ insert' cxt act = go =<< act where
     VPi x Impl a b -> do
       m <- freshMeta cxt a st
       let mv = eval (env cxt) m
-      go (App t m Impl V1, b $$ mv, st)
+      go (App t m Impl V1, b $ mv, st)
     va -> pure (t, va, st)
 
 -- | Insert fresh implicit applications to a term which is not
@@ -54,7 +54,7 @@ insertUntilName cxt name act = go =<< act where
       else do
         m <- freshMeta cxt a st
         let mv = eval (env cxt) m
-        go (App t m Impl V1, b $$ mv, st)
+        go (App t m Impl V1, b $ mv, st)
     _ ->
       throwIO $ Error cxt $ NoNamedImplicitArg name
 
@@ -109,13 +109,13 @@ coe cxt t a s a' s' = maybe t id <$!> go cxt t a s a' s' where
       case coev0 of
         Nothing -> do
           body <- go cxt' (App (Wk t) (Var 0) i V0)
-                          (b  $$ VVar (lvl cxt)) s
-                          (b' $$ VVar (lvl cxt)) s'
+                          (b  $ VVar (lvl cxt)) s
+                          (b' $ VVar (lvl cxt)) s'
           pure $ Lam x i (quote (lvl cxt) a') <$!> body <*!> pure V0
         Just coev0 -> do
           body <- go cxt' (App (Wk t) coev0 i V0)
-                          (b  $$ eval (env cxt') coev0) s
-                          (b' $$ VVar (lvl cxt)) s'
+                          (b  $ eval (env cxt') coev0) s
+                          (b' $ VVar (lvl cxt)) s'
           case body of
             Nothing   ->
               pure $ Just $ Lam (pick x x') i (quote (lvl cxt) a') (App (Wk t) coev0 i V0) V0
@@ -158,13 +158,13 @@ check cxt t a st = case (t, force a) of
       Nothing ->
         pure (quote (lvl cxt) a', a')
 
-    Lam x i' a <$!> check (bind cxt x va st) t (b $$ VVar (lvl cxt)) st
+    Lam x i' a <$!> check (bind cxt x va st) t (b $ VVar (lvl cxt)) st
                <*!> pure V0
 
   -- Otherwise if Pi is implicit, insert a new implicit lambda
   (t, VPi x Impl a b) -> do
     Lam x Impl (quote (lvl cxt) a)
-      <$!> check (newBinder cxt x a st) t (b $$ VVar (lvl cxt)) st
+      <$!> check (newBinder cxt x a st) t (b $ VVar (lvl cxt)) st
       <*!> pure V1
 
   (P.Lift a, VU S1) -> do
@@ -288,12 +288,12 @@ infer cxt = \case
         pure (t, a, b)
       tty -> do
         a <- eval (env cxt) <$!> freshMeta cxt (VU st) st
-        b <- Closure (env cxt) <$!> freshMeta (bind cxt "x" a st) (VU st) st
+        b <- closeTm cxt <$!> freshMeta (bind cxt "x" a st) (VU st) st
         t <- coe cxt t tty st (VPi "x" i a b) st
         pure (t, a, b)
 
     u <- check cxt u a st
-    pure (App t u i V0, b $$ eval (env cxt) u, st)
+    pure (App t u i V0, b $ eval (env cxt) u, st)
 
   P.U s ->
     pure (U s, VU s, s)
@@ -338,29 +338,15 @@ infer cxt = \case
   P.Zero st ->
     pure (Zero st, VNat st, st)
 
-  P.Suc st t -> do
-    t <- check cxt t (VNat st) st
-    pure (Suc st t, VNat st, st)
+  P.Suc st ->
+    pure (Suc st, VNat st ==> VNat st, st)
 
-  P.NatElim st p s z t -> do
+  P.NatElim st -> do
 
-    let pty = VPi "" Expl (VNat st) (Closure [] (U st))
+    let ty = vpiE "p" (VNat st ==> VU st) \p ->
+             vpiE "s" (vpiE "n" (VNat st) \n -> p `vAppE0` n ==> p `vAppE0` VSuc st n) \s ->
+             vpiE "z" (p `vAppE0` VZero st) \z ->
+             vpiE "n" (VNat st) \n ->
+             p `vAppE0` n
 
-    p <- check cxt p pty st
-
-    let sty = eval (env cxt) $
-              Pi "n" Expl (Nat st) $
-              Pi "pn" Expl (App (Wk p) (Var 0) Expl V0) $
-              App (Wk (Wk p)) (Suc st (Var 1)) Expl V0
-
-    s <- check cxt s sty st
-
-    let zty = eval (env cxt) $ App p (Zero st) Expl V0
-
-    z <- check cxt z zty st
-
-    t <- check cxt t (VNat st) st
-
-    let resty = eval (env cxt) $ App p t Expl V0
-
-    pure (NatElim st p s z t, resty, st)
+    pure (NatElim st, ty, st)

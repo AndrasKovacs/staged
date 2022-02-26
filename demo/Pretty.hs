@@ -76,15 +76,15 @@ goTm v = go where
     Var x                       -> goIx ns x
 
     App t u Expl _              -> par p appp $ go appp ns t . ws . go atomp ns u
-    App t u Impl o              -> verbose o
+    App t u Impl v              -> verbose v
                                      (par p appp $ go appp ns t . ws . braces (go letp ns u))
                                      (go p ns t)
 
-    Lam (fresh ns -> x) i _ t o -> let goLam ns (Lam (fresh ns -> x) i _ t o) =
-                                         verbose o (ws . lamBind x i) id . goLam (ns:>x) t
+    Lam (fresh ns -> x) i _ t v -> let goLam ns (Lam (fresh ns -> x) i _ t v) =
+                                         verbose v (ws . lamBind x i) id . goLam (ns:>x) t
                                        goLam ns t =
                                          (". "++) . go letp ns t
-                                   in verbose o
+                                   in verbose v
                                       (par p letp $ ("λ "++) . lamBind x i . goLam (ns:>x) t)
                                       (go p (ns:>x) t)
 
@@ -115,13 +115,9 @@ goTm v = go where
     InsertedMeta m pr           -> verbose V1 (("?"++show m++"(..)")++) ('_':)
 
     Zero s                      -> ("zero"++).stage s
-    Suc s t                     -> par p appp $ ("suc"++) . stage s . ws . go atomp ns t
+    Suc s                       -> ("suc"++).stage s
     Nat s                       -> ("Nat"++).stage s
-    NatElim st pr s z t         -> par p appp $ ("NatElim "++)
-                                  . go atomp ns pr . ws
-                                  . go atomp ns s  . ws
-                                  . go atomp ns z  . ws
-                                  . go atomp ns z
+    NatElim s                   -> ("NatElim"++).stage s
 
 goTopTm :: Verbosity -> String -> String -> [Name] -> Tm -> ShowS
 goTopTm v = top where

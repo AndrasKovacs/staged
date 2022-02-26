@@ -11,6 +11,7 @@ description:         "Small implementation of a two-level type theory, for demon
 
 default-extensions:
 - BangPatterns
+- BlockArguments
 - ConstraintKinds
 - ConstraintKinds
 - DeriveAnyClass

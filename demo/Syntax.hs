@@ -53,8 +53,8 @@ data Tm
 
   | Nat Stage
   | Zero Stage
-  | Suc Stage Tm
-  | NatElim Stage Tm Tm Tm Tm
+  | Suc Stage
+  | NatElim Stage
   deriving Show
 
 tQuote :: Tm -> Tm
@@ -64,3 +64,12 @@ tQuote t          = Quote t
 tSplice :: Tm -> Tm
 tSplice (Quote t) = t
 tSplice t         = Splice t
+
+appE0 :: Tm -> Tm -> Tm
+appE0 t u = App t u Expl V0
+
+tSuc :: Stage -> Tm -> Tm
+tSuc st t = Suc st `appE0` t
+
+tNatElim :: Stage -> Tm -> Tm -> Tm -> Tm -> Tm
+tNatElim st p s z t = NatElim st `appE0` p `appE0` s `appE0` z `appE0` t

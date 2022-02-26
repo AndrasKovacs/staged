@@ -80,8 +80,8 @@ pruneTy (RevPruning pr) a = go pr (PSub Nothing 0 0 mempty) a where
   go pr psub a = case (pr, force a) of
     ([]          , a          ) -> psubst psub a
     (Just{}  : pr, VPi x i a b) -> Pi x i <$!> psubst psub a
-                                          <*!> go pr (lift psub) (b $$ VVar (cod psub))
-    (Nothing : pr, VPi x i a b) -> go pr (skip psub) (b $$ VVar (cod psub))
+                                          <*!> go pr (lift psub) (b $ VVar (cod psub))
+    (Nothing : pr, VPi x i a b) -> go pr (skip psub) (b $ VVar (cod psub))
     _                           -> impossible
 
 -- | Prune arguments from a meta, return solution value.
@@ -103,7 +103,7 @@ etaExpandMeta m = do
 
   let go :: Cxt -> VTy -> Stage -> IO Tm
       go cxt a s = case force a of
-        VPi x i a b -> Lam x i (quote (lvl cxt) a) <$!> go (bind cxt x a s) (b $$ VVar (lvl cxt)) s
+        VPi x i a b -> Lam x i (quote (lvl cxt) a) <$!> go (bind cxt x a s) (b $ VVar (lvl cxt)) s
                                                    <*!> pure V0
         VLift a     -> Quote <$!> go cxt a S0
         a           -> freshMeta cxt a s
@@ -170,8 +170,8 @@ psubstSp psub t = \case
   SId                  -> pure t
   SApp sp u i o        -> App <$!> psubstSp psub t sp <*!> psubst psub u <*!> pure i <*!> pure o
   SSplice sp           -> Splice <$!> psubstSp psub t sp
-  SNatElim st p s z sp -> NatElim st <$!> psubst psub p <*!> psubst psub s
-                                     <*!> psubst psub z <*!> psubstSp psub t sp
+  SNatElim st p s z sp -> tNatElim st <$!> psubst psub p <*!> psubst psub s
+                                      <*!> psubst psub z <*!> psubstSp psub t sp
 
 
 -- | Quote a `Val` to normal form, while applying a partial substitution.
@@ -187,15 +187,15 @@ psubst psub t = case force t of
     Nothing -> throwIO UnifyError  -- scope error ("escaping variable" error)
     Just v  -> psubstSp psub (quote (dom psub) v) sp
 
-  VLam x i a t o -> Lam x i <$!> psubst psub a <*!> psubst (lift psub) (t $$ VVar (cod psub))
+  VLam x i a t o -> Lam x i <$!> psubst psub a <*!> psubst (lift psub) (t $ VVar (cod psub))
                                                <*!> pure o
-  VPi x i a b    -> Pi x i <$!> psubst psub a <*!> psubst (lift psub) (b $$ VVar (cod psub))
+  VPi x i a b    -> Pi x i <$!> psubst psub a <*!> psubst (lift psub) (b $ VVar (cod psub))
   VU s           -> pure $ U s
   VLift t        -> Lift <$!> psubst psub t
   VQuote t       -> Quote <$!> psubst psub t
   VNat s         -> pure (Nat s)
   VZero s        -> pure (Zero s)
-  VSuc s t       -> Suc s <$!> psubst psub t
+  VSuc s t       -> tSuc s <$!> psubst psub t
 
 -- | Wrap a term in Lvl number of lambdas. We get the domain info from the VTy
 --   argument.
@@ -203,8 +203,8 @@ lams :: Lvl -> VTy -> Tm -> Tm
 lams l a t = go a (0 :: Lvl) where
   go a l' | l' == l = t
   go a l' = case force a of
-    VPi "_" i a b -> Lam ("x"++show l') i (quote l' a) (go (b $$ VVar l') (l' + 1)) V0
-    VPi x i a b   -> Lam x i (quote l' a) (go (b $$ VVar l') (l' + 1)) V0
+    VPi "_" i a b -> Lam ("x"++show l') i (quote l' a) (go (b $ VVar l') (l' + 1)) V0
+    VPi x i a b   -> Lam x i (quote l' a) (go (b $ VVar l') (l' + 1)) V0
     _             -> impossible
 
 -- | Solve (Γ ⊢ m spine =? rhs)
@@ -252,7 +252,7 @@ flexFlex gamma m sp m' sp' = do
 unify :: Lvl -> Val -> Val -> IO ()
 unify l t u = case (force t, force u) of
   (VU s        , VU s'          ) | s == s' -> pure ()
-  (VPi x i a b , VPi x' i' a' b') | i == i' -> unify l a a' >> unify (l + 1) (b $$ VVar l) (b' $$ VVar l)
+  (VPi x i a b , VPi x' i' a' b') | i == i' -> unify l a a' >> unify (l + 1) (b $ VVar l) (b' $ VVar l)
   (VLift t     , VLift t'       )           -> unify l t t'
   (VQuote t    , VQuote t'      )           -> unify l t t'
   (VRigid x sp , VRigid x' sp'  ) | x == x' -> unifySp l sp sp'
@@ -260,9 +260,9 @@ unify l t u = case (force t, force u) of
   (VZero _     , VZero _        )           -> pure ()
   (VSuc _ t    , VSuc _ t'      )           -> unify l t t'
 
-  (VLam _ _ _ t _, VLam _ _ _ t' _) -> unify (l + 1) (t $$ VVar l) (t' $$ VVar l)
-  (t             , VLam _ i _ t' o) -> unify (l + 1) (vApp t (VVar l) i o) (t' $$ VVar l)
-  (VLam _ i _ t o, t'             ) -> unify (l + 1) (t $$ VVar l) (vApp t' (VVar l) i o)
+  (VLam _ _ _ t _, VLam _ _ _ t' _) -> unify (l + 1) (t $ VVar l) (t' $ VVar l)
+  (t             , VLam _ i _ t' o) -> unify (l + 1) (vApp t (VVar l) i o) (t' $ VVar l)
+  (VLam _ i _ t o, t'             ) -> unify (l + 1) (t $ VVar l) (vApp t' (VVar l) i o)
 
   (VFlex m sp  , VFlex m' sp'   ) | m == m' -> unifySp l sp sp' -- TODO: intersection
                                   | True    -> flexFlex l m sp m' sp'

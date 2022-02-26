@@ -1,0 +1,115 @@
+
+
+let id : {A} → A → A
+  = λ x. x;
+
+let comp : {A B C} → (B → C) → (A → B) → A → C
+  = λ f g x. f (g x);
+
+let Eq : {A} → A → A → U0
+  := λ {A} x y. (P : A → U0) → P x → P y;
+
+let refl : {A x} → Eq {A} x x
+  := λ P px. px;
+
+
+-- Runtime Bool
+------------------------------------------------------------
+
+let Bool : U0
+  := (Bool : U0)(true : Bool)(false : Bool) → Bool;
+
+let true : Bool
+  := λ _ t f. t;
+
+let false : Bool
+  := λ _ t f. f;
+
+let case : {A} → Bool → A → A → A
+  := λ b. b _;
+
+
+-- Runtime Nat
+------------------------------------------------------------
+
+let Nat : U0
+  := (N : U0)(suc : N → N)(zero : N) → N;
+
+let zero : Nat
+  := λ _ _ z. z;
+
+let suc : Nat → Nat
+  := λ a N s z. s (a N s z);
+
+let add : Nat → Nat → Nat
+  := λ a b N s z. a N s (b N s z);
+
+let iter : {A} → Nat → (A → A) → A → A
+  := λ n. n _;
+
+
+-- Runtime lists
+------------------------------------------------------------
+
+let List : U0 → U0
+  := λ A. (L : U0)(cons : A → L → L)(nil : L) → L;
+
+let nil : {A} → List A
+  := λ L c n. n;
+
+let cons : {A} → A → List A → List A
+  := λ a as L c n. c a (as L c n);
+
+let foldr : {A B} → (A → B → B) → B → List A → B
+  := λ f z as. as _ f z;
+
+
+-- Fusible lists
+------------------------------------------------------------
+
+let FList : U0 → U1
+  = λ A. (L : U0)(cons : A → L → L)(nil : L) → L;
+
+let fnil : {A : U0} → FList A
+  = λ L c n. n;
+
+let fcons : {A : U0} → A → FList A → FList A
+  = λ a as L c n. c a (as L c n);
+
+let fmap : {A B : U0} → (A → B) → FList A → FList B
+  = λ f as L c n. as L (λ a bs. c (f a) bs) n;
+
+let fbind : {A B : U0} → FList A → (A → FList B) → FList B
+  = λ as f L c n. as L (λ a l. f a L c l) n;
+
+let ffilter : {A : U0} → (A → Bool) → FList A → FList A
+  = λ f as L c n. as L (λ a l. case (f a) (c a l) l) n;
+
+let fappend : {A : U0} → FList A → FList A → FList A
+ = λ xs ys L c n. xs L c (ys L c n);
+
+
+-- conversion
+------------------------------------------------------------
+
+let up : {A : U0} → List A → FList A
+  = λ as L c n. foldr c n as;
+
+let down : {A : U0} → FList A → List A
+  = λ as. as _ cons nil;
+
+
+-- fusion examples
+------------------------------------------------------------
+
+let f1 : List Nat → List Nat
+  := λ xs. down (fmap suc (fmap suc (up xs)));
+
+let f2 : List Nat → List Nat
+  := λ as. down (ffilter (λ _. true) (fmap suc (up as)));
+
+let f3 : List Nat → List Nat
+  := λ as. down (fappend (fmap suc (up as)) (fmap (comp suc suc) (up as)));
+
+
+U0

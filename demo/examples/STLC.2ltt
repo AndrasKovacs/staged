@@ -1,13 +1,8 @@
 
 -- Typed static evaluator for an embedded simply-typed lambda calculus
 
-
 -- Meta-level library
 --------------------------------------------------------------------------------
-
--- type annotations
-let the0 : (A : U0) → A → A = λ _ x. x;
-let the1 : (A : U1) → A → A = λ _ x. x;
 
 let Pair : U1 → U1 → U1
   = λ A B. (Pair : U1)(pair : A → B → Pair) → Pair;
@@ -132,11 +127,11 @@ let v2 : {Γ A B C} → Tm (snoc (snoc (snoc Γ A) B) C) A
 let exp1 : Tm nil (fun (fun ι ι) (fun ι ι))
   = lam (lam (app v1 v0));
 
-let exp1val : (Bot0 → Bot0) → (Bot0 → Bot0)
-  := EvalClosedTm exp1;
-
 let exp2 : Tm nil (fun (fun ι ι) (fun ι ι))
   = lam (lam (app v1 (app v1 (app v1 (app v1 (app v1 v0))))));
+
+let exp1val : (Bot0 → Bot0) → (Bot0 → Bot0)
+  := EvalClosedTm exp1;
 
 let exp2val : (Bot0 → Bot0) → (Bot0 → Bot0)
   := EvalClosedTm exp2;

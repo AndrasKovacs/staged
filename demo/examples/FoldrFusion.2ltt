@@ -1,6 +1,20 @@
 
--- Demonstration of basic staged foldr/build fusion
---------------------------------------------------------------------------------
+{-
+In this file we demonstrate basic foldr/build fusion.
+
+What we don't have compared to GHC, is that back-and-forth CPS conversion is by
+*definition* the identity function. The CPS isomorphism is not provable up to
+any notion of equality in usual type theories; this only works in theories with
+internal parametricity. The definitional CPS iso could be also added as some
+kind of rewrite rule here too. All other fusion computation does work, and comes
+with a formal guarantee of staging.
+
+Note that in many languages, implicit GHC-style fusion is *not* used: In
+Rust/C++, we have explicit conversion between fusible and non-fusible
+representations, e.g. conversion between concrete data and iterators in Rust. I
+think that this is not a bad idea at all, and I generally prefer explicitly
+marked fusion in performance-oriented languages.
+-}
 
 
 let id : {A} → A → A
@@ -24,6 +38,7 @@ let false : Bool
 let case : {A} → Bool → A → A → A
   := λ b. b _;
 
+
 -- Runtime Nat functions
 ------------------------------------------------------------
 
@@ -32,6 +47,7 @@ let iter0 : {A} → Nat0 → (A → A) → A → A
 
 let add0 : Nat0 → Nat0 → Nat0
   := λ a b. iter0 a suc0 b;
+
 
 -- Runtime lists
 ------------------------------------------------------------
@@ -77,7 +93,7 @@ let fappend : {A : U0} → FList A → FList A → FList A
  = λ xs ys L c n. xs L c (ys L c n);
 
 
--- conversion
+-- conversion between runtime and fusible lists
 ------------------------------------------------------------
 
 let up : {A : U0} → List A → FList A
@@ -93,8 +109,15 @@ let down : {A : U0} → FList A → List A
 let f1 : List Nat0 → List Nat0
   := λ xs. down (fmap id (fmap suc0 (fmap suc0 (up xs))));
 
+-- output: λ xs. foldr (λ x x1. cons (suc0 (suc0 x)) x1) nil xs
+
 let f2 : List Nat0 → List Nat0
   := λ as. down (fappend (fmap suc0 (up as)) (fmap (comp suc0 suc0) (up as)));
+
+-- output:
+--    λ as. foldr (λ x x1. cons (suc0 x) x1)
+--                (foldr (λ x x1. cons (suc0 (suc0 x)) x1) nil as)
+--                as
 
 let f3 : List Nat0 → List Nat0
   := λ as. down (
@@ -102,5 +125,9 @@ let f3 : List Nat0 → List Nat0
       fbind (up as) (λ x.
       fbind (up as) (λ y.
       fpure (add0 x y)))));
+
+-- output:
+--   λ as. foldr (λ x x1. foldr (λ x2 x3. cons (add0 (suc0 zero0) (add0 x x2)) x3) x1 as)
+--               nil as
 
 U0

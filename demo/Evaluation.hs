@@ -75,10 +75,10 @@ evalBind env t u = eval (env:>u) t
 eval :: Env -> Tm -> Val
 eval env = \case
   Var x             -> vVar env x
-  App t u i o       -> vApp (eval env t) (eval env u) i o
-  Lam x i a t o     -> VLam x i (eval env a) (evalBind env t) o
+  App t u i vr      -> vApp (eval env t) (eval env u) i vr
+  Lam x i a t vr    -> VLam x i (eval env a) (evalBind env t) vr
   Pi x i a b        -> VPi x i (eval env a) (evalBind env b)
-  Let _ _ _ t u     -> eval (env :> eval env t) u
+  Let _ _ _ t u _   -> eval (env :> eval env t) u
   U s               -> VU s
   Meta m            -> vMeta m
   AppPruning t pr   -> vAppPruning env (eval env t) pr
@@ -149,11 +149,11 @@ zonk vs l t = go t where
                             Unsolved{}    -> Meta m
     U s                -> U s
     Pi x i a b         -> Pi x i (go a) (goBind b)
-    App t u i o        -> case goSp t of
-                            Left t  -> quote l (vApp t (eval vs u) i o)
-                            Right t -> App t (go u) i o
-    Lam x i a t o      -> Lam x i (go a) (goBind t) o
-    Let s x a t u      -> Let s x (go a) (go t) (goBind u)
+    App t u i vr       -> case goSp t of
+                            Left t  -> quote l (vApp t (eval vs u) i vr)
+                            Right t -> App t (go u) i vr
+    Lam x i a t vr     -> Lam x i (go a) (goBind t) vr
+    Let s x a t u vr   -> Let s x (go a) (go t) (goBind u) vr
     Wk t               -> Wk (zonk (tail vs) (l-1) t)
 
     AppPruning t pr    -> AppPruning (go t) pr

@@ -1,0 +1,395 @@
+
+{-
+This file demonstrates some dependently typed staged programming involving
+vectors indexed by static lengths.
+
+We use native natural numbers to define vectors as iterated pairs. The native
+naturals are essential, because we use dependent elimination a lot. So it's not
+enough to have Church-coded data here.
+
+Vectors provide a good opportunity for demonstrating more sophisticated
+let-insertion. First, we'll look at more naive staged functions. Then we
+introduce a monad for encapsulating let-insertion as an effect, and give some
+simple definitions for staged operations on vectors which generate adequately
+shared sub-expressions.
+-}
+
+
+-- basic library
+
+let id : {A} → A → A
+  = λ x. x;
+
+let the : (A : U1) → A → A
+  = λ A x. x;
+
+let comp : {A B C} → (B → C) → (A → B) → A → C
+  = λ f g x. f (g x);
+
+let iter1 : {A} → Nat1 → (A → A) → A → A
+  = λ {A} n f a. NatElim1 (λ _. A) (λ _. f) a n;
+
+let iter0 : {A} → Nat0 → (A → A) → A → A
+  := λ {A} n f a. NatElim0 (λ _. A) (λ _. f) a n;
+
+let add0 : Nat0 → Nat0 → Nat0
+  := λ a b. iter0 a suc0 b;
+
+let add1 : Nat1 → Nat1 → Nat1
+  = λ a b. iter1 a suc1 b;
+
+let Pair0 : U0 → U0 → U0
+  := λ A B. (P : U0) → (A → B → P) → P;
+
+let pair0 : {A B} → A → B → Pair0 A B
+  := λ a b P p. p a b;
+
+let fst0 : {A B} → Pair0 A B → A
+  := λ p. p _ (λ a b. a);
+
+let snd0 : {A B} → Pair0 A B → B
+  := λ p. p _ (λ a b. b);
+
+let Pair1 : U1 → U1 → U1
+  = λ A B. (P : U1) → (A → B → P) → P;
+
+let pair1 : {A B} → A → B → Pair1 A B
+  = λ a b P p. p a b;
+
+let fst1 : {A B} → Pair1 A B → A
+  = λ p. p _ (λ a b. a);
+
+let snd1 : {A B} → Pair1 A B → B
+  = λ p. p _ (λ a b. b);
+
+let match0 : {A B C} → Pair0 A B → (A → B → C) → C
+  := λ p f. f (fst0 p) (snd0 p);
+
+let Top0 : U0
+  := (Top0 : U0) → Top0 → Top0;
+
+let tt0 : Top0
+  := λ _ x. x;
+
+let Top1 : U1
+  = (Top1 : U1) → Top1 → Top1;
+
+let tt1 : Top1
+  = λ _ x. x;
+
+let Pair1 : U1 → U1 → U1
+  = λ A B. (P : U1) → (A → B → P) → P;
+
+let pair1 : {A B} → A → B → Pair1 A B
+  = λ a b P p. p a b;
+
+let fst1 : {A B} → Pair1 A B → A
+  = λ p. p _ (λ a b. a);
+
+let snd1 : {A B} → Pair1 A B → B
+  = λ p. p _ (λ a b. b);
+
+let n0  = zero1;
+let n1  = suc1 zero1;
+let n2  = suc1 (suc1 zero1);
+let n3  = suc1 (suc1 (suc1 zero1));
+let n4  = suc1 (suc1 (suc1 (suc1 zero1)));
+let n5  = suc1 (suc1 (suc1 (suc1 (suc1 zero1))));
+let n10 = add1 n5 n5;
+
+
+-- Static Fin, used for indexing examples
+
+let Fin : Nat1 → U1
+  = λ n. (Fin   : Nat1 → U1)
+         (fsuc  : {n} → Fin n → Fin (suc1 n))
+         (fzero : {n} → Fin (suc1 n))
+         → Fin n;
+
+let fzero : {n} → Fin (suc1 n)
+  = λ F fs fz. fz;
+
+let fsuc : {n} → Fin n → Fin (suc1 n)
+  = λ f F fs fz. fs (f F fs fz);
+
+let f0 : {n} → Fin (suc1 n)
+  = fzero;
+
+let f1 : {n} → Fin (add1 n2 n)
+  = fsuc fzero;
+
+let f2 : {n} → Fin (add1 n3 n)
+  = fsuc (fsuc fzero);
+
+let f3 : {n} → Fin (add1 n4 n)
+  = fsuc (fsuc (fsuc fzero));
+
+
+-- runtime vectors, indexed by static length
+
+let Vec0 : Nat1 → U0 → U0
+  = λ n A. iter1 n (Pair0 A) Top0;
+
+let nil0 : (A : U0) → Vec0 zero1 A
+  = λ _. tt0;
+
+let cons0 : {A : U0}{n} → A → Vec0 n A → Vec0 (suc1 n) A
+  = pair0;
+
+let head0 : {A n} → Vec0 (suc1 n) A → A
+  = fst0;
+
+let tail0 : {A n} → Vec0 (suc1 n) A → Vec0 n A
+  = snd0;
+
+
+{-
+The following two staged functions are fairly easy to implement without
+additional infrastructure.
+
+In "vreplicate0", we might want to introduce sharing before with duplicate the
+input expression n-times. But this is fairly trivial, we can just insert a
+runtime let at a call site.
+-}
+
+let replicate0 : {A : U0}(n : Nat1) → A → Vec0 n A
+  = λ {A} n a.
+    NatElim1 (λ n. Vec0 n A)
+             (λ n rec. cons0 a rec)
+             (nil0 A)
+             n;
+
+let index0 : {A}(n : _) → Vec0 n A → Fin n → A
+ = λ {A} n as f.
+   f (λ n. Vec0 n A → A)
+     (λ rec as. rec (tail0 as))
+     (λ as. head0 as)
+     as;
+
+let v3 : Vec0 n3 Nat0
+  := replicate0 n3 zero0;
+
+-- output: pair0 zero0 (pair0 zero0 (pair0 zero0 tt0))
+
+let index30 : {A : U0} → Vec0 n3 A → A
+  := λ as. index0 n3 as f0;
+
+-- output: λ as. fst0 as
+
+let index31 : {A : U0} → Vec0 n3 A → A
+  := λ as. index0 n3 as f1;
+
+-- output: λ as. fst0 (snd0 as)
+
+let index32 : {A : U0} → Vec0 n3 A → A
+  := λ as. index0 n3 as f2;
+
+-- output: λ as. fst0 (snd0 (snd0 as))
+
+
+{-
+It's easy to implement a standard map function:
+-}
+
+let map0 : {A B : U0}(n : _) → (A → B) → Vec0 n A → Vec0 n B
+  = λ {A}{B} n f.
+    NatElim1 (λ n. Vec0 n A → Vec0 n B)
+             (λ n rec as. cons0 (f (head0 as)) (rec (tail0 as)))
+             (λ as. nil0 A)
+             n;
+
+{-
+However, this duplicates a bunch of projections:
+-}
+
+-- let map03 : {A B : U0} → (A → B) → Vec0 n3 A → Vec0 n3 B
+--   := λ f as. map0 n3 f as;
+
+{-
+output:
+  λ f as. pair0 (f (fst0 as)) (pair0 (f (fst0 (snd0 as))) (pair0 (f (fst0 (snd0 (snd0 as)))) tt0))
+
+A "sufficiently smart" compiler could eliminate the common expressions, but a
+core point in staging is that we don't necessarily want to rely on downstream
+compilation.
+-}
+
+{-
+First, we need static vectors and their operations. Here, we don't have to care
+about sharing at all, and just write the absolute simplest definitions. The
+basic idea of out let-insertion technique is that we convert runtime vectors to
+static vectors, do operations, then convert back. The insertion behavior will be
+configured at the point of conversion.
+-}
+
+let Vec1 : Nat1 → U1 → U1
+  = λ n A. iter1 n (Pair1 A) Top1;
+
+let nil1 : (A : U1) → Vec1 zero1 A
+  = λ _. tt1;
+
+let cons1 : {A : U1}{n} → A → Vec1 n A → Vec1 (suc1 n) A
+  = pair1;
+
+let head1 : {A n} → Vec1 (suc1 n) A → A
+  = fst1;
+
+let tail1 : {A n} → Vec1 (suc1 n) A → Vec1 n A
+  = snd1;
+
+let foldl1 :
+    {A : U1}(B : Nat1 → U1) → ({n} → B n → A → B (suc1 n))
+  → B zero1 → (n : _) → Vec1 n A → B n
+  = λ {A} B f z n as.
+    NatElim1
+      (λ n. (B : Nat1 → U1) → ({n} → B n → A → B (suc1 n)) → B zero1 → Vec1 n A → B n)
+      (λ n rec B f z as. rec (λ x. B (suc1 x)) f (f z (head1 as)) (tail1 as))
+      (λ B f z as. z)
+      n B f z as;
+
+let reverse1 : {A}(n : _) → Vec1 n A → Vec1 n A
+  = λ {A}. foldl1 (λ n. Vec1 n A) (λ as a. cons1 a as) (nil1 A);
+
+let map1 : {A B}(n : _) → (A → B) → Vec1 n A → Vec1 n B
+  = λ {A}{B} n f.
+    NatElim1 (λ n. Vec1 n A → Vec1 n B)
+             (λ n rec as. cons1 (f (head1 as)) (rec (tail1 as)))
+             (λ as. nil1 B)
+             n;
+
+let down : {A : U0}(n : _) → Vec1 n A → Vec0 n A
+  = λ {A} n as.
+    NatElim1 (λ n. Vec1 n A → Vec0 n A)
+             (λ n rec as. cons0 (head1 as) (rec (tail1 as)))
+             (λ _. nil0 A)
+             n as;
+
+let zipWith1 : {A B C}(n : _) → (A → B → C) → Vec1 n A → Vec1 n B → Vec1 n C
+  = λ {A}{B}{C} n f.
+    NatElim1 (λ n. Vec1 n A → Vec1 n B → Vec1 n C)
+             (λ n rec as bs. cons1 (f (head1 as) (head1 bs)) (rec (tail1 as) (tail1 bs)))
+             (λ as bs. nil1 C)
+             n;
+
+let append1 : {A}(n m : _) → Vec1 n A → Vec1 m A → Vec1 (add1 n m) A
+  = λ {A} n m as bs.
+    NatElim1 (λ n. Vec1 n A → Vec1 (add1 n m) A)
+             (λ n rec as. cons1 (head1 as) (rec (tail1 as)))
+             (λ _. bs)
+             n as;
+
+{-
+We have the "insertion monad" (I'm not sure what to call it), which is
+essentially a CPS identity monad, but we can only eliminate to U0 from it.
+
+This is useful in the following situation: we want to compute with static data,
+but we also want to use let-insertion freely. We can do this inside the Ins
+monad, but the restriction is that we can only escape from it by returning
+runtime code. So we have (Ins : U1 → U1), but (irun : {A : U0} → Ins A → A)
+only.
+-}
+
+let Ins : U1 → U1
+  = λ A. (Ins : U0) → (A → Ins) → Ins;
+
+let ipure : {A : U1} → A → Ins A
+  = λ a Ins con. con a;
+
+let ibind : {A B : U1} → Ins A → (A → Ins B) → Ins B
+  = λ ma f Ins con. ma Ins (λ a. f a Ins con);
+
+let irun : {A : U0} → Ins A → A
+  = λ {A} ma. ma A (λ x. x);
+
+-- let-insertion
+let ilet : {A : U0}{B : U1} → A → (A → Ins B) → Ins B
+  = λ {A}{B} a f Ins con. let x := a; f x Ins con;
+
+{-
+Now, we can convert a runtime vector to a static one, which let-binds all fields
+and "tails" of a vector, and is a vector of let-bound variables.
+-}
+
+let up : {A}(n : Nat1) → Vec0 n A → Ins (Vec1 n A)
+  = λ {A} n as.
+      NatElim1 (λ n. Vec0 n A → Ins (Vec1 n A))
+               (λ n rec as.
+                 ilet  (head0 as) (λ a.
+                 ilet  (tail0 as) (λ as.
+                 ibind (rec as)    (λ as.
+                 ipure (cons1 a as)
+                 ))))
+               (λ as. ipure (nil1 A))
+               n as;
+
+let map0 : {A B : U0}(n : _) → (A → B) → Vec0 n A → Vec0 n B
+  = λ n f as. irun (
+       ibind (up n as) (λ as.
+       ipure (down n (map1 n f as))
+       ));
+
+let map03 : {A B : U0} → (A → B) → Vec0 n3 A → Vec0 n3 B
+  := map0 n3;
+
+{-
+output:
+   λ f as.
+     let x  := fst0 as;
+     let x1 := snd0 as;
+     let x2 := fst0 x1;
+     let x3 := snd0 x1;
+     let x4 := fst0 x3;
+     let x5 := snd0 x3;
+     pair0 (f x) (pair0 (f x2) (pair0 (f x4) tt0));
+-}
+
+let zipWith0 : {A B C : U0}(n : _) → (A → B → C) → Vec0 n A → Vec0 n B → Vec0 n C
+  = λ n f as bs. irun (
+       ibind (up n as) (λ as.
+       ibind (up n bs) (λ bs.
+       ipure (down n (zipWith1 n f as bs))
+       )));
+
+let zipWith03 : {A B C : U0} → (A → B → C) → Vec0 n3 A → Vec0 n3 B → Vec0 n3 C
+  := λ f as bs. zipWith0 n3 f as bs;
+
+{-
+output:
+  λ f as bs.
+    let x   := fst0 as;
+    let x1  := snd0 as;
+    let x2  := fst0 x1;
+    let x3  := snd0 x1;
+    let x4  := fst0 x3;
+    let x5  := snd0 x3;
+    let x6  := fst0 bs;
+    let x7  := snd0 bs;
+    let x8  := fst0 x7;
+    let x9  := snd0 x7;
+    let x10 := fst0 x9;
+    let x11 := snd0 x9;
+    pair0 (f x x6) (pair0 (f x2 x8) (pair0 (f x4 x10) tt0));
+-}
+
+let reverse0 : {A : U0}(n : _) → Vec0 n A → Vec0 n A
+  = λ n as. irun (
+      ibind (up n as) (λ as.
+      ipure (down n (reverse1 n as))
+      ));
+
+let reverse03 : {A : U0} → Vec0 n3 A → Vec0 n3 A
+  := λ as. reverse0 n3 as;
+
+{-
+output:
+  λ as.
+    let x  := fst0 as;
+    let x1 := snd0 as;
+    let x2 := fst0 x1;
+    let x3 := snd0 x1;
+    let x4 := fst0 x3;
+    let x5 := snd0 x3;
+    pair0 x4 (pair0 x2 (pair0 x tt0));
+-}
+
+U0

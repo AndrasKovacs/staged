@@ -27,7 +27,8 @@ helpMsg = unlines [
   "",
   "Commands:",
   "  elab          : print elaboration output",
-  "  elab-verbose  : print elaboration output, show metavars and inserted implicits",
+  "  elab-verbose  : print elaboration output, show metavars, inserted type",
+  "                  annotations, implicit lambdas and applications",
   "  stage         : print staging output",
   "  stage-verbose : print staging output, show inserted implicits",
   "  nf            : print normal form",
@@ -87,8 +88,11 @@ main' mode src = mainWith (pure [mode]) ((,src) <$> parseString src)
 
 --------------------------------------------------------------------------------
 
-verbosityTest = main' "elab" $ unlines [
+
+verbosityTest = main' "elab-verbose" $ unlines [
   "let id : {A : U0} → A → A := λ x. x;",
+  "let foo := zero0;",
+  "let bar := let x := zero0; U0;",
   "id U0"
   ]
 
@@ -99,8 +103,11 @@ natUnifyTest = main' "elab-verbose" $ unlines [
   "let refl : {A : U1}{x : A} → Eq {A} x x",
   "  = λ _ px. px;",
 
+  "let f : Nat1 → Nat1",
+  "  = λ n. NatElim1 (λ _. Nat1) (λ _ x. x) zero1 n;",
+
   "let meta : Nat1 → Nat1 = _;",
-  "let test : (n : Nat1) → Eq {Nat1} (meta n) (NatElim1 (λ _. Nat1) (λ _ x. x) zero1 n)",
+  "let test : (n : Nat1) → Eq {Nat1} (f (meta n)) (f n)",
   "  = λ n. refl ;",
 
   "U0"

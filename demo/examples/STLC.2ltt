@@ -1,6 +1,19 @@
 
+{-
+In this file we
+- define a Chruch-coded static syntax of simply typed lambda calculus
+- write a standard interpreter, which targets the runtime language
 
--- Typed static evaluator for an embedded simply-typed lambda calculus.
+This means that embedded lambda terms are interpreted into object-level source
+code. This can be useful for zero-overhead deeply embedded EDSLs, where we may
+want to have the ability to manipulate and inspect embedded syntax, but at the
+same time want to have no overhead of interpretation, at least for the purely
+static embedded expressions.
+
+It is also possible to mix static and runtime expressions ("partially static
+data"), in which case the runtime parts can be interpreted as usual. We don't
+demonstrate this here.
+-}
 
 
 -- Meta-level library
@@ -135,7 +148,11 @@ let exp2 : Tm nil (fun (fun ι ι) (fun ι ι))
 let exp1val : (Bot0 → Bot0) → (Bot0 → Bot0)
   := EvalClosedTm exp1;
 
+-- output: λ v v1. v v1;
+
 let exp2val : (Bot0 → Bot0) → (Bot0 → Bot0)
   := EvalClosedTm exp2;
+
+-- output: λ v v1. v (v (v (v (v v1))))
 
 U0

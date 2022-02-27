@@ -20,7 +20,7 @@ data Val0
   | VApp0 Val0 Val0 Icit Verbosity
   | VPi0 Name Icit Val0 (Val0 -> Val0)
   | VLam0 Name Icit Val0 (Val0 -> Val0) Verbosity
-  | VLet0 Name Val0 Val0 (Val0 -> Val0)
+  | VLet0 Name Val0 Val0 (Val0 -> Val0) Verbosity
   | VU0
   | VNat0
   | VZero0
@@ -62,7 +62,7 @@ eval1 env = \case
   Lam x i a t o     -> VLam1 (eval1Bind env t)
   App t u i o       -> vApp1 (eval1 env t) (eval1 env u)
   Pi{}              -> VSomeU1
-  Let _ _ _ t u     -> eval1 (Def1 env (eval1 env t)) u
+  Let _ _ _ t u _   -> eval1 (Def1 env (eval1 env t)) u
   Quote t           -> VQuote (eval0 env t)
   Lift{}            -> VSomeU1
   U{}               -> VSomeU1
@@ -95,7 +95,7 @@ eval0 env = \case
   Lam x i a t o     -> VLam0 x i (eval0 env a) (eval0Bind env t) o
   App t u i o       -> VApp0 (eval0 env t) (eval0 env u) i o
   Pi x i a b        -> VPi0 x i (eval0 env a) (eval0Bind env b)
-  Let _ x a t u     -> VLet0 x (eval0 env a) (eval0 env t) (eval0Bind env u)
+  Let _ x a t u v   -> VLet0 x (eval0 env a) (eval0 env t) (eval0Bind env u) v
   U _               -> VU0
   Splice t          -> vSplice (eval1 env t)
   Wk t              -> eval0 (envTail env) t
@@ -115,7 +115,7 @@ quote0 l = \case
   VApp0 t u i o     -> App (quote0 l t) (quote0 l u) i o
   VPi0 x i a b      -> Pi x i (quote0 l a) (quote0 (l + 1) (b $ VVar0 l))
   VLam0 x i a t o   -> Lam x i (quote0 l a) (quote0 (l + 1) (t $ VVar0 l)) o
-  VLet0 x a t u     -> Let S0 x (quote0 l a) (quote0 l t) (quote0 (l + 1) (u $ VVar0 l))
+  VLet0 x a t u v   -> Let S0 x (quote0 l a) (quote0 l t) (quote0 (l + 1) (u $ VVar0 l)) v
   VU0               -> U S0
   VNat0             -> Nat S0
   VZero0            -> Zero S0

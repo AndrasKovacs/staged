@@ -183,17 +183,17 @@ check cxt t a st = case (t, force a) of
     tQuote <$!> check cxt t a S0
 
   (P.Let st' x a t u, a') | st == st' -> do
-    (!a, !va, !t, !vt) <- case a of
+    (!a, !va, !t, !vt, !verbosity) <- case a of
       Nothing -> do
         (t, a) <- inferS cxt t st
-        pure (quote (lvl cxt) a, a, t, eval (env cxt) t)
+        pure (quote (lvl cxt) a, a, t, eval (env cxt) t, V1)
       Just a -> do
         a <- checkU cxt a st
         let ~va = eval (env cxt) a
         t <- check cxt t va st
-        pure (a, va, t, eval (env cxt) t)
+        pure (a, va, t, eval (env cxt) t, V0)
     u <- check (define cxt x t vt a va st) u a' st
-    pure (Let st' x a t u)
+    pure (Let st' x a t u verbosity)
 
   (P.Hole, a) ->
     freshMeta cxt a st
@@ -304,17 +304,17 @@ infer cxt = \case
     pure (Pi x i a b, VU s, s)
 
   P.Let st x a t u -> do
-    (!a, !va, !t, !vt) <- case a of
+    (!a, !va, !t, !vt, !verbosity) <- case a of
       Nothing -> do
         (!t, !a) <- inferS cxt t st
-        pure (quote (lvl cxt) a, a, t, eval (env cxt) t)
+        pure (quote (lvl cxt) a, a, t, eval (env cxt) t, V1)
       Just a -> do
         a <- checkU cxt a st
         let ~va = eval (env cxt) a
         t <- check cxt t va st
-        pure (a, va, t, eval (env cxt) t)
+        pure (a, va, t, eval (env cxt) t, V0)
     (!u, !b) <- inferS (define cxt x t vt a va st) u st
-    pure (Let st x a t u, b, st)
+    pure (Let st x a t u verbosity, b, st)
 
   P.Hole -> do
     throwIO $ Error cxt InferStage

@@ -47,7 +47,7 @@ goIx ns topX = go ns topX topX where
   go ("*":ns) x wkx = go ns (x + 1) (wkx + 1)
   go (n:ns)   0 _   = (n++)
   go (n:ns)   x wkx = go ns (x - 1) wkx
-  go _        _ _   = impossible
+  go _        _ _   = (("@"++show topX)++)
 
 stage S0 = ('0':)
 stage S1 = ('1':)
@@ -73,56 +73,58 @@ goTm v = go where
 
   go :: Int -> [Name] -> Tm -> ShowS
   go p ns = \case
-    Var x                       -> goIx ns x
+    Var x                         -> goIx ns x
 
-    App t u Expl _              -> par p appp $ go appp ns t . ws . go atomp ns u
-    App t u Impl v              -> verbose v
-                                     (par p appp $ go appp ns t . ws . braces (go letp ns u))
-                                     (go p ns t)
+    App t u Expl _                -> par p appp $ go appp ns t . ws . go atomp ns u
+    App t u Impl v                -> verbose v
+                                       (par p appp $ go appp ns t . ws . braces (go letp ns u))
+                                       (go p ns t)
 
-    Lam (fresh ns -> x) i _ t v -> let goLam ns (Lam (fresh ns -> x) i _ t v) =
-                                         verbose v (ws . lamBind x i) id . goLam (ns:>x) t
-                                       goLam ns t =
-                                         (". "++) . go letp ns t
-                                   in verbose v
-                                      (par p letp $ ("λ "++) . lamBind x i . goLam (ns:>x) t)
-                                      (go p (ns:>x) t)
+    Lam (fresh ns -> x) i _ t v   -> let goLam ns (Lam (fresh ns -> x) i _ t v) =
+                                           verbose v (ws . lamBind x i) id . goLam (ns:>x) t
+                                         goLam ns t =
+                                           (". "++) . go letp ns t
+                                     in verbose v
+                                        (par p letp $ ("λ "++) . lamBind x i . goLam (ns:>x) t)
+                                        (go p (ns:>x) t)
 
-    U S0                        -> ("U0"++)
-    U S1                        -> ("U1"++)
+    U S0                          -> ("U0"++)
+    U S1                          -> ("U1"++)
 
-    Pi "_" Expl a b             -> par p pip $ go appp ns a . (" → "++) . go pip (ns:>"_") b
+    Pi "_" Expl a b               -> par p pip $ go appp ns a . (" → "++) . go pip (ns:>"_") b
 
-    Pi (fresh ns -> x) i a b    -> par p pip $ piBind ns x i a . goPi (ns:>x) b where
-                                     goPi ns (Pi (fresh ns -> x) i a b)
-                                       | x /= "_" = piBind ns x i a . goPi (ns:>x) b
-                                     goPi ns b = (" → "++) . go pip ns b
+    Pi (fresh ns -> x) i a b      -> par p pip $ piBind ns x i a . goPi (ns:>x) b where
+                                       goPi ns (Pi (fresh ns -> x) i a b)
+                                         | x /= "_" = piBind ns x i a . goPi (ns:>x) b
+                                       goPi ns b = (" → "++) . go pip ns b
 
-    Let s (fresh ns -> x) a t u -> par p letp $ ("let "++) . (x++) . (" : "++) . go letp ns a
+    Let s (fresh ns -> x) a t u v -> par p letp $ ("let "++) . (x++)
+                                   . verbose v ((" : "++) . go letp ns a) id
                                    . ws . assign s . ws . go letp ns t . ("; "++)
                                    . go letp (ns:>x) u
 
 
-    Meta m                      -> verbose V1 (("?"++show m)++) ('_':)
-    AppPruning t pr             -> goPr p ns ns t pr
+    Meta m                        -> verbose V1 (("?"++show m)++) ('_':)
+    AppPruning t pr               -> goPr p ns ns t pr
 
-    Quote t                     -> ('<':).go letp ns t.('>':)
-    Splice t                    -> ('[':).go letp ns t.(']':)
-    Lift a                      -> par p appp (("^"++) . go atomp ns a)
-    Wk t                        -> go p (ns:>"*") t
-    -- Wk t                        -> ("wk("++).go p (ns:>"*") t.(")"++)
+    Quote t                       -> ('<':).go letp ns t.('>':)
+    Splice t                      -> ('[':).go letp ns t.(']':)
+    Lift a                        -> par p appp (("^"++) . go atomp ns a)
+    Wk t                          -> go p (ns:>"*") t
+    -- Wk t                          -> ("wk("++).go p (ns:>"*") t.(")"++)
 
-    InsertedMeta m pr           -> verbose V1 (("?"++show m++"(..)")++) ('_':)
+    InsertedMeta m pr             -> verbose V1 (("?"++show m++"(..)")++) ('_':)
 
-    Zero s                      -> ("zero"++).stage s
-    Suc s                       -> ("suc"++).stage s
-    Nat s                       -> ("Nat"++).stage s
-    NatElim s                   -> ("NatElim"++).stage s
+    Zero s                        -> ("zero"++).stage s
+    Suc s                         -> ("suc"++).stage s
+    Nat s                         -> ("Nat"++).stage s
+    NatElim s                     -> ("NatElim"++).stage s
 
 goTopTm :: Verbosity -> String -> String -> [Name] -> Tm -> ShowS
 goTopTm v = top where
 
   go = goTm v
+  verbose o s1 s2 = if o <= v then s1 else s2
 
   top :: String -> String -> [Name] -> Tm -> ShowS
   top pre post ns (Lam (fresh ns -> x) i a t o) =
@@ -130,9 +132,11 @@ goTopTm v = top where
     . icit i braces (showParen True) (
            ((if null x then "_" else x)++) . (" : "++) . go letp ns a)
     . top "\n " ".\n\n" (x:ns) t
-  top pre post ns (Let st (fresh ns -> x) a t u) =
+  top pre post ns (Let st (fresh ns -> x) a t u v) =
       (post++)
-    . ("let "++).(x++).(" : "++). go letp ns a . ("\n  "++).assign st.ws
+    . ("let "++).(x++)
+    . verbose v ((" : "++). go letp ns a) id
+    . ("\n  "++).assign st.ws
     . go letp ns t . (";\n\n"++) . top "\nλ" "" (x:ns) u
   top pre post ns (Splice t) =
       (post++)

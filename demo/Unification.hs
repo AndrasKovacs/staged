@@ -2,6 +2,7 @@
 module Unification (unify, unifyCatch, freshMeta) where
 
 import Control.Monad
+import Control.Applicative
 import Control.Exception
 import Data.IORef
 import qualified Data.IntMap as IM
@@ -15,6 +16,7 @@ import Metacontext
 import Syntax
 import Value
 import Cxt
+-- import Pretty
 
 --------------------------------------------------------------------------------
 
@@ -67,8 +69,8 @@ invert gamma sp = do
           VRigid (Lvl x) (SSplice SId) -> invertVal x (VQuote (VVar dom))
           _                            -> throwIO UnifyError
 
-      go SSplice{}  = throwIO UnifyError
-      go SNatElim{} = throwIO UnifyError
+      go SSplice{}  = impossible -- should be already expanded away
+      go SNatElim{} = impossible -- should be already split off
 
   (dom, domvars, sub, pr, isLinear) <- go sp
   pure (PSub Nothing dom gamma sub, pr <$ guard isLinear)
@@ -116,15 +118,13 @@ etaExpandMeta m = do
 -- | Eta-expand splices in the spine, if possible.
 expandVFlex :: MetaVar -> Spine -> IO (MetaVar, Spine)
 expandVFlex m sp = do
-  -- a spine is expandable if it has at least one splice and no NatElim
-  let scan splices elims SId                   = (splices::Int, elims::Int)
-      scan splices elims (SApp sp _ _ _)       = scan splices elims sp
-      scan splices elims (SSplice sp)          = scan (splices + 1) elims sp
-      scan splices elims (SNatElim _ _ _ _ sp) = scan splices (elims + 1) sp
 
-  let (!splices, !elims) = scan 0 0 sp
+  let hasSplice SId             = False
+      hasSplice (SApp sp _ _ _) = hasSplice sp
+      hasSplice SSplice{}       = True
+      hasSplice SNatElim{}      = impossible -- already split spine
 
-  if splices > 0 && elims == 0 then do
+  if hasSplice sp then do
     m          <- etaExpandMeta m
     VFlex m sp <- pure $! vAppSp m sp
     pure (m, sp)
@@ -180,8 +180,12 @@ psubst psub t = case force t of
 
   VFlex m' sp -> case occ psub of
     Just m | m == m' -> throwIO UnifyError -- occurs check
-    _                -> do (!m', !sp) <- pruneVFlex psub m' sp
-                           psubstSp psub (Meta m') sp
+    _                -> do
+      (!sp, !outer) <- pure $ splitSpine sp
+      (!m', !sp)    <- pruneVFlex psub m' sp
+      inner         <- psubstSp psub (Meta m') sp
+      psubstSp psub inner outer
+
 
   VRigid (Lvl x) sp -> case IM.lookup x (sub psub) of
     Nothing -> throwIO UnifyError  -- scope error ("escaping variable" error)
@@ -207,12 +211,37 @@ lams l a t = go a (0 :: Lvl) where
     VPi x i a b   -> Lam x i (quote l' a) (go (b $ VVar l') (l' + 1)) V0
     _             -> impossible
 
+-- | Split a spine to a NatElim-free prefix and the rest.
+splitSpine :: Spine -> (Spine, Spine)
+splitSpine sp = maybe (sp, SId) id (go sp) where
+  go :: Spine -> Maybe (Spine, Spine)
+  go SId                     = Nothing
+  go (SApp sp u i v)         = (\(l, r) -> (l, SApp r u i v)) <$!> go sp
+  go (SSplice sp)            = (\(l, r) -> (l, SSplice r)) <$!> go sp
+  go (SNatElim  st p s z sp) = (\(l, r) -> (l, SNatElim st p s z r)) <$!> (go sp <|> pure (sp, SId))
+
 -- | Solve (Γ ⊢ m spine =? rhs)
 solve :: Lvl -> MetaVar -> Spine -> Val -> IO ()
-solve gamma m sp rhs = do
-  (!m, !sp) <- expandVFlex m sp
-  psub <- invert gamma sp
-  solveWithPSub m psub rhs
+solve l m topSp topRhs = do
+  (!sp, !outer) <- pure $! splitSpine topSp
+  (!m, !sp)     <- expandVFlex m sp
+  psub          <- invert l sp
+  if isSId outer then do
+    solveWithPSub m psub topRhs
+  else case force topRhs of
+    VRigid x rhsSp -> do
+
+      let go SId                   sp'                       = solveWithPSub m psub (VRigid x sp')
+          go (SApp sp u _ _)       (SApp sp' u' _ _)         = go sp sp' >> unify l u u'
+          go (SSplice sp)          (SSplice sp')             = go sp sp'
+          go (SNatElim _ p s z sp) (SNatElim _ p' s' z' sp') = unify l p p' >> unify l s s' >> unify l z z'
+                                                             >> go sp sp'
+          go _ _ = throwIO UnifyError
+
+      go outer rhsSp
+    _ ->
+      throwIO UnifyError
+
 
 -- | Solve m given the result of inversion on a spine.
 solveWithPSub :: MetaVar -> (PartialSub, Maybe Pruning) -> Val -> IO ()
@@ -240,14 +269,50 @@ unifySp l sp sp' = case (sp, sp') of
                                                       >> unifySp l sp sp'
   _                                                -> throwIO UnifyError
 
--- | Solve (Γ ⊢ m spine =? m' spine').
-flexFlex :: Dbg => Lvl -> MetaVar -> Spine -> MetaVar -> Spine -> IO ()
+isSId :: Spine -> Bool
+isSId SId = True
+isSId _   = False
+
+flexFlex :: Lvl -> MetaVar -> Spine -> MetaVar -> Spine -> IO ()
 flexFlex gamma m sp m' sp' = do
-  (!m,  !sp)  <- expandVFlex m sp
-  (!m', !sp') <- expandVFlex m' sp'
-  try (invert gamma sp) >>= \case
-    Left UnifyError -> solve gamma m' sp' (VFlex m sp)
-    Right psub      -> solveWithPSub m psub (VFlex m' sp')
+  let go = do
+        (sp, outer) <- pure $! splitSpine sp
+        unless (isSId outer) $ throwIO UnifyError
+        (m, sp) <- expandVFlex m sp
+        psub <- invert gamma sp
+        pure (m, sp, psub)
+
+  try go >>= \case
+    Left UnifyError     -> solve gamma m' sp' (VFlex m sp)
+    Right (m, sp, psub) -> solveWithPSub m psub (VFlex m' sp')
+
+
+intersect :: Lvl -> MetaVar -> Spine -> Spine -> IO ()
+intersect l m sp sp' = do
+  (sp , outer)  <- pure $! splitSpine sp
+  (sp', outer') <- pure $! splitSpine sp'
+  if isSId outer && isSId outer' then do
+
+    (m', sp)    <- expandVFlex m sp             -- expand m
+    VFlex _ sp' <- pure $! force (VFlex m sp')  -- force sp' with old m
+    m           <- pure m'                      -- we don't care about old m anymore
+
+    let go SId SId = Just []
+        go (SApp sp t i _) (SApp sp' t' _ _) = case (force t, force t') of
+          (VVar x                , VVar x'                ) -> ((i <$ guard (x == x')):) <$!> go sp sp'
+          (VQuote (VVar x)       , VQuote (VVar x')       ) -> ((i <$ guard (x == x')):) <$!> go sp sp'
+          (VRigid x (SSplice SId), VRigid x' (SSplice SId)) -> ((i <$ guard (x == x')):) <$!> go sp sp'
+          _                                                 -> Nothing
+        go _ _ = impossible
+
+    case go sp sp' of
+      Nothing                      -> unifySp l sp sp'
+      Just pr | any (==Nothing) pr -> () <$ pruneMeta pr m
+              | otherwise          -> pure ()
+
+  else do
+    unifySp l sp sp'
+
 
 unify :: Lvl -> Val -> Val -> IO ()
 unify l t u = case (force t, force u) of
@@ -264,7 +329,7 @@ unify l t u = case (force t, force u) of
   (t             , VLam _ i _ t' o) -> unify (l + 1) (vApp t (VVar l) i o) (t' $ VVar l)
   (VLam _ i _ t o, t'             ) -> unify (l + 1) (t $ VVar l) (vApp t' (VVar l) i o)
 
-  (VFlex m sp  , VFlex m' sp'   ) | m == m' -> unifySp l sp sp' -- TODO: intersection
+  (VFlex m sp  , VFlex m' sp'   ) | m == m' -> intersect l m sp sp' -- unifySp l sp sp'
                                   | True    -> flexFlex l m sp m' sp'
   (VFlex m sp  , t'             ) -> solve l m sp t'
   (t           , VFlex m' sp'   ) -> solve l m' sp' t

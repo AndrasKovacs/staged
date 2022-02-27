@@ -32,7 +32,7 @@ closeTy :: Path -> Ty -> Ty
 closeTy mcl b = case mcl of
   Here               -> b
   Bind mcl x a s     -> closeTy mcl (Pi x Expl a b)
-  Define mcl x a s t -> closeTy mcl (Let s x a t b)
+  Define mcl x a s t -> closeTy mcl (Let s x a t b V1)
 
 data Tm
   = Var Ix
@@ -41,7 +41,7 @@ data Tm
   | AppPruning Tm Pruning  -- ^ Used for applying a pruned meta to a mask of the scope.
   | InsertedMeta MetaVar Pruning
   | Pi Name Icit Ty Ty
-  | Let Stage Name Ty Tm Tm
+  | Let Stage Name Ty Tm Tm Verbosity
   | Meta MetaVar
 
   | U Stage

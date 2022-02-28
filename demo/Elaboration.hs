@@ -16,6 +16,7 @@ import Value
 
 import qualified Presyntax as P
 
+
 -- Implicit insertion
 --------------------------------------------------------------------------------
 
@@ -62,8 +63,9 @@ insertUntilName cxt name act = go =<< act where
 -- Subtyping
 --------------------------------------------------------------------------------
 
--- | Try to adjust (t : a) at stage s to (t' : a') at stage s',
---   without doing any subtyping coercion.
+-- | Try to adjust (t : a : U s) to stage s', transporting both the type and the
+--   term, without doing any subtyping coercion. Return `Nothing` if the output
+--   is unchanged.
 adjustStage' :: Cxt -> Tm -> VTy -> Stage -> Stage -> IO (Maybe (Tm, VTy))
 adjustStage' cxt t a s s' = case compare s s' of
   EQ ->
@@ -78,20 +80,22 @@ adjustStage' cxt t a s s' = case compare s s' of
       unifyCatch cxt a (VLift m)
       pure $ Just (tSplice t, m)
 
--- | Try to adjust (t : a) at stage s to (t' : a') at stage s',
---   without doing any subtyping coercion.
+-- | Try to adjust (t : a : U s) to stage s', without using any subtyping
+--   coercion.
 adjustStage :: Cxt -> Tm -> VTy -> Stage -> Stage -> IO (Tm, VTy)
 adjustStage cxt t a s s' = maybe (t, a) id <$!> adjustStage' cxt t a s s'
 
--- | Try to coerce (t : a) at stage s to a' type at stage s'.
+-- | Try to coerce (t : a : U s) to (a' : U s').
 coe :: Cxt -> Tm -> VTy -> Stage -> VTy -> Stage -> IO Tm
 coe cxt t a s a' s' = maybe t id <$!> go cxt t a s a' s' where
 
+  -- pick an informative name
   pick "_" "_" = "x"
   pick "_" x   = x
   pick x "_"   = x
   pick _  x    = x
 
+  -- fall back to unification
   justUnify :: Cxt -> Tm -> VTy -> Stage -> VTy -> Stage -> IO (Maybe Tm)
   justUnify cxt t a s a' s' = do
 
@@ -99,6 +103,8 @@ coe cxt t a s a' s' = maybe t id <$!> go cxt t a s a' s' where
       Nothing     -> Nothing <$ unifyCatch cxt a a'
       Just (t, a) -> Just t  <$ unifyCatch cxt a a'
 
+  -- The main subtyping function. Returns `Nothing` if the output is convertible to
+  -- the input, thereby letting us skip unnecessary eta-expansion.
   go :: Cxt -> Tm -> VTy -> Stage -> VTy -> Stage -> IO (Maybe Tm)
   go cxt t a s a' s' = case (force a, force a') of
 
@@ -135,7 +141,6 @@ coe cxt t a s a' s' = maybe t id <$!> go cxt t a s a' s' where
     (a, a') -> justUnify cxt t a s a' s'
 
 
-
 -- Check & Infer
 --------------------------------------------------------------------------------
 
@@ -144,6 +149,8 @@ checkU cxt t s = check cxt t (VU s) s
 
 check :: Cxt -> P.Tm -> VTy -> Stage -> IO Tm
 check cxt t a st = case (t, force a) of
+
+  -- Update current source position
   (P.Pos pos t, a) ->
     check (cxt {pos = coerce pos}) t a st
 
@@ -179,6 +186,13 @@ check cxt t a st = case (t, force a) of
   (P.Quote t, VLift a) -> do
     tQuote <$!> check cxt t a S0
 
+  -- We insert a quote if the checking type is lifted, and the term is not
+  -- already a quote. This improves inference quite a bit. It should not lose
+  -- solutions, because every value with lifted type is of the form <t> up to
+  -- definitional equality.
+  --
+  -- The extra quots isn't necessarily in the output, because it may be
+  -- cancelled out by a splice.
   (t, VLift a) -> do
     tQuote <$!> check cxt t a S0
 
@@ -212,18 +226,12 @@ inferU cxt t = do
   unifyCatch cxt a (VU s)
   pure (t, s)
 
+-- | Infer with known expected stage. This is mainly useful when we want to
+--   process let-definitions without type annotations.
 inferS :: Cxt -> P.Tm -> Stage -> IO (Tm, VTy)
 inferS cxt t s = case t of
   P.Pos pos t ->
     inferS (cxt {pos = coerce pos}) t s
-
-  -- P.Lam x ann (Right i) t -> do
-  --   a <- case ann of
-  --     Nothing -> freshMeta cxt (VU s) s
-  --     Just a -> checkU cxt a s
-  --   let ~va = eval (env cxt) a
-  --   (t, b) <- inferS (bind cxt x va s) t s
-  --   pure (Lam x i a t, VPi x i va (closeVal cxt b))
 
   P.Lam x Nothing (Right i) t -> do
     a <- freshMeta cxt (VU s) s
@@ -268,7 +276,7 @@ infer cxt = \case
 
   P.App t u i -> do
 
-    -- choose implicit insertion
+    -- choose the kind of implicit insertion
     (i, t, tty, st) <- case i of
       Left name -> do
         (!t, !tty, !ts) <- insertUntilName cxt name $ infer cxt t
@@ -286,6 +294,8 @@ infer cxt = \case
         unless (i == i') $
           throwIO $ Error cxt $ IcitMismatch i i'
         pure (t, a, b)
+
+      -- if t doesn't have a Pi type, we try to coerce it to have one.
       tty -> do
         a <- eval (env cxt) <$!> freshMeta cxt (VU st) st
         b <- closeTm cxt <$!> freshMeta (bind cxt "x" a st) (VU st) st

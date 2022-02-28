@@ -91,36 +91,36 @@ eval0Bind env t u = eval0 (Def0 env u) t
 
 eval0 :: Env -> Tm -> Val0
 eval0 env = \case
-  Var x             -> vVar0 env x
-  Lam x i a t o     -> VLam0 x i (eval0 env a) (eval0Bind env t) o
-  App t u i o       -> VApp0 (eval0 env t) (eval0 env u) i o
-  Pi x i a b        -> VPi0 x i (eval0 env a) (eval0Bind env b)
-  Let _ x a t u v   -> VLet0 x (eval0 env a) (eval0 env t) (eval0Bind env u) v
-  U _               -> VU0
-  Splice t          -> vSplice (eval1 env t)
-  Wk t              -> eval0 (envTail env) t
-  Nat _             -> VNat0
-  Zero _            -> VZero0
-  Suc _             -> VSuc0
-  NatElim _         -> VNatElim0
-  InsertedMeta m _  -> metaError m
-  Meta m            -> metaError m
-  Quote{}           -> impossible
-  Lift{}            -> impossible
-  AppPruning{}      -> impossible
+  Var x            -> vVar0 env x
+  Lam x i a t o    -> VLam0 x i (eval0 env a) (eval0Bind env t) o
+  App t u i o      -> VApp0 (eval0 env t) (eval0 env u) i o
+  Pi x i a b       -> VPi0 x i (eval0 env a) (eval0Bind env b)
+  Let _ x a t u v  -> VLet0 x (eval0 env a) (eval0 env t) (eval0Bind env u) v
+  U _              -> VU0
+  Splice t         -> vSplice (eval1 env t)
+  Wk t             -> eval0 (envTail env) t
+  Nat _            -> VNat0
+  Zero _           -> VZero0
+  Suc _            -> VSuc0
+  NatElim _        -> VNatElim0
+  InsertedMeta m _ -> metaError m
+  Meta m           -> metaError m
+  Quote{}          -> impossible
+  Lift{}           -> impossible
+  AppPruning{}     -> impossible
 
 quote0 :: Lvl -> Val0 -> Tm
 quote0 l = \case
-  VVar0 x           -> Var (lvl2Ix l x)
-  VApp0 t u i o     -> App (quote0 l t) (quote0 l u) i o
-  VPi0 x i a b      -> Pi x i (quote0 l a) (quote0 (l + 1) (b $ VVar0 l))
-  VLam0 x i a t o   -> Lam x i (quote0 l a) (quote0 (l + 1) (t $ VVar0 l)) o
-  VLet0 x a t u v   -> Let S0 x (quote0 l a) (quote0 l t) (quote0 (l + 1) (u $ VVar0 l)) v
-  VU0               -> U S0
-  VNat0             -> Nat S0
-  VZero0            -> Zero S0
-  VSuc0             -> Suc S0
-  VNatElim0         -> NatElim S0
+  VVar0 x         -> Var (lvl2Ix l x)
+  VApp0 t u i o   -> App (quote0 l t) (quote0 l u) i o
+  VPi0 x i a b    -> Pi x i (quote0 l a) (quote0 (l + 1) (b $ VVar0 l))
+  VLam0 x i a t o -> Lam x i (quote0 l a) (quote0 (l + 1) (t $ VVar0 l)) o
+  VLet0 x a t u v -> Let S0 x (quote0 l a) (quote0 l t) (quote0 (l + 1) (u $ VVar0 l)) v
+  VU0             -> U S0
+  VNat0           -> Nat S0
+  VZero0          -> Zero S0
+  VSuc0           -> Suc S0
+  VNatElim0       -> NatElim S0
 
 stage :: Tm -> Tm
 stage t = quote0 0 $ eval0 Nil t

@@ -19,8 +19,8 @@ import Text.Megaparsec
 
 type Dbg :: Constraint
 
-type Dbg = HasCallStack
--- type Dbg = ()
+-- type Dbg = HasCallStack
+type Dbg = ()
 
 impossible :: Dbg => a
 impossible = error "impossible"

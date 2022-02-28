@@ -21,7 +21,7 @@ Using `stack`:
 Using `cabal`:
 - Install [cabal](https://www.haskell.org/cabal/)
 - Run `cabal v2-update`.
-- Run `cabal v2-install` in the smalltt directory. 
+- Run `cabal v2-install` in the smalltt directory.
 
 Also make sure that the executable is on the PATH. On Linux-es, the `stack`
 install directory is `$HOME/.local/bin`, and the `cabal` one is
@@ -40,7 +40,7 @@ in `cat file.2ltt | 2ltt COMMAND`. The following commands are available:
 
 #### Tutorial
 
-See [examples/Basics.2ltt](examples/Basics.2ltt) for a tutorial on language features and usage.
+See [examples/Tutorial.2ltt](examples/Tutorial.2ltt) for a tutorial on language features and usage.
 
 #### Examples
 
@@ -60,7 +60,7 @@ type formers (without dependent elimination). We can also encode unit and sigma 
 ### Notes on implementation
 
 - Elaboration is bidirectional, and uses normalization-by-evaluation for computation.
-- We use contextual metavariables. These are outside of basic 2LTT, because they are able to abstract over variables with arbitrarily mixed stages, while proper 2LTT type formers can't cross between stages. In the implementation, I reuse ordinary `App` and `Pi` and `Lam` constructors for contextual metas, but formally they are distinct from 2LTT constructions. Fortunately, the different usages can be always disambiguated in this demo. If all metavariables are solved, then they can be inlined ("zonked"), and then we get syntax which is purely in a 2LTT. 
+- We use contextual metavariables. These are outside of basic 2LTT, because they are able to abstract over variables with arbitrarily mixed stages, while proper 2LTT type formers can't cross between stages. In the implementation, I reuse ordinary `App` and `Pi` and `Lam` constructors for contextual metas, but formally they are distinct from 2LTT constructions. Fortunately, the different usages can be always disambiguated in this demo. If all metavariables are solved, then they can be inlined ("zonked"), and then we get syntax which is purely in a 2LTT.
 - Implicit functions follow Agda conventions and notation. We use pattern unification with a number of extensions: pruning, inessential nonlinearity, intersections, eta-expansion for metavariables (to get rid of splicing, similarly to when we get rid of sigma projections), and spine inversion modulo quote/splice (with quote/splice viewed as construction/projection for a unary record type). These extra features are documented [here](http://www2.tcs.ifi.lmu.de/~abel/unif-sigma-long.pdf).
 - Staging ([Staging.hs](Staging.hs)) follows the optimization notes in Section 4.4. of the paper. Meta-level evaluation is purely syntax-directed and closed, and we additionally erase types during evaluation (replacing them with a dummy value), because they are irrelevant in staging output. Object-level evaluation is simply an implementation of delayed variable renamings, using closures and De Bruijn levels.
 - Stages must be unambiguous in source programs; there are no stage metavariables nor stage unification in the implementation. However, this does not seem to make user experience any worse. I had previous prototypes with stage metavariables, and it turned out to be an unnecessary and rarely useful complication. The main point of stage ambiguity is actually the `let`-definitions, and I have found that if `let`-definitions always have explicit stages, then the rest of inference becomes highly effective. In summary, we always want to disambiguate `let`, but if we do so, stage metavariables are unnecessary.

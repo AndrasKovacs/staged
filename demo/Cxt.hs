@@ -12,12 +12,12 @@ import Value
 -- Elaboration context
 --------------------------------------------------------------------------------
 
-data Cxt = Cxt {                               -- Used for:
-    env       :: Env                           -- evaluation
-  , lvl       :: Lvl                           -- going under binders
-  , path      :: Path                          -- getting types of fresh metas
-  , pruning   :: Pruning                       -- getting terms of fresh metas (mask of bound variables)
-  , srcNames  :: M.Map Name (Lvl, VTy, Stage ) -- only contains info relevant to raw name lookup
+data Cxt = Cxt {                              -- Used for:
+    env       :: Env                          -- evaluation
+  , lvl       :: Lvl                          -- going under binders
+  , path      :: Path                         -- getting types of fresh metas
+  , pruning   :: Pruning                      -- getting terms of fresh metas (mask of bound variables)
+  , srcNames  :: M.Map Name (Lvl, VTy, Stage) -- only contains info relevant to raw name lookup
   , pos       :: SourcePos
   }
 
@@ -60,7 +60,7 @@ newBinder (Cxt env l path pr ns pos) x ~a st =
       (Bind path x (quote l a) st)
       (pr :> Just Expl)
       ns                        -- Unchanged! An inserted binder cannot be accessed from
-      pos                       --   source syntax
+      pos                       --   source syntax.
 
 -- | Extend with a definition. We require both terms and values, for efficiency,
 --   because when we elaborate let-definitions, we usually already have terms

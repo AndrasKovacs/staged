@@ -101,7 +101,7 @@ pLamBinder :: Parser (Name, Maybe Tm, Either Name Icit)
 pLamBinder =
       ((,Nothing,Right Expl) <$> pBind)
   <|> parens ((,,Right Expl) <$> pBind <*> optional (char ':' *> pTm))
-  <|> try ((,,Right Impl) <$> braces pBind <*> optional (char ':' *> pTm))
+  <|> try (braces ((,,Right Impl) <$> pBind <*> optional (char ':' *> pTm)))
   <|> braces (do {x <- pIdent; char '='; y <- pBind; pure (y, Nothing, Left x)})
 
 pLam :: Parser Tm

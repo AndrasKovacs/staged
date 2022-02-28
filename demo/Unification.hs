@@ -16,7 +16,6 @@ import Metacontext
 import Syntax
 import Value
 import Cxt
--- import Pretty
 
 --------------------------------------------------------------------------------
 
@@ -33,7 +32,7 @@ readUnsolved m = readMeta m >>= \case
 
 --------------------------------------------------------------------------------
 
--- | partial substitution from Γ to Δ
+-- | Partial substitution from Γ to Δ.
 data PartialSub = PSub {
     occ :: Maybe MetaVar   -- optional occurs check
   , dom :: Lvl             -- size of Γ
@@ -131,7 +130,7 @@ expandVFlex m sp = do
   else do
     pure (m, sp)
 
--- | Eta-expand and then prune spine to the extent that it is possible.
+-- | Eta-expand and then prune spine, both to the extent that it's possible.
 pruneVFlex :: PartialSub -> MetaVar -> Spine -> IO (MetaVar, Spine)
 pruneVFlex psub m sp = do
 
@@ -165,6 +164,8 @@ pruneVFlex psub m sp = do
       pure (m, sp)
 
 
+-- | Quote a `Spine` under a partial substitution, applying it to a normal term
+--   to get a normal term.
 psubstSp :: PartialSub -> Tm -> Spine -> IO Tm
 psubstSp psub t = \case
   SId                  -> pure t
@@ -172,7 +173,6 @@ psubstSp psub t = \case
   SSplice sp           -> Splice <$!> psubstSp psub t sp
   SNatElim st p s z sp -> tNatElim st <$!> psubst psub p <*!> psubst psub s
                                       <*!> psubst psub z <*!> psubstSp psub t sp
-
 
 -- | Quote a `Val` to normal form, while applying a partial substitution.
 psubst :: PartialSub -> Val -> IO Tm
@@ -201,7 +201,7 @@ psubst psub t = case force t of
   VZero s        -> pure (Zero s)
   VSuc s t       -> tSuc s <$!> psubst psub t
 
--- | Wrap a term in Lvl number of lambdas. We get the domain info from the VTy
+-- | Wrap a term in `Lvl` number of lambdas. We get the domain info from the `VTy`
 --   argument.
 lams :: Lvl -> VTy -> Tm -> Tm
 lams l a t = go a (0 :: Lvl) where
@@ -285,7 +285,6 @@ flexFlex gamma m sp m' sp' = do
   try go >>= \case
     Left UnifyError     -> solve gamma m' sp' (VFlex m sp)
     Right (m, sp, psub) -> solveWithPSub m psub (VFlex m' sp')
-
 
 intersect :: Lvl -> MetaVar -> Spine -> Spine -> IO ()
 intersect l m sp sp' = do

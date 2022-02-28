@@ -16,8 +16,8 @@ data Tm
   | Quote Tm                                   -- <t>
   | Splice Tm                                  -- [t]
 
-  | Nat Stage
-  | Zero Stage
-  | Suc Stage
-  | NatElim Stage
+  | Nat Stage                                  -- Nat0 | Nat1
+  | Zero Stage                                 -- zero0 | zero1
+  | Suc Stage                                  -- suc0 | suc1
+  | NatElim Stage                              -- NatElim0 | NatElim1
   deriving Show

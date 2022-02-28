@@ -8,6 +8,8 @@ name:           2ltt
 version:        0.1.0.0
 description:    Small implementation of a two-level type theory, for demonstrating staged compilation
 category:       Language
+license:        MIT
+license-file:   LICENSE
 build-type:     Simple
 
 executable 2ltt
@@ -24,6 +26,7 @@ executable 2ltt
       Pretty
       Staging
       Syntax
+      Tests
       Unification
       Value
       Paths_2ltt

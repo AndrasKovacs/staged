@@ -1,0 +1,124 @@
+Hello everyone, this is András Kovács and I will talk about using
+two-level type theory for staged compilation.
+
+--
+
+First, what's staged compilation? The goal is to have programs which generate
+programs. This is always possible by simply manipulating strings or AST-s, but
+that's usually rather error-prone and tedious. So we would like to have some
+extra features.
+
+--
+
+Like guaranteed well-typed output, lightweight syntax, and seamless integration
+of object-level and meta-level code
+
+The price that we pay for these conveniences, is that not every meaningful
+metaprogram can be expressed in particular staged systems.
+
+--
+
+Two-level type theory was originally developed for the purpose of
+metaprogramming, where the object theory is homotopy type theory, and the
+metatheory is extensional type theory. The primary motivation was to do
+synthetic homotopy theory.
+--
+However, it turns out that two-level type theory is a great system for doing
+metaprogramming in general. It works for a wide range of theories, and the
+object theory does not have to be homotopy type theory.
+--
+Moreover, it has simple rules
+--
+it supports fast staging with normalization-by-evaluation
+--
+we get a nice model theory and semantics which is already developed
+
+Let's look at the concrete rules. We have two universes, U0, which represents
+the object level, and U1 for the meta level. Both may be closed under arbitrary
+type formers. It's important that constructors and eliminators stay within the
+same universe, so there is no interaction between universes at this point. We
+allow such interaction by adding three operations to the theory.
+--
+First, for any object level type A, we get Code A as the meta-level type of
+expressions.
+--
+Second, we have quoting: this means that any object-level term yields a meta-level
+expression.
+--
+Third, we have splicing: this means that if we have a meta-level computation
+which returns an expression, we can run it and insert the result in object level
+code.
+--
+Finally, we know splicing and quoting form a definitional isomorphism.
+--
+By staging we mean computing away every meta-level subterm in an object level
+term. In other words, running every metaprogram and splicing in their results.
+
+
+Let's look at some examples. id zero is just the usual polymorphic identity function
+in the object theory.
+--
+Id one is the identity function in the metatheory, but it can be also used on
+object-level expressions, because we can apply it to a quoted term. So we get a
+version of id which must be evaluated during staging.
+--
+We can use quantification over Code U0 to define a map function for object-level
+lists. This differs from the usual map function in U0 because it must be
+computed during staging, so in particular the function argument must be inlined.
+--
+We can also freely use staging to compute types, like this example for vectors
+with statically known sizes.
+--
+It seems that most staging annotations can be inferred by a combination of
+bidirectional elaboration and coercive subtyping. For example, I've implemented
+a staged interpreter for simply-typed lambda calculus, which required no manual
+annotation.
+--
+The benefit of having simple object theories is that they are easier to compile
+and to optimize. Then, even if the object theory is really weak, we get
+universes and dependent types for free, from the meta level of two-level type
+theory. We look at some setups like this in the following.
+--
+If the object theory is a simple type theory, we get a system for
+monomorphization. In this case, the object theory has no universes or
+polymorphism, but in two-level type theory we can still have a universe of
+object-level types. We can define an identity function which is specialized
+for each object-level type.
+--
+Higher-rank polymorphism is also allowed in this system. What is not possible,
+is storing polymorphic functions in object-level data, like having a n object-level
+list of polymorphic functions.
+--
+Let's make the object theory even weaker now. If we disallow higher-order
+functions in the object theory, we can compile staged programs without using closures.
+--
+However, in two level type theory we still have higher order functions and
+currying.
+--
+Again, what we cannot do is to store functions in object-level data. This ensures
+that eventually all higher-order functions compute down to first-order functions.
+--
+This system is still surprisingly expressive. It seems to me that in functional
+programming, abstracting over functions is more commonly used than storing
+functions as data.
+--
+It's also possible to combine monomorphization with a dependently typed object
+theory. One way to do this is to index U zero with memory layouts. For example,
+we might want to distinguish pointers from unboxed values. This lets us write a
+layout-polymorphic identity function. Layouts live on the meta level, so every
+layout is computed to a closed canonical value during staging.
+--
+Finally, let's take a brief look at semantics. The standard semantics of two-level type
+theory is in the category of presheaves over the syntactic category of the
+object theory.
+--
+In the model, Code is a variant of Yoneda embedding which acts on types.
+--
+The range of possible staging features in this model depends essentially on the
+morphisms in the base category.
+--
+If morphisms are substitutions, we can only generate code by staging, but not look into code in any interesting way
+--
+If morphisms are weakenings, we can analyze code, because more operations are
+stable under weakening than under arbitrary substitution. However, this also
+rules out object theories whose specification requires general substitutions.

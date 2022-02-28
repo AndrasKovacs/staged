@@ -1,0 +1,254 @@
+
+Staged compilation
+
+- write syntax in of some theory
+-   I want to extract constructions in a different (simpler theory)
+  (metaprogams: programs which output programs)
+
+- It's always possible in to just output trees/strings
+  - issue: no guarantee of well-typed output if we're using untyped representatation
+  -        try to use typed representation: much more complicated to embed
+  -        deep embedding of variables/binding/substitution (too verbose)
+
+- Staged compilation:
+  metaprograms + restrictions + guarantees + more concise embedded programs
+
+   - what is it that we don't want to explicitly handle
+     - substitution in general + variables
+     - weakenings + variables  (semantics consistent with decidable equality
+                                of conversionCheck : (A : U₀) (t u : ^[A])
+				                     → Dec (t ≡ u))
+- intensional analysis ("non-generative" staging)
+- staged system with simply typed object language permits intensional analysis
+
+   ¬ (Tm ∙ LEM)
+
+   □ : closed modality ("crisp")
+   ¬ (□ LEM₀)
+
+   □ (t =₀ u) → t =₁ u
+   □ Bool₀ → Bool₁
+
+- Yoneda lemma vs intensional analysis
+
+  - formally simplest way to implement staging
+    - presheaf model of 2LTT over the object theory
+      (extracted algorithm not quite efficient)
+    - (fancy efficient staging (staging-by-evaluation) will agree with this)
+
+    how we stage a program:
+       t : Tm ∙ A    where A : U₀   (input: Tm in 2LTT output: Tm in object theory)
+
+         -- I get from the presheaf model
+         A   : Ty(2LTT) ∙
+	 ⟦A⟧ : Ty(objTT) ∙
+	 ⟦t⟧ : Tm(objTT) ∙ ⟦A⟧
+
+         -- operationally: efficient closed evaluation for metaprograms
+	                   naive weakening for object syntax
+
+         Yoneda lemma:  (Γ object theory context)
+	                (yΓ : psh over object theory)  (yΓ := set of substitutions
+			                                      into Γ)
+
+          Γ : obj context
+	  Δ : presheaf
+          (yΓ => Δ) ≃ |Δ| Γ
+
+          Γ := ∙ ▶ Nat₀
+
+          (y(∙ ▶ Nat₀) => (∙ ▶ Nat₁)) ≃ |∙ ▶ Nat₁| (∙ ▶ Nat₀)
+
+          ∙, Nat₀ ⊢ t : Nat₁     if the context is a y(..)
+
+             |Nat₁|(∙, Nat₀) = ℕ
+
+          (∙, x : Bool₀ ⊢ t : Bool₁) ≃ Bool
+
+             Yoneda only applies if context is representable (of the form y(..))
+
+          ∙, x : Bool₀  ≃ y Γ    ?
+
+          ∙, x : Bool₀, y : Nat₀ ....
+
+          y(Γ ▶ A) ≃ yΓ ▶ yA  (holds if morphisms are substitutions)
+	                      (fails if morphisms are weakenings)
+
+              Sub Γ (Δ ▶ A) ≃ ((σ : Sub Γ Δ) × Tm Γ (A[σ]))
+              Wk ...
+
+          ∙, x : Bool₀, y : Bool₀ ⊢ t : Bool₁
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-- Example for staged system (2LTT (two-level type theory))
+
+(see also Template Haskell, MetaOCaml)
+
+two universes
+U₀ : types of the runtime language  (synonymously "object theory", "dynamic language")
+U₁ : types of the compile time language ("static" types, "metatheoretic types", "meta-level" types)
+
+U₀ : U₀   -- type-in-type at both stages
+U₁ : U₁
+
+- every rule in stays either in U₀ or in U₁
+
+_→₁_ : U₁ → U₁ → U₁
+_→₀_ : U₀ → U₀ → U₀
+
+_→₁_ : Tm Γ U₁ → Tm Γ U₁ → Tm Γ U₁
+_→₀_ : Tm Γ U₀ → Tm Γ U₀ → Tm Γ U₀
+applications + lambdas
+
+Nat₁  : U₁
+zero₁ : Nat₁
+suc₁  : Nat₁ → Nat₁
+iter₁ : (A : U₁) → Nat₁ → (A → A) → A → A
+
+Nat₀  : U₀
+zero₀ : Nat₀
+suc₀  : Nat₀ → Nat₀
+iter₀ : (A : U₀) → Nat₀ → (A → A) → A → A
+
+^_ : Tm Γ U₀ → Tm Γ U₁     -- other names: Code, Exp
+   : U₀ → U₁
+
+A  : U₀  -- a type in the runtime language
+^A : U₁  -- type of metaprograms which return code with type A
+
+<_> : A → ^A    -- quoting : metaprogram which immediately returns a runtime expression
+[_] : ^A → A    -- splicing: run metaprogram, insert output to runtime expression
+
+-- (polymorphic identity functions)
+id : (A : U₀) → A → A         -- id : Tm ∙ ((A : U₀) → A → A)
+id = λ A x. x                 -- id = λ A x. x
+
+id : (A : U₁) → A → A
+
+id : (A : ^U₀) → ^[A] → ^[A]  -- (A : Tm ∙ U) → Tm ∙ A → Tm ∙ A
+    A    : ^U₀
+    [A]  : U₀
+    ^[A] : U₁
+
+id : (A : ^U₀) → ^([A] → [A])  --         -- (doesn't work)
+                                          -- (Tm ∙ A → Tm ∙ B) ≃ Tm ∙ (A → B)
+                                          -- (Γ : Con) → Tm Γ A → ...
+
+   -- type iso:  ^(A → B) ≃ (^A → ^B)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+- staged compilation /= staged computation
+- motivation
+  - trade-off: stability vs verbosity
+  - simple object th, higher-level metath
+
+- syntaxes
+  - quote/splice
+  - internal universe
+
+- staging alg
+  - psh model
+    - slow, correctness todo
+  - untyped staging-by-eval
+    - practical, fast, formally difficult
+
+- yoneda, intensional analysis
+  - intensional axioms
+  - representable cxts, weakening vs subst
+  - problems with defn equalities
+  - syntactic induction?
+
+- applications
+  - distinctions & restrictions in obj theory
+    - monomorphization
+    - closure control
+    - layout indexing
+    - (bounded-space functions?)

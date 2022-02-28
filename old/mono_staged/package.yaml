@@ -1,0 +1,119 @@
+
+name:        staged-fp
+version:     0.1.0.0
+license:     MIT
+category:    Language
+description: "Experimental compiler with staging"
+author:      "András Kovács"
+maintainer:  "puttamalac@gmail.com"
+copyright:   "2021 András Kovács"
+
+flags:
+  dump:
+    description: dump core, stg and cmm to files
+    default: false
+    manual: true
+  llvm:
+    description: use llvm for codegen
+    default: false
+    manual: true
+  debug:
+    description: turn on debug info printing
+    default: false
+    manual: true
+
+when:
+  - condition: flag(dump)
+    ghc-options:
+      - -ddump-simpl
+      - -ddump-stg
+      - -ddump-cmm
+      - -dsuppress-all
+      - -dno-suppress-type-signatures
+      - -ddump-to-file
+  - condition: flag(llvm)
+    ghc-options:
+      - -fllvm
+  - condition: flag(debug)
+    cpp-options:
+      - -DDEBUG
+
+dependencies:
+- base >= 4.7 && < 5
+
+default-extensions:
+  - AllowAmbiguousTypes
+  - BangPatterns
+  - BlockArguments
+  - CPP
+  - ConstraintKinds
+  - DataKinds
+  - DeriveFoldable
+  - DeriveFunctor
+  - DeriveTraversable
+  - DerivingVia
+  - ExplicitNamespaces
+  - FlexibleContexts
+  - FlexibleInstances
+  - FunctionalDependencies
+  - GADTs
+  - KindSignatures
+  - LambdaCase
+  - MagicHash
+  - MultiParamTypeClasses
+  - OverloadedStrings
+  - PatternSynonyms
+  - PolyKinds
+  - RankNTypes
+  - ScopedTypeVariables
+  - StandaloneDeriving
+  - Strict
+  - TemplateHaskell
+  - TypeApplications
+  - TypeFamilies
+  - UndecidableInstances
+  - ViewPatterns
+
+ghc-options:
+  - -Wall
+  - -Wno-name-shadowing
+  - -Wno-unused-binds
+  - -Wno-unused-matches
+  - -Wno-missing-signatures
+  - -Wno-unused-do-bind
+  - -Wno-unticked-promoted-constructors
+  - -O2
+  - -fmax-worker-args=20
+
+library:
+  source-dirs:
+    - src
+  dependencies:
+    - bytestring
+    - containers
+    - dynamic-array
+    - flatparse
+    - hashable
+    - microlens
+    - microlens-th
+    - primdata
+    - template-haskell
+    - unordered-containers
+
+executables:
+  staged:
+    source-dirs:
+      - staged
+    main:
+      Main.hs
+    ghc-options:
+      - -rtsopts
+      - -threaded
+      - -with-rtsopts= "-A64M -s -N8"
+    dependencies:
+      - staged-fp
+      - dynamic-array
+      - bytestring
+    when:
+    - condition: false
+      other-modules: Paths_smalltt

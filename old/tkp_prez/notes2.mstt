@@ -1,0 +1,266 @@
+
+{-
+- Staged compilation
+- What is staged compilation?
+  - Metaprogramming + restrictions + guarantees + convenience
+     - restrictions: no arbitrary scope manipulation, only well-typed expressions
+     - guarantees: only well-typed (well-scoping) output
+     - convenience: concise syntax
+
+- What I have:
+  - Staged compilation with dependent types
+    - Prior work in homotopy type theory :
+       -  two-level type theory (2LTT)
+       -  solution to limitations of HoTT: metaprogramming layer on top of it
+    - We just take 2LTT as a system of staged compilation
+      - staged language (system where we can write metaprograms)
+      - object-language (language of code output)
+
+- STaging + correctness:
+
+   - staging: metaprogram --> object code output
+   - correctness:
+      - soundness:      staging output is β-convertible to the input
+      - completeness:   convertible inputs are staged to convertible outputs
+      - stability:      staging something which is already staged
+                         does nothing
+-}
+
+-- U i : universes
+
+-- U 0 : universe of runtime types
+-- U 1 : universe of static / compile time types
+-- U 2 : ...
+-- U ...
+
+let U0 = U 0 in
+let U1 = U 1 in
+
+-- Church-encoded runtime Booleans
+let Bool  : U0   = (B : U0) → B → B → B in
+let false : Bool = λ B t f. f in
+let true  : Bool = λ B t f. t in
+
+let id₀ : {A : U0} → A → A
+  = λ x. x in
+
+let id₁ : {A : U1} → A → A
+  = λ x. x in
+
+{-
+Three operations for staging:
+  - Lifting:    whenever (A : U0) then   ^A : U1
+                ^A is the type of metaprograms which return expressions with
+                type A
+  - quoting:    whenever (A : U0) and (t : A) then <t> : ^A
+                <t> is the metaprogram which immediately returns "t" expression
+  - splicing:   whenever (A : U0) and (t : ^A) then [t] : A
+                [t] executes the metaprogram and inserts the result into
+		staging output
+  - <[t]> = t
+  - [<t>] = t
+
+Compare: Template Haskell
+  - "lift"   : Exp a
+  - "quote"  : [|| t ||]
+  - "splice" : $$( t )
+Also: MetaOCaml, Scala
+-}
+
+-- let foo : Bool = id₁ {^Bool} <true> in
+-- let foo : Bool = id₁ true in
+
+let const₁ : {A B : U1} → A → B → A
+ = λ x y. x in
+
+let comp₁ : {A B C : U1} → (B → C) → (A → B) → A → C
+ = λ f g x. f (g x) in
+
+let foo : Bool
+ = id₁ (const₁ false true) in
+
+λ (List  : U0 → U0)
+  (nil   : {A} → List A)
+  (cons  : {A} → A → List A → List A)
+  (foldr : {A B} → (A → B → B) → B → List A → B).
+
+let map₀ : {A B : U0} → (A → B) → List A → List B
+ = λ f as. foldr (λ a bs. cons (f a) bs) nil as in
+
+let mapInline : {A B : ^U0} → (A → B) → List A → List B
+  = λ f as. foldr (λ a bs. cons (f a) bs) nil as in
+
+let mapId : {A : U0} → List A → List A
+ = λ as. mapInline (λ x. x) as in
+
+U 0
+
+-- Embed a lambda calculus at compile time
+-- Write an interpreter for it
+--    (Futamure projections (ways to turn interpreters into compilers)
+
+
+
+
+
+-- let U0 = U 0 in
+-- let U1 = U 1 in
+
+-- let idLift : {A : ^U0} → ^[A] → ^[A]
+--   = λ x. x in
+
+-- U0
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+{-
+--------------------------------------------------------------------------------
+
+let Bool  : U0   = (B : U0) → B → B → B in
+let false : Bool = λ B t f. f in
+let true  : Bool = λ B t f. t in
+
+let Bool₁  : U1   = (B : U1) → B → B → B in
+let false₁ : Bool₁ = λ B t f. f in
+let true₁  : Bool₁ = λ B t f. t in
+
+let Nat  : U0              = (N : U0) → N → (N → N) → N in
+let zero : Nat             = λ _ z s. z in
+let suc  : Nat → Nat       = λ a _ z s. s (a _ z s) in
+let add  : Nat → Nat → Nat = λ a b N z s. a N (b N z s) s in
+let mul  : Nat → Nat → Nat = λ a b N z s. a N z (λ z. b N z s) in
+let n5   : Nat             = λ _ z s. s (s (s (s (s z)))) in
+let n10  : Nat             = add n5 n5 in
+
+let Nat₁  : U1                 = (N : U1) → N → (N → N) → N in
+let zero₁ : Nat₁               = λ _ z s. z in
+let suc₁  : Nat₁ → Nat₁        = λ a _ z s. s (a _ z s) in
+let add₁  : Nat₁ → Nat₁ → Nat₁ = λ a b N z s. a N (b N z s) s in
+let n₁5   : Nat₁               = λ _ z s. s (s (s (s (s z)))) in
+let n₁10  : Nat₁               = add₁ n₁5 n₁5 in
+
+--------------------------------------------------------------------------------
+-}
+
+
+{-
+-- postulate runtime lists
+λ (List  : U0 → U0)
+  (nil   : {A} → List A)
+  (cons  : {A} → A → List A → List A)
+  (foldr : {A B} → (A → B → B) → B → List A → B).
+
+let Unit : U0
+  = (A : U0) → A → A in
+
+let tt : Unit
+  = λ A x. x in
+
+let Nat : U0 = (N : U0) → N → (N → N) → N in
+let zero : Nat = λ _ z s. z in
+let suc : Nat → Nat = λ a _ z s. s (a _ z s) in
+let add : Nat → Nat → Nat = λ a b N z s. a N (b N z s) s in
+let mul : Nat → Nat → Nat = λ a b N z s. a N z (λ z. b N z s) in
+let n5 : Nat = λ _ z s. s (s (s (s (s z)))) in
+let n10 = add n5 n5 in
+
+let Nat₁ : U1 = (N : U1) → N → (N → N) → N in
+let zero₁ : Nat₁ = λ _ z s. z in
+let suc₁ : Nat₁ → Nat₁ = λ a _ z s. s (a _ z s) in
+let add₁ : Nat₁ → Nat₁ → Nat₁ = λ a b N z s. a N (b N z s) s in
+let n₁5 : Nat₁ = λ _ z s. s (s (s (s (s z)))) in
+let n₁10 = add₁ n₁5 n₁5 in
+
+
+
+let Bool2 : U1 = (B : ^U0) → B → B → B in
+let false2 : Bool2 = λ B t f. f in
+let true2 : Bool2 = λ B t f. t in
+
+let List2 : ^U0 → U1 = λ A. (L : ^U0) → (A → L → L) → L → L in
+let nil2  : {A : ^U0} → List2 A = λ L c n. n in
+let cons2 : {A : ^U0} → A → List2 A → List2 A = λ a as L c n. c a (as L c n) in
+
+let Pair₁ : ^U0 → U0 → U1
+  = λ A B. (P : ^U0) → (A → B → P) → P in
+
+let Pair₀ : U0 → U0 → U0
+  = λ A B. (P : U0) → (A → B → P) → P in
+
+let fst : {A B : ^U0} → Pair₁ A B → A
+  = λ p. p _ (λ a b. a) in
+
+let snd : {A B : ^U0} → Pair₁ A B → B
+  = λ p. p _ (λ a b. b) in
+
+let pair : {A B : ^U0} → A → B → Pair₁ A B
+  = λ a b P p. p a b in
+
+--------------------------------------------------------------------------------
+
+
+
+
+
+
+--------------------------------------------------------------------------------
+
+let State₁ : ^U0 → U0 → U1
+  = λ S A. S → Pair₁ A S in
+
+let State₀ : U0 → U0 → U0
+  = λ S A. S → Pair₀ A S in
+
+let get : {S : ^U0} → State₁ S S
+  = λ s. pair s s in
+
+let put : {S : ^U0} → S → State₁ S Unit
+  = λ s _. pair tt s in
+
+let modify : {S : ^U0} → (S → S) → State₁ S Unit
+  = λ f s. pair tt (f s) in
+
+let bind : {A B S : ^U0} → State₁ S A → (A → State₁ S B) → State₁ S B
+  = λ f g s. g (fst (f s)) (snd (f s)) in
+
+let pure : {A S : ^U0} → A → State₁ S A
+  = λ a s. pair a s in
+
+let f1 : State₀ Nat Unit
+  = bind (modify (add n5)) (λ _.
+    bind (modify (add n5)) (λ _.
+    pure tt)) in
+
+let f2 : State₀ Nat Nat
+  = bind get           (λ n.
+    bind (put {Nat} n) (λ _.
+    bind get           (λ m.
+    pure n))) in
+
+U
+-}

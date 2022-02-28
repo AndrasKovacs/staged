@@ -1,0 +1,23 @@
+\begin{thebibliography}{1}
+
+\bibitem{twolevel}
+Danil Annenkov, Paolo Capriotti, Nicolai Kraus, and Christian Sattler.
+\newblock Two-level type theory and applications.
+\newblock {\em ArXiv e-prints}, may 2019.
+
+\bibitem{kiselyov14metaocaml}
+Oleg Kiselyov.
+\newblock The design and implementation of {BER} metaocaml - system
+  description.
+\newblock In Michael Codish and Eijiro Sumii, editors, {\em Functional and
+  Logic Programming - 12th International Symposium, {FLOPS} 2014, Kanazawa,
+  Japan, June 4-6, 2014. Proceedings}, volume 8475 of {\em Lecture Notes in
+  Computer Science}, pages 86--102. Springer, 2014.
+
+\bibitem{hottbook}
+The {Univalent Foundations Program}.
+\newblock {\em Homotopy Type Theory: Univalent Foundations of Mathematics}.
+\newblock \url{https://homotopytypetheory.org/book}, Institute for Advanced
+  Study, 2013.
+
+\end{thebibliography}

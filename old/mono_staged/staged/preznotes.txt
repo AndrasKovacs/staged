@@ -1,0 +1,116 @@
+
+Last time:
+
+   - In 2LTT : all lvls share type formers + def eq.
+   - Runtime stage has *no* interesting def. eq.
+       - *Only weaking* for runtime (not even substitution)
+       - Runtime let-bindings behave exactly like bound variables (not like defined things!)
+            - In unification: - meta under runtime let, abstract over *all* runtime vars
+	    -                 - At runtime stage *everything* is injective including all eliminators
+     	                           app t u = app t' u'  iff   t = t' and u = u'
+
+
+   - infer cxt (let x : A = t in u) ?
+   -    (I have to elab while not knowing what def eq. is valid for x)
+   -    infer cxt (λ x. t)  =>  ?
+   -         Pi (x : A) B
+   -         A → B
+
+   1. I don't do *anything* when uncertain about stages (potential upgrade: postponing)
+
+   2. Two stages are fully separated in implementation      (GADT for stage-indexed types in Core)
+
+       duplication 1:
+          (data Tm1, data Tm0, data Val1, data Val0)
+
+       duplication 2:
+          check0 : I know stage + type
+	  check1 : -- || --
+	  infer0 : I know stage but *not* type
+	  infer1 : -- || --
+	  infer  : I don't anything about preterm
+
+  3. Point of stage disambiguation: let-definition (top level / local let)
+
+
+     f := λ x. x + 10     -- runtime Int → Int
+     f = λ x. x + 10      -- compile time ^Int → ^Int
+
+     assume that t : ^A
+                 u : ^B
+
+     infer (let x = t in u)  -->   ?
+         what should be output stage?
+	                output term/type?
+
+        -  let x = ~t in ~u             (stage 0, runtime binding)
+	-  let x = t in u               (stage 1, meta binding)
+	-  let x = t in ~u              (stage 0, meta binding)
+	-  <let x = ~t in ~u>           (stage 1, runtime binding)
+
+  4. Metavariables, unification?
+
+    - metas live at meta level
+    - zonking is just staging
+    - we have to "lift" types & contexts of fresh metas to meta level
+
+    Pattern unification:
+       ?0 x y z =? rhs
+       ?0 = λ x y z. rhs
+
+    we immediately get spines like this:
+
+       ?0 <x> <y> z =? rhs          --
+
+    solution: - view <_>/~_ as wrap/unwrap for unary record type
+              - do pattern unification modulo Σ
+
+       pattern unification modulo
+          - swapping,
+	  - Skolemization
+	  - currying
+	  - Π/Σ eta rules
+
+       preservation isos: ^(A → B) ≃ ^A → ^B
+                          ^(A × B) ≃ (^A × ^B)
+			  A ≃ ^A (in external sense)
+
+       record ^ (A : Set) : Set where
+          constructor <_>
+	  field
+	    ~_
+
+  5. Coercion implementation:
+
+    In 2LTT prototype : heteregeneously staged coercion
+
+    Previous version:
+        A → A  ≤  ^A → ^A               (A → B) ≤ (A' → B') iff (usual contra-covariant)
+
+             t     : A → B
+             coe t : A' → B'
+
+    Now: only homogeneous coercion
+
+       Int → Int      ^Int → ^Int
+       t : Int → Int
+       <t> : ^(Int → Int)
+
+       ^(Int → Int) ≤ ^Int → ^Int
+
+       ^Int → ^Int   ≤   Int → Int
+
+        I create fresh meta α:
+
+          ^Int → ^Int ≤ ^α
+
+       t : ^Int → ^Int
+       <λ x. ~(f <x>)> : ^(Int → Int)
+       ~(<λ x. ~(f <x>)>) : Int → Int
+       λ x. ~(f <x>)      : Int → Int
+
+  6. Value types & computation types
+
+       First implementation:
+          - implicit subtyping:  U0 Val ≤ U0 Comp
+	  - _→_ : U0 Val → U0 Comp → U0 Comp

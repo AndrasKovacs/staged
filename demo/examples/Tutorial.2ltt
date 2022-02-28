@@ -232,6 +232,209 @@ We have *natural numbers* at both stages, as the following built-in constants:
   NatElim0 : (P : Nat0 → U0) → ((n : Nat0) → P n → P (suc0 n)) → P zero0 → (n : Nat0) → P n
 -}
 
+{-
+Let us look at some staging examples. First, we define some basic polymorphic functions.
+-}
+
+let const1 : {A B : U1} → A → B → A
+  = λ x y. x;
+
+let const0 : {A B : U0} → A → B → A
+  := λ x y. x;
+
+let comp1 : {A B C : U1} → (B → C) → (A → B) → A → C
+  = λ f g x. f (g x);
+
+let comp0 : {A B C : U0} → (B → C) → (A → B) → A → C
+  := λ f g x. f (g x);
+
+{-
+Interestingly, we can use all of id0, id1, const0, const1, comp0 and conp1 in
+*runtime code*. How is this possible, when e.g. id1 is a static function? We can
+use lifting to make id1 compute on *expressions*:
+-}
+
+let ex13 : Nat0 := [id1 {^Nat0} <zero0>];
+
+{-
+ex12 is staged as follows:
+
+  [id1 {^Nat0} <zero0>]
+  [<zero0>]
+  zero0
+
+Staging annotations are a bit of mouthful here, but we can just omit them, and
+2ltt inserts them:
+-}
+
+let ex14 : Nat0 := id1 zero0;
+
+-- or even:
+let ex15 := id1 zero0;
+
+{-
+So, we can freely use the polymorphic static functions, and they compute at compile time.
+
+Let's look at composing two runtime functions, using static composition. Fully
+explicitly:
+-}
+
+let ex16 : Nat0 → Nat0
+  := λ x. [comp1 {^Nat0}{^Nat0}{^Nat0} (λ x. <suc0 [x]>) (λ x. <suc0 [x]>) <x>];
+
+  -- stages to (λ x. suc0 (suc0 x))
+
+{-
+This is way more verbose, but once again we can simply write the following:
+-}
+
+let ex17 : Nat0 → Nat0
+  := comp1 suc0 suc0;
+
+{-
+Note that 2ltt was able to convert (suc0 : Nat0 → Nat0) to ((λ x. <suc0 [x]>) : ^Nat0 → ^Nat0).
+
+In general, we have the following isomorphism of types:
+
+    ^((x : A) → B x) ≃ ((x : ^A) → ^(B [x]))
+
+2ltt can trasport along this isomorphism automatically. 2ltt
+uses coercive subtyping, with the following rules.
+
+  ──────    (inserts <_>)
+  A ≤ ^A
+
+  ──────    (inserts [_])
+  ^A ≤ A
+
+  ────────  (inserts ^_)
+  U0 ≤ U1
+
+      A' ≤ A      ∀ x. B x ≤ B' x
+  ───────────────────────────────────   (eta-expands, coerces back-and-forth)
+  ((x : A) → B x) ≤ ((x : A') → B' x)
+
+
+The actual implementation is a bit more complicated, but you can generally
+expect these coercions to work.
+-}
+
+{-
+In contrast, the runtime comp0 is unchanged during staging:
+-}
+
+let ex18 : Nat0 → Nat0
+  := comp0 suc0 suc0;  -- stages to itself
+
+{-
+We can also define *constants*, runtime values which are
+always inlined:
+-}
+
+let three : Nat0 = suc0 (suc0 (suc0 zero0));
+
+{-
+Note the "="! This is elaborated to
+
+   let three : Nat0 = <suc0 (suc0 (suc0 zero0))>
+
+and it is spliced in whenever we use in in runtime code.
+-}
+
+
+{-
+Let's move on to slightly more interesting examples with runtime data
+structures. Right now, we only have Nat0 as a runtime inductive type, but we can
+actually define Church-coded versions of a wide range of types, thanks to
+type-in-type. We define runtime lists:
+-}
+
+let List0 : U0 → U0
+  := λ A. (L : U0)(cons0 : A → L → L)(nil0 : L) → L;
+
+let nil0 : {A} → List0 A
+  := λ L c n. n;
+
+let cons0 : {A} → A → List0 A → List0 A
+  := λ a as L c n. c a (as L c n);
+
+let foldr0 : {A B} → (A → B → B) → B → List0 A → B
+  := λ f z as. as _ f z;
+
+{-
+From now on, we just view these definitions as primitive constants in the
+following staging examples.
+
+Let's define an inlined map function, explicitly:
+-}
+
+let explicitInlMap0 : {A : ^U0}{B : ^U0} → (^[A] → ^[B]) → ^(List0 [A]) → ^(List0 [B])
+  = λ {A}{B} f as. <foldr0 {[A]}{List0 [B]} (λ a bs. cons0 {[B]} [f <a>] bs) (nil0 {[B]}) [as]>;
+
+{-
+With inference:
+-}
+
+let inlMap0 : {A B : ^U0} → (A → B) → List0 A → List0 B
+  = λ f as. foldr0 (λ a bs. cons0 (f a) bs) nil0 as;
+
+{-
+Now, inlMap0 always inlines its function argument. Note that inlMap0 can be
+used on *any* function argument, but when the function argument is
+just a neutral variable (because it's a runtime higher-order function argument),
+we don't gain much from inlining a call to that. Examples:
+-}
+
+let ex19 : List0 Nat0 → List0 Nat0
+  := inlMap0 (comp1 suc0 suc0);
+  -- stages to (λ x. foldr0 (λ a bs. cons0 (suc0 (suc0 a)) bs) nil0 x)
+
+let ex20 : (Nat0 → Nat0) → List0 Nat0 → List0 Nat0
+  := λ f. inlMap0 f;
+  -- in this case, nothing interesting happens, we just inline the "f" variable.
+  -- stages to (λ f x. foldr0 (λ a bs. cons0 (f a) bs) nil0 x)
+
+{-
+Inlining is one thing, but we can also compute runtime code in more complicated
+ways, by recursion or induction on static data. Let's define first some Nat
+operations.
+-}
+
+let iter0 : {A} → Nat0 → (A → A) → A → A
+  := λ {A} n f a. NatElim0 (λ _. A) (λ _. f) a n;
+
+let add0 : Nat0 → Nat0 → Nat0
+  := λ a b. iter0 a suc0 b;
+
+let mul0 : Nat0 → Nat0 → Nat0
+  := λ a b. iter0 a (add0 b) zero0;
+
+let iter1 : {A} → Nat1 → (A → A) → A → A
+  = λ {A} n f a. NatElim1 (λ _. A) (λ _. f) a n;
+
+let add1 : Nat1 → Nat1 → Nat1
+  = λ a b. iter1 a suc1 b;
+
+let mul1 : Nat1 → Nat1 → Nat1
+  = λ a b. iter1 a (add1 b) zero1;
+
+{-
+The "hello world" of staging is some variation of Nat exponentiation, where the
+exponent is static. Let's do that. The exponent is the first argument below, to
+get more convenient partial applications.
+-}
+
+let exp : Nat1 → Nat0 → Nat0
+  = λ a b. iter1 a (mul0 b) (suc0 zero0);
+
+let ex21 : Nat0 → Nat0
+  := exp (suc1 (suc1 (suc1 zero1)));
+  -- stages to (λ x. mul0 x (mul0 x (mul0 x (suc0 zero0))))
+
+{-
+That's it for now! There are many more possibilities in 2ltt. You may look at the other
+files in this directory for more advanced examples.
+-}
 
 
 U0

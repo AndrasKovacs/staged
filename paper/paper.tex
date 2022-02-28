@@ -387,7 +387,7 @@ $\cons_0 : (A : \U_0) \to A \to \List_0\,A$ and $\msf{foldr}_0 : (A\,B : \U_0)
       \to \Lift(\List_0\,\spl A) \to \Lift(\List_0\,\spl B)\\
   & \mit{map} := \lambda\,A\,B\,f\,\mit{as}.\,
       \qut{\msf{foldr}_0\,
-        \spl A\,\spl B\,
+        \spl A\,(\List_0 \spl B)\,
         (\lambda\,a\,\mit{bs}.\, \cons_0\,\spl B\,\spl(f\,\qut{a})\,\mit{bs})\,
         (\nil_0\,\spl B)\,
         \spl as
@@ -400,12 +400,12 @@ $\blank\!+_0\!\blank : \Nat_0 \to \Nat_0 \to \Nat_0$ and $\mit{ns} :
 \List_0\,\Nat_0$, we have the following staging behavior:
 \begin{alignat*}{3}
   & &&\spl(\mit{map}\,\qut{\Nat_0}\,\qut{\Nat_0}\,(\lambda\,n.\,\qut{\spl n +_0 10})\,\qut{\mit{ns}})\\
-  & =\hspace{1em}&&\spl\qut{\msf{foldr}_0\,
-        \spl \qut{\Nat_0}\,\spl \qut{\Nat_0}\,
+  & =\hspace{0.5em}&&\spl\qut{\msf{foldr}_0\,
+        \spl \qut{\Nat_0}\,\spl \qut{\List_0\,\spl\qut{Nat_0}}\,
         (\lambda\,a\,\mit{bs}.\, \cons_0\,\spl B\,\spl\qut{\spl\qut{a} +_0 10}\,\mit{bs})\,
         (\nil_0\,\spl \qut{\Nat_0})\,
         \spl\qut{\mit{ns}}}\\
-  & =\hspace{1em} &&\msf{foldr_0}\,\Nat_0\,\Nat_0\,\,(\lambda\,a\,bs.\,a +_0 10)\,(\nil_0\,\Nat_0)\,\mit{ns}
+  & =\hspace{0.5em} &&\msf{foldr_0}\,\Nat_0\,(\List_0\,\Nat_0)\,\,(\lambda\,a\,bs.\,\cons_0\,(a +_0 10)\,bs)\,(\nil_0\,\Nat_0)\,\mit{ns}
 \end{alignat*}
 
 By using meta-level functions and lifted types, we already have control over

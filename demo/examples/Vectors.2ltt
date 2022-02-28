@@ -147,9 +147,9 @@ let tail0 : {A n} → Vec0 (suc1 n) A → Vec0 n A
 The following two staged functions are fairly easy to implement without
 additional infrastructure.
 
-In "vreplicate0", we might want to introduce sharing before with duplicate the
-input expression n-times. But this is fairly trivial, we can just insert a
-runtime let at a call site.
+In "vreplicate0", we might want to introduce sharing before we duplicate the
+input expression n-times. But this is fairly trivial, we can just let-insert
+at the call site.
 -}
 
 let replicate0 : {A : U0}(n : Nat1) → A → Vec0 n A
@@ -316,7 +316,7 @@ let up : {A}(n : Nat1) → Vec0 n A → Ins (Vec1 n A)
                (λ n rec as.
                  ilet  (head0 as) (λ a.
                  ilet  (tail0 as) (λ as.
-                 ibind (rec as)    (λ as.
+                 ibind (rec as)   (λ as.
                  ipure (cons1 a as)
                  ))))
                (λ as. ipure (nil1 A))

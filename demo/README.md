@@ -49,3 +49,19 @@ See [examples/Basics.2ltt](examples/Basics.2ltt) for a tutorial on language feat
 - [examples/Vectors.2ltt](examples/Vectors.2ltt): length-indexed vectors with statically known length, represented as iterated pairs. Also includes a demonstration of encapsulating let-insertion in a monad.
 
 -----
+
+### Comparison to the preprint
+
+- The preprint has a countable hierarchy of universes at each stage, closed under pi and sigma types and natural numbers. In contrast, the demo
+here has type-in-type, and does not have sigma types. Type-in-type makes implementation much easier, and allows us to lambda-encode a variety of
+type formers (without dependent elimination). We can also encode unit and sigma types, without eta-rules, but this is sufficient for examples.
+- The preprint writes splicing as `~t`, while the demo has it as `[t]`. The latter is much easier to parse and print than the paper's notation, and it's not much more verbose. Unfortunately, `[_]` is not viable in the paper because it's already severely overloaded there.
+
+### Notes on implementation
+
+- Elaboration is bidirectional, and uses normalization-by-evaluation for computation.
+- We use contextual metavariables. These are an extension of basic 2LTT, because they are able to abstract over variables with arbitrarily mixed stages. In the implementation, I reuse ordinary `App` and `Pi` and `Lam` constructors for contextual metas, but formally they are distinct from 2LTT constructions. Fortunately, the different usages can be always disambiguated in this demo. If all metavariables are solved, then they can be inlined ("zonked"), and then we get syntax which is purely in a 2LTT. 
+- Implicit functions follow Agda conventions and notation. We use pattern unification with a number of extensions: pruning, inessential nonlinearity, intersections, eta-expansion for metavariables (to get rid of splicing, similarly to when we get rid of sigma projections), and spine inversion modulo quote/splice (with quote/splice viewed as construction/projection for a unary record type). These extra features are documented [here](http://www2.tcs.ifi.lmu.de/~abel/unif-sigma-long.pdf).
+- Staging ([Staging.hs](Staginh.hs)) follows the optimization notes in Section 4.4. of the paper. Meta-level evaluation is purely syntax-directed and closed, and we additionally erase types during evaluation (replacing them with a dummy value), because they are irrelevant in staging output. Object-level evaluation is simply an implementation of delayed variable renamings, using closures and De Bruijn levels.
+
+

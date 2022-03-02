@@ -11,9 +11,9 @@ with a formal guarantee of staging.
 
 Note that in many languages, implicit GHC-style fusion is *not* used: In
 Rust/C++, we have explicit conversion between fusible and non-fusible
-representations, e.g. conversion between concrete data and iterators in Rust. I
-think that this is not a bad idea at all, and I generally prefer explicitly
-marked fusion in performance-oriented languages.
+representations. For instance, Rust has explicit conversion between concrete
+data and iterators. I think that this is not a bad idea at all, and I generally
+prefer explicitly marked fusion in performance-oriented languages.
 -}
 
 

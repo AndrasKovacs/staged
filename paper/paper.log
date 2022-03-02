@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.20 (TeX Live 2019/Debian) (preloaded format=pdflatex 2021.6.7)  28 FEB 2022 16:28
+This is pdfTeX, Version 3.14159265-2.6-1.40.20 (TeX Live 2019/Debian) (preloaded format=pdflatex 2021.6.7)  2 MAR 2022 15:52
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -40,6 +40,8 @@ Package acmart Info: Explicitly selecting natbib mode on input line 134.
 Package acmart Info: Not using anonymous mode on input line 142.
 Package acmart Info: Not using timestamp mode on input line 150.
 Package acmart Info: Not using authordraft mode on input line 160.
+Package acmart Info: Using anonymous mode on input line 169.
+Package acmart Info: Using review mode on input line 169.
 Class acmart Info: Using format acmsmall, number 1 on input line 169.
 Class acmart Info: Using fontsize 10pt on input line 253.
 
@@ -686,6 +688,9 @@ s
 \f@nch@O@olf=\skip73
 \f@nch@O@orf=\skip74
 )
+\ACM@linecount@bx=\box53
+\ACM@linecount@bxht=\skip75
+\ACM@linecount=\count300
 \@folio@wd=\dimen185
 \@folio@ht=\dimen186
 \@folio@voffset=\dimen187
@@ -704,12 +709,12 @@ LaTeX Font Info:    Font shape `T1/LinuxLibertineT-TLF/m/n' will be
 (/usr/share/texlive/texmf-dist/tex/latex/mathpartir/mathpartir.sty
 Package: mathpartir 2016/02/24 version 1.3.2 Math Paragraph for Typesetting Inf
 erence Rules
-\mpr@andskip=\skip75
+\mpr@andskip=\skip76
 \mpr@lista=\toks35
 \mpr@listb=\toks36
-\mpr@hlist=\box53
-\mpr@vlist=\box54
-\mpr@right=\box55
+\mpr@hlist=\box54
+\mpr@vlist=\box55
+\mpr@right=\box56
 )
 (/usr/share/texlive/texmf-dist/tex/latex/todonotes/todonotes.sty
 Package: todonotes 2019/01/24 v1.1.2 Todonotes source and documentation.
@@ -728,7 +733,7 @@ Package: ifthen 2014/09/29 v1.1c Standard LaTeX ifthen package (DPC)
 
 (/usr/share/texlive/texmf-dist/tex/generic/pgf/utilities/pgfutil-common-lists.t
 ex)) (/usr/share/texlive/texmf-dist/tex/generic/pgf/utilities/pgfutil-latex.def
-\pgfutil@abb=\box56
+\pgfutil@abb=\box57
 ) (/usr/share/texlive/texmf-dist/tex/generic/pgf/utilities/pgfrcs.code.tex
 (/usr/share/texlive/texmf-dist/tex/generic/pgf/pgf.revision.tex)
 Package: pgfrcs 2020/01/08 v3.1.5b (3.1.5b)
@@ -760,14 +765,14 @@ ex
 \pgf@yd=\dimen256
 \w@pgf@writea=\write4
 \r@pgf@reada=\read3
-\c@pgf@counta=\count300
-\c@pgf@countb=\count301
-\c@pgf@countc=\count302
-\c@pgf@countd=\count303
+\c@pgf@counta=\count301
+\c@pgf@countb=\count302
+\c@pgf@countc=\count303
+\c@pgf@countd=\count304
 \t@pgf@toka=\toks41
 \t@pgf@tokb=\toks42
 \t@pgf@tokc=\toks43
-\pgf@sys@id@count=\count304
+\pgf@sys@id@count=\count305
  (/usr/share/texlive/texmf-dist/tex/generic/pgf/systemlayer/pgf.cfg
 File: pgf.cfg 2020/01/08 v3.1.5b (3.1.5b)
 )
@@ -783,8 +788,8 @@ File: pgfsys-common-pdf.def 2020/01/08 v3.1.5b (3.1.5b)
 (/usr/share/texlive/texmf-dist/tex/generic/pgf/systemlayer/pgfsyssoftpath.code.
 tex
 File: pgfsyssoftpath.code.tex 2020/01/08 v3.1.5b (3.1.5b)
-\pgfsyssoftpath@smallbuffer@items=\count305
-\pgfsyssoftpath@bigbuffer@items=\count306
+\pgfsyssoftpath@smallbuffer@items=\count306
+\pgfsyssoftpath@bigbuffer@items=\count307
 )
 (/usr/share/texlive/texmf-dist/tex/generic/pgf/systemlayer/pgfsysprotocol.code.
 tex
@@ -798,8 +803,8 @@ Package: pgfcore 2020/01/08 v3.1.5b (3.1.5b)
 (/usr/share/texlive/texmf-dist/tex/generic/pgf/math/pgfmathutil.code.tex)
 (/usr/share/texlive/texmf-dist/tex/generic/pgf/math/pgfmathparser.code.tex
 \pgfmath@dimen=\dimen257
-\pgfmath@count=\count307
-\pgfmath@box=\box57
+\pgfmath@count=\count308
+\pgfmath@box=\box58
 \pgfmath@toks=\toks44
 \pgfmath@stack@operand=\toks45
 \pgfmath@stack@operation=\toks46
@@ -822,7 +827,7 @@ tex)
 (/usr/share/texlive/texmf-dist/tex/generic/pgf/math/pgfmathfunctions.integerari
 thmetics.code.tex)))
 (/usr/share/texlive/texmf-dist/tex/generic/pgf/math/pgfmathfloat.code.tex
-\c@pgfmathroundto@lastzeros=\count308
+\c@pgfmathroundto@lastzeros=\count309
 ))
 (/usr/share/texlive/texmf-dist/tex/generic/pgf/math/pgfint.code.tex)
 (/usr/share/texlive/texmf-dist/tex/generic/pgf/basiclayer/pgfcorepoints.code.te
@@ -858,10 +863,10 @@ File: pgfcorepathusage.code.tex 2020/01/08 v3.1.5b (3.1.5b)
 (/usr/share/texlive/texmf-dist/tex/generic/pgf/basiclayer/pgfcorescopes.code.te
 x
 File: pgfcorescopes.code.tex 2020/01/08 v3.1.5b (3.1.5b)
-\pgfpic=\box58
-\pgf@hbox=\box59
-\pgf@layerbox@main=\box60
-\pgf@picture@serial@count=\count309
+\pgfpic=\box59
+\pgf@hbox=\box60
+\pgf@layerbox@main=\box61
+\pgf@picture@serial@count=\count310
 )
 (/usr/share/texlive/texmf-dist/tex/generic/pgf/basiclayer/pgfcoregraphicstate.c
 ode.tex
@@ -894,8 +899,8 @@ File: pgfcorearrows.code.tex 2020/01/08 v3.1.5b (3.1.5b)
 (/usr/share/texlive/texmf-dist/tex/generic/pgf/basiclayer/pgfcoreshade.code.tex
 File: pgfcoreshade.code.tex 2020/01/08 v3.1.5b (3.1.5b)
 \pgf@max=\dimen281
-\pgf@sys@shading@range@num=\count310
-\pgf@shadingcount=\count311
+\pgf@sys@shading@range@num=\count311
+\pgf@shadingcount=\count312
 )
 (/usr/share/texlive/texmf-dist/tex/generic/pgf/basiclayer/pgfcoreimage.code.tex
 File: pgfcoreimage.code.tex 2020/01/08 v3.1.5b (3.1.5b)
@@ -903,7 +908,7 @@ File: pgfcoreimage.code.tex 2020/01/08 v3.1.5b (3.1.5b)
 (/usr/share/texlive/texmf-dist/tex/generic/pgf/basiclayer/pgfcoreexternal.code.
 tex
 File: pgfcoreexternal.code.tex 2020/01/08 v3.1.5b (3.1.5b)
-\pgfexternal@startupbox=\box61
+\pgfexternal@startupbox=\box62
 ))
 (/usr/share/texlive/texmf-dist/tex/generic/pgf/basiclayer/pgfcorelayers.code.te
 x
@@ -922,7 +927,7 @@ File: pgfcorerdf.code.tex 2020/01/08 v3.1.5b (3.1.5b)
 )))
 (/usr/share/texlive/texmf-dist/tex/generic/pgf/modules/pgfmoduleshapes.code.tex
 File: pgfmoduleshapes.code.tex 2020/01/08 v3.1.5b (3.1.5b)
-\pgfnodeparttextbox=\box62
+\pgfnodeparttextbox=\box63
 ) (/usr/share/texlive/texmf-dist/tex/generic/pgf/modules/pgfmoduleplot.code.tex
 File: pgfmoduleplot.code.tex 2020/01/08 v3.1.5b (3.1.5b)
 )
@@ -955,7 +960,7 @@ Package: tikz 2020/01/08 v3.1.5b (3.1.5b)
 (/usr/share/texlive/texmf-dist/tex/generic/pgf/libraries/pgflibraryplothandlers
 .code.tex
 File: pgflibraryplothandlers.code.tex 2020/01/08 v3.1.5b (3.1.5b)
-\pgf@plot@mark@count=\count312
+\pgf@plot@mark@count=\count313
 \pgfplotmarksize=\dimen286
 )
 \tikz@lastx=\dimen287
@@ -966,22 +971,22 @@ File: pgflibraryplothandlers.code.tex 2020/01/08 v3.1.5b (3.1.5b)
 \tikz@lastmovetoy=\dimen292
 \tikzleveldistance=\dimen293
 \tikzsiblingdistance=\dimen294
-\tikz@figbox=\box63
-\tikz@figbox@bg=\box64
-\tikz@tempbox=\box65
-\tikz@tempbox@bg=\box66
-\tikztreelevel=\count313
-\tikznumberofchildren=\count314
-\tikznumberofcurrentchild=\count315
-\tikz@fig@count=\count316
+\tikz@figbox=\box64
+\tikz@figbox@bg=\box65
+\tikz@tempbox=\box66
+\tikz@tempbox@bg=\box67
+\tikztreelevel=\count314
+\tikznumberofchildren=\count315
+\tikznumberofcurrentchild=\count316
+\tikz@fig@count=\count317
 
 (/usr/share/texlive/texmf-dist/tex/generic/pgf/modules/pgfmodulematrix.code.tex
 File: pgfmodulematrix.code.tex 2020/01/08 v3.1.5b (3.1.5b)
-\pgfmatrixcurrentrow=\count317
-\pgfmatrixcurrentcolumn=\count318
-\pgf@matrix@numberofcolumns=\count319
+\pgfmatrixcurrentrow=\count318
+\pgfmatrixcurrentcolumn=\count319
+\pgf@matrix@numberofcolumns=\count320
 )
-\tikz@expandcount=\count320
+\tikz@expandcount=\count321
 
 (/usr/share/texlive/texmf-dist/tex/generic/pgf/frontendlayer/tikz/libraries/tik
 zlibrarytopaths.code.tex
@@ -1004,29 +1009,29 @@ File: tikzlibraryfadings.code.tex 2020/01/08 v3.1.5b (3.1.5b)
 File: pgflibraryfadings.code.tex 2020/01/08 v3.1.5b (3.1.5b)
 ))) (/usr/share/texlive/texmf-dist/tex/latex/tools/calc.sty
 Package: calc 2017/05/25 v4.3 Infix arithmetic (KKT,FJ)
-\calc@Acount=\count321
-\calc@Bcount=\count322
+\calc@Acount=\count322
+\calc@Bcount=\count323
 \calc@Adimen=\dimen295
 \calc@Bdimen=\dimen296
-\calc@Askip=\skip76
-\calc@Bskip=\skip77
+\calc@Askip=\skip77
+\calc@Bskip=\skip78
 LaTeX Info: Redefining \setlength on input line 80.
 LaTeX Info: Redefining \addtolength on input line 81.
-\calc@Ccount=\count323
-\calc@Cskip=\skip78
+\calc@Ccount=\count324
+\calc@Cskip=\skip79
 )
-\c@@todonotes@numberoftodonotes=\count324
+\c@@todonotes@numberoftodonotes=\count325
 )
 (/usr/share/texlive/texmf-dist/tex/latex/scalerel/scalerel.sty
 Package: scalerel 2016/12/29 v1.8 Routines for constrained scaling and stretchi
 ng of objects, relative to a reference object or in absolute terms
-\thesrwidth=\skip79
-\thesrheight=\skip80
-\srblobheight=\skip81
-\srblobdepth=\skip82
-\mnxsrwidth=\skip83
-\LMex=\skip84
-\LMpt=\skip85
+\thesrwidth=\skip80
+\thesrheight=\skip81
+\srblobheight=\skip82
+\srblobdepth=\skip83
+\mnxsrwidth=\skip84
+\LMex=\skip85
+\LMpt=\skip86
 )
 (/usr/share/texlive/texmf-dist/tex/latex/tools/bm.sty
 Package: bm 2019/07/24 v1.2d Bold Symbol Support (DPC/FMi)
@@ -1037,17 +1042,17 @@ Package: bm 2019/07/24 v1.2d Bold Symbol Support (DPC/FMi)
 LaTeX Font Info:    Redeclaring math alphabet \mathbf on input line 141.
 LaTeX Info: Redefining \bm on input line 209.
 )
-\c@notation=\count325
+\c@notation=\count326
 Package hyperref Info: Option `pdfdisplaydoctitle' set `true' on input line 143
 .
-\c@theorem=\count326
+\c@theorem=\count327
 
 Excluding comment 'screenonly' Include comment 'printonly'
-Include comment 'anonsuppress'
+Excluding comment 'anonsuppress' Excluding comment 'acks'
 (/usr/share/texlive/texmf-dist/tex/latex/l3backend/l3backend-pdfmode.def
 File: l3backend-pdfmode.def 2020-02-03 L3 backend support: PDF mode
-\l__kernel_color_stack_int=\count327
-\l__pdf_internal_box=\box67
+\l__kernel_color_stack_int=\count328
+\l__pdf_internal_box=\box68
 )
 (./paper.aux)
 \openout1 = `paper.aux'.
@@ -1167,7 +1172,7 @@ Package microtype Info: Loading generic protrusion settings for font family
 (microtype)             See the microtype manual for details.
 
 ABD: EveryShipout initializing macros
-\AtBeginShipoutBox=\box68
+\AtBeginShipoutBox=\box69
 
 (/usr/share/texlive/texmf-dist/tex/generic/stringenc/se-pdfdoc.def
 File: se-pdfdoc.def 2019/11/29 v1.12 stringenc: PDFDocEncoding
@@ -1183,7 +1188,7 @@ Package: nameref 2019/09/16 v2.46 Cross-referencing by name of section
 (/usr/share/texlive/texmf-dist/tex/generic/gettitlestring/gettitlestring.sty
 Package: gettitlestring 2019/12/15 v1.6 Cleanup title references (HO)
 )
-\c@section@level=\count328
+\c@section@level=\count329
 )
 LaTeX Info: Redefining \ref on input line 143.
 LaTeX Info: Redefining \pageref on input line 143.
@@ -1196,16 +1201,16 @@ LaTeX Info: Redefining \nameref on input line 143.
 
 (/usr/share/texlive/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
 [Loading MPS to PDF converter (version 2006.09.02).]
-\scratchcounter=\count329
+\scratchcounter=\count330
 \scratchdimen=\dimen297
-\scratchbox=\box69
-\nofMPsegments=\count330
-\nofMParguments=\count331
+\scratchbox=\box70
+\nofMPsegments=\count331
+\nofMParguments=\count332
 \everyMPshowfont=\toks49
-\MPscratchCnt=\count332
+\MPscratchCnt=\count333
 \MPscratchDim=\dimen298
-\MPnumerator=\count333
-\makeMPintoPDFobject=\count334
+\MPnumerator=\count334
+\makeMPintoPDFobject=\count335
 \everyMPtoPDFconversion=\toks50
 ) (/usr/share/texlive/texmf-dist/tex/latex/epstopdf-pkg/epstopdf-base.sty
 Package: epstopdf-base 2020-01-24 v2.11 Base part for package epstopdf
@@ -1250,8 +1255,8 @@ e
 * \@reversemarginfalse
 * (1in=72.27pt=25.4mm, 1cm=28.453pt)
 
-\c@mv@tabular=\count335
-\c@mv@boldtabular=\count336
+\c@mv@tabular=\count336
+\c@mv@boldtabular=\count337
 (/usr/share/texlive/texmf-dist/tex/latex/upquote/upquote.sty
 Package: upquote 2012/04/19 v1.3 upright-quote and grave-accent glyphs in verba
 tim
@@ -1288,10 +1293,6 @@ LaTeX Font Info:    Font shape `T1/LinuxLibertineT-TLF/m/n' will be
 (Font)              scaled to size 10.95pt on input line 185.
 LaTeX Font Info:    Font shape `T1/LinuxBiolinumT-TLF/m/n' will be
 (Font)              scaled to size 10.95pt on input line 185.
-LaTeX Font Info:    Font shape `T1/LinuxBiolinumT-TLF/m/n' will be
-(Font)              scaled to size 9.0pt on input line 185.
-LaTeX Font Info:    Font shape `T1/LinuxLibertineT-TLF/m/n' will be
-(Font)              scaled to size 9.0pt on input line 185.
 LaTeX Font Info:    Trying to load font information for TS1+LinuxLibertineT-TLF
  on input line 185.
 
@@ -1305,6 +1306,8 @@ Package microtype Info: Loading generic protrusion settings for font family
 (microtype)             `LinuxLibertineT-TLF' (encoding: TS1).
 (microtype)             For optimal results, create family-specific settings.
 (microtype)             See the microtype manual for details.
+LaTeX Font Info:    Font shape `T1/LinuxLibertineT-TLF/m/n' will be
+(Font)              scaled to size 9.0pt on input line 185.
 LaTeX Font Info:    Font shape `T1/LinuxLibertineT-TLF/b/n' will be
 (Font)              scaled to size 9.0pt on input line 185.
 LaTeX Font Info:    Font shape `T1/LinuxLibertineT-TLF/m/it' will be
@@ -1338,6 +1341,8 @@ LaTeX Font Info:    Font shape `OT1/LinuxLibertineT-TLF/m/n' will be
 (Font)              scaled to size 10.0pt on input line 215.
 LaTeX Font Info:    Font shape `OT1/LinuxLibertineT-TLF/sb/n' will be
 (Font)              scaled to size 10.0pt on input line 215.
+LaTeX Font Info:    Font shape `T1/LinuxLibertineT-TLF/m/n' will be
+(Font)              scaled to size 7.0pt on input line 220.
  [1.1{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}]
 LaTeX Font Info:    Font shape `T1/LinuxBiolinumT-TLF/m/n' will be
 (Font)              scaled to size 7.3pt on input line 260.
@@ -1367,60 +1372,60 @@ LaTeX Font Info:    Font shape `T1/LinuxLibertineT-TLF/m/n' will be
 (Font)              scaled to size 7.3pt on input line 399.
 LaTeX Font Info:    Font shape `T1/LinuxLibertineT-TLF/m/n' will be
 (Font)              scaled to size 5.5pt on input line 399.
-[4.4] [5.5] [6.6] [7.7]
+[4.4] [5.5] [6.6] [7.7] [8.8]
 LaTeX Font Info:    Font shape `T1/LinuxLibertineT-TLF/b/n' will be
-(Font)              scaled to size 10.0pt on input line 714.
- [8.8] [9.9] [10.10]
-Overfull \hbox (5.68489pt too wide) in paragraph at lines 928--932
+(Font)              scaled to size 10.0pt on input line 705.
+ [9.9] [10.10]
+Overfull \hbox (5.68489pt too wide) in paragraph at lines 920--924
 []\T1/LinuxLibertineT-TLF/m/n/10 (-20) Lastly, we note that the cor-rect-ness t
 er-mi-nol-ogy is bor-rowed from pre-vi-ous works on normalization-
  []
 
 [11.11]
 LaTeX Font Info:    Font shape `T1/LinuxBiolinumT-TLF/b/n' will be
-(Font)              scaled to size 7.3pt on input line 986.
+(Font)              scaled to size 7.3pt on input line 978.
 LaTeX Font Info:    Font shape `T1/LinuxBiolinumT-TLF/b/n' will be
-(Font)              scaled to size 5.5pt on input line 986.
+(Font)              scaled to size 5.5pt on input line 978.
  [12.12] [13.13]
 LaTeX Font Info:    Font shape `T1/LinuxLibertineT-TLF/m/sc' will be
-(Font)              scaled to size 10.0pt on input line 1165.
+(Font)              scaled to size 10.0pt on input line 1157.
  [14.14] [15.15]
 
 Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `math shift' on input line 1251.
+(hyperref)                removing `math shift' on input line 1243.
 
 
 Package hyperref Warning: Token not allowed in a PDF string (Unicode):
-(hyperref)                removing `math shift' on input line 1251.
+(hyperref)                removing `math shift' on input line 1243.
 
-
-Underfull \vbox (badness 5939) has occurred while \output is active []
-
- [16.16]
-[17.17]
+[16.16] [17.17]
 LaTeX Font Info:    Font shape `T1/LinuxBiolinumT-TLF/m/it' will be
-(Font)              scaled to size 7.3pt on input line 1408.
+(Font)              scaled to size 7.3pt on input line 1400.
 LaTeX Font Info:    Font shape `T1/LinuxBiolinumT-TLF/m/it' will be
-(Font)              scaled to size 5.5pt on input line 1408.
+(Font)              scaled to size 5.5pt on input line 1400.
  [18.18] [19.19] [20.20]
 LaTeX Font Info:    Font shape `T1/LinuxLibertineT-TLF/m/it' will be
-(Font)              scaled to size 7.3pt on input line 1636.
+(Font)              scaled to size 7.3pt on input line 1628.
 LaTeX Font Info:    Font shape `T1/LinuxLibertineT-TLF/m/it' will be
-(Font)              scaled to size 5.5pt on input line 1636.
+(Font)              scaled to size 5.5pt on input line 1628.
  [21.21] [22.22] [23.23]
 LaTeX Font Info:    Trying to load font information for T1+zi4 on input line 17
-99.
+90.
 
 (/usr/share/texlive/texmf-dist/tex/latex/inconsolata/t1zi4.fd
 File: t1zi4.fd 2018/01/14 T1/zi4 (Inconsolata)
 )
 LaTeX Font Info:    Font shape `T1/zi4/m/n' will be
-(Font)              scaled to size 10.0pt on input line 1799.
+(Font)              scaled to size 10.0pt on input line 1790.
 Package microtype Info: Loading generic protrusion settings for font family
 (microtype)             `zi4' (encoding: T1).
 (microtype)             For optimal results, create family-specific settings.
 (microtype)             See the microtype manual for details.
- (./paper.bbl
+
+Underfull \vbox (badness 6396) has occurred while \output is active []
+
+ [24.24]
+(./paper.bbl
 LaTeX Font Info:    Font shape `T1/LinuxLibertineT-TLF/m/it' will be
 (Font)              scaled to size 8.0pt on input line 46.
 LaTeX Font Info:    Font shape `T1/LinuxBiolinumT-TLF/m/n' will be
@@ -1429,64 +1434,66 @@ LaTeX Font Info:    Font shape `OT1/LinuxLibertineT-TLF/m/it' will be
 (Font)              scaled to size 8.0pt on input line 52.
 LaTeX Font Info:    Font shape `OT1/LinuxLibertineT-TLF/m/it' will be
 (Font)              scaled to size 6.2pt on input line 52.
-
-Underfull \vbox (badness 10000) has occurred while \output is active []
-
- [24.24]
 LaTeX Info: Redefining \tempurl on input line 66.
 LaTeX Info: Redefining \tempurl on input line 103.
 LaTeX Info: Redefining \tempurl on input line 117.
 LaTeX Info: Redefining \tempurl on input line 143.
+ [25.25]
 LaTeX Info: Redefining \tempurl on input line 161.
 LaTeX Info: Redefining \tempurl on input line 189.
-LaTeX Info: Redefining \tempurl on input line 202.
-LaTeX Info: Redefining \tempurl on input line 216.
-LaTeX Info: Redefining \tempurl on input line 233.
-LaTeX Info: Redefining \tempurl on input line 248.
-LaTeX Info: Redefining \tempurl on input line 260.
-LaTeX Info: Redefining \tempurl on input line 278.
-LaTeX Info: Redefining \tempurl on input line 294.
-LaTeX Info: Redefining \tempurl on input line 341.
-LaTeX Info: Redefining \tempurl on input line 359.
-LaTeX Info: Redefining \tempurl on input line 374.
-LaTeX Info: Redefining \tempurl on input line 391.
-
-Underfull \vbox (badness 10000) has occurred while \output is active []
-
- [25.25]
-LaTeX Info: Redefining \tempurl on input line 409.
+LaTeX Info: Redefining \tempurl on input line 214.
+LaTeX Info: Redefining \tempurl on input line 228.
+LaTeX Info: Redefining \tempurl on input line 245.
+LaTeX Info: Redefining \tempurl on input line 258.
+LaTeX Info: Redefining \tempurl on input line 273.
+LaTeX Info: Redefining \tempurl on input line 285.
+LaTeX Info: Redefining \tempurl on input line 314.
+LaTeX Info: Redefining \tempurl on input line 330.
+LaTeX Info: Redefining \tempurl on input line 347.
+LaTeX Info: Redefining \tempurl on input line 394.
+LaTeX Info: Redefining \tempurl on input line 412.
 LaTeX Info: Redefining \tempurl on input line 427.
-LaTeX Info: Redefining \tempurl on input line 441.
+LaTeX Info: Redefining \tempurl on input line 444.
 LaTeX Info: Redefining \tempurl on input line 462.
-LaTeX Info: Redefining \tempurl on input line 475.
-LaTeX Info: Redefining \tempurl on input line 490.
-LaTeX Info: Redefining \tempurl on input line 504.
-LaTeX Info: Redefining \tempurl on input line 528.
-LaTeX Info: Redefining \tempurl on input line 542.
-LaTeX Info: Redefining \tempurl on input line 570.
+LaTeX Info: Redefining \tempurl on input line 477.
+
+Underfull \vbox (badness 6396) has occurred while \output is active []
+
+ [26.26]
+LaTeX Info: Redefining \tempurl on input line 496.
+LaTeX Info: Redefining \tempurl on input line 513.
+LaTeX Info: Redefining \tempurl on input line 527.
+LaTeX Info: Redefining \tempurl on input line 548.
+LaTeX Info: Redefining \tempurl on input line 561.
+LaTeX Info: Redefining \tempurl on input line 576.
+LaTeX Info: Redefining \tempurl on input line 590.
+LaTeX Info: Redefining \tempurl on input line 614.
+LaTeX Info: Redefining \tempurl on input line 628.
+LaTeX Info: Redefining \tempurl on input line 656.
+LaTeX Info: Redefining \tempurl on input line 672.
 )
 
 Class acmart Warning: CCS concepts are mandatory for papers over two pages.
 
-Package atenddvi Info: Last page = 26.
-[26.26]
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 1866.
-Package atveryend Info: Executing hook `AfterLastShipout' on input line 1866.
+Package atenddvi Info: Last page = 27.
+[27.27]
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 1913.
+Package atveryend Info: Executing hook `AfterLastShipout' on input line 1913.
  (./paper.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 1866.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 1866.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 1913.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 1913.
 
 Package rerunfilecheck Info: File `paper.out' has not changed.
-(rerunfilecheck)             Checksum: DE4D44DF1687C3FEADD4BFAC67885B5A;4851.
+(rerunfilecheck)             Checksum: 4995DBF3B97CAF9E8CAFAB4C94B63D40;4724.
  ) 
 Here is how much of TeX's memory you used:
- 30931 strings out of 481239
- 543133 string characters out of 5920378
- 809287 words of memory out of 5000000
- 44501 multiletter control sequences out of 15000+600000
- 881801 words of font info for 673 fonts, out of 8000000 for 9000
+ 30970 strings out of 481239
+ 544152 string characters out of 5920378
+ 814136 words of memory out of 5000000
+ 44522 multiletter control sequences out of 15000+600000
+ 883302 words of font info for 681 fonts, out of 8000000 for 9000
  1302 hyphenation exceptions out of 8191
- 68i,13n,100p,796b,619s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 68i,16n,100p,796b,685s stack positions out of 5000i,500n,10000p,200000b,80000s
 {/usr/share/texlive/texmf-dist/fonts/enc/dvips/inconsolata/i4-t1-4.enc}{/usr/
 share/texlive/texmf-dist/fonts/enc/dvips/libertine/lbtn_ncsllp.enc}{/usr/share/
 texlive/texmf-dist/fonts/enc/dvips/libertine/lbtn_fygcup.enc}{/usr/share/texliv
@@ -1521,10 +1528,10 @@ pfb></usr/share/texlive/texmf-dist/fonts/type1/public/newtx/txmiaX.pfb></usr/sh
 are/texlive/texmf-dist/fonts/type1/public/txfonts/txsya.pfb></usr/share/texlive
 /texmf-dist/fonts/type1/public/txfonts/txsyb.pfb></usr/share/texlive/texmf-dist
 /fonts/type1/public/newtx/txsys.pfb>
-Output written on paper.pdf (26 pages, 737260 bytes).
+Output written on paper.pdf (27 pages, 749621 bytes).
 PDF statistics:
- 689 PDF objects out of 1000 (max. 8388607)
- 579 compressed objects within 6 object streams
- 166 named destinations out of 1000 (max. 500000)
- 85845 words of extra memory for PDF output out of 89155 (max. 10000000)
+ 711 PDF objects out of 1000 (max. 8388607)
+ 600 compressed objects within 6 object streams
+ 173 named destinations out of 1000 (max. 500000)
+ 84301 words of extra memory for PDF output out of 89155 (max. 10000000)
 

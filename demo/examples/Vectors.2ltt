@@ -303,7 +303,7 @@ let irun : {A : U0} → Ins A → A
 
 -- let-insertion
 let ilet : {A : U0}{B : U1} → A → (A → Ins B) → Ins B
-  = λ {A}{B} a f Ins con. let x := a; f x Ins con;
+  = λ a f Ins con. let x := a; f x Ins con;
 
 {-
 Now, we can convert a runtime vector to a static one, which let-binds all fields

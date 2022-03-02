@@ -1,7 +1,7 @@
 
 {-
-In this file we
-- define a Chruch-coded static syntax of simply typed lambda calculus
+In this file I
+- define a Church-coded static syntax of simply typed lambda calculus
 - write a standard interpreter, which targets the runtime language
 
 This means that embedded lambda terms are interpreted into object-level source
@@ -11,7 +11,7 @@ same time want to have no overhead of interpretation, at least for the purely
 static embedded expressions.
 
 It is also possible to mix static and runtime expressions ("partially static
-data"), in which case the runtime parts can be interpreted as usual. We don't
+data"), in which case the runtime parts can be interpreted as usual. I don't
 demonstrate this here.
 -}
 

@@ -2,7 +2,7 @@
 %%% Do NOT edit. File created by BibTeX with style
 %%% ACM-Reference-Format-Journals [18-Jan-2012].
 
-\begin{thebibliography}{37}
+\begin{thebibliography}{44}
 
 %%% ====================================================================
 %%% NOTE TO THE USER: you can override these defaults by providing
@@ -190,6 +190,18 @@
 \showDOI{\tempurl}
 
 
+\bibitem[Chapman et~al\mbox{.}(2010)]%
+        {chapman2010gentle}
+\bibfield{author}{\bibinfo{person}{James Chapman},
+  \bibinfo{person}{Pierre-{\'E}variste Dagand}, \bibinfo{person}{Conor
+  McBride}, {and} \bibinfo{person}{Peter Morris}.}
+  \bibinfo{year}{2010}\natexlab{}.
+\newblock \showarticletitle{The gentle art of levitation}.
+\newblock \bibinfo{journal}{\emph{ACM Sigplan Notices}} \bibinfo{volume}{45},
+  \bibinfo{number}{9} (\bibinfo{year}{2010}), \bibinfo{pages}{3--14}.
+\newblock
+
+
 \bibitem[Coquand(1996)]%
         {coquand1996algorithm}
 \bibfield{author}{\bibinfo{person}{Thierry Coquand}.}
@@ -234,6 +246,19 @@
 \showDOI{\tempurl}
 
 
+\bibitem[Dagand(2017)]%
+        {ornaments}
+\bibfield{author}{\bibinfo{person}{Pierre{-}{\'{E}}variste Dagand}.}
+  \bibinfo{year}{2017}\natexlab{}.
+\newblock \showarticletitle{The essence of ornaments}.
+\newblock \bibinfo{journal}{\emph{J. Funct. Program.}}  \bibinfo{volume}{27}
+  (\bibinfo{year}{2017}), \bibinfo{pages}{e9}.
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.1017/S0956796816000356}
+\showDOI{\tempurl}
+
+
 \bibitem[Danvy et~al\mbox{.}(1996)]%
         {eta-expansion-trick}
 \bibfield{author}{\bibinfo{person}{Olivier Danvy}, \bibinfo{person}{Karoline
@@ -260,6 +285,17 @@
 \url{https://agda.readthedocs.io/en/v2.6.2.1/}
 \showURL{%
 \tempurl}
+
+
+\bibitem[Diehl(2017)]%
+        {diehl-thesis}
+\bibfield{author}{\bibinfo{person}{Larry Diehl}.}
+  \bibinfo{year}{2017}\natexlab{}.
+\newblock \emph{\bibinfo{title}{Fully Generic Programming over Closed Universes
+  of Inductive-Recursive Types}}.
+\newblock \bibinfo{thesistype}{Ph.\,D. Dissertation}. \bibinfo{school}{Portland
+  State University}.
+\newblock
 
 
 \bibitem[Dybjer(1995)]%
@@ -292,6 +328,23 @@
 \newblock
 \urldef\tempurl%
 \url{https://doi.org/10.1145/165180.165214}
+\showDOI{\tempurl}
+
+
+\bibitem[Gratzer et~al\mbox{.}(2020)]%
+        {gratzer20multimodal}
+\bibfield{author}{\bibinfo{person}{Daniel Gratzer}, \bibinfo{person}{G.~A.
+  Kavvos}, \bibinfo{person}{Andreas Nuyts}, {and} \bibinfo{person}{Lars
+  Birkedal}.} \bibinfo{year}{2020}\natexlab{}.
+\newblock \showarticletitle{Multimodal Dependent Type Theory}. In
+  \bibinfo{booktitle}{\emph{{LICS} '20: 35th Annual {ACM/IEEE} Symposium on
+  Logic in Computer Science, Saarbr{\"{u}}cken, Germany, July 8-11, 2020}},
+  \bibfield{editor}{\bibinfo{person}{Holger Hermanns}, \bibinfo{person}{Lijun
+  Zhang}, \bibinfo{person}{Naoki Kobayashi}, {and} \bibinfo{person}{Dale
+  Miller}} (Eds.). \bibinfo{publisher}{{ACM}}, \bibinfo{pages}{492--506}.
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.1145/3373718.3394736}
 \showDOI{\tempurl}
 
 
@@ -328,7 +381,7 @@
 
 
 \bibitem[Kameyama et~al\mbox{.}(2011)]%
-        {staging-with-delimited-control}
+        {DBLP:journals/jfp/KameyamaKS11}
 \bibfield{author}{\bibinfo{person}{Yukiyoshi Kameyama}, \bibinfo{person}{Oleg
   Kiselyov}, {and} \bibinfo{person}{Chung{-}chieh Shan}.}
   \bibinfo{year}{2011}\natexlab{}.
@@ -410,6 +463,22 @@
 \showDOI{\tempurl}
 
 
+\bibitem[Kiselyov and Yallop(2022)]%
+        {DBLP:journals/corr/abs-2201-00495}
+\bibfield{author}{\bibinfo{person}{Oleg Kiselyov} {and} \bibinfo{person}{Jeremy
+  Yallop}.} \bibinfo{year}{2022}\natexlab{}.
+\newblock \showarticletitle{let (rec) insertion without Effects, Lights or
+  Magic}.
+\newblock \bibinfo{journal}{\emph{CoRR}}  \bibinfo{volume}{abs/2201.00495}
+  (\bibinfo{year}{2022}).
+\newblock
+\showeprint[arXiv]{2201.00495}
+\urldef\tempurl%
+\url{https://arxiv.org/abs/2201.00495}
+\showURL{%
+\tempurl}
+
+
 \bibitem[Licata et~al\mbox{.}(2018)]%
         {licata2018internal}
 \bibfield{author}{\bibinfo{person}{Daniel~R. Licata}, \bibinfo{person}{Ian
@@ -425,6 +494,23 @@
 \newblock
 \urldef\tempurl%
 \url{https://doi.org/10.4230/LIPIcs.FSCD.2018.22}
+\showDOI{\tempurl}
+
+
+\bibitem[L{\"{o}}h and Magalh{\~{a}}es(2011)]%
+        {loh11generic}
+\bibfield{author}{\bibinfo{person}{Andres L{\"{o}}h} {and}
+  \bibinfo{person}{Jos{\'{e}}~Pedro Magalh{\~{a}}es}.}
+  \bibinfo{year}{2011}\natexlab{}.
+\newblock \showarticletitle{Generic programming with indexed functors}. In
+  \bibinfo{booktitle}{\emph{Proceedings of the seventh {ACM} {SIGPLAN} workshop
+  on Generic programming, WGP@ICFP 2011, Tokyo, Japan, September 19-21, 2011}},
+  \bibfield{editor}{\bibinfo{person}{Jaakko J{\"{a}}rvi} {and}
+  \bibinfo{person}{Shin{-}Cheng Mu}} (Eds.). \bibinfo{publisher}{{ACM}},
+  \bibinfo{pages}{1--12}.
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.1145/2036918.2036920}
 \showDOI{\tempurl}
 
 
@@ -568,6 +654,22 @@
 \newblock
 \urldef\tempurl%
 \url{https://doi.org/10.1145/3498723}
+\showDOI{\tempurl}
+
+
+\bibitem[Yallop et~al\mbox{.}(2018)]%
+        {DBLP:journals/pacmpl/YallopGK18}
+\bibfield{author}{\bibinfo{person}{Jeremy Yallop}, \bibinfo{person}{Tamara von
+  Glehn}, {and} \bibinfo{person}{Ohad Kammar}.}
+  \bibinfo{year}{2018}\natexlab{}.
+\newblock \showarticletitle{Partially-static data as free extension of
+  algebras}.
+\newblock \bibinfo{journal}{\emph{Proc. {ACM} Program. Lang.}}
+  \bibinfo{volume}{2}, \bibinfo{number}{{ICFP}} (\bibinfo{year}{2018}),
+  \bibinfo{pages}{100:1--100:30}.
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.1145/3236795}
 \showDOI{\tempurl}
 
 

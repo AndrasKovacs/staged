@@ -1,7 +1,7 @@
 %% build: latexmk -pdf -pvc paper.tex
 
-\documentclass[acmsmall,anonymous,review]{acmart}
-%% \documentclass[nonacm,acmsmall]{acmart}
+%% \documentclass[acmsmall,anonymous,review]{acmart}
+\documentclass[nonacm,acmsmall,review]{acmart}
 %% \raggedbottom
 
 %% \BibTeX command to typeset BibTeX logo in the docs
@@ -575,12 +575,12 @@ annotations which have to be carefully tuned and ordered, and it is possible to
 get pessimized code via failed fusion.
 
 \subsubsection{Inferring staging operations}
-We can extract a coercive subtyping system from the staging
-operations, which can be used to infer staging operations, and in particular
-transport definitions along preservation isomorphisms. One choice is to have $A
-\leq \Lift A$, $\Lift A \leq A$, a contravariant-covariant rule for functions
-and a covariant rule for $\Sigma$. During bidirectional elaboration, when we
-need to compare an inferred and an expected type, we can insert coercions.  We
+We can extract a coercive subtyping system from the staging operations, which
+can be used for inference, and in particular for automatically transporting
+definitions along preservation isomorphisms. One choice is to have $A \leq \Lift
+A$, $\Lift A \leq A$, a contravariant-covariant rule for functions and a
+covariant rule for $\Sigma$. During bidirectional elaboration, when we need to
+compare an inferred and an expected type, we can insert coercions.  We
 implemented this feature in our prototype. It additionally supports Agda-style
 implicit arguments and pattern unification, so it can elaborate the following
 definition:
@@ -652,8 +652,8 @@ a meta-level type, and runtime types are indexed over representations.
   and $\msf{Prod} : \Rep \to \Rep \to \Rep$, and additionally we may assume
   any desired primitive machine representation as a $\Rep$.
 \item We have Russell-style $\U_{0,j} : \Rep \to \U_{0, j+1}\,r$, where $r$ is
-  some chosen runtime representation for types; often this would mark types as
-  erased at runtime. We leave the meta-level $\U_{1,j}$ hierarchy unchanged.
+  some chosen runtime representation for types; usually we would mark types are
+  erased. We leave the meta-level $\U_{1,j}$ hierarchy unchanged.
 \item We may introduce unboxed $\Sigma$ types and primitive machine types in the
   runtime language. For $r : \Rep$, $r' : \Rep$, $A : \U_{0}\,r$ and $B : A \to
   \U_{0}\,r'$, we may have $(x : A) \times B\,x :
@@ -951,7 +951,7 @@ idea of staging:
       based on sizes of the object-theoretic scopes, since these sizes may be changed
       by substitution.
 \item On the other hand, if only stable constructions are possible, we never
-      have to \emph{prove} stability, or even explicitly mention object-theoretic
+      have to prove stability, or even explicitly mention object-theoretic
       contexts, substitutions and variables. The tedious details of deep embeddings
       can be replaced with a handful of staging operations and typing rules.
 \end{itemize}
@@ -1845,18 +1845,25 @@ effect systems such as monads at the meta level.
 
 \section{Conclusions and Future Work}\label{sec:conclusions}
 
-In this work, we have developed the foundational metatheory of 2LTT as a system
-of two-stage compilation, and gave glimpses into potential applications
-and extensions.
+We developed the foundational metatheory of 2LTT as a system of
+two-stage compilation. We view the current results as more like a starting point
+to more thorough investigation into applications and extensions; in this paper
+we only sketched these.
 
-We emphasize that variants of 2LTT can serve both as languages where staging
-features are implemented, and also as \emph{metatheories}, not only for the
-formalization for staging techniques, but also more generally for reasoning
-about constructions in object languages. This purpose is prominent in the
-original 2LTT use case in synthetic homotopy theory. The meta-level language in
-a 2LTT can be expressive enough to express general mathematics, and the
+We emphasize that variants of 2LTT can serve as languages where staging
+features can be practically implemented, and also as \emph{metatheories}, not
+only for the formalization for staging techniques, but also more generally for
+reasoning about constructions in object languages. This purpose is prominent in
+the original 2LTT use case in synthetic homotopy theory. The meta-level language
+in a 2LTT can be expressive enough to express general mathematics, and the
 meta-level propositional equality $\blank\!=_1\!\blank$ can be used to prove
 $\beta\eta$-equality of object-level types and terms.
+
+For example, we could use object theories as \emph{shallowly embedded} target
+languages of optimization techniques and program translations. In particular, we
+may choose a low-level object theory without higher-order functions, and
+formalize closure conversion as an interpretation of an embedded meta-level
+syntax into the object theory.
 
 There is much future work in adapting existing staging techniques to 2LTT
 (which, as we mentioned, can double as formalization of said techniques), or
@@ -1868,7 +1875,8 @@ adding staging where it has not been available previously.
   in \cite{DBLP:journals/jfp/KameyamaKS11}. The automatic let-floating feature
   of MetaOCaml \cite{DBLP:journals/corr/abs-2201-00495} requires strengthening
   of terms, which is not stable under substitution, but it is stable under
-  weakening, so it could be viewed as an ``intensional analysis'' feature.
+  weakening, so perhaps it could be implemented as an ``intensional analysis''
+  feature.
 \item \emph{Generic programming with dependent types}. There is substantial
   literature in this area
   (e.g.\ \cite{loh11generic,chapman2010gentle,diehl-thesis,ornaments}), but only
@@ -1888,23 +1896,23 @@ There are also ways that 2LTT itself could be enhanced.
   stages, the runtime one, the static one, and another one which supports
   polymorphism over the first two stages.
 \item \emph{Modalities}. We mentioned the closed modality in Section
-  \ref{sec:closed-modalities}.  More generally, there should be many
-  \emph{multimodal} \cite{gratzer20multimodal} type theories supporting
-  staging. 2LTT itself can be viewed as a very simple multimodal theory with
-  $\Lift$ as the only modality, which is also degenerate (because it entails no
-  structural restriction on contexts). We could support multiple object
-  theories, with modalities for lifting them to meta-level or for representing
-  translations between them. We could also have modalities for switching between
-  stability under substitution and stability under weakening.
+  \ref{sec:closed-modalities}.  More generally, many \emph{multimodal}
+  \cite{gratzer20multimodal} type theories could plausibly support staging. 2LTT
+  itself can be viewed as a very simple multimodal theory with $\Lift$ as the
+  only modality, which is also degenerate (because it entails no structural
+  restriction on contexts). We could support multiple object theories, with
+  modalities for lifting them to the meta level or for representing translations
+  between them. We could also have modalities for switching between stability
+  under substitution and stability under weakening.
+\item \emph{Intensional analysis}. We only touched on the most basic semantics
+  of intensional analysis in Section \ref{sec:intensional-analysis}. It remains
+  a substantial challenge to work out the practicalities. For good ergonomics,
+  we would need something like a ``pattern matching'' operation on object-level
+  terms, or some induction principle which is more flexible than the plain
+  assumption of decidable object-level equality.
 \end{itemize}
 
-We could also further develop use-cases of restricted object theories. Here,
-2LTT could provide a convenient way to formalize certain optimizations and
-program translations. In essence, the object-level fragment of 2LTT can serve as
-a \emph{shallowly embedded} target of program translations. For example, we
-may choose a low-level object theory without higher-order functions, and formalize
-closure conversion as an interpretation of an embedded meta-level syntax into
-the object theory.
+
 
 \bibliographystyle{ACM-Reference-Format}
 \interlinepenalty=10000

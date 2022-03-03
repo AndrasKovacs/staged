@@ -130,6 +130,7 @@
 
 \newcommand{\whset}{\wh{\Set}}
 \newcommand{\rexti}{\re_{\ext_1}^{-1}}
+\newcommand{\rextizero}{\re_{\ext_0}^{-1}}
 
 \newcommand{\rel}{^{\approx}}
 \newcommand{\yon}{\msf{y}}
@@ -1402,7 +1403,7 @@ operations. With this, we also have $\re\,\qut{t}\,\gamma =
   \re_{\ext_0} : \re\,(\Gamma \ext_0 A) \simeq ((\gamma : \re\,\Gamma)\times \Tm_{0,j}\,(\re\,A\,\gamma))
 \]
 This is because substitutions targeting $\Gamma \ext_0 A$ are the same as
-pairs of substitutions and terms, by the specification of $\blank\ext_0\blank$.
+pairs of substitutions and terms, by the specification of $\blank\!\ext_0\!\blank$.
 
 \subsubsection{Action on object-level types and terms} $\re$ preserves all structure
 in the object-level fragment of 2LTT. This follows from the $\re$ specification:
@@ -1540,7 +1541,7 @@ identity maps, as $(\El\,t)\rel := t\rel$ and $(\Code\,t)\rel := t\rel$.
 
 \subsubsection{Object-level family structure} We interpret extended contexts as follows.
 \begin{alignat*}{3}
-  & (\Gamma \ext_0 A)\rel\,(\gamma,\,\alpha)\,(\rexti\,(\gamma',\,\alpha')) := (\gamma\rel : \Gamma\rel\,\gamma\,\gamma') \times (\emb{\alpha} = \alpha')
+  & (\Gamma \ext_0 A)\rel\,(\gamma,\,\alpha)\,(\rextizero\,(\gamma',\,\alpha')) := (\gamma\rel : \Gamma\rel\,\gamma\,\gamma') \times (\emb{\alpha} = \alpha')
 \end{alignat*}
 Note that $\alpha : \Tm_{\mbbo j}\,(\ev\,A\,\gamma)$, so $\emb{\alpha} :
 \Tm_{0,j}\,\emb{\ev\,A\,\gamma}$, but since $A\rel\,\gamma\rel :
@@ -1626,7 +1627,7 @@ $|A\rel|\,{\Gamma^P}\rel : \emb{|\ev\,A|\,\Gamma^P} = A[\id]$, hence $\emb{\Stag
 
 \begin{corollary}[Conservativity of 2LTT]\label{conservativity}
 From the soundness and stability of staging, we get that $\emb{\blank}$ is
-bijective on types and terms, i.e.\ $\Ty_{\mbbo j}\,\Gamma \simeq \Ty_{0,j}\,\emb{\Gamma}$ and
+bijective on types and terms, hence $\Ty_{\mbbo j}\,\Gamma \simeq \Ty_{0,j}\,\emb{\Gamma}$ and
 $\Tm_{\mbbo j}\,\Gamma\,A \simeq \Tm_{0,j}\,\emb{\Gamma}\,\emb{A}$.
 \end{corollary}
 
@@ -1771,7 +1772,7 @@ to get a self-contained presentation of the staging algorithm.
 The multi-stage calculus of Kawata and Igarashi \cite{multi-stage-calculus}
 supports staging operations and type dependencies. However, there are major
 differences to the current work. First, ibid.\ does not have large elimination,
-nor does it allow staged manipulation of type expressions. Second, it does not
+hence it does not support computing types by staging. Second, it does not
 support staged compilation in the sense of Definition \ref{def:staging}; rather,
 it is a system for runtime code manipulation and evaluation (which we may call
 staged \emph{computation}). In other words, programs may manipulate code

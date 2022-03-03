@@ -14,14 +14,12 @@ First, clone or download this repository.
 
 Using `stack`:
 - Install [stack](https://docs.haskellstack.org/en/stable/README/).
-- Run `stack install` in the smalltt directory. If you have LLVM installed, use
-   `stack install --flag smalltt:llvm` instead, that gives some performance
-   boost.
+- Run `stack install` in the directory.
 
 Using `cabal`:
 - Install [cabal](https://www.haskell.org/cabal/)
 - Run `cabal v2-update`.
-- Run `cabal v2-install` in the smalltt directory.
+- Run `cabal v2-install` in the directory.
 
 Also make sure that the executable is on the PATH. On Linux-es, the `stack`
 install directory is `$HOME/.local/bin`, and the `cabal` one is

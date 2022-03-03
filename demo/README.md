@@ -30,11 +30,11 @@ install directory is `$HOME/.local/bin`, and the `cabal` one is
 `2ltt` reads a single expression from the standard input, so the typical use case is to pipe a file to `2ltt`, as
 in `cat file.2ltt | 2ltt COMMAND`. The following commands are available:
 - `elab`: prints elaboration output. This prints all inferred staging operations, but does not print anything inserted by general inference, namely type annotations, implicit arguments and implicit lambdas.
-- `elab-verbose`: print elaboration output, showing almost all data inserted by elaboration. It also lists all metavariables and their solutions in the preface of the output.
-- `stage`: print staging output, don't show inserted implicits and annotations.
-- `stage-verbose`: print staging output, show inserted implicits and annotations.
-- `nf`: print the verbose normal form of the input program, together with its type.
-- `type`: print the verbose normal type of the input program.
+- `elab-verbose`: prints elaboration output, showing almost all data inserted by elaboration. It also lists all metavariables and their solutions in the preface of the output.
+- `stage`: prints staging output, doesn't show inserted implicits and annotations.
+- `stage-verbose`: prints staging output, shows inserted implicits and annotations.
+- `nf`: prints the verbose normal form of the input program, together with its type.
+- `type`: prints the verbose normal type of the input program.
 
 #### Tutorial
 

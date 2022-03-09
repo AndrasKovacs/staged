@@ -249,7 +249,7 @@ let comp0 : {A B C : U0} → (B → C) → (A → B) → A → C
   := λ f g x. f (g x);
 
 {-
-Interestingly, we can use all of id0, id1, const0, const1, comp0 and conp1 in
+Interestingly, we can use all of id0, id1, const0, const1, comp0 and comp1 in
 *runtime code*. How is this possible, when e.g. id1 is a static function? We can
 use lifting to make id1 compute on *expressions*:
 -}

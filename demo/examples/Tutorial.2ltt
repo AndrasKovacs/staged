@@ -336,7 +336,7 @@ let three : Nat0 = suc0 (suc0 (suc0 zero0));
 {-
 Note the "="! This is elaborated to
 
-   let three : Nat0 = <suc0 (suc0 (suc0 zero0))>
+   let three : ^Nat0 = <suc0 (suc0 (suc0 zero0))>
 
 and it is spliced in whenever we use in in runtime code.
 -}

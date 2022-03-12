@@ -4,7 +4,7 @@ Staged compilation with two-level type theory.
 
 This is a system for two-stage compilation with full dependent types at both stages; as far as I know, the first such system.
 
-- [Preprint](https://github.com/AndrasKovacs/AndrasKovacs.github.io/tree/master/pdfs/2ltt.pdf). Includes a proof of correctness of staging.
+- [Preprint](paper/paper.pdf). Includes a proof of correctness of staging.
 - [Demo implementation](demo), together with a tutorial and some code examples. Has an efficient staging implementation and powerful inference for stage annotations.
 
 Older material, somewhat obsolete now:

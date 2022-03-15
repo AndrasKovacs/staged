@@ -217,7 +217,7 @@ compilation.
 {-
 First, we need static vectors and their operations. Here, we don't have to care
 about sharing at all, and just write the absolute simplest definitions. The
-basic idea of out let-insertion technique is that we convert runtime vectors to
+basic idea of the let-insertion technique is that we convert runtime vectors to
 static vectors, do operations, then convert back. The insertion behavior will be
 configured at the point of conversion.
 -}

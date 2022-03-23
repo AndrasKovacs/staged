@@ -1,0 +1,252 @@
+
+\documentclass{easychair}
+\raggedbottom
+
+\usepackage{doc}
+\usepackage{xcolor}
+\usepackage{mathpartir}
+\usepackage{todonotes}
+\presetkeys{todonotes}{inline}{}
+\usepackage{scalerel}
+\usepackage{bm}
+\usepackage{amssymb}
+
+\renewcommand{\mit}[1]{\mathit{#1}}
+\newcommand{\msf}[1]{\mathsf{#1}}
+\newcommand{\mbb}[1]{\mathbb{#1}}
+\newcommand{\mbf}[1]{\mathbf{#1}}
+\newcommand{\bs}[1]{\boldsymbol{#1}}
+\newcommand{\wh}[1]{\widehat{#1}}
+\newcommand{\ext}{\triangleright}
+\newcommand{\Code}{\msf{Code}}
+\newcommand{\El}{\msf{El}}
+\newcommand{\lam}{\msf{lam}}
+\newcommand{\app}{\msf{app}}
+\newcommand{\NatElim}{\msf{NatElim}}
+\newcommand{\y}{\msf{y}}
+\newcommand\whobj{\wh{\msf{Obj}}}
+
+\newcommand{\Lift}{{\Uparrow}}
+\newcommand{\spl}{{\sim}}
+\newcommand{\qut}[1]{\langle #1\rangle}
+
+\newcommand{\mbbc}{\mbb{C}}
+\newcommand{\mbbo}{\mbb{O}}
+\newcommand{\ob}{_\mbbo}
+
+\newcommand{\U}{\msf{U}}
+\newcommand{\Con}{\msf{Con}}
+\newcommand{\Sub}{\msf{Sub}}
+\newcommand{\Ty}{\msf{Ty}}
+\newcommand{\Tm}{\msf{Tm}}
+\newcommand{\Cono}{\msf{Con}_{\mbbo}}
+\newcommand{\Subo}{\msf{Sub}_{\mbbo}}
+\newcommand{\Tyo}{\msf{Ty}_{\mbbo}}
+\newcommand{\Tmo}{\msf{Tm}_{\mbbo}}
+\newcommand{\hCon}{\wh{\msf{Con}}}
+\newcommand{\hSub}{\wh{\msf{Sub}}}
+\newcommand{\hTy}{\wh{\msf{Ty}}}
+\newcommand{\hTm}{\wh{\msf{Tm}}}
+
+\newcommand{\p}{\msf{p}}
+\newcommand{\q}{\msf{q}}
+
+\newcommand{\Bool}{\msf{Bool}}
+\newcommand{\true}{\msf{true}}
+\newcommand{\false}{\msf{false}}
+\newcommand{\True}{\msf{True}}
+\newcommand{\False}{\msf{False}}
+\newcommand{\List}{\msf{List}}
+\newcommand{\nil}{\msf{nil}}
+\newcommand{\cons}{\msf{cons}}
+\newcommand{\Nat}{\msf{Nat}}
+\newcommand{\zero}{\msf{zero}}
+\newcommand{\suc}{\msf{suc}}
+\newcommand{\ttt}{\msf{tt}}
+\newcommand{\fst}{\msf{fst}}
+\newcommand{\snd}{\msf{snd}}
+\newcommand{\mylet}{\msf{let}}
+\newcommand{\emptycon}{\scaleobj{.75}\bullet}
+\newcommand{\id}{\msf{id}}
+
+\newcommand{\Set}{\msf{Set}}
+\newcommand{\Rep}{\msf{Rep}}
+\newcommand{\blank}{{\mathord{\hspace{1pt}\text{--}\hspace{1pt}}}}
+\newcommand{\emb}[1]{\ulcorner#1\urcorner}
+
+\newcommand{\Stage}{\msf{Stage}}
+\newcommand{\hato}{\bm\hat{\mbbo}}
+\newcommand{\ev}{\mbb{E}}
+\newcommand{\re}{\mbb{R}}
+
+\theoremstyle{remark}
+\newtheorem{notation}{Notation}
+
+\newcommand{\whset}{\wh{\Set}}
+\newcommand{\rexti}{\re_{\ext_1}^{-1}}
+\newcommand{\rextizero}{\re_{\ext_0}^{-1}}
+\newcommand{\rel}{^{\approx}}
+\newcommand{\yon}{\msf{y}}
+
+\title{Conservativity of Two-Level Type Theory Corresponds to Staged Compilation}
+
+\author{Andr\'as Kov\'acs}
+
+% Institutes for affiliations are also joined by \and,
+\institute{
+  E\"otv\"os Lor\'and University,
+  Budapest, Hungary \\
+  \email{kovacsandras@inf.elte.hu}
+}
+
+\authorrunning{Kov\'acs}
+\titlerunning{Using Two-Level Type Theory for Staged Compilation}
+\pagenumbering{gobble}
+\begin{document}
+
+\maketitle
+
+%% %% abstract
+
+%% Two-level type theory (2LTT) was originally intended as a tool to make
+%% metatheoretical reasoning about constructions in homotopy type theory more
+%% convenient, by internalizing an extensional metatheory in a syntactic layer. We
+%% observe that variants of 2LTT formalize setups with two-stage compilation.
+%% Additionally, the conservativity property of a 2LTT over the object-level theory
+%% is equivalent to having a sound and stable staging algorithm, which compiles the
+%% object-level fragment of 2LTT to the syntax of the object theory. In previous
+%% work on 2LTT by Annekov et al. only a weak form of conservativity is shown,
+%% which corresponds to staging without the soundness property. We define staging
+%% as evaluation of 2LTT syntax in the presheaf model over the object-level
+%% syntactic category. Operationally, this is in similar to
+%% normalization-by-evaluation, except that evaluation in the meta-level fragment
+%% is closed (i.e. no free variables occur) and thus more efficient. We show
+%% stability and soundness of staging; the former is straightforward, and the
+%% latter is given by a proof-relevant logical relation internally to the presheaf
+%% model. Equivalently, staging and its soundness can be established in a single
+%% step, by gluing along the functor which restricts 2LTT syntax to object-level
+%% typing contexts.
+
+Two-level type theory (2LTT) \cite{twolevel} was originally intended as a tool
+to make metatheoretical reasoning about constructions in homotopy type theory
+more convenient, by internalizing an extensional metatheory in a syntactic
+layer.
+\\\\
+\textbf{2LTT as a two-stage language.} First, we observe that basic variants of
+2LTT formalize two-stage compilation, where the meta-level syntactic fragment contains
+static (compile-time) computations, and \emph{staging} is the algorithm which
+performs all static computation, producing object-theoretic syntax as output. The
+basic rules are the following. There are two universes, $\U_0$ and $\U_1$, where
+$\U_0$ classifies object-level (runtime) types and $\U_1$ classifies meta-level
+(compile time) types. There are three \emph{staging operations}.
+
+\emph{Lifting:} for $A : \U_0$, we have $\Lift A : \U_1$. From the staging point
+of view, $\Lift A$ is the type of metaprograms which compute runtime expressions
+of type $A$.
+
+\emph{Quoting:} for $A : \U_0$ and $t : A$, we have $\qut{t} :\,\Lift A$.  A
+quoted term $\qut{t}$ represents the metaprogram which immediately yields $t$.
+
+\emph{Splicing:} for $A : \U_0$ and $t :\,\Lift A$, we have $\spl t : A$.
+During staging, the metaprogram in the splice is executed, and the resulting
+expression is inserted into the output.
+
+Quoting and splicing are definitional inverses. Also, the above
+operations are the \emph{only} way of crossing between stages; all type formers
+stay within a single stage, and in particular we cannot eliminate from one stage
+to a different one. The staging interpretation of 2LTT remains valid with
+arbitrary assumed type formers. Note that all three operations correspond to
+features in existing staged systems such as MetaOCaml \cite{kiselyov14metaocaml}
+or typed Template Haskell \cite{typed-th}, although none of the existing systems
+support staging with dependent types.
+\\\\
+\textbf{Conservativity as staging.} By conservativity we mean the following.
+There is an embedding morphism $\emb{\blank}$ which maps from the object theory
+to the object-level syntactic fragment of 2LTT. 2LTT is conservative if
+$\emb{\blank}$ is bijective on types and terms,
+i.e.\ $\Ty_{\msf{Obj}}\,\Gamma\ \simeq \Tm_{\msf{2LTT}}\,\emb{\Gamma}\,\U_0$ and
+$\Tm_{\msf{Obj}}\,\Gamma\,A \simeq \Tm_{\msf{2LTT}}\,\emb{\Gamma}\,\emb{A}$.
+
+A staging algorithm consists of functions $\Stage :
+\Tm_{\msf{2LTT}}\,\emb{\Gamma}\,\U_0 \to \Ty_{\msf{Obj}}\,\Gamma$ and $\Stage :
+\Tm_{\msf{2LTT}}\,\emb{\Gamma}\,\emb{A} \to \Tm_{\msf{Obj}}\,\Gamma\,A$. We call
+$\Stage$ \emph{stable} if $\Stage\,\circ\,\emb{\blank} = \id$, and \emph{sound}
+if $\emb{\blank}\,\circ\,\Stage = \id$. Hence, conservativity is the same as
+having a sound and stable staging algorithm. In \cite{twolevel}, only a weak
+form of conservativity is shown, which corresponds to staging without soundness.
+\\\\
+\textbf{Staging by evaluation.} We define $\Stage$ as the evaluation of 2LTT
+types and terms in the presheaf model over the syntactic category of the object
+theory. We call this model $\whobj$. The object-level 2LTT fragment is
+interpreted using sets of types and terms in the object theory. Operationally,
+this yields closed evaluation for the meta-level 2LTT fragment, and we get naive
+weakening for object-theoretic terms. Naive weakening can be inefficient, but in
+practice it can be optimized using De Bruijn levels and delayed variable
+renamings. The same efficiency issue arises in presheaf-based
+normalization-by-evaluation, and the same solution applies there. However,
+staging can be overall more efficient, because meta-level evaluation is closed
+(no free variables occur in values).
+\\\\
+\textbf{Soundness.} Stability of staging follows by straightforward induction on the object theory;
+soundness requires more effort. We define a \emph{restriction} morphism, which
+maps from 2LTT to $\whobj$, restricting the meta-level syntactic fragment so
+that it can only depend on object-level typing contexts, that is, contexts given
+as $\emb{\Gamma}$ for some $\Gamma$. Then, we show soundness of staging by a
+proof-relevant logical relation between the evaluation morphism from 2LTT to
+$\whobj$ and the restriction morphism. We define this logical relation in the
+internal language of $\whobj$, to avoid the deluge of boilerplate for showing
+stability under object-theoretic substitution.
+
+Alternatively, staging together with its soundness can be established in a
+single step, by gluing along the restriction morphism. This interpretation can
+be more compactly defined using synthetic Tait computability
+\cite{sterlingthesis}.
+\\\\
+\textbf{Intensional analysis.} This means analyzing the internal structure of
+object-level terms, i.e.\ values with type $\Lift\,A$. While intensional
+analysis can be often simulated with deeply embedded inductive syntaxes at the
+meta level, it may be more concise and convenient to use native intensional
+analysis features instead. We consider the interpretation of such features in
+the presheaf models.
+
+If the object theory has parallel substitutions as syntactic morphisms,
+then $\whobj$ does not support intensional analysis. For illustration, consider
+decidable equality of $\Lift A$ as an intensional meta-level axiom; this is
+essentially decidability of definitional equality of object terms. This
+axiom does not hold in $\whobj$, because inequality of object-level terms
+is not stable under substitution: inequal variables can be mapped to equal
+terms.
+
+However, we may choose to only have \emph{weakenings} as morphisms in the object
+syntax. In this case, decidable equaity for $\Lift A$ holds in $\whobj$, since
+term inequality is stable under weakening. As a trade-off, if there is no notion
+of substitution in the specification of the object theory, it is not possible to
+specify dependent or polymorphic types there. This is still sufficient for many
+practical use cases, for example when the object theory is simply-typed, in
+which case staging also performs \emph{monomorphization}. In this setup, it makes
+sense to only have weakening in the equational theory of the object theory, but
+no $\beta\eta$-rules and no substitution. The reason is that we do not want
+to equate programs with different performance characteristics, when we do
+staging in order to improve runtime code performance.
+\\\\
+\textbf{Future work.} A major line of future work is to connect 2LTT to existing
+literature on staged compilation. This would involve formalizing existing tricks
+and techniques, such as let-insertion techniques
+\cite{DBLP:journals/corr/abs-2201-00495}, fusion, various binding-time
+improvements and CPS conversions \cite{partial-evaluation}. Another line is
+fleshing out practical details for staging and intensional analysis. In staging,
+a production-strength solution should include some form of caching, to reduce
+code duplication. In intensional analysis, some form of induction or pattern
+matching would be more ergonomic than plain decidability of conversion.
+
+Also, 2LTT could be extended to more general \emph{multimodal}
+\cite{gratzer20multimodal} type theories, where modalities represent morphisms
+between different object-theoretic syntactic categories, in possibly different
+object theories. A simple example is the closed or ``crisp'' modality
+\cite{licata2018internal} which can be used to represent closed object terms.
+
+
+\bibliographystyle{plain}
+\bibliography{references}
+
+\end{document}

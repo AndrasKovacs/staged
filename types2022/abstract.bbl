@@ -1,0 +1,55 @@
+\begin{thebibliography}{1}
+
+\bibitem{twolevel}
+Danil Annenkov, Paolo Capriotti, Nicolai Kraus, and Christian Sattler.
+\newblock Two-level type theory and applications.
+\newblock {\em ArXiv e-prints}, may 2019.
+
+\bibitem{gratzer20multimodal}
+Daniel Gratzer, G.~A. Kavvos, Andreas Nuyts, and Lars Birkedal.
+\newblock Multimodal dependent type theory.
+\newblock In Holger Hermanns, Lijun Zhang, Naoki Kobayashi, and Dale Miller,
+  editors, {\em {LICS} '20: 35th Annual {ACM/IEEE} Symposium on Logic in
+  Computer Science, Saarbr{\"{u}}cken, Germany, July 8-11, 2020}, pages
+  492--506. {ACM}, 2020.
+
+\bibitem{partial-evaluation}
+Neil~D. Jones, Carsten~K. Gomard, and Peter Sestoft.
+\newblock {\em Partial evaluation and automatic program generation}.
+\newblock Prentice Hall international series in computer science. Prentice
+  Hall, 1993.
+
+\bibitem{kiselyov14metaocaml}
+Oleg Kiselyov.
+\newblock The design and implementation of {BER} metaocaml - system
+  description.
+\newblock In Michael Codish and Eijiro Sumii, editors, {\em Functional and
+  Logic Programming - 12th International Symposium, {FLOPS} 2014, Kanazawa,
+  Japan, June 4-6, 2014. Proceedings}, volume 8475 of {\em Lecture Notes in
+  Computer Science}, pages 86--102. Springer, 2014.
+
+\bibitem{DBLP:journals/corr/abs-2201-00495}
+Oleg Kiselyov and Jeremy Yallop.
+\newblock let (rec) insertion without effects, lights or magic.
+\newblock {\em CoRR}, abs/2201.00495, 2022.
+
+\bibitem{licata2018internal}
+Daniel~R. Licata, Ian Orton, Andrew~M. Pitts, and Bas Spitters.
+\newblock Internal universes in models of homotopy type theory.
+\newblock In H{\'{e}}l{\`{e}}ne Kirchner, editor, {\em 3rd International
+  Conference on Formal Structures for Computation and Deduction, {FSCD} 2018,
+  July 9-12, 2018, Oxford, {UK}}, volume 108 of {\em LIPIcs}, pages
+  22:1--22:17. Schloss Dagstuhl - Leibniz-Zentrum f{\"{u}}r Informatik, 2018.
+
+\bibitem{sterlingthesis}
+Jonathan Sterling.
+\newblock {\em First Steps in Synthetic Tait Computability}.
+\newblock PhD thesis, Carnegie Mellon University Pittsburgh, PA, 2021.
+
+\bibitem{typed-th}
+Ningning Xie, Matthew Pickering, Andres L{\"{o}}h, Nicolas Wu, Jeremy Yallop,
+  and Meng Wang.
+\newblock Staging with class: a specification for typed template haskell.
+\newblock {\em Proc. {ACM} Program. Lang.}, 6({POPL}):1--30, 2022.
+
+\end{thebibliography}

@@ -338,7 +338,7 @@ Note the "="! This is elaborated to
 
    let three : Nat0 = <suc0 (suc0 (suc0 zero0))>
 
-and it is spliced in whenever we use in in runtime code.
+and it is spliced in whenever we use it in runtime code.
 -}
 
 

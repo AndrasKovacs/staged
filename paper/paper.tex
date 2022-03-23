@@ -496,7 +496,7 @@ We describe more generally the action of $\Lift$ on type formers. First, $\Lift$
 preserves negative type formers up to definitional isomorphism \cite[Section~2.3]{twolevel}:
 \begin{alignat*}{5}
   \Lift((x : A) \to B\,x) &\simeq ((x : \Lift A) \to \Lift\,(B\,\spl x))\\
-  \Lift ((x : A) \times B) &\simeq ((x : \Lift A) \times \Lift (B\,\spl x))\\
+  \Lift ((x : A) \times B\,x) &\simeq ((x : \Lift A) \times \Lift (B\,\spl x))\\
   \Lift \top_0 &\simeq \top_1
 \end{alignat*}
 For function types, the preservation maps are the following:
@@ -1495,7 +1495,7 @@ switch to the external view temporarily. By Definition \ref{def:restriction}, we
 At the same time, we have $n\rel\,\gamma\rel : \re_{\mbb{N}}\,(\ev\,n\,\gamma) =
 \re\,n\,\gamma'$, hence we know externally that $|\ev\,n|\,\gamma = n[\gamma']$.
 In other words, $n[\gamma']$ is canonical and is obtained as the serialization
-of $\ev\,n\,\gamma$. Therefore, $(\msf{NatElim}\,P\,z\,s\,n))[\gamma']$ is
+of $\ev\,n\,\gamma$. Therefore, $(\msf{NatElim}\,P\,z\,s\,n)[\gamma']$ is
 definitionally equal to $|\ev\,n|\,\gamma$-many applications of $s$ to
 $z$, and we can use $|\ev\,n|\,\gamma$-many applications of $s\rel$ to $z\rel$
 to witness the goal type. The $\beta$-rules for $\msf{NatElim}$ are also respected

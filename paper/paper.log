@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.20 (TeX Live 2019/Debian) (preloaded format=pdflatex 2021.6.7)  3 MAR 2022 08:56
+This is pdfTeX, Version 3.14159265-2.6-1.40.20 (TeX Live 2019/Debian) (preloaded format=pdflatex 2021.6.7)  23 MAR 2022 18:51
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1477,7 +1477,7 @@ Package rerunfilecheck Info: File `paper.out' has not changed.
 Here is how much of TeX's memory you used:
  30886 strings out of 481239
  542043 string characters out of 5920378
- 810284 words of memory out of 5000000
+ 810286 words of memory out of 5000000
  44464 multiletter control sequences out of 15000+600000
  867371 words of font info for 655 fonts, out of 8000000 for 9000
  1302 hyphenation exceptions out of 8191
@@ -1515,7 +1515,7 @@ txexs.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/newtx/txmiaX.pfb></
 usr/share/texlive/texmf-dist/fonts/type1/public/txfonts/txsya.pfb></usr/share/t
 exlive/texmf-dist/fonts/type1/public/txfonts/txsyb.pfb></usr/share/texlive/texm
 f-dist/fonts/type1/public/newtx/txsys.pfb>
-Output written on paper.pdf (27 pages, 745614 bytes).
+Output written on paper.pdf (27 pages, 745605 bytes).
 PDF statistics:
  707 PDF objects out of 1000 (max. 8388607)
  597 compressed objects within 6 object streams

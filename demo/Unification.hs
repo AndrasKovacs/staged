@@ -181,7 +181,7 @@ psubst psub t = case force t of
   VFlex m' sp -> case occ psub of
     Just m | m == m' -> throwIO UnifyError -- occurs check
     _                -> do
-      (!sp, !outer) <- pure $ splitSpine sp
+      (!sp, !outer) <- pure $! splitSpine sp
       (!m', !sp)    <- pruneVFlex psub m' sp
       inner         <- psubstSp psub (Meta m') sp
       psubstSp psub inner outer
@@ -290,6 +290,8 @@ intersect :: Lvl -> MetaVar -> Spine -> Spine -> IO ()
 intersect l m sp sp' = do
   (sp , outer)  <- pure $! splitSpine sp
   (sp', outer') <- pure $! splitSpine sp'
+
+  -- try to intersect if the spines contain no NatElim
   if isSId outer && isSId outer' then do
 
     (m', sp)    <- expandVFlex m sp             -- expand m

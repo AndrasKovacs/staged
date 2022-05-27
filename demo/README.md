@@ -17,7 +17,7 @@ Using `stack`:
 - Run `stack install` in the directory.
 
 Using `cabal`:
-- Install [cabal](https://www.haskell.org/cabal/)
+- Install [cabal](https://www.haskell.org/cabal/).
 - Run `cabal v2-update`.
 - Run `cabal v2-install` in the directory.
 
@@ -30,7 +30,7 @@ install directory is `$HOME/.local/bin`, and the `cabal` one is
 `2ltt` reads a single expression from the standard input, so the typical use case is to pipe a file to `2ltt`, as
 in `cat file.2ltt | 2ltt COMMAND`. The following commands are available:
 - `elab`: prints elaboration output. This prints all inferred staging operations, but does not print anything inserted by general inference, namely type annotations, implicit arguments and implicit lambdas.
-- `elab-verbose`: prints elaboration output, showing almost all data inserted by elaboration. It also lists all metavariables and their solutions in the preface of the output.
+- `elab-verbose`: prints elaboration output, showing almost all data inserted by elaboration. It also lists all metavariables and their solutions in the preface of the output. Metavariables that are inserted in the code are displayed as `?x(..)`, where `x` is a natural number denoting a metavariable, and `(..)` is a shorthand for the application of `x` to all bound variables in the local scope.
 - `stage`: prints staging output, doesn't show inserted implicits and annotations.
 - `stage-verbose`: prints staging output, shows inserted implicits and annotations.
 - `nf`: prints the verbose normal form of the input program, together with its type.
@@ -63,3 +63,22 @@ type formers (without dependent elimination). We can also encode unit and sigma 
 - Staging ([Staging.hs](Staging.hs)) follows the optimization notes in Section 4.4. of the paper. Meta-level evaluation is purely syntax-directed and closed, and we additionally erase types during evaluation (replacing them with a dummy value), because they are irrelevant in staging output. Object-level evaluation is simply an implementation of delayed variable renamings, using closures and De Bruijn levels.
 - Stages must be unambiguous in source programs; there are no stage metavariables nor stage unification in the implementation. However, this does not seem to make user experience any worse. I had previous prototypes with stage metavariables, and it turned out to be an unnecessary and rarely useful complication. The main point of stage ambiguity is actually the `let`-definitions, and I have found that if `let`-definitions always have explicit stages, then the rest of inference becomes highly effective. In summary, we always want to disambiguate `let`, but if we do so, stage metavariables are unnecessary.
 - We use a combination of bidirectional elaboration rules and coercive subtyping to infer staging operations. Bidirectional elaboration can go under quotes, or insert a quote when we are checking a non-quoted term with a lifted type. Coercive subtyping uses `A <= Lift A`, `Lift A <= A` and `U0 <= U1` together with a contravariant-covariant rule for functions. We also try to eliminate unecessary coercions; for example the naive `(Nat0 -> Nat0) <= (Nat0 -> Nat0)` inserts an unnecessary eta-expansion, but our version keeps track of trivial coercions, and omits them in elaboration output.
+
+### Summary of source files
+
+- [Common.hs](Common.hs): miscellaneous definitions, names, De Bruijn indices/levels.
+- [Cxt.hs](Cxt.hs): the elaboration context + ways to add things to the context.
+- [Elaboration.hs](Elaboration.hs): definitions of bidirectional elaboration and subtyping coercions.
+- [Errors.hs](Errors.hs): the type of errors and the corresponding pretty printing function.
+- [Evaluation.hs](Evaluation.hs): contains the evaluator used in *conversion checking*, and also the quotation to normal forms and the "zonking" operation which inlines solved metas. Evaluation computes all redexes (both meta- and object-level redexes).
+- [Main.hs](Main.hs): main function, command line option processing.
+- [Metacontext.hs](Metacontext.hs): this contains a *mutable* top-level state for metavariables, as an `IntMap` in an `IORef`. During unification this
+  state can be modified. Each `2ltt` command performs a single run of elaboration, so we don't have to re-initialize the state at any point.
+- [Parser.hs](Parser.hs): the parser.
+- [Presyntax.hs](Presyntax.hs): defines the type of raw terms, which is the output of parsing and the input of elaboration.
+- [Pretty.hs](Pretty.hs): pretty printing.
+- [Staging.hs](Staging.hs): the staging algorithm.
+- [Syntax.hs](Syntax.hs): the definition of core syntax.
+- [Tests.hs](Tests.hs): some tests for elaboration that I used to weed out inference/subtyping bugs.
+- [Unification.hs](Unification.hs): unification.
+- [Value.hs](Value.hs): the type of semantic values used in unification and evaluation.

@@ -2,7 +2,7 @@
 %%% Do NOT edit. File created by BibTeX with style
 %%% ACM-Reference-Format-Journals [18-Jan-2012].
 
-\begin{thebibliography}{44}
+\begin{thebibliography}{48}
 
 %%% ====================================================================
 %%% NOTE TO THE USER: you can override these defaults by providing
@@ -67,26 +67,38 @@
 \showDOI{\tempurl}
 
 
-\bibitem[Altenkirch et~al\mbox{.}(1995)]%
-        {altenkirch1995categorical}
-\bibfield{author}{\bibinfo{person}{Thorsten Altenkirch},
-  \bibinfo{person}{Martin Hofmann}, {and} \bibinfo{person}{Thomas Streicher}.}
-  \bibinfo{year}{1995}\natexlab{}.
-\newblock \showarticletitle{Categorical reconstruction of a reduction free
-  normalization proof}. In \bibinfo{booktitle}{\emph{Category Theory and
-  Computer Science}}. Springer, \bibinfo{pages}{182--199}.
+\bibitem[Abel et~al\mbox{.}(2018)]%
+        {decidableconv}
+\bibfield{author}{\bibinfo{person}{Andreas Abel}, \bibinfo{person}{Joakim
+  {\"{O}}hman}, {and} \bibinfo{person}{Andrea Vezzosi}.}
+  \bibinfo{year}{2018}\natexlab{}.
+\newblock \showarticletitle{Decidability of conversion for type theory in type
+  theory}.
+\newblock \bibinfo{journal}{\emph{Proc. {ACM} Program. Lang.}}
+  \bibinfo{volume}{2}, \bibinfo{number}{{POPL}} (\bibinfo{year}{2018}),
+  \bibinfo{pages}{23:1--23:29}.
 \newblock
+\urldef\tempurl%
+\url{https://doi.org/10.1145/3158111}
+\showDOI{\tempurl}
 
 
 \bibitem[Altenkirch and Kaposi(2016)]%
-        {altenkirch2016normalisation}
+        {ttintt}
 \bibfield{author}{\bibinfo{person}{Thorsten Altenkirch} {and}
   \bibinfo{person}{Ambrus Kaposi}.} \bibinfo{year}{2016}\natexlab{}.
-\newblock \showarticletitle{Normalisation by evaluation for dependent types}.
-  In \bibinfo{booktitle}{\emph{LIPIcs-Leibniz International Proceedings in
-  Informatics}}, Vol.~\bibinfo{volume}{52}. Schloss Dagstuhl-Leibniz-Zentrum
-  fuer Informatik.
+\newblock \showarticletitle{Type theory in type theory using quotient inductive
+  types}. In \bibinfo{booktitle}{\emph{Proceedings of the 43rd Annual {ACM}
+  {SIGPLAN-SIGACT} Symposium on Principles of Programming Languages, {POPL}
+  2016, St. Petersburg, FL, USA, January 20 - 22, 2016}},
+  \bibfield{editor}{\bibinfo{person}{Rastislav Bodik} {and}
+  \bibinfo{person}{Rupak Majumdar}} (Eds.). \bibinfo{publisher}{{ACM}},
+  \bibinfo{pages}{18--29}.
 \newblock
+\showISBNx{978-1-4503-3549-2}
+\urldef\tempurl%
+\url{https://doi.org/10.1145/2837614.2837638}
+\showDOI{\tempurl}
 
 
 \bibitem[Altenkirch and Kaposi(2017)]%
@@ -170,6 +182,23 @@
 \newblock \bibinfo{journal}{\emph{arXiv preprint arXiv:1702.04912}}
   (\bibinfo{year}{2017}).
 \newblock
+
+
+\bibitem[Castellan et~al\mbox{.}(2019)]%
+        {cwfs}
+\bibfield{author}{\bibinfo{person}{Simon Castellan}, \bibinfo{person}{Pierre
+  Clairambault}, {and} \bibinfo{person}{Peter Dybjer}.}
+  \bibinfo{year}{2019}\natexlab{}.
+\newblock \showarticletitle{Categories with Families: Unityped, Simply Typed,
+  and Dependently Typed}.
+\newblock \bibinfo{journal}{\emph{CoRR}}  \bibinfo{volume}{abs/1904.00827}
+  (\bibinfo{year}{2019}).
+\newblock
+\showeprint[arXiv]{1904.00827}
+\urldef\tempurl%
+\url{http://arxiv.org/abs/1904.00827}
+\showURL{%
+\tempurl}
 
 
 \bibitem[Cavallo et~al\mbox{.}(2020)]%
@@ -274,6 +303,19 @@
 \showDOI{\tempurl}
 
 
+\bibitem[Davies and Pfenning(2001)]%
+        {DBLP:journals/jacm/DaviesP01}
+\bibfield{author}{\bibinfo{person}{Rowan Davies} {and} \bibinfo{person}{Frank
+  Pfenning}.} \bibinfo{year}{2001}\natexlab{}.
+\newblock \showarticletitle{A modal analysis of staged computation}.
+\newblock \bibinfo{journal}{\emph{J. {ACM}}} \bibinfo{volume}{48},
+  \bibinfo{number}{3} (\bibinfo{year}{2001}), \bibinfo{pages}{555--604}.
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.1145/382780.382785}
+\showDOI{\tempurl}
+
+
 \bibitem[developers(2022)]%
         {agdadocs}
 \bibfield{author}{\bibinfo{person}{Agda developers}.}
@@ -298,20 +340,16 @@
 \newblock
 
 
-\bibitem[Dybjer(1995)]%
-        {Dybjer96internaltype}
-\bibfield{author}{\bibinfo{person}{Peter Dybjer}.}
-  \bibinfo{year}{1995}\natexlab{}.
-\newblock \showarticletitle{Internal Type Theory}. In
-  \bibinfo{booktitle}{\emph{Types for Proofs and Programs, International
-  Workshop TYPES'95, Torino, Italy, June 5-8, 1995, Selected Papers}}
-  \emph{(\bibinfo{series}{Lecture Notes in Computer Science},
-  Vol.~\bibinfo{volume}{1158})}, \bibfield{editor}{\bibinfo{person}{Stefano
-  Berardi} {and} \bibinfo{person}{Mario Coppo}} (Eds.).
-  \bibinfo{publisher}{Springer}, \bibinfo{pages}{120--134}.
+\bibitem[Dunfield and Krishnaswami(2021)]%
+        {DBLP:journals/csur/DunfieldK21}
+\bibfield{author}{\bibinfo{person}{Jana Dunfield} {and} \bibinfo{person}{Neel
+  Krishnaswami}.} \bibinfo{year}{2021}\natexlab{}.
+\newblock \showarticletitle{Bidirectional Typing}.
+\newblock \bibinfo{journal}{\emph{{ACM} Comput. Surv.}} \bibinfo{volume}{54},
+  \bibinfo{number}{5} (\bibinfo{year}{2021}), \bibinfo{pages}{98:1--98:38}.
 \newblock
 \urldef\tempurl%
-\url{https://doi.org/10.1007/3-540-61780-9\_66}
+\url{https://doi.org/10.1145/3450952}
 \showDOI{\tempurl}
 
 
@@ -346,6 +384,17 @@
 \urldef\tempurl%
 \url{https://doi.org/10.1145/3373718.3394736}
 \showDOI{\tempurl}
+
+
+\bibitem[Hofmann(1995)]%
+        {hofmann95extensional}
+\bibfield{author}{\bibinfo{person}{Martin Hofmann}.}
+  \bibinfo{year}{1995}\natexlab{}.
+\newblock \bibinfo{booktitle}{\emph{Extensional concepts in intensional type
+  theory}}.
+\newblock \bibinfo{publisher}{University of Edinburgh, Department of Computer
+  Science}.
+\newblock
 
 
 \bibitem[Hofmann(1997)]%
@@ -549,19 +598,6 @@
 \showDOI{\tempurl}
 
 
-\bibitem[Palmgren and Vickers(2007)]%
-        {partialhorn}
-\bibfield{author}{\bibinfo{person}{Erik Palmgren} {and}
-  \bibinfo{person}{Steven~J. Vickers}.} \bibinfo{year}{2007}\natexlab{}.
-\newblock \showarticletitle{Partial Horn logic and cartesian categories}.
-\newblock \bibinfo{journal}{\emph{Ann. Pure Appl. Log.}} \bibinfo{volume}{145},
-  \bibinfo{number}{3} (\bibinfo{year}{2007}), \bibinfo{pages}{314--353}.
-\newblock
-\urldef\tempurl%
-\url{https://doi.org/10.1016/j.apal.2006.10.001}
-\showDOI{\tempurl}
-
-
 \bibitem[P{\'{e}}drot and Tabareau(2020)]%
         {fire-triangle}
 \bibfield{author}{\bibinfo{person}{Pierre{-}Marie P{\'{e}}drot} {and}
@@ -574,6 +610,20 @@
 \newblock
 \urldef\tempurl%
 \url{https://doi.org/10.1145/3371126}
+\showDOI{\tempurl}
+
+
+\bibitem[Pujet and Tabareau(2022)]%
+        {DBLP:journals/pacmpl/PujetT22}
+\bibfield{author}{\bibinfo{person}{Lo{\"{\i}}c Pujet} {and}
+  \bibinfo{person}{Nicolas Tabareau}.} \bibinfo{year}{2022}\natexlab{}.
+\newblock \showarticletitle{Observational equality: now for good}.
+\newblock \bibinfo{journal}{\emph{Proc. {ACM} Program. Lang.}}
+  \bibinfo{volume}{6}, \bibinfo{number}{{POPL}} (\bibinfo{year}{2022}),
+  \bibinfo{pages}{1--27}.
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.1145/3498693}
 \showDOI{\tempurl}
 
 
@@ -640,6 +690,24 @@
 \shownote{Unpublished note}.
 
 
+\bibitem[Winterhalter et~al\mbox{.}(2019)]%
+        {DBLP:conf/cpp/WinterhalterST19}
+\bibfield{author}{\bibinfo{person}{Th{\'{e}}o Winterhalter},
+  \bibinfo{person}{Matthieu Sozeau}, {and} \bibinfo{person}{Nicolas Tabareau}.}
+  \bibinfo{year}{2019}\natexlab{}.
+\newblock \showarticletitle{Eliminating reflection from type theory}. In
+  \bibinfo{booktitle}{\emph{Proceedings of the 8th {ACM} {SIGPLAN}
+  International Conference on Certified Programs and Proofs, {CPP} 2019,
+  Cascais, Portugal, January 14-15, 2019}},
+  \bibfield{editor}{\bibinfo{person}{Assia Mahboubi} {and}
+  \bibinfo{person}{Magnus~O. Myreen}} (Eds.). \bibinfo{publisher}{{ACM}},
+  \bibinfo{pages}{91--103}.
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.1145/3293880.3294095}
+\showDOI{\tempurl}
+
+
 \bibitem[Xie et~al\mbox{.}(2022)]%
         {typed-th}
 \bibfield{author}{\bibinfo{person}{Ningning Xie}, \bibinfo{person}{Matthew
@@ -647,7 +715,7 @@
   \bibinfo{person}{Jeremy Yallop}, {and} \bibinfo{person}{Meng Wang}.}
   \bibinfo{year}{2022}\natexlab{}.
 \newblock \showarticletitle{Staging with class: a specification for typed
-  template Haskell}.
+  {Template} {Haskell}}.
 \newblock \bibinfo{journal}{\emph{Proc. {ACM} Program. Lang.}}
   \bibinfo{volume}{6}, \bibinfo{number}{{POPL}} (\bibinfo{year}{2022}),
   \bibinfo{pages}{1--30}.

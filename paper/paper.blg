@@ -12,11 +12,7 @@ Reallocated global_strs (elt_size=200001) to 20 items from 10.
 Reallocated glb_str_end (elt_size=4) to 20 items from 10.
 Reallocated singl_function (elt_size=4) to 100 items from 50.
 Warning--page numbers missing in both pages and numpages fields in modulartc
-Warning--empty publisher in altenkirch1995categorical
-Warning--empty address in altenkirch1995categorical
-Warning--empty publisher in altenkirch2016normalisation
-Warning--empty address in altenkirch2016normalisation
-Warning--page numbers missing in both pages and numpages fields in altenkirch2016normalisation
+Warning--empty address in ttintt
 Warning--page numbers missing in both pages and numpages fields in kaposinbe
 Warning--no number and no volume in twolevel
 Warning--page numbers missing in both pages and numpages fields in twolevel
@@ -25,11 +21,12 @@ Warning--page numbers missing in both pages and numpages fields in bocquet2021re
 Warning--empty address in scrap-your-inefficient-engine
 Warning--no number and no volume in capriotti2017models
 Warning--page numbers missing in both pages and numpages fields in capriotti2017models
+Warning--page numbers missing in both pages and numpages fields in cwfs
 Warning--empty address in DBLP:conf/csl/CavalloMS20
 Warning--empty address in stream-fusion
-Warning--empty address in Dybjer96internaltype
 Warning--empty address in short-cut
 Warning--empty address in gratzer20multimodal
+Warning--empty address in hofmann95extensional
 Warning--empty address in Hofmann97syntaxand
 Warning--empty address in partial-evaluation
 Warning--empty address in gluing
@@ -40,45 +37,46 @@ Warning--empty address in licata2018internal
 Warning--empty address in loh11generic
 Warning--empty address in maclane98categories
 Warning--empty address in cubicalnbe
-You've used 44 entries,
+Warning--empty address in DBLP:conf/cpp/WinterhalterST19
+You've used 48 entries,
             5981 wiz_defined-function locations,
-            1817 strings with 28182 characters,
-and the built_in function-call counts, 49786 in all, are:
-= -- 6813
-> -- 1323
+            1850 strings with 29203 characters,
+and the built_in function-call counts, 54413 in all, are:
+= -- 7578
+> -- 1455
 < -- 0
-+ -- 438
-- -- 483
-* -- 3325
-:= -- 4623
-add.period$ -- 227
-call.type$ -- 44
-change.case$ -- 276
-chr.to.int$ -- 43
-cite$ -- 73
-duplicate$ -- 4470
-empty$ -- 3148
-format.name$ -- 606
-if$ -- 12361
++ -- 484
+- -- 531
+* -- 3650
+:= -- 5047
+add.period$ -- 248
+call.type$ -- 48
+change.case$ -- 302
+chr.to.int$ -- 47
+cite$ -- 75
+duplicate$ -- 4825
+empty$ -- 3403
+format.name$ -- 670
+if$ -- 13567
 int.to.chr$ -- 3
 int.to.str$ -- 1
-missing$ -- 168
-newline$ -- 486
-num.names$ -- 331
-pop$ -- 1602
+missing$ -- 181
+newline$ -- 537
+num.names$ -- 361
+pop$ -- 1711
 preamble$ -- 1
-purify$ -- 625
+purify$ -- 683
 quote$ -- 0
-skip$ -- 1629
+skip$ -- 1746
 stack$ -- 0
-substring$ -- 3888
-swap$ -- 439
+substring$ -- 4252
+swap$ -- 477
 text.length$ -- 0
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 993
-warning$ -- 29
-while$ -- 340
+type$ -- 1042
+warning$ -- 27
+while$ -- 370
 width$ -- 0
-write$ -- 998
-(There were 29 warnings)
+write$ -- 1091
+(There were 27 warnings)

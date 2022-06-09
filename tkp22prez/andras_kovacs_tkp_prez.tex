@@ -1,0 +1,436 @@
+%% build: latexmk -pdf -pvc prez.tex
+
+\documentclass[dvipsnames]{beamer}
+\usetheme{Madrid}
+
+%% kill footline
+\setbeamertemplate{footline}[frame number]{}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}{}
+
+%% bibliography
+\bibliographystyle{alpha}
+\setbeamerfont{bibliography item}{size=\footnotesize}
+\setbeamerfont{bibliography entry author}{size=\footnotesize}
+\setbeamerfont{bibliography entry title}{size=\footnotesize}
+\setbeamerfont{bibliography entry location}{size=\footnotesize}
+\setbeamerfont{bibliography entry note}{size=\footnotesize}
+\setbeamertemplate{bibliography item}{}
+
+%% kill ball enumeration
+\setbeamertemplate{enumerate items}[circle]
+\setbeamertemplate{section in toc}[circle]
+
+%% kill block shadows
+\setbeamertemplate{blocks}[rounded][shadow=false]
+\setbeamertemplate{title page}[default][colsep=-4bp,rounded=true]
+
+%% kill ball itemize
+\setbeamertemplate{itemize items}[circle]
+
+%% --------------------------------------------------------------------------------
+
+\usepackage[utf8]{inputenc}
+%% \usepackage[hidelinks]{hyperref}
+\usepackage{amsmath}
+\usepackage{cite}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{amsfonts}
+\usepackage{mathpartir}
+\usepackage{scalerel}
+\usepackage{stmaryrd}
+\usepackage{bm}
+\usepackage{graphicx}
+
+%% --------------------------------------------------------------------------------
+
+%% HoTT style composition
+\makeatletter
+\DeclareRobustCommand{\sqcdot}{\mathbin{\mathpalette\morphic@sqcdot\relax}}
+\newcommand{\morphic@sqcdot}[2]{%
+  \sbox\z@{$\m@th#1\centerdot$}%
+  \ht\z@=.33333\ht\z@
+  \vcenter{\box\z@}%
+}
+\makeatother
+
+\newcommand{\mi}[1]{\mathit{#1}}
+\newcommand{\ms}[1]{\mathsf{#1}}
+\newcommand{\mbb}[1]{\mathbb{#1}}
+\newcommand{\mbf}[1]{\mathbf{#1}}
+\newcommand{\bs}[1]{\boldsymbol{#1}}
+\newcommand{\ap}{\ms{ap}}
+\newcommand{\apd}{\ms{apd}}
+\newcommand{\tr}{\ms{tr}}
+\newcommand{\happly}{\ms{happly}}
+\newcommand{\funext}{\ms{funext}}
+\newcommand{\toind}{\to^{\ms{int}}}
+
+\newcommand{\Tys}{\ms{Ty_{sig}}}
+\newcommand{\Tms}{\ms{Tm_{sig}}}
+\newcommand{\Us}{\ms{U_{sig}}}
+\newcommand{\Els}{\ms{El_{sig}}}
+
+\newcommand{\Ix}{\mi{Ix}}
+
+\newcommand{\zero}{\ms{zero}}
+\newcommand{\suc}{\ms{suc}}
+\newcommand{\J}{\ms{J}}
+\newcommand{\UIP}{\ms{UIP}}
+
+\newcommand{\refl}{\mathsf{refl}}
+\newcommand{\reflect}{\mathsf{reflect}}
+\newcommand{\Reflect}{\mathsf{Reflect}}
+\newcommand{\id}{\mathsf{id}}
+\newcommand{\Con}{\mathsf{Con}}
+\newcommand{\Sub}{\mathsf{Sub}}
+\newcommand{\Tm}{\mathsf{Tm}}
+\newcommand{\Ty}{\mathsf{Ty}}
+\newcommand{\U}{\mathsf{U}}
+\newcommand{\El}{\mathsf{El}}
+\newcommand{\Id}{\mathsf{Id}}
+\newcommand{\ID}{\mathsf{ID}}
+\newcommand{\proj}{\mathsf{proj}}
+\renewcommand{\tt}{\mathsf{tt}}
+\newcommand{\blank}{\mathord{\hspace{1pt}\text{--}\hspace{1pt}}}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\Set}{\mathsf{Set}}
+\newcommand{\Type}{\mathsf{Type}}
+\newcommand{\Sort}{\mathsf{Sort}}
+
+\newcommand{\ToS}{\mathsf{ToS}}
+\newcommand{\ext}{\triangleright}
+\newcommand{\emptycon}{\scaleobj{.75}\bullet}
+
+\newcommand{\Pii}{\Pi}
+\newcommand{\funi}{\Rightarrow}
+\newcommand{\appi}{\mathsf{app}}
+\newcommand{\lami}{\mathsf{lam}}
+
+\newcommand{\fune}{\Rightarrow^{\ms{Ext}}}
+\newcommand{\Pie}{\Pi^{\mathsf{Ext}}}
+\newcommand{\appe}{\mathsf{app^{Ext}}}
+\newcommand{\lame}{\mathsf{lam^{Ext}}}
+\newcommand{\toe}{\to^{\ms{Ext}}}
+\newcommand{\arre}{\Rightarrow^{\mathsf{Ext}}}
+\newcommand{\lambdae}{\lambda^{\ms{Ext}}}
+
+\newcommand{\Piinf}{\Pi^{\mathsf{ext}}}
+\newcommand{\appinf}{\mathsf{app^{ext}}}
+\newcommand{\laminf}{\mathsf{lam^{ext}}}
+\newcommand{\laminfprime}{\mathsf{lam^{ext'}}}
+\newcommand{\toinf}{\to^{\ms{ext}}}
+\newcommand{\lambdainf}{\lambda^{\ms{ext}}}
+\newcommand{\arrinf}{\Rightarrow^{\mathsf{ext}}}
+\newcommand{\bPiinf}{\bs{\Piinf}}
+
+\newcommand{\appitt}{\mathop{{\scriptstyle @}}}
+\newcommand{\Refl}{\mathsf{Refl}}
+\newcommand{\IdU}{\mathsf{IdU}}
+\newcommand{\ReflU}{\mathsf{ReflU}}
+\newcommand{\Sig}{\mathsf{Sig}}
+\newcommand{\ToSSig}{\mathsf{ToSSig}}
+\newcommand{\Subtype}{\mathsf{Subtype}}
+\newcommand{\subtype}{\mathsf{subtype}}
+\newcommand{\NatSig}{\mathsf{NatSig}}
+\newcommand{\Sg}{\Sigma}
+\newcommand{\flcwf}{\mathsf{flcwf}}
+\newcommand{\SigTy}{\mathsf{SigTy}}
+\newcommand{\SigTm}{\mathsf{SigTm}}
+\newcommand{\SigU}{\mathsf{SigU}}
+\newcommand{\tm}{\ms{tm}}
+\newcommand{\ty}{\ms{ty}}
+
+\newcommand{\Kfam}{\mathsf{K}}
+\newcommand{\lamK}{\mathsf{lam}_{\K}}
+\newcommand{\appK}{\mathsf{app}_{\K}}
+
+\newcommand{\p}{\mathsf{p}}
+\newcommand{\q}{\mathsf{q}}
+\newcommand{\K}{\mathsf{K}}
+\newcommand{\A}{\mathsf{A}}
+\newcommand{\D}{\mathsf{D}}
+\renewcommand{\S}{\mathsf{S}}
+\newcommand{\arri}{\Rightarrow}
+\newcommand{\syn}{\mathsf{syn}}
+\newcommand{\SynSig}{\mathsf{SynSig}}
+\newcommand{\bCon}{\bs{\Con}}
+\newcommand{\bTy}{\bs{\Ty}}
+\newcommand{\bSub}{\bs{\Sub}}
+\newcommand{\bTm}{\bs{\Tm}}
+\newcommand{\bGamma}{\bs{\Gamma}}
+\newcommand{\bDelta}{\bs{\Delta}}
+\newcommand{\bsigma}{\bs{\sigma}}
+\newcommand{\bdelta}{\bs{\delta}}
+\newcommand{\bepsilon}{\bs{\epsilon}}
+\newcommand{\bt}{\bs{t}}
+\newcommand{\bu}{\bs{u}}
+\newcommand{\bA}{\bs{A}}
+\newcommand{\ba}{\bs{a}}
+\newcommand{\bb}{\bs{b}}
+\newcommand{\bB}{\bs{B}}
+\newcommand{\bid}{\bs{\id}}
+\newcommand{\bemptycon}{\scaleobj{.75}{\bs{\bullet}}}
+\newcommand{\bSet}{\bs{\Set}}
+\newcommand{\bU}{\bs{\U}}
+\newcommand{\bEl}{\bs{\El}}
+\newcommand{\bPii}{\bs{\Pi}}
+\newcommand{\bPie}{\bs{\Pie}}
+\newcommand{\bappi}{\bs{\mathsf{app}}}
+\newcommand{\blami}{\bs{\mathsf{lam}}}
+\newcommand{\bId}{\bs{\Id}}
+\newcommand{\bM}{\bs{\mathsf{M}}}
+\newcommand{\bT}{\bs{\mathsf{T}}}
+\newcommand{\bS}{\bs{\mathsf{S}}}
+\newcommand{\bP}{\bs{\mathsf{P}}}
+\newcommand{\bD}{\bs{\mathsf{D}}}
+\newcommand{\bI}{\bs{\mathsf{I}}}
+\newcommand{\bK}{\bs{\mathsf{K}}}
+
+\newcommand{\ul}[1]{\underline{#1}}
+\newcommand{\ulGamma}{\ul{\Gamma}}
+\newcommand{\ulDelta}{\ul{\Delta}}
+\newcommand{\ulgamma}{\ul{\gamma}}
+\newcommand{\ulOmega}{\ul{\Omega}}
+\newcommand{\uldelta}{\ul{\delta}}
+\newcommand{\ulsigma}{\ul{\sigma}}
+\newcommand{\ulnu}{\ul{\nu}}
+\newcommand{\ulepsilon}{\ul{\epsilon}}
+\newcommand{\ulemptycon}{\ul{\emptycon}}
+\newcommand{\ult}{\ul{t}}
+\newcommand{\ulu}{\ul{u}}
+\newcommand{\ulA}{\ul{A}}
+\newcommand{\ula}{\ul{a}}
+\newcommand{\ulB}{\ul{B}}
+\newcommand{\tos}{\mathsf{tos}}
+\newcommand{\coe}{\mathsf{coe}}
+\newcommand{\coh}{\mathsf{coh}}
+\newcommand{\llb}{\llbracket}
+\newcommand{\rrb}{\rrbracket}
+\newcommand{\sem}[1]{\llb#1\rrb}
+
+\newcommand{\Var}{\ms{Var}}
+\newcommand{\var}{\ms{var}}
+\newcommand{\app}{\ms{app}}
+\newcommand{\vz}{\ms{vz}}
+\newcommand{\vs}{\ms{vs}}
+\newcommand{\Alg}{\ms{Alg}}
+\newcommand{\Mor}{\ms{Mor}}
+\newcommand{\DispAlg}{\ms{DispAlg}}
+\newcommand{\Section}{\ms{Section}}
+\newcommand{\Initial}{\ms{Initial}}
+\newcommand{\Inductive}{\ms{Inductive}}
+\newcommand{\TmAlg}{\ms{TmAlg}}
+\newcommand{\Rec}{\ms{Rec}}
+\newcommand{\Ind}{\ms{Ind}}
+\newcommand{\Obj}{\ms{Obj}}
+\newcommand{\Nat}{\ms{Nat}}
+\newcommand{\Bool}{\ms{Bool}}
+\newcommand{\mbbC}{\mbb{C}}
+\newcommand{\hmbbC}{\hat{\mbb{C}}}
+\newcommand{\mbbD}{\mbb{D}}
+\newcommand{\lam}{\ms{lam}}
+
+\newcommand{\true}{\ms{true}}
+\newcommand{\false}{\ms{false}}
+\newcommand{\up}{\uparrow}
+\newcommand{\down}{\downarrow}
+
+\newcommand{\lab}{\langle}
+\newcommand{\rab}{\rangle}
+\newcommand{\defn}{:\equiv}
+\newcommand{\yon}{\ms{y}}
+\newcommand{\lub}{\,\sqcup\,}
+\newcommand{\bmsA}{\bs{\ms{A}}}
+
+\newcommand{\vsp}{\vspace{1em}}
+
+\newcommand{\Lift}{{\Uparrow}}
+\newcommand{\spl}{{\sim}}
+\newcommand{\qut}[1]{\langle #1\rangle}
+
+
+%% --------------------------------------------------------------------------------
+
+\title{Staged Compilation With Dependent Types}
+\author{András Kovács}
+\institute{Eötvös Loránd University}
+\date{26 May 2022 \\ \vspace{0.5em}\footnotesize{Application Domain Specific Highly Reliable IT Solutions - Thematic Excellence Project - Closing Conference}}
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}{Metaprogramming \& code generation}
+
+\textbf{Metaprograms} are programs which generate program code.
+\vsp
+\pause
+
+In any usual language, we can write programs which output code (as strings).
+\vsp
+\pause
+
+However, this has serious \alert{safety} and \alert{ergonomics} drawbacks.
+\begin{itemize}
+  \item The well-typing and well-formedness of the output is \alert{not guaranteed}.
+  \item We have to work directly with syntax trees and/or strings.
+\end{itemize}
+\vsp
+\pause
+
+\textbf{Staged compilation} (two-stage):
+\begin{itemize}
+ \item Users work in a language with structured metaprogramming features.
+ \item \textbf{Staging} means running metaprograms and extracting code output.
+ \item The compiler further proccesses the staging output.
+\end{itemize}
+\vspace{0.5em}
+\pause
+
+\begin{exampleblock}{}Examples: \emph{templates}, \emph{generics}, \emph{macros}.
+\end{exampleblock}
+
+\end{frame}
+
+\begin{frame}{Contribution}
+
+A highly general \& expressive framework for staged compilation.
+\vsp
+\pause
+
+Based on \textbf{two-level type theory} (2LTT), which was originally intended
+as a mathematical language of synthetic homotopy theory.\footnote{Annekov, Capriotti, Kraus, Sattler: \emph{Two-Level Type Theory and Applications.}}
+\vsp
+\pause
+
+\begin{itemize}
+  \item The first staged system to support \emph{dependent types}.
+  \item Generalizes a wide range of existing typed metaprogramming systems.
+  \item Has an efficient staging implementation + proof of soundness.
+\end{itemize}
+\vsp
+\pause
+
+Draft paper \emph{``Staged Compilation With Two-Level Type Theory''} by AK,
+conditionally accepted at ICFP 2022.
+\end{frame}
+
+
+\begin{frame}{2LTT language overview}
+
+A dependent type theory + extra staging features.
+\pause
+
+\begin{block}{Staging features}
+  \begin{enumerate}
+  \item $\Type_0$ is the type of \textbf{runtime} (object-level) types. Object-level
+    types \& their values will appear in generated code.
+  \pause
+  \item $\Type_1$ is the type of \textbf{compile time} (meta-level) types. Meta-level
+    types \& their values only appear during compilation.
+  \pause
+  \item For $A : \Type_0$ we have $\Lift A : \Type_1$. This is the \textbf{type of metaprograms
+    which generate code with type $A$}.
+  \pause
+  \item For $A : \Type_0$ and $t : A$, we have $\qut{t} : \Lift A$. This is the \textbf{metaprogram   which returns $t$ as an expression (``quote'')}.
+  \pause
+  \item For $t : \Lift A$, we have $\spl{t} : A$. This \textbf{inserts the result of a metaprogram into an expression (``splice'')}.
+  \pause
+  \item These are the \textbf{only ways} to convert between $\Type_0$ and $\Type_1$.
+  \end{enumerate}
+\end{block}
+\end{frame}
+
+
+\begin{frame}{Examples (1)}
+ We use Agda-like syntax.
+
+
+\begin{exampleblock}{Runtime identity function}
+  \vspace{-1.2em}
+  \begin{alignat*}{3}
+    & \ms{id_0} : (A : \Type_0) \to A \to A\\
+    & \ms{id_0}\,A\,x = x
+  \end{alignat*}
+\end{exampleblock}
+\pause
+
+\begin{exampleblock}{Compile-time identity function}
+  \vspace{-1.2em}
+  \begin{alignat*}{3}
+    & \ms{id_1} : (A : \Type_1) \to A \to A\\
+    & \ms{id_1}\,A\,x = x
+  \end{alignat*}
+\end{exampleblock}
+\pause
+
+Assume $\Bool_0 : \Type_0$ and $\true_0 : \Bool_0$. Now, $\id_1$ can be used on
+\emph{expressions} as well:
+
+\begin{exampleblock}{}
+  \vspace{-1.2em}
+  \begin{alignat*}{3}
+    & \ms{id_1}\,(\Lift \Bool)\,\qut{\true} : \Lift\,\Bool
+  \end{alignat*}
+\end{exampleblock}
+
+This becomes simply $\qut{\true}$ after staging.
+
+\end{frame}
+
+\begin{frame}{Examples (2)}
+
+\begin{exampleblock}{Inlined $\ms{map}$ function}
+\vspace{-1.2em}
+  \begin{alignat*}{3}
+    & \ms{map} : (A\,B : \Lift \Type_0) \to (\Lift\,\spl A \to \Lift\,\spl B)
+                 \to \Lift (\ms{List}_0\,\,\spl A) \to \Lift (\ms{List}_0\,\spl B)\\
+    & \ms{map}\,\ms{A}\,\ms{B}\,\ms{f}\,\ms{as} = \\
+    & \hspace{3em} \langle \ms{let}\,\ms{go}\,[] \hspace{2.4em}= []\\
+    & \hspace{4.6em} \ms{go}\,(\ms{a}:\ms{as}) = \spl{(\ms{f}\,\qut{\ms{a}})} : \ms{go}\,\ms{as}\\
+    & \hspace{3.4em}\ms{in}\,\hspace{0.2em}\ms{go}\,\spl{\ms{as}}\rangle
+  \end{alignat*}
+\end{exampleblock}
+\pause
+\begin{exampleblock}{With inferred staging annotations:}
+\vspace{-1.2em}
+  \begin{alignat*}{3}
+    & \ms{map} : (A\,B : \Lift \Type_0) \to (A \to B) \to \ms{List}_0\,A \to \ms{List}_0\,B\\
+    & \ms{map}\,\ms{A}\,\ms{B}\,\ms{f}\,\ms{as} = \\
+    & \hspace{3em} \ms{let}\,\ms{go}\,[] \hspace{2.4em}= []\\
+    & \hspace{4.2em} \ms{go}\,(\ms{a}:\ms{as}) = \ms{f}\,\ms{a} : \ms{go}\,\ms{as}\\
+    & \hspace{3em}\ms{in}\,\hspace{0.2em}\ms{go}\,\ms{as}
+  \end{alignat*}
+\end{exampleblock}
+
+\end{frame}
+
+\begin{frame}{Computing types at compile time}
+
+\begin{exampleblock}{Vectors as nested pairs}
+\vspace{-1.2em}
+  \begin{alignat*}{3}
+    & \rlap{$\ms{Vector} : \ms{Nat}_1 \to \Lift\Type_0 \to \Lift\Type_0$}\\
+    & \ms{Vector}\,\,&& 0      \,&& \ms{A} = ()\\
+    & \ms{Vector}\,\,&& (\ms{n} + 1)\,&& \ms{A} = \qut{(\spl\ms{A},\, \spl{(\ms{Vector}\,\ms{n}\,\ms{A})})}
+  \end{alignat*}
+\end{exampleblock}
+\vsp
+\pause
+
+$\spl{(\ms{Vector}\,3\,\qut{\Bool_0})}$ is computed to $(\Bool_0,\,(\Bool_0,\,(\Bool_0,\,())))$.
+\vsp
+\pause
+
+We can also write a $\ms{map}$ for vectors of given lengths. We can generate types +
+\alert{well-typed programs depending on generated types}.
+\vsp
+\pause
+
+This has not been possible in previous systems.
+
+\end{frame}
+
+
+\end{document}

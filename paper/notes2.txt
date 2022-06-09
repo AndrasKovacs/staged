@@ -168,6 +168,106 @@ Stage' t := |F t| Γᴾ
 |F t| Γᴾ : TmB Γ (|A| Γᴾ)
 
 
+-- Strict Stability
+--------------------------------------------------------------------------------
+
+Everything is extracted to setoids. What was previously = is now only
+conversion! But I know that every previously defined thing respects conversion,
+and all type/term formers can be coerced along conversion.
+
+_=_ becomes *strict* equality of underlying elements.
+
+(Γ : ConB)ᴾ     : |F⌜Γ⌝|Γ              -- generic environment
+(σ : SubB Γ Δ)ᴾ : Δᴾ[σ] = |F⌜σ⌝| Γᴾ
+(A : TyB Γ)ᴾ    : A = |F⌜A⌝| Γᴾ
+(t : TmB Γ A)ᴾ  : t = |F⌜t⌝| Γᴾ
+
+∙ᴾ : |F⌜∙⌝|∙
+   : ⊤
+∙ᴾ := tt
+
+(Γ ▶ A)ᴾ : |Σ^ F⌜Γ⌝ TmB[F⌜A⌝]| (Γ ▶ A)
+         : (γ : F⌜Γ⌝(Γ▶A)) × TmB (Γ ▶ A) (|F⌜A⌝| γ)
+(Γ ▶ A)ᴾ := (Γᴾ[p], q)
+
+   q : TmB (Γ ▶ A) (|F⌜A⌝| (Γᴾ[p]))
+     : TmB (Γ ▶ A) ((|F⌜A⌝| Γᴾ)[p])    -- naturality of F⌜A⌝
+     : TmB (Γ ▶ A) (A[p])
+
+idᴾ : Γᴾ[id] = |F⌜id⌝| Γᴾ
+    : Γᴾ = Γᴾ OK
+
+(σ ∘ δ)ᴾ : Σᴾ[σ∘δ] = |F⌜σ∘δ⌝| Γᴾ
+         : Σᴾ[σ][δ] = |F⌜σ⌝| (|F⌜δ⌝| Γᴾ)
+	 : Σᴾ[σ][δ] = |F⌜σ⌝| Δᴾ[δ]
+	 : Σᴾ[σ][δ] = (|F⌜σ⌝| Δᴾ)[δ]
+	 : Σᴾ[σ][δ] = Σᴾ[σ][δ] OK
+
+(A[σ : Sub Γ Δ])ᴾ : A[σ] = |F⌜A[σ]⌝| Γᴾ
+                  : A[σ] = |F⌜A⌝[F⌜σ⌝]| Γᴾ
+		  : A[σ] = |F⌜A⌝| (|F⌜σ⌝| Γᴾ)
+		  : A[σ] = |F⌜A⌝| (Δᴾ[σ])
+		  : A[σ] = (|F⌜A⌝| Δᴾ)[σ]
+		  : A[σ] = A[σ] OK
+
+(t[σ])ᴾ : t[σ] = |F⌜t[σ]⌝| Γᴾ
+        : t[σ] = |F⌜t⌝| (|F⌜σ⌝| Γᴾ)
+        : t[σ] = |F⌜t⌝| (Δᴾ[σ])
+        : t[σ] = (|F⌜t⌝| Δᴾ)[σ]
+        : t[σ] = t[σ] OK
+
+(σ,t)ᴾ : (Δ▶A)ᴾ[σ,t] = |F⌜σ,t⌝| Γᴾ
+       : (Δᴾ[σ], t)  = |F⌜σ,t⌝| Γᴾ
+       : (Δᴾ[σ], t)  = (|F⌜σ⌝|Γᴾ, |F⌜t⌝| Γᴾ)
+       : (Δᴾ[σ], t)  = (Δᴾ[σ], t)  OK
+
+pᴾ : Γᴾ[p] = |F⌜p⌝| (Γ▶A)ᴾ
+   : Γᴾ[p] = |F⌜p⌝| (Γᴾ[p], q)
+   : Γᴾ[p] = Γᴾ[p] OK
+
+qᴾ : q = |F⌜q⌝| (Γ▶A)ᴾ
+   : q = |F⌜q⌝| (Γᴾ[p], q)
+   : q = q OK
+
+⊤ᴾ : ⊤ = |F⌜⊤⌝| Γᴾ
+   : ⊤ = ⊤ OK
+
+ttᴾ trivial
+
+Πᴾ : Π A B = |F(⌜Π A B⌝)| Γᴾ
+   : Π A B = Π (|F⌜A⌝| Γᴾ) (|F⌜B⌝| (Γᴾ[p], q))
+   : Π A B = Π (|F⌜A⌝| Γᴾ) (|F⌜B⌝| (Γ▶A)ᴾ)
+   : Π A B = Π A B OK
+
+(app t)ᴾ : app t = |F⌜app t⌝| (Γ▶A)ᴾ
+         : app t = |F⌜app t⌝| (Γᴾ[p], q)
+	 : app t = app (|F⌜t⌝| Γᴾ)
+	 : app t = app t OK
+
+(lam t)ᴾ : lam t = |F⌜lam t⌝| Γᴾ
+         : lam t = lam (|F⌜t⌝| (Γᴾ[p], q))
+	 : lam t = lam t OK
+
+Σᴾ likewise
+Boolᴾ likewise
+
+-- BoolElim : (B : Ty (Γ ▶ Bool))
+            → Tm Γ (B[id,true]) → Tm Γ (B[id,false]) → (b : Tm Γ Bool) → Tm Γ (B[id,b])
+
+(BoolElim B t f b)ᴾ :
+  BoolElim B t f b = |F⌜BoolElim B t f b⌝| Γᴾ
+  BoolElim B t f b = ...
+  OK
+
+(U j)ᴾ : U j = |F⌜U j⌝| Γᴾ
+       : U j = U j
+
+(code t)ᴾ : code t = |F⌜code t⌝| Γᴾ
+          : OK
+
+El likewise
+
+
 -- Soundness
 --------------------------------------------------------------------------------
 

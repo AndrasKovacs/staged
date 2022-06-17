@@ -1,6 +1,6 @@
 %% build: latexmk -pdf -pvc paper.tex
 
-\documentclass[acmsmall,anonymous,review]{acmart}
+\documentclass[acmsmall,review]{acmart}
 %% \documentclass[nonacm,acmsmall,review]{acmart}
 %% \raggedbottom
 
@@ -162,23 +162,22 @@
 }
 
 \begin{abstract}
-  The aim of staged compilation is to enable metaprogramming in a way such that
-  we have guarantees about the well-formedness of code output, and we can also
-  mix together object-level and meta-level code in a concise and convenient
-  manner. In this work, we observe that two-level type theory (2LTT), a system
-  originally devised for the purpose of developing synthetic homotopy theory,
-  also serves as a system for staged compilation with dependent types. 2LTT has
-  numerous good properties for this use case: it has a concise specification,
-  well-behaved model theory, and it supports a wide range of language features
-  both at the object and the meta level. First, we give an overview of 2LTT's
-  features and applications in staging. Then, we present a staging algorithm and
-  prove its soundness and stability. Our algorithm is ``staging-by-evaluation'',
-  analogously to the technique of normalization-by-evaluation, in that staging
-  is given by the evaluation of 2LTT syntax in a semantic domain. A sound and
-  stable staging algorithm constitutes a proof of strong conservativity of 2LLT
-  over the object theory. To our knowledge, this is the first description of
-  staged compilation which supports full dependent types and unrestricted
-  staging for types.
+The aim of staged compilation is to enable metaprogramming in a way such that we
+have guarantees about the well-formedness of code output, and we can also mix
+together object-level and meta-level code in a concise and convenient manner. In
+this work, we observe that two-level type theory (2LTT), a system originally
+devised for the purpose of developing synthetic homotopy theory, also serves as
+a system for staged compilation with dependent types. 2LTT has numerous good
+properties for this use case: it has a concise specification, well-behaved model
+theory, and it supports a wide range of language features both at the object and
+the meta level. First, we give an overview of 2LTT's features and applications
+in staging. Then, we present a staging algorithm and prove its correctness. Our
+algorithm is ``staging-by-evaluation'', analogously to the technique of
+normalization-by-evaluation, in that staging is given by the evaluation of 2LTT
+syntax in a semantic domain. The staging algorithm together with its correctness
+constitutes a proof of strong conservativity of 2LLT over the object theory. To our
+knowledge, this is the first description of staged compilation which supports
+full dependent types and unrestricted staging for types.
 \end{abstract}
 
 \begin{CCSXML}
@@ -501,7 +500,7 @@ evaluator presented in Idris 1 \cite{scrap-your-inefficient-engine}. However, in
 contrast to 2LTT, Idris 1 does not provide a formal guarantee that partial
 evaluation does not get stuck.
 
-\subsection{Properties of Lifting \& Binding Time Improvements}
+\subsection{Properties of Lifting, Binding Time Improvements}
 
 We describe more generally the action of lifting on type formers. While lifting
 does not have definitional computation rules, it does preserve negative type formers up
@@ -753,7 +752,9 @@ dependent types as setoid fibrations. For inductive base types such $\Bool$ or
 $\Nat$, the equivalence relation is interpreted as identity. Functions are
 interpreted as equivalence-preserving functions, and two functions are equivalent if
 they are pointwise equivalent. A quotient type $A/R$ is interpreted by extending
-the semantic notion of equivalence for $A$ with the given $R$ relation.
+the semantic notion of equivalence for $A$ with the given $R$ relation. We will
+sketch the interpretation of the 2LTT syntax (given as a quotient inductive-inductive type)
+in Section \ref{sec:2lttsetoid}.
 
 \begin{definition} Assume a closed function $f : A \to B$ defined
 in the mentioned type theory. The \textbf{extraction} of $f$ is
@@ -767,14 +768,13 @@ a constructive theory, but that is the case in the cited work
 \cite{DBLP:journals/pacmpl/PujetT22}.
 
 In other words, we can view the usage of constructive quotients as a convenient
-shorthand for working with explicit equivalence relations (an \emph{internal
-language} of setoids). When we reason about the syntax of a type theory, this
-provides a bridge between the categorical/algebraic style and the traditional
-style that uses separate equivalence relations. It makes sense to work with
-quotients internally to a type theory whenever we only want to talk about
-constructions and properties which respect conversion. However, at any point we
-have the option to switch to an external perspective and look at underlying sets
-and the underlying maps.
+shorthand for working with explicit equivalence relations. When we reason about
+the syntax of a type theory, this provides a bridge between the
+categorical/algebraic style and the traditional style that uses separate
+equivalence relations. It makes sense to work with quotients internally to a
+type theory whenever we only want to talk about constructions and properties
+which respect conversion. However, at any point we have the option to switch to
+an external perspective and look at underlying sets and the underlying maps.
 
 
 \subsection{Models and Syntax of 2LTT}\label{sec:2lttmod}
@@ -786,10 +786,14 @@ quotiented by definitional equality. A major advantage of this representation is
 that it \emph{only} includes well-typed syntax, so we never have to talk about
 ``raw'' types and terms.
 
-First, we define the
-structural scaffolding of 2LTT without type formers, mostly following
-\cite{twolevel}. The specification is agnostic about the sizes of sets involved,
-i.e.\ we can model underlying sorts using any metatheoretic $\Set_j$.
+We provide an appendix to this paper, where we present a listing of all rules
+and equations of 2LTT in two styles: first, in a more traditional style with
+derivation rules, and also in a very compact manner using a second-order
+algebraic signature.
+
+First, we define the structural scaffolding of 2LTT without type formers, mostly
+following \cite{twolevel}. The specification is agnostic about the sizes of sets
+involved, i.e.\ we can model underlying sorts using any metatheoretic $\Set_j$.
 
 \begin{definition} A model of \textbf{basic 2LTT} consists of the following.
 \begin{itemize}
@@ -843,36 +847,36 @@ i.e.\ we can model underlying sorts using any metatheoretic $\Set_j$.
 The following notions are derivable:
 \begin{itemize}
 \item
-  By moving left-to-right along $\Sub\,\Gamma\,(\Delta\ext A) \simeq ((\sigma :
-  \Sub\,\Gamma\,\Delta) \times \Tm_{i,j}\,\Gamma\,(A[\sigma]))$,
+  By moving left-to-right along $\Sub\,\Gamma\,(\Delta\ext A) \simeq (\sigma :
+  \Sub\,\Gamma\,\Delta) \times \Tm_{i,j}\,\Gamma\,(A[\sigma])$,
   and starting from the identity morphism $\id : \Sub\,(\Gamma\ext A)\,(\Gamma\ext A)$, we recover
   the \emph{weakening substitution} $\p : \Sub\,(\Gamma\ext A)\,\Gamma$ and the \emph{zero variable}
   $\q : \Tm_{i,j}\,(\Gamma\ext A)\,(A[\p])$.
 \item
   By weakening $\q$, we recover a notion of variables as De Bruijn
   indices. In general, the $n$-th De Bruijn index is defined as $\q[\p^{n}]$,
-  where $\p^{n}$ denotes $n$-fold composition.
+  where $\p^{n}$ denotes $n$-fold composition of $p$.
 \item
-  By moving right-to-left along $\Sub\,\Gamma\,(\Delta\ext A) \simeq ((\sigma :
-  \Sub\,\Gamma\,\Delta) \times \Tm_{i,j}\,\Gamma\,(A[\sigma]))$, we recover the
+  By moving right-to-left along $\Sub\,\Gamma\,(\Delta\ext A) \simeq (\sigma :
+  \Sub\,\Gamma\,\Delta) \times \Tm_{i,j}\,\Gamma\,(A[\sigma])$, we recover the
   operation which extends a morphism with a term. In the initial model, this
   extends a parallel substitution with an extra term, thus justifying the view
   of substitutions as lists of terms. We denote the extension operation as
-  $(\sigma,\,t)$ for $\sigma : \Sub\,\Gamma\,\Delta$.
+  $(\sigma,\,t)$ for $\sigma : \Sub\,\Gamma\,\Delta$ and $t : \Tm_{i,j}\,\Gamma\,(A[\sigma])$.
 \end{itemize}
 
 \begin{notation}
 De Bruijn indices are rather hard to read, so we will sometimes use nameful notation
 for binders and substitutions. For example, we may write $\Gamma \ext (x : A)
-\ext (y : B)$ for a context, and subsequently write $B[y \mapsto t]$ for
+\ext (y : B)$ for a context, and subsequently write $B[x \mapsto t]$ for
 substituting the $x$ variable for some term $t : \Tm_{i,j}\,\Gamma\,A$. Using
 nameless notation, we would instead have $B : \Ty_{i,j}\,(\Gamma \ext A)$ and
-$B[\id,\,t]$; here we recover single substitution by extending the identity
+$B[\id,\,t] : \Ty_{i,j}\,\Gamma$; here we recover single substitution by extending the identity
 substitution $\id : \Sub\,\Gamma\,\Gamma$ with $t$.
 
-We may also use implicit weakening: if a type or term is in a $\Gamma$ context,
-we may use it in an extended $\Gamma \ext A$ context without marking the
-weakening substitution.
+We may also leave weakening implicit: if a type or term is in a context
+$\Gamma$, we may use it in an extended context $\Gamma \ext A$ without marking
+the weakening substitution.
 \end{notation}
 
 \begin{definition}
@@ -888,8 +892,8 @@ an evident structural way, e.g.\ as in $(\Lift A)[\sigma] = \Lift(A[\sigma])$.
   together with $\El : \Tm_{i,j+1}\,\Gamma\,\U_{i,j} \to \Ty_{i,j}\,\Gamma$ and $\Code$, where $\Code$
   and $\El$ are inverses.
 \item \emph{$\Sigma$-types}. We have $\Sigma\,(x : A)\,B : \Ty_{i,j}\,\Gamma$ for $A : \Ty_{i,j}\,\Gamma$
-  and $B : \Ty_{i,j}\,(\Gamma \ext (x : A))$, together with a natural isomorphism of pairing and projections:
-  \[ \Tm_{i,j}\,\Gamma\,(\Sigma\,(x : A)\,B) \simeq ((t : \Tm_{i,j}\,\Gamma\,A) \times \Tm_{i,j}\,\Gamma\,(B[x\mapsto t]) \]
+  and $B : \Ty_{i,j}\,(\Gamma \ext (x : A))$, together with a natural isomorphism consisting of pairing and projections:
+  \[ \Tm_{i,j}\,\Gamma\,(\Sigma\,(x : A)\,B) \simeq (t : \Tm_{i,j}\,\Gamma\,A) \times \Tm_{i,j}\,\Gamma\,(B[x\mapsto t]) \]
   We write $(t,\,u)$ for pairing and $\fst$ and $\snd$ for projections.
 \item \emph{Function types}.
   We have $\Pi\,(x : A)\,B : \Ty_{i,j}\,\Gamma$ for $A : \Ty_{i,j}\,\Gamma$ and
@@ -898,8 +902,9 @@ an evident structural way, e.g.\ as in $(\Lift A)[\sigma] = \Lift(A[\sigma])$.
     & \lam &&: \Tm_{i,j}\,(\Gamma \ext (x : A))\,B \to \Tm_{i,j}\,\Gamma\,(\Pi\,(x : A)\,B) \\
     & \app &&: \Tm_{i,j}\,\Gamma\,(\Pi\,(x : A)\,B) \to \Tm_{i,j}\,(\Gamma \ext (x : A))\,B
   \end{alignat*}
-  such that $\lam$ and $\app$ are inverses. This specification of $\app$ is
-  equivalent to the ``traditional'' specification:
+  such that $\lam$ and $\app$ are inverses. Since we have explicit
+  substitutions, this specification of $\app$ is equivalent to the
+  ``traditional'' one:
   \[ \app' : (t : \Tm_{i,j}\,\Gamma\,(\Pi\,(x :
   A)\,B))\to (u : \Tm_{i,j}\,\Gamma\,A) \to \Tm_{i,j}\,\Gamma\,(B[x \mapsto
     u]).\]
@@ -910,11 +915,11 @@ an evident structural way, e.g.\ as in $(\Lift A)[\sigma] = \Lift(A[\sigma])$.
   and $\suc_{i,j} : \Tm_{i,j}\,\Gamma\,\Nat_{i,j} \to \Tm_{i,j}\,\Gamma\,\Nat_{i,j}$. The eliminator is the following.
   \begin{alignat*}{5}
     & \NatElim :\hspace{0.5em}
-                &&  (P &&: \Ty_{i,k}\,(\Gamma \ext (n : \Nat_{i,j}) \\
+                &&  (P &&: \Ty_{i,k}\,(\Gamma \ext (n : \Nat_{i,j}))) \\
     &           &&  (z &&: \Tm_{i,k}\,\Gamma\,(P[n\mapsto \zero_{i,j}])) \\
     &           &&  (s &&: \Tm_{i,k}\,(\Gamma \ext (n : \Nat_{i,j}) \ext (\mit{pn} : P[n\mapsto n]))\,(P[n\mapsto \suc_{i,j}\,n]))\\
     &           &&  (t &&: \Tm_{i,j}\,\Gamma\,\Nat_{i,j}) \\
-    &\hspace{3em}\to        &&&& \Tm_{i,j}\,\Gamma\,(P[n\mapsto t]))
+    &\hspace{3em}\to        &&&& \Tm_{i,k}\,\Gamma\,(P[n\mapsto t]))
   \end{alignat*}
   We also have the $\beta$-rules:
   \begin{alignat*}{5}
@@ -978,7 +983,7 @@ some observations.
       difficulty of formalization.
 \end{itemize}
 
-\subsubsection{The setoid interpretation of the syntax} We need to show
+\subsubsection{The setoid interpretation of the syntax}\label{sec:2lttsetoid} We need to show
 that the 2LTT syntax, as a particular inductive type, can be modeled in setoids.
 Unfortunately, there is no prior work which presents the setoid interpretation
 of quotient types in the generality of quotient induction-induction. We sketch

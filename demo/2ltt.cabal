@@ -8,12 +8,18 @@ name:           2ltt
 version:        0.1.0.0
 description:    Small implementation of a two-level type theory, for demonstrating staged compilation
 category:       Language
+homepage:       https://github.com/AndrasKovacs/staged#readme
+bug-reports:    https://github.com/AndrasKovacs/staged/issues
 author:         András Kovács
 maintainer:     puttamalac@gmail.com
 copyright:      2022 András Kovács
 license:        MIT
 license-file:   LICENSE
 build-type:     Simple
+
+source-repository head
+  type: git
+  location: https://github.com/AndrasKovacs/staged
 
 executable 2ltt
   main-is: Main.hs

@@ -66,19 +66,23 @@ type formers (without dependent elimination). We can also encode unit and sigma 
 
 ### Summary of source files
 
+I do a summary roughly in the order one should read the files, to get a picture of the implementation, following
+the order of module dependencies and the elaboration pipeline.
+
 - [Common.hs](Common.hs): miscellaneous definitions, names, De Bruijn indices/levels.
-- [Cxt.hs](Cxt.hs): the elaboration context + ways to add things to the context.
-- [Elaboration.hs](Elaboration.hs): definitions of bidirectional elaboration and subtyping coercions.
-- [Errors.hs](Errors.hs): the type of errors and the corresponding pretty printing function.
-- [Evaluation.hs](Evaluation.hs): contains the evaluator used in *conversion checking*, and also the quotation to normal forms and the "zonking" operation which inlines solved metas. Evaluation computes all redexes (both meta- and object-level redexes).
-- [Main.hs](Main.hs): main function, command line option processing.
+- [Presyntax.hs](Presyntax.hs): defines the type of raw terms, which is the output of parsing and the input of elaboration.
+- [Parser.hs](Parser.hs): the parser.
+- [Syntax.hs](Syntax.hs): the definition of core syntax.
+- [Value.hs](Value.hs): the type of semantic values used in unification and evaluation.
 - [Metacontext.hs](Metacontext.hs): this contains a *mutable* top-level state for metavariables, as an `IntMap` in an `IORef`. During unification this
   state can be modified. Each `2ltt` command performs a single run of elaboration, so we don't have to re-initialize the state at any point.
-- [Parser.hs](Parser.hs): the parser.
-- [Presyntax.hs](Presyntax.hs): defines the type of raw terms, which is the output of parsing and the input of elaboration.
+- [Evaluation.hs](Evaluation.hs): contains the evaluator used in *conversion checking*, and also the quotation to normal forms and the "zonking" operation which inlines solved metas. Evaluation computes all redexes (both meta- and object-level redexes).
 - [Pretty.hs](Pretty.hs): pretty printing.
-- [Staging.hs](Staging.hs): the staging algorithm.
-- [Syntax.hs](Syntax.hs): the definition of core syntax.
-- [Tests.hs](Tests.hs): some tests for elaboration that I used to weed out inference/subtyping bugs.
+- [Cxt.hs](Cxt.hs): the elaboration context + ways to add things to the context.
+- [Errors.hs](Errors.hs): the type of errors and the corresponding pretty printing function.
 - [Unification.hs](Unification.hs): unification.
-- [Value.hs](Value.hs): the type of semantic values used in unification and evaluation.
+- [Elaboration.hs](Elaboration.hs): definitions of bidirectional elaboration and subtyping coercions.
+- [Staging.hs](Staging.hs): the staging algorithm.
+- [Main.hs](Main.hs): main function, command line option processing.
+- [Tests.hs](Tests.hs): some ad-hoc tests for elaboration that I used to weed out inference/subtyping bugs.
+

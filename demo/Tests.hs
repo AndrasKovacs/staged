@@ -3,7 +3,7 @@
 
 module Tests where
 
-import Main
+import MainInteraction
 
 verbosityTest = main' "elab-verbose" $ unlines [
   "let id : {A : U0} → A → A := λ x. x;",

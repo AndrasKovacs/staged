@@ -83,5 +83,8 @@ the order of module dependencies and the elaboration pipeline.
 - [Unification.hs](Unification.hs): unification.
 - [Elaboration.hs](Elaboration.hs): definitions of bidirectional elaboration and subtyping coercions.
 - [Staging.hs](Staging.hs): the staging algorithm.
-- [Main.hs](Main.hs): main function, command line option processing.
+- [MainInteraction.hs](MainInteraction.hs): main functions, command line option
+  processing. This is separate from [Main.hs](Main.hs) to allow the main
+  interaction to be separately imported.
 - [Tests.hs](Tests.hs): some ad-hoc tests for elaboration that I used to weed out inference/subtyping bugs.
+- [Main.hs](Main.hs): the entry point to `2ltt`.

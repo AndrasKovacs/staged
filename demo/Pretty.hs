@@ -14,12 +14,12 @@ import Syntax
 
 --------------------------------------------------------------------------------
 
+-- adjust a name so that it does not shadow a given scope
 fresh :: [Name] -> Name -> Name
 fresh ns "_" = "_"
 fresh ns x   = if elem x ns then go (1::Int) else x
   where go n | elem (x ++ show n) ns = go (n + 1)
              | True                  = x ++ show n
-
 
 -- printing precedences
 atomp = 3  :: Int -- U, var

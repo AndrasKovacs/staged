@@ -330,7 +330,7 @@ unify l t u = case (force t, force u) of
   (t             , VLam _ i _ t' o) -> unify (l + 1) (vApp t (VVar l) i o) (t' $ VVar l)
   (VLam _ i _ t o, t'             ) -> unify (l + 1) (t $ VVar l) (vApp t' (VVar l) i o)
 
-  (VFlex m sp  , VFlex m' sp'   ) | m == m' -> intersect l m sp sp' -- unifySp l sp sp'
+  (VFlex m sp  , VFlex m' sp'   ) | m == m' -> intersect l m sp sp'
                                   | True    -> flexFlex l m sp m' sp'
   (VFlex m sp  , t'             ) -> solve l m sp t'
   (t           , VFlex m' sp'   ) -> solve l m' sp' t

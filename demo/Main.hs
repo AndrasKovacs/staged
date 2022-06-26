@@ -51,7 +51,6 @@ mainWith getOpt getRaw = do
       putStrLn "-- elaboration output"
       putStrLn "------------------------------------------------------------"
       putStrLn ""
-      -- putStrLn $ show t
       putStrLn $ showTopTm V0 t
     ["elab-verbose"] -> do
       (!t, !a) <- elab

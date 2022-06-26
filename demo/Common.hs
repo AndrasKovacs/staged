@@ -41,6 +41,7 @@ instance Show Icit where
   show Impl = "implicit"
   show Expl = "explicit"
 
+-- | Wrapper to turn off printing in derived Show instances.
 newtype DontShow a = DontShow a
 
 instance Show (DontShow a) where

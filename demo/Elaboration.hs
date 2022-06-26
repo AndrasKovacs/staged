@@ -64,8 +64,8 @@ insertUntilName cxt name act = go =<< act where
 --------------------------------------------------------------------------------
 
 -- | Try to adjust (t : a : U s) to stage s', transporting both the type and the
---   term, without doing any subtyping coercion. Return `Nothing` if the output
---   is unchanged.
+--   term. Return `Nothing` if the output is unchanged. Only uses the subtyping
+--   rules A ≤ ^A and ^A ≤ A.
 adjustStage' :: Cxt -> Tm -> VTy -> Stage -> Stage -> IO (Maybe (Tm, VTy))
 adjustStage' cxt t a s s' = case compare s s' of
   EQ ->
@@ -80,8 +80,7 @@ adjustStage' cxt t a s s' = case compare s s' of
       unifyCatch cxt a (VLift m)
       pure $ Just (tSplice t, m)
 
--- | Try to adjust (t : a : U s) to stage s', without using any subtyping
---   coercion.
+-- | Try to adjust (t : a : U s) to stage s'.
 adjustStage :: Cxt -> Tm -> VTy -> Stage -> Stage -> IO (Tm, VTy)
 adjustStage cxt t a s s' = maybe (t, a) id <$!> adjustStage' cxt t a s s'
 
@@ -95,9 +94,9 @@ coe cxt t a s a' s' = maybe t id <$!> go cxt t a s a' s' where
   pick x "_"   = x
   pick _  x    = x
 
-  -- fall back to unification
-  justUnify :: Cxt -> Tm -> VTy -> Stage -> VTy -> Stage -> IO (Maybe Tm)
-  justUnify cxt t a s a' s' = do
+  -- fall back to ^ subtyping and unification.
+  justAdjust :: Cxt -> Tm -> VTy -> Stage -> VTy -> Stage -> IO (Maybe Tm)
+  justAdjust cxt t a s a' s' = do
 
     adjustStage' cxt t a s s' >>= \case
       Nothing     -> Nothing <$ unifyCatch cxt a a'
@@ -131,14 +130,14 @@ coe cxt t a s a' s' = maybe t id <$!> go cxt t a s a' s' where
     (VU S0  , VU S1   ) -> pure $ Just $ Lift t
     (VLift a, VLift a') -> Nothing <$ unifyCatch cxt a a'
 
-    (a@VFlex{}, a') -> justUnify cxt t a s a' s'
-    (a, a'@VFlex{}) -> justUnify cxt t a s a' s'
+    (a@VFlex{}, a') -> justAdjust cxt t a s a' s'
+    (a, a'@VFlex{}) -> justAdjust cxt t a s a' s'
 
     -- coercion avoidance is not perfect here!
     (VLift a, a') -> Just <$!> coe cxt (tSplice t) a S0 a' s'
     (a, VLift a') -> Just . tQuote <$!> coe cxt t a s a' S0
 
-    (a, a') -> justUnify cxt t a s a' s'
+    (a, a') -> justAdjust cxt t a s a' s'
 
 
 -- Check & Infer
@@ -191,7 +190,7 @@ check cxt t a st = case (t, force a) of
   -- solutions, because every value with lifted type is of the form <t> up to
   -- definitional equality.
   --
-  -- The extra quots isn't necessarily in the output, because it may be
+  -- The extra quote isn't necessarily in the output, because it may be
   -- cancelled out by a splice.
   (t, VLift a) -> do
     tQuote <$!> check cxt t a S0

@@ -143,28 +143,28 @@ zonk vs l t = go t where
   goBind t = zonk (vs :> VVar l) (l+1) t
 
   go = \case
-    Var x              -> Var x
-    Meta m             -> case lookupMeta m of
-                            Solved v _ _  -> quote l v
-                            Unsolved{}    -> Meta m
-    U s                -> U s
-    Pi x i a b         -> Pi x i (go a) (goBind b)
-    App t u i vr       -> case goSp t of
-                            Left t  -> quote l (vApp t (eval vs u) i vr)
-                            Right t -> App t (go u) i vr
-    Lam x i a t vr     -> Lam x i (go a) (goBind t) vr
-    Let s x a t u vr   -> Let s x (go a) (go t) (goBind u) vr
-    Wk t               -> Wk (zonk (tail vs) (l-1) t)
+    Var x             -> Var x
+    Meta m            -> case lookupMeta m of
+                           Solved v _ _  -> quote l v
+                           Unsolved{}    -> Meta m
+    U s               -> U s
+    Pi x i a b        -> Pi x i (go a) (goBind b)
+    App t u i vr      -> case goSp t of
+                           Left t  -> quote l (vApp t (eval vs u) i vr)
+                           Right t -> App t (go u) i vr
+    Lam x i a t vr    -> Lam x i (go a) (goBind t) vr
+    Let s x a t u vr  -> Let s x (go a) (go t) (goBind u) vr
+    Wk t              -> Wk (zonk (tail vs) (l-1) t)
 
-    AppPruning t pr    -> AppPruning (go t) pr
-    InsertedMeta m pr  -> case lookupMeta m of
-                            Solved v _ _ -> quote l (vAppPruning vs v pr)
-                            Unsolved{}   -> InsertedMeta m pr
+    AppPruning t pr   -> AppPruning (go t) pr
+    InsertedMeta m pr -> case lookupMeta m of
+                           Solved v _ _ -> quote l (vAppPruning vs v pr)
+                           Unsolved{}   -> InsertedMeta m pr
 
-    Lift a             -> Lift (go a)
-    Quote t            -> Quote (go t)
-    Splice t           -> Splice (go t)
-    Nat s              -> Nat s
-    Zero s             -> Zero s
-    Suc s              -> Suc s
-    NatElim s          -> NatElim s
+    Lift a            -> Lift (go a)
+    Quote t           -> Quote (go t)
+    Splice t          -> Splice (go t)
+    Nat s             -> Nat s
+    Zero s            -> Zero s
+    Suc s             -> Suc s
+    NatElim s         -> NatElim s

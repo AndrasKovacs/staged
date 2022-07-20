@@ -9,6 +9,7 @@
   \providecommand\BibTeX{{%
     \normalfont B\kern-0.5em{\scshape i\kern-0.25em b}\kern-0.8em\TeX}}}
 
+
 %%% The following is specific to ICFP '22 and the paper
 %%% 'Staged Compilation with Two-Level Type Theory'
 %%% by András Kovács.
@@ -151,7 +152,7 @@
 %% \hypersetup{draft}
 \begin{document}
 
-\title{Staged Compilation With Two-Level Type Theory}
+\title{Staged Compilation with Two-Level Type Theory}
 \titlenote{The author was supported by the “Application Domain Specific Highly
   Reliable IT Solutions” project which has been implemented with support from
   the National Research, Development and Innovation Fund of Hungary, financed
@@ -401,7 +402,7 @@ An $\mit{id}_0$ application will simply appear in staging output as it is. In
 contrast, $\mit{id}_1$ can be used as a compile-time evaluated function, because
 the staging operations allow us to freely apply $\mit{id}_1$ to runtime
 arguments. For example, $\mit{id}_1\,(\Lift\,\Bool_0)\,\qut{\true_0}$ has type
-$\Lift \Bool_0$, therefore $\spl(\mit{id}_1\,(\Lift\,\Bool_0)\,\qut{\true_0})$
+$\Lift \Bool_0$, which implies that $\spl(\mit{id}_1\,(\Lift\,\Bool_0)\,\qut{\true_0})$
 has type $\Bool_0$. We can stage this expression as follows:
 \[
 \spl(\mit{id}_1\,(\Lift\,\Bool_0)\,\qut{\true_0}) = \spl\qut{\true_0} = \true_0
@@ -443,8 +444,8 @@ $\blank\!+_0\!\blank : \Nat_0 \to \Nat_0 \to \Nat_0$ and $\mit{ns} :
 \begin{alignat*}{3}
   & &&\spl(\mit{map}\,\qut{\Nat_0}\,\qut{\Nat_0}\,(\lambda\,n.\,\qut{\spl n +_0 10})\,\qut{\mit{ns}})\\
   & =\hspace{0.3em}&&\spl\qut{\msf{foldr}_0\,
-        \spl \qut{\Nat_0}\,\spl \qut{\List_0\,\spl\qut{Nat_0}}\,
-        (\lambda\,a\,\mit{bs}.\, \cons_0\,\spl\qut{\Nat_0}\,\spl\qut{\spl\qut{a} +_0 10}\,\mit{bs})\,
+        \spl \qut{\Nat_0}\,\spl \qut{\List_0\,\spl\qut{Nat_0}}\\
+  & && \hspace{3.5em}(\lambda\,a\,\mit{bs}.\, \cons_0\,\spl\qut{\Nat_0}\,\spl\qut{\spl\qut{a} +_0 10}\,\mit{bs})\,
         (\nil_0\,\spl \qut{\Nat_0})\,
         \spl\qut{\mit{ns}}}\\
   & =\hspace{0.3em} &&\msf{foldr_0}\,\Nat_0\,(\List_0\,\Nat_0)\,\,(\lambda\,a\,bs.\,\cons_0\,(a +_0 10)\,bs)\,(\nil_0\,\Nat_0)\,\mit{ns}
@@ -597,10 +598,7 @@ type, it is brought to a form which can be binding-time improved. For instance,
 consider foldr-build fusion for lists \cite{short-cut}, which is employed in GHC
 Haskell.  Starting from $\Lift (\List_0\,A)$, we use Böhm-Berarducci encoding
 \cite{boehm-berarducci} under the lifting to get
-\[ \Lift((L : \U_0) \to (A \to L \to L) \to L \to L) \]
-which is isomorphic to
-\[ (L : \Lift\,U_0) \to (\Lift\,A \to \Lift\,\spl L \to \Lift\,\spl L)
-    \to \Lift\,\spl L \to \Lift\,\spl L. \]
+\[ \Lift((L : \U_0) \to (A \to L \to L) \to L \to L) \simeq ((L : \Lift\,U_0) \to (\Lift\,A \to \Lift\,\spl L \to \Lift\,\spl L)). \]
 Alternatively, for \emph{stream fusion} \cite{stream-fusion}, we embed $\List\,A$ into the
 coinductive colists (i.e.\ the possibly infinite lists), and use a terminal
 lambda-encoding. The embedding into the ``larger'' structure enables some staged
@@ -677,7 +675,7 @@ only applied to statically known arguments, so the polymorphism can be staged
 away. The main restriction that programmers have to keep in mind is that
 polymorphic functions cannot be stored inside runtime data types.
 
-%% This is fairly similar to the well-known monomorphization models in the C++ and
+%% This is similar to the well-known monomorphization models in the C++ and
 %% Rust programming languages. The evident difference is that in 2LTT we can use a
 %% full type theory at compile time. Additionally, we will see in Section
 %% \ref{sec:intensional-analysis} that this setup is compatible with intensional

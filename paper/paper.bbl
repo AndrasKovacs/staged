@@ -2,7 +2,7 @@
 %%% Do NOT edit. File created by BibTeX with style
 %%% ACM-Reference-Format-Journals [18-Jan-2012].
 
-\begin{thebibliography}{48}
+\begin{thebibliography}{49}
 
 %%% ====================================================================
 %%% NOTE TO THE USER: you can override these defaults by providing
@@ -524,6 +524,20 @@
 \showeprint[arXiv]{2201.00495}
 \urldef\tempurl%
 \url{https://arxiv.org/abs/2201.00495}
+\showURL{%
+\tempurl}
+
+
+\bibitem[Kovács(2022)]%
+        {staged-demo}
+\bibfield{author}{\bibinfo{person}{András Kovács}.}
+  \bibinfo{year}{2022}\natexlab{}.
+\newblock \bibinfo{title}{Demo implementation for the paper "Staged Compilation
+  With Two-Level Type Theory"}.
+\newblock
+\newblock
+\urldef\tempurl%
+\url{https://zenodo.org/record/6757373}
 \showURL{%
 \tempurl}
 

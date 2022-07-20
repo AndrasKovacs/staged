@@ -1,6 +1,6 @@
 %% build: latexmk -pdf -pvc paper.tex
 
-\documentclass[acmsmall,review]{acmart}
+\documentclass[acmsmall,screen]{acmart}
 %% \documentclass[nonacm,acmsmall,review]{acmart}
 %% \raggedbottom
 
@@ -45,7 +45,7 @@
 %% citations and references.
 %% Uncommenting
 %% the next command will enable that style.
-%%\citestyle{acmauthoryear}
+\citestyle{acmauthoryear}
 
 %% --------------------------------------------------------------------------------
 
@@ -80,7 +80,7 @@
 \newcommand{\mbbo}{\mbb{O}}
 \newcommand{\ob}{_\mbbo}
 
-\renewcommand{\U}{\msf{U}}
+\newcommand{\U}{\msf{U}}
 \newcommand{\Con}{\msf{Con}}
 \newcommand{\Sub}{\msf{Sub}}
 \newcommand{\Ty}{\msf{Ty}}
@@ -230,26 +230,28 @@ applicable to the theory of staging.
     model of 2LTT \cite[Section~2.5.3]{twolevel}, which lies over the syntactic
     category of the object theory. We show that evaluation in this model yields
     a staging algorithm for closed types and terms. We then extend staging to
-    open types and terms, which may depend on object-level contexts. We show
+    open types and terms which may depend on object-level variables. We show
     stability of staging, which means that staging is surjective up to
     conversion, and we also show that staging strictly preserves all type and
     term formers. Finally, we discuss efficiency and potential practical implementations
     of staging.
   \item
-    In Section \ref{sec:soundness} we show soundness of staging, which roughly means that
-    the output of staging is convertible to its input. Staging together with
-    its stability and soundness can be viewed as a \emph{strong conservativity}
-    theorem of 2LTT over the object theory. This means that the possible
-    object-level constructions in 2LTT are in bijection with the constructions
-    in the object theory, and staging witnesses that meta-level constructions
-    can be always computed away. This strengthens the weak notion of
-    conservativity shown in \cite{capriotti2017models} and \cite{twolevel}.
+    In Section \ref{sec:soundness} we show soundness of staging, which roughly
+    means that the output of staging is convertible to its input. Staging
+    together with its stability and soundness can be viewed as a \emph{strong
+    conservativity} theorem of 2LTT over the object theory. This means that the
+    same constructions can be expressed in the object theory and the
+    object-level fragment of 2LTT, up to conversion, and staging witnesses that
+    meta-level constructions can be always computed away. This strengthens the
+    weak notion of conservativity shown in \cite{capriotti2017models} and
+    \cite{twolevel}.
   \item
     In Section \ref{sec:intensional-analysis}, we discuss possible semantic
     interpretations of intensional code analysis, i.e.\ the ability to look into
     the structure of object-level code.
   \item We provide a small standalone implementation of elaboration and staging
-    for a two-level type theory, with code samples that expand on the paper.
+    for a two-level type theory, with code samples that expand on the paper
+    \cite{staged-demo}.
   \item To our knowledge, this work is the first formalization and implementation of
     staged compilation in the presence of full dependent types, with
     universes and large elimination. In particular, we allow unrestricted
@@ -411,12 +413,12 @@ $\blank\!+_0\!\blank : \Nat_0 \to \Nat_0 \to \Nat_0$ and $\mit{ns} :
 \List_0\,\Nat_0$, we have the following staging behavior:
 \begin{alignat*}{3}
   & &&\spl(\mit{map}\,\qut{\Nat_0}\,\qut{\Nat_0}\,(\lambda\,n.\,\qut{\spl n +_0 10})\,\qut{\mit{ns}})\\
-  & =\hspace{0.5em}&&\spl\qut{\msf{foldr}_0\,
+  & =\hspace{0.3em}&&\spl\qut{\msf{foldr}_0\,
         \spl \qut{\Nat_0}\,\spl \qut{\List_0\,\spl\qut{Nat_0}}\,
         (\lambda\,a\,\mit{bs}.\, \cons_0\,\spl\qut{\Nat_0}\,\spl\qut{\spl\qut{a} +_0 10}\,\mit{bs})\,
         (\nil_0\,\spl \qut{\Nat_0})\,
         \spl\qut{\mit{ns}}}\\
-  & =\hspace{0.5em} &&\msf{foldr_0}\,\Nat_0\,(\List_0\,\Nat_0)\,\,(\lambda\,a\,bs.\,\cons_0\,(a +_0 10)\,bs)\,(\nil_0\,\Nat_0)\,\mit{ns}
+  & =\hspace{0.3em} &&\msf{foldr_0}\,\Nat_0\,(\List_0\,\Nat_0)\,\,(\lambda\,a\,bs.\,\cons_0\,(a +_0 10)\,bs)\,(\nil_0\,\Nat_0)\,\mit{ns}
 \end{alignat*}
 
 By using meta-level functions and lifted types, we already have control over
@@ -446,9 +448,9 @@ on $\Nat_1$ to implement a map function. For readability, we use an Agda-style
 pattern matching definition below (instead of the elimination principle).
 \begin{alignat*}{6}
   &\hspace{-3em}\rlap{$\mit{map} : (n : \Nat_1) \to (\Lift\,\spl A \to \Lift\,\spl B) \to \Lift(\mit{Vec}\,n\,A) \to \Lift(\mit{Vec}\,n\,B)$}\\
-  &\hspace{-3em}\mit{map}\,&&\zero_1      && f\,&&\mit{as} := \qut{\tt_0}\\
-  &\hspace{-3em}\mit{map}\,&&(\suc_1\,n)\,&& f\,&&\mit{as} :=
-     \qut{(\spl(f\,\qut{\fst_0\,\spl\mit{as}}),\,\mit{map}\,n\,f\,\qut{\snd_0\,\spl \mit{as}})}
+  &\hspace{-3em}\mit{map}\,\,&&\zero_1      && f\,&&\mit{as} := \qut{\tt_0}\\
+  &\hspace{-3em}\mit{map}\,\,&&(\suc_1\,n)\,&& f\,&&\mit{as} :=
+     \qut{(\spl(f\,\qut{\fst_0\,\spl\mit{as}}),\,\spl(\mit{map}\,n\,f\,\qut{\snd_0\,\spl \mit{as}}))}
 \end{alignat*}
 This definition inlines the mapping function for each projected element of the
 vector. For instance, staging $\spl(\mit{map}\,2\,(\lambda\,n.\,\qut{\spl n +_0
@@ -466,7 +468,7 @@ ad-hoc let-insertion:
           (f\,(\fst_0\,\mit{ns}),\,(f\,(\fst_0(\snd_0\,\mit{ns})),\,\tt_0))
 \end{alignat*}
 We include examples of more sophisticated let-insertion in the supplementary
-code.
+code \cite{staged-demo}.
 
 More generally, we are free to use dependent types at the meta-level, so we can
 reproduce more complicated staging examples. Any well-typed interpreter can be
@@ -524,7 +526,7 @@ By rewriting a 2LTT program left-to-right along preservation maps, we perform
 what is termed \emph{binding time improvement} in the partial evaluation
 literature \cite[Chapter~12]{partial-evaluation}. Note that the output of $\mit{pres}_{\to}$ uses a
 meta-level $\lambda$, while going the other way introduces a runtime
-binder. Meta-level function types and $\Sigma$ types support more computation during
+binder. Meta-level function types and $\Sigma$-types support more computation during
 staging, so in many cases it is beneficial to use the improved forms. In some
 cases though we may want to use unimproved forms, to limit the size of generated
 code. This is similar to what we have seen with let-insertion. For a minimal
@@ -627,7 +629,7 @@ compile.
 
 In this case, the object language is simply typed, so every type is known
 statically. This makes it easy to assign different memory layouts to different
-types, and generate code accordingly for each type. Moving to 2LTT, we still
+types and generate code accordingly for each type. Moving to 2LTT, we still
 want to abstract over runtime types at compile time, so we use the following
 setup.
 \begin{itemize}
@@ -640,17 +642,17 @@ setup.
   \Lift A$.
 \end{itemize}
 Despite the restriction to simple types at runtime, we can still write arbitrary
-higher-rank polymorphic functions, such as a function with type $((A : \Ty_0)
+higher-rank polymorphic functions in 2LTT, such as a function with type $((A : \Ty_0)
 \to \Lift\,\spl A \to \Lift \spl A) \to \Lift\,\Bool_0$. This function can be
 only applied to statically known arguments, so the polymorphism can be staged
 away. The main restriction that programmers have to keep in mind is that
 polymorphic functions cannot be stored inside runtime data types.
 
-This is fairly similar to the well-known monomorphization models in the
-C++ and Rust programming languages. The evident difference is that in 2LTT we
-can use a full type theory at compile time. Additionally, we will see in Section
-\ref{sec:intensional-analysis} that this setup is compatible with an induction principle for
-$\Ty_0$, so that we can analyze the structure of runtime types.
+This is fairly similar to the well-known monomorphization models in the C++ and
+Rust programming languages. The evident difference is that in 2LTT we can use a
+full type theory at compile time. Additionally, we will see in Section
+\ref{sec:intensional-analysis} that this setup is compatible with intensional
+analysis, the ability to analyze the structure of object types and terms.
 
 \subsubsection{Memory representation polymorphism}
 
@@ -808,7 +810,7 @@ involved, i.e.\ we can model underlying sorts using any metatheoretic $\Set_j$.
 
   In the initial model, an element of $\Con$ is a \emph{typing context}, an
   element of $\Sub$ is a \emph{parallel substitution}, $\emptycon$ is the
-  \emph{empty typing context}, and $\epsilon$ is the empty list viewed as a
+  \emph{empty typing context} and $\epsilon$ is the empty list viewed as a
   parallel substitution. The identity substitution $\id : \Sub\,\Gamma\,\Gamma$
   maps each variable to itself, and $\sigma \circ \delta$ can be computed
   by substituting each term in $\sigma$ (which is a list of terms) with $\delta$.
@@ -954,7 +956,7 @@ where the object level is a homotopy type theory and the meta level is an
 extensional type theory. In contrast, we allow a wider range of setups under the
 2LTT umbrella. Ibid.\ also considers a range of additional
 strengthenings and extensions of 2LTT \cite[Section~2.4]{twolevel}, most of which
-are useful in synthetic homotopy theory. We do not assume any of these, and
+are useful in synthetic homotopy theory. We do not assume any of these and
 stick to the most basic formulation of 2LTT.
 
 \subsubsection{Elaborating informal syntax}
@@ -963,10 +965,9 @@ The justification for the usage of the informal syntax in Section
 notation to the formal syntax (often termed ``core syntax'' in the
 implementation of dependently typed programming languages). Elaboration is
 partial: it may throw error on invalid input. Elaboration also requires
-\emph{decidability of conversion} for the formal syntax, since checking
-well-typing requires comparing types for conversion, which in turn requires
-comparing terms.  We do not detail elaboration in this paper, we only make
-some observations.
+\emph{decidability of conversion} for the formal syntax, since type checking
+requires comparing types for conversion, which in turn requires comparing terms.
+We do not detail elaboration in this paper, we only make some observations.
 \begin{itemize}
 \item Decidability of conversion can be shown through normalization. Since 2LTT
       is a minor variation on ordinary MLTT, we expect that existing proofs for MLTT
@@ -1106,12 +1107,12 @@ significantly weaker conservativity theorem is shown, which only expresses that
 there exists a function from $\Tm_{0,j}\,\emb{\Gamma}\,\emb{A}$ to $\Tm_{\mbbo
   j}\,\Gamma\,A$.
 
-Strictness tells us that staging does not perform any computation in the
-object theory; e.g.\ it does not perform $\beta$-reduction or inline any
-$\msf{let}$-definition. This is practically quite important; for instance,
-\emph{full normalization of 2LTT} is a sound and stable staging algorithm, but
-it is not strict, and it is practically not useful, since it does not
-provide any control over inlining and $\beta$-reduction in code generation.
+Strictness tells us that staging does not perform any computation in the object
+theory; e.g.\ it does not perform $\beta$-reduction. This is practically quite
+important; for instance, \emph{full normalization of 2LTT} is a sound and stable
+staging algorithm, but it is not strict, and it is practically not useful, since
+it does not provide any control over inlining and $\beta$-reduction in code
+generation.
 
 Note that staging necessarily preserves type and term formers up to conversion,
 since it is defined on quotiented types and terms. More generally, staging
@@ -1235,7 +1236,7 @@ expositions in previous literature, see \cite[Chapter~1.2]{huber-thesis} and
 \subsubsection{The object-level fragment}
 
 We move on to modeling the object-level syntactic fragment of 2LTT. We make some
-preliminary definitions. First, note the types in the object theory yield a
+preliminary definitions. First, note that types in the object theory yield a
 presheaf, and terms yield a displayed presheaf over them; this immediately
 follows from the specification of a family structure in a cwf. Hence, we do a
 bit of a name overloading, and have $\Ty_{\mbbo j} : \hCon$ and $\Tm_{\mbbo j} : \hTy\,\Ty_{\mbbo j}$.
@@ -1331,7 +1332,6 @@ We look at the interpretation of contexts.
   We have the zero de Bruijn variable $\q : \Tm_{\mbbo j}\,(\Gamma \ext
   A)\,(A[\p])$.  Hence, we define $(\Gamma \ext A)^P$ as $(\Gamma^P[\p],\,\q)$.
 \end{itemize}
-
 Thus, a generic semantic context $\Gamma^P : |\ev\emb{\Gamma}|\,\Gamma$ is just
 a list of variables, corresponding to the identity substitution $\id :
 \Subo\,\Gamma\,\Gamma$ which maps each variable to itself.
@@ -1937,13 +1937,10 @@ object theory, it is not possible to specify dependent or polymorphic types
 there. We need a substitution operation to describe dependent elimination or
 polymorphic instantiation.
 
-However, this is still sufficient for many practical use cases, for example the
-monomorphization setup in Section \ref{sec:monomorphization}. Here, it makes sense to only
-have weakening in the object theory, but no $\beta\eta$-rules. We care about
-the intension of the staging output; presumably we are doing monomorphization
-because we care about code performance, so in 2LTT we do not want to
-definitionally equate object-level programs with different performance
-characteristics.
+However, stability under weakening is still sufficient for many practical use
+cases, for example the monomorphization setup in Section
+\ref{sec:monomorphization}. Here, we only have weakening as definitional
+equality in the object theory, and we do not have $\beta\eta$-rules.
 
 \subsubsection{Closed modalities}\label{sec:closed-modalities}
 Another option is to add a \emph{closed} or \emph{crisp} modality
@@ -2120,7 +2117,6 @@ There are also ways that 2LTT itself could be enhanced.
   terms, or some induction principle which is more flexible than the plain
   assumption of decidable object-level equality.
 \end{itemize}
-
 
 
 \bibliographystyle{ACM-Reference-Format}

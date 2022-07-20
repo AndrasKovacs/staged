@@ -9,16 +9,21 @@
   \providecommand\BibTeX{{%
     \normalfont B\kern-0.5em{\scshape i\kern-0.25em b}\kern-0.8em\TeX}}}
 
-%% Rights management information.  This information is sent to you
-%% when you complete the rights form.  These commands have SAMPLE
-%% values in them; it is your responsibility as an author to replace
-%% the commands and values with those provided to you when you
-%% complete the rights form.
-
-%% \setcopyright{acmcopyright}
-%% \copyrightyear{2018}
-%% \acmYear{2018}
-%% \acmDOI{XXXXXXX.XXXXXXX}
+%%% The following is specific to ICFP '22 and the paper
+%%% 'Staged Compilation with Two-Level Type Theory'
+%%% by András Kovács.
+%%%
+\setcopyright{rightsretained}
+\acmPrice{}
+\acmDOI{10.1145/3547641}
+\acmYear{2022}
+\copyrightyear{2022}
+\acmSubmissionID{icfp22main-p52-p}
+\acmJournal{PACMPL}
+\acmVolume{6}
+\acmNumber{ICFP}
+\acmArticle{110}
+\acmMonth{8}
 
 %% These commands are for a JOURNAL article.
 
@@ -35,6 +40,7 @@
 %% of the event, and this ID should be used as the parameter to this command.
 %%\acmSubmissionID{123-A56-BU3}
 
+\bibliographystyle{ACM-Reference-Format}
 %%
 %% The majority of ACM publications use numbered citations and
 %% references.  The command \citestyle{authoryear} switches to the
@@ -146,6 +152,11 @@
 \begin{document}
 
 \title{Staged Compilation With Two-Level Type Theory}
+\titlenote{The author was supported by the “Application Domain Specific Highly
+  Reliable IT Solutions” project which has been implemented with support from
+  the National Research, Development and Innovation Fund of Hungary, financed
+  under the Thematic Excellence Programme TKP2020-NKA-06 (National Challenges
+  Subprogramme) funding scheme.}
 
 %% The "author" command and its associated commands are used to define
 %% the authors and their affiliations.
@@ -181,9 +192,27 @@ full dependent types and unrestricted staging for types.
 \end{abstract}
 
 \begin{CCSXML}
+<ccs2012>
+   <concept>
+       <concept_id>10003752.10003790.10011740</concept_id>
+       <concept_desc>Theory of computation~Type theory</concept_desc>
+       <concept_significance>500</concept_significance>
+       </concept>
+   <concept>
+       <concept_id>10011007.10011006.10011041.10011047</concept_id>
+       <concept_desc>Software and its engineering~Source code generation</concept_desc>
+       <concept_significance>500</concept_significance>
+       </concept>
+ </ccs2012>
 \end{CCSXML}
 
+\ccsdesc[500]{Theory of computation~Type theory}
+\ccsdesc[500]{Software and its engineering~Source code generation}
+
 \keywords{type theory, two-level type theory, staged compilation}
+
+
+
 \maketitle
 
 \section{Introduction}\label{sec:introduction}
@@ -200,11 +229,11 @@ structure of object expressions. On the other hand, we get \emph{guarantees}
 about the well-scoping or well-typing of the code output, and we are also able
 to use concise syntax for embedding object-level code.
 
-\emph{Two-level type theory}, or 2LTT in short, was described by Annekov,
-Capriotti, Kraus and Sattler \cite{twolevel}, building on ideas from Vladimir
-Voevodsky \cite{hts}. The motivation was to allow convenient metatheoretical
-reasoning about a certain mathematical language (homotopy type theory), and to
-enable concise and modular ways to extend the language with axioms.
+\emph{Two-level type theory}, or 2LTT in short, was described in
+\cite{twolevel}, building on ideas from \cite{hts}. The motivation was to allow
+convenient metatheoretical reasoning about a certain mathematical language
+(homotopy type theory), and to enable concise and modular ways to extend the
+language with axioms.
 
 It turns out that metamathematical convenience closely corresponds to
 metaprogramming convenience: 2LTT can be directly and effectively employed in
@@ -314,6 +343,8 @@ will discuss variations of the object-level languages in Section \ref{sec:variat
 \subsubsection{Moving between stages}
 At this point, our system is rather limited, since there is no interaction
 between the stages. We enable such interaction through the following operations.
+Note that none of these operations can be expressed as functions, since function
+types cannot cross between stages.
 \begin{itemize}
 \item \emph{Lifting:} for $A : \U_0$, we have $\Lift A : \U_1$.  From the
   staging point of view, $\Lift A$ is the type of metaprograms which compute
@@ -333,8 +364,6 @@ between the stages. We enable such interaction through the following operations.
 \item Quoting and splicing are definitional inverses, i.e.\ we have $\spl\qut{t} = t$ and
   $\qut{\spl t}=t$ as definitional equalities.
 \end{itemize}
-Note that none of these three operations can be expressed as functions, since
-function types cannot cross between stages.
 
 Informally, if we have a closed program $t : A$ with $A : \U_0$, \emph{staging}
 means computing all metaprograms and recursively replacing all splices in $t$ and $A$
@@ -648,11 +677,11 @@ only applied to statically known arguments, so the polymorphism can be staged
 away. The main restriction that programmers have to keep in mind is that
 polymorphic functions cannot be stored inside runtime data types.
 
-This is fairly similar to the well-known monomorphization models in the C++ and
-Rust programming languages. The evident difference is that in 2LTT we can use a
-full type theory at compile time. Additionally, we will see in Section
-\ref{sec:intensional-analysis} that this setup is compatible with intensional
-analysis, the ability to analyze the structure of object types and terms.
+%% This is fairly similar to the well-known monomorphization models in the C++ and
+%% Rust programming languages. The evident difference is that in 2LTT we can use a
+%% full type theory at compile time. Additionally, we will see in Section
+%% \ref{sec:intensional-analysis} that this setup is compatible with intensional
+%% analysis, the ability to analyze the structure of object types and terms.
 
 \subsubsection{Memory representation polymorphism}
 
@@ -725,17 +754,16 @@ the features of this metatheory in the following.
 The metatheory is an intensional type theory with a cumulative universe
 hierarchy $\Set_i$, where $i$ is ordinal number such that $i \leq \omega +
 1$. The transfinite $i$ levels are a convenience feature for modeling typing
-contexts, where sometimes we will need universes large enough to fit
-types at arbitrary finite levels. We also assume uniqueness of identity proofs
-and function extensionality. We will omit transports along identity proofs in
-the paper, for the sake of readability. The missing transports can be in
-principle recovered due to Hofmann's conservativity result
-\cite{hofmann95extensional}; see also Winterhalter et
-al. \cite{DBLP:conf/cpp/WinterhalterST19}. We assume $\Pi$, $\Sigma$, $\top$ and
-$\mbb{N}$ types in all universes, and reuse Notation \ref{notation:basics}. We
-also assume certain quotient inductive-inductive types, to represent the syntax of 2LTT
-and the object theory. We will detail these shortly in Sections \ref{sec:2lttmod}
-and \ref{sec:objmod}.
+contexts, where sometimes we will need universes large enough to fit types at
+arbitrary finite levels. We also assume uniqueness of identity proofs and
+function extensionality. We will omit transports along identity proofs in the
+paper, for the sake of readability. The missing transports can be in principle
+recovered due to Hofmann's conservativity result \cite{hofmann95extensional};
+see also \cite{DBLP:conf/cpp/WinterhalterST19}. We assume $\Pi$, $\Sigma$,
+$\top$ and $\mbb{N}$ types in all universes, and reuse Notation
+\ref{notation:basics}. We also assume certain quotient inductive-inductive
+types, to represent the syntax of 2LTT and the object theory. We will detail
+these shortly in Sections \ref{sec:2lttmod} and \ref{sec:objmod}.
 
 \subsection{Algorithm Extraction}
 
@@ -747,21 +775,16 @@ can improve performance. Hence, at some point we may want to ``escape'' from
 quotients.
 
 Fortunately, our specified meta type theory can be interpreted in
-\emph{setoids}, as most recently explained by Pujet and Tabareau
+\emph{setoids}, as most recently explained in
 \cite{DBLP:journals/pacmpl/PujetT22}. A setoid is a set together with an
-equivalence relation on it. We interpret closed types as setoids, and
-dependent types as setoid fibrations. For inductive base types such $\Bool$ or
-$\Nat$, the equivalence relation is interpreted as identity. Functions are
-interpreted as equivalence-preserving functions, and two functions are equivalent if
-they are pointwise equivalent. A quotient type $A/R$ is interpreted by extending
-the semantic notion of equivalence for $A$ with the given $R$ relation. We will
-sketch the interpretation of the 2LTT syntax (given as a quotient inductive-inductive type)
-in Section \ref{sec:2lttsetoid}.
-
-\begin{definition} Assume a closed function $f : A \to B$ defined
-in the mentioned type theory. The \textbf{extraction} of $f$ is
-the underlying function of $f$'s interpretation in the setoid model.
-\end{definition}
+equivalence relation on it. We interpret closed types as setoids, and dependent
+types as setoid fibrations. For inductive base types such $\Bool$ or $\Nat$, the
+equivalence relation is interpreted as identity. Functions are interpreted as
+equivalence-preserving functions, and two functions are equivalent if they are
+pointwise equivalent. A quotient type $A/R$ is interpreted by extending the
+semantic notion of equivalence for $A$ with the given $R$ relation. We will
+sketch the interpretation of the 2LTT syntax (given as a quotient
+inductive-inductive type) in Section \ref{sec:2lttsetoid}.
 
 In particular, from $f : A/R \to A/R$ we can extract a function which acts on
 the underlying set of $A$'s interpretation. Note that an extracted function can
@@ -769,15 +792,25 @@ be only viewed as an algorithm if the setoid interpretation is itself defined in
 a constructive theory, but that is the case in the cited work
 \cite{DBLP:journals/pacmpl/PujetT22}.
 
-In other words, we can view the usage of constructive quotients as a convenient
-shorthand for working with explicit equivalence relations. When we reason about
-the syntax of a type theory, this provides a bridge between the
-categorical/algebraic style and the traditional style that uses separate
-equivalence relations. It makes sense to work with quotients internally to a
-type theory whenever we only want to talk about constructions and properties
-which respect conversion. However, at any point we have the option to switch to
-an external perspective and look at underlying sets and the underlying maps.
+\begin{definition} Assume a closed function $f : A \to B$ defined
+in the mentioned type theory. The \textbf{extraction} of $f$ is
+the underlying function of $f$'s interpretation in the setoid model.
+\end{definition}
 
+In other words, we can view quotients as a convenient shorthand for working with
+explicit equivalence relations. We can work with quotients when we want to enforce
+preservation of equivalence relations, but at any point we have the option to
+switch to an external view and look at underlying sets and functions.
+
+%% In other words, we can view the usage of constructive quotients as a convenient
+%% shorthand for working with explicit equivalence relations. When we reason about
+%% the syntax of a type theory, this provides a bridge between the
+%% categorical/algebraic style and the traditional style that uses separate
+%% equivalence relations.
+%% It makes sense to work with quotients internally to a type theory whenever we
+%% only want to talk about constructions and properties which respect
+%% conversion. However, at any point we have the option to switch to an external
+%% perspective and look at underlying sets and the underlying maps.
 
 \subsection{Models and Syntax of 2LTT}\label{sec:2lttmod}
 
@@ -1489,7 +1522,7 @@ together with $\NatElim$, and likewise we have all other type formers.
 \subsubsection{Internal $\ev$} We also use an internal view of
 $\ev$ which maps 2LTT syntax to internal values; i.e.\ we compose $\ev$ with
 internalization. Below, note that the input to $\ev$ is \emph{external}, so we
-mark $\ev$ as being parametrized by external input.
+mark $\ev$ as being parameterized by external input.
 \begin{alignat*}{3}
   &\ev\,(\Gamma &&: \Con)                      &&: \whset_\omega \\
   &\ev\,(\sigma &&: \Sub\,\Gamma\,\Delta)      &&: \ev\,\Gamma \to \ev\,\Delta \\
@@ -1506,6 +1539,21 @@ object-level terms over $\Ty_{0,j}$ as $|\Tm_{0,j}|\,\{\Gamma\}\,A :=
 \Tm_{0,j}\,\emb{\Gamma}\,A$. Hence, internally we have $\Ty_{0,j} : \whset_0$ and
 $\Tm_{0,j} : \Ty_{0,j} \to \whset_0$. $\Ty_{0,j}$ is closed under all type formers,
 analogously as we have seen for $\Ty_{\mbbo j}$.
+
+%% \begin{alignat*}{6}
+%%   &\ev\,(\Gamma &&: \Con)                      &&: \whset_\omega && \ev\,(t      &&: \Tm_{1,j}\,\Gamma)          &&: (\gamma : \ev\,\Gamma) \to \ev\,A\,\gamma\\
+%%   &\ev\,(\sigma &&: \Sub\,\Gamma\,\Delta)      &&: \ev\,\Gamma \to \ev\,\Delta \hspace{3.5em}&& \ev\,(A      &&: \Ty_{0,j}\,\Gamma)          &&: \ev\,\Gamma \to \Ty_{\mbbo_j}\\
+%%   &\ev\,(A      &&: \Ty_{1,j}\,\Gamma)          &&: \ev\,\Gamma \to \whset_j&& \ev\,(t      &&: \Tm_{0,j}\,\Gamma\,A)       &&: (\gamma : \ev\,\Gamma) \to \Tm_{\mbbo j}\,(\ev\,A\,\gamma)
+%% \end{alignat*}
+
+%% \begin{alignat*}{3}
+%%   &\ev\,(\Gamma &&: \Con)                      &&: \whset_\omega \\
+%%   &\ev\,(\sigma &&: \Sub\,\Gamma\,\Delta)      &&: \ev\,\Gamma \to \ev\,\Delta \\
+%%   &\ev\,(A      &&: \Ty_{1,j}\,\Gamma)          &&: \ev\,\Gamma \to \whset_j\\
+%%   &\ev\,(t      &&: \Tm_{1,j}\,\Gamma)          &&: (\gamma : \ev\,\Gamma) \to \ev\,A\,\gamma\\
+%%   &\ev\,(A      &&: \Ty_{0,j}\,\Gamma)          &&: \ev\,\Gamma \to \Ty_{\mbbo_j}\\
+%%   &\ev\,(t      &&: \Tm_{0,j}\,\Gamma\,A)       &&: (\gamma : \ev\,\Gamma) \to \Tm_{\mbbo j}\,(\ev\,A\,\gamma)
+%% \end{alignat*}
 
 \subsubsection{Embedding}
 Now, the embedding operation $\emb{\blank}$ can be also internalized on types
@@ -1657,9 +1705,7 @@ $(\sigma,\,t) : \Sub\,\Gamma\,(\Delta\ext A)$, $\p : \Sub\,(\Gamma\ext
 A)\,\Gamma$, $\p : \Sub\,(\Gamma\ext A)\,\Gamma$ and $\q : \Tm_{1,j}\,(\Gamma
 \ext A)\,(A[\p])$. The category-with-families equations hold evidently.
 \begin{alignat*}{4}
-  & (\sigma,\,t)\rel\,\gamma\rel                 && := (\sigma\rel\,\gamma\rel,\,t\rel\,\gamma\rel)\\
-  & \p\rel\,(\gamma\rel,\,t\rel)                 && := \gamma\rel\\
-  & \q\rel\,(\gamma\rel,\,t\rel)                 && := t\rel
+  & (\sigma,\,t)\rel\,\gamma\rel := (\sigma\rel\,\gamma\rel,\,t\rel\,\gamma\rel) \hspace{2em} \p\rel\,(\gamma\rel,\,t\rel) := \gamma\rel \hspace{2em} \q\rel\,(\gamma\rel,\,t\rel) := t\rel
 \end{alignat*}
 
 \subsubsection{Meta-level natural numbers} First, we have to define a relation:
@@ -1960,19 +2006,18 @@ cannot capture closure environments).
 \section{Related Work}\label{sec:related-work}
 
 The work Annekov et al.\ on two-level type theory \cite{twolevel}, building on
-the thesis of Capriotti \cite{capriotti2017models} and ideas from Voevodsky
-\cite{hts}, is the foremost inspiration in the current work. Interestingly, the
-above works do mention metaprogramming as a source of intuition for 2LTT, but
-they only briefly touch on this aspect, and in \cite{twolevel} the main focus is
-on extensions of basic 2LTT which do not have staging semantics
-anymore. Ibid.\ conjectures the strong conservativity of 2LTT in Proposition
-2.18, and suggests categorical gluing as proof strategy. In this work, we do
-essentially that: our presheaf model and the logical relation model could be
-merged into a single instance of gluing along the $\re$ morphism; this merges
-staging and its soundness proof. We split this construction to two parts in order
-to get a self-contained presentation of the staging algorithm.
+\cite{capriotti2017models} and \cite{hts}, is the foremost inspiration in
+the current work. Interestingly, the above works do mention metaprogramming as a
+source of intuition for 2LTT, but they only briefly touch on this aspect, and in
+\cite{twolevel} the main focus is on extensions of basic 2LTT which do not have
+staging semantics anymore. Ibid.\ conjectures the strong conservativity of 2LTT
+in Proposition 2.18, and suggests categorical gluing as proof strategy. In this
+work, we do essentially that: our presheaf model and the logical relation model
+could be merged into a single instance of gluing along the $\re$ morphism; this
+merges staging and its soundness proof. We split this construction to two parts
+in order to get a self-contained presentation of the staging algorithm.
 
-The multi-stage calculus of Kawata and Igarashi \cite{multi-stage-calculus}
+The multi-stage calculus in \cite{multi-stage-calculus}
 supports staging operations and type dependencies. However, there are major
 differences to the current work. First, ibid.\ does not have large elimination,
 hence it does not support computing types by staging. Second, it does not
@@ -1982,7 +2027,7 @@ staged \emph{computation}). In other words, programs may manipulate code
 fragments during execution, in more liberal ways than in 2LTT, but there is no
 judgment which ensures that a purely ``object-level'' program can be extracted
 from a multi-stage program. Similar considerations apply to systems with the S4
-modality (see e.g.\ Davies and Pfenning \cite{DBLP:journals/jacm/DaviesP01}),
+modality (see e.g.\ \cite{DBLP:journals/jacm/DaviesP01}),
 where there is no judgment that guarantees elimination of modal operations.
 
 %% We make a
@@ -2119,7 +2164,6 @@ There are also ways that 2LTT itself could be enhanced.
 \end{itemize}
 
 
-\bibliographystyle{ACM-Reference-Format}
 \interlinepenalty=10000
 \bibliography{references}
 

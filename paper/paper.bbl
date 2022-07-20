@@ -83,6 +83,19 @@
 \showDOI{\tempurl}
 
 
+\bibitem[{Agda developers}(2022)]%
+        {agdadocs}
+\bibfield{author}{\bibinfo{person}{{Agda developers}}.}
+  \bibinfo{year}{2022}\natexlab{}.
+\newblock \bibinfo{title}{Agda documentation}.
+\newblock
+\newblock
+\urldef\tempurl%
+\url{https://agda.readthedocs.io/en/v2.6.2.1/}
+\showURL{%
+\tempurl}
+
+
 \bibitem[Altenkirch and Kaposi(2016)]%
         {ttintt}
 \bibfield{author}{\bibinfo{person}{Thorsten Altenkirch} {and}
@@ -314,19 +327,6 @@
 \urldef\tempurl%
 \url{https://doi.org/10.1145/382780.382785}
 \showDOI{\tempurl}
-
-
-\bibitem[developers(2022)]%
-        {agdadocs}
-\bibfield{author}{\bibinfo{person}{Agda developers}.}
-  \bibinfo{year}{2022}\natexlab{}.
-\newblock \bibinfo{title}{Agda documentation}.
-\newblock
-\newblock
-\urldef\tempurl%
-\url{https://agda.readthedocs.io/en/v2.6.2.1/}
-\showURL{%
-\tempurl}
 
 
 \bibitem[Diehl(2017)]%

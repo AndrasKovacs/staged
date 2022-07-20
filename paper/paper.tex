@@ -695,7 +695,7 @@ a meta-level type, and runtime types are indexed over representations.
 \item We have Russell-style $\U_{0,j} : \Rep \to \U_{0, j+1}\,r$, where $r$ is
   some chosen runtime representation for types; usually we would mark types are
   erased. We leave the meta-level $\U_{1,j}$ hierarchy unchanged.
-\item We may introduce unboxed $\Sigma$ types and primitive machine types in the
+\item We may introduce unboxed $\Sigma$-types and primitive machine types in the
   runtime language. For $r : \Rep$, $r' : \Rep$, $A : \U_{0}\,r$ and $B : A \to
   \U_{0}\,r'$, we may have $(x : A) \times B\,x :
   \U_{0}\,(\msf{Prod\,r\,r'})$. Thus, we have type dependency, but we do not
@@ -1609,14 +1609,14 @@ cwf given by $(\Ty_{1,j},\,\Tm_{1,j})$ and the corresponding cwf structure in
 $\hato$. In ibid.\ there is an analysis of such cwf morphisms, from which we
 obtain the following additional preservation properties:
 \begin{itemize}
-\item Meta-level $\Sigma$ types are preserved up to isomorphism, so we have
+\item Meta-level $\Sigma$-types are preserved up to isomorphism, so we have
   \[ \re_{\Sigma} : \re\,(\Sigma\,A\,B)\,\gamma
   \simeq ((\alpha : \re\,A) \times \re\,B\,(\rexti\,(\gamma,\,\alpha))). \]
   The semantic values of $\re\,(\Sigma\,A\,B)\,\gamma$
   are 2LTT terms with type $(\Sigma\,A\,B)[\gamma]$, restricted to object-level contexts.
   We can still perform pairing and projection with such restricted terms; hence
   the preservation property.
-\item Meta-level $\Pi$ types and universes are preserved in a lax way. For $\Pi$, we have
+\item Meta-level $\Pi$-types and universes are preserved in a lax way. For $\Pi$, we have
   \[ \re_{\app} : \re\,(\Pi\,A\,B)\,\gamma \to (\alpha : \re\,A\,\gamma) \to \re\,B\,(\rexti\,(\gamma,\,\alpha))
   \]
   such that $\re_{\app}\,(\re\,t\,\gamma)\,\alpha =

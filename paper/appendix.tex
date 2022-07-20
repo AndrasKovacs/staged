@@ -1,7 +1,7 @@
 
 %% build: latexmk -pdf -pvc appendix.tex
 
-\documentclass[acmsmall,screen]{acmart}
+\documentclass[acmsmall,screen,nonacm]{acmart}
 %% \raggedbottom
 
 \settopmatter{printacmref=false} % Removes citation information below abstract
@@ -88,7 +88,7 @@
 \newcommand{\mbbo}{\mbb{O}}
 \newcommand{\ob}{_\mbbo}
 
-\renewcommand{\U}{\msf{U}}
+\newcommand{\U}{\msf{U}}
 \newcommand{\Con}{\msf{Con}}
 \newcommand{\Sub}{\msf{Sub}}
 \newcommand{\Ty}{\msf{Ty}}
@@ -153,7 +153,7 @@
 %% \hypersetup{draft}
 \begin{document}
 
-\title{Staged Compilation With Two-Level Type Theory (Appendix)}
+\title{Staged Compilation with Two-Level Type Theory (Appendix)}
 
 %% The "author" command and its associated commands are used to define
 %% the authors and their affiliations.

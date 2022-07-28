@@ -329,7 +329,7 @@ examples.
     and will be staged away. Elements of $A$ are likewise computed away.
 \end{itemize}
 
-\subsubsection{Type formers} $\U_0$ and $\U_1$ may be closed under arbitrary type formers,
+\subsubsection{Type Formers} $\U_0$ and $\U_1$ may be closed under arbitrary type formers,
 such as functions, $\Sigma$-types, identity types or inductive types in general.
 However, all constructors and eliminators in type formers must stay at the same
 stage. For example:
@@ -341,7 +341,7 @@ stage. For example:
 It is not required that we have the \emph{same} type formers at both stages. We
 will discuss variations of the object-level languages in Section \ref{sec:variations}.
 
-\subsubsection{Moving between stages}
+\subsubsection{Moving Between Stages}
 At this point, our system is rather limited, since there is no interaction
 between the stages. We enable such interaction through the following operations.
 Note that none of these operations can be expressed as functions, since function
@@ -615,7 +615,7 @@ passes. For instance, fusion in GHC relies on rewrite rules and inlining
 annotations which have to be carefully tuned and ordered, and it is possible to
 get pessimized code via failed fusion.
 
-\subsubsection{Inferring staging operations}
+\subsubsection{Inferring Staging Operations}
 We can extract a coercive subtyping system from the staging operations, which
 can be used for inference, and in particular for automatically transporting
 definitions along preservation isomorphisms. One choice is to have $A \leq \Lift
@@ -681,7 +681,7 @@ polymorphic functions cannot be stored inside runtime data types.
 %% \ref{sec:intensional-analysis} that this setup is compatible with intensional
 %% analysis, the ability to analyze the structure of object types and terms.
 
-\subsubsection{Memory representation polymorphism}
+\subsubsection{Memory Representation Polymorphism}
 
 This refines monomorphization, so that types are not directly identified with
 memory representations, but instead representations are internalized in 2LTT as
@@ -748,7 +748,7 @@ In the rest of the paper we will mostly work in this setting, and we will
 explicitly note when we switch to a different metatheory. We summarize
 the features of this metatheory in the following.
 
-\subsubsection{Metatheory}
+\paragraph{Metatheory}
 The metatheory is an intensional type theory with a cumulative universe
 hierarchy $\Set_i$, where $i$ is ordinal number such that $i \leq \omega +
 1$. The transfinite $i$ levels are a convenience feature for modeling typing
@@ -990,7 +990,7 @@ strengthenings and extensions of 2LTT \cite[Section~2.4]{twolevel}, most of whic
 are useful in synthetic homotopy theory. We do not assume any of these and
 stick to the most basic formulation of 2LTT.
 
-\subsubsection{Elaborating informal syntax}
+\subsubsection{Elaborating Informal Syntax}
 The justification for the usage of the informal syntax in Section
 \ref{sec:tour-of-2ltt} is \emph{elaboration}. Elaboration translates surface
 notation to the formal syntax (often termed ``core syntax'' in the
@@ -1015,7 +1015,7 @@ We do not detail elaboration in this paper, we only make some observations.
       difficulty of formalization.
 \end{itemize}
 
-\subsubsection{The setoid interpretation of the syntax}\label{sec:2lttsetoid} We need to show
+\subsubsection{The Setoid Interpretation of the Syntax}\label{sec:2lttsetoid} We need to show
 that the 2LTT syntax, as a particular inductive type, can be modeled in setoids.
 Unfortunately, there is no prior work which presents the setoid interpretation
 of quotient types in the generality of quotient induction-induction. We sketch
@@ -1201,7 +1201,7 @@ and elements of $\Subo$ as $f$, $g$, and $h$, to avoid name clashing with
 contexts and substitutions in the presheaf model.
 \end{notation}
 
-\subsubsection{The syntactic category and the meta-level fragment}
+\subsubsection{The Syntactic Category and the Meta-Level Fragment}
 
 \begin{definition} $\bs{\wh{\Con} : \Set_{\omega+1}}$ is defined as the set of presheaves
 over $\mbbo$. $\Gamma : \wh{\Con}$ has an action on objects $|\Gamma| :
@@ -1264,7 +1264,7 @@ also the meta-level family structure and all meta-level type formers. For
 expositions in previous literature, see \cite[Chapter~1.2]{huber-thesis} and
 \cite[Section~4.1]{Hofmann97syntaxand}.
 
-\subsubsection{The object-level fragment}
+\subsubsection{The Object-Level Fragment}
 
 We move on to modeling the object-level syntactic fragment of 2LTT. We make some
 preliminary definitions. First, note that types in the object theory yield a
@@ -1461,7 +1461,7 @@ strong enough types to represent typed semantic values. For example, there
 are distinct data constructors storing semantic function values, natural number
 literals and quoted expressions.
 
-\subsubsection{Caching} In a production-strength implementation we would need some
+\paragraph{Caching} In a production-strength implementation we would need some
 caching mechanism, to avoid excessive duplication of code. For example, if we
 use the staged $\mit{map}$ function multiple times with the same type and
 function arguments, we do not want to generate separate code for each
@@ -1509,7 +1509,7 @@ the same conventions as in Notation \ref{basic-notation}.
   & A : \hTy_{1,j}\,\Gamma           && \hspace{1em}\text{is internalized as}\hspace{1em} A      : \Gamma \to \whset_j \\
   & t : \hTm_{1,j}\,\Gamma\,A        && \hspace{1em}\text{is internalized as}\hspace{1em} t      : (\gamma : \Gamma) \to A\,\gamma
 \end{alignat*}
-\subsubsection{Object-theoretic syntax} The syntax of the object theory is clearly
+\subsubsection{Object-Theoretic Syntax} The syntax of the object theory is clearly
 fully stable under object-theoretic substitution, so we can internalize all of
 its type and term formers. We internalize object-level types and terms as
 $\Ty_{\mbbo j} : \whset_0$ and $\Tm_{\mbbo j} : \Ty_{\mbbo j} \to
@@ -1529,7 +1529,7 @@ mark $\ev$ as being parameterized by external input.
   &\ev\,(A      &&: \Ty_{0,j}\,\Gamma)          &&: \ev\,\Gamma \to \Ty_{\mbbo_j}\\
   &\ev\,(t      &&: \Tm_{0,j}\,\Gamma\,A)       &&: (\gamma : \ev\,\Gamma) \to \Tm_{\mbbo j}\,(\ev\,A\,\gamma)
 \end{alignat*}
-\subsubsection{Object-level fragment of 2LTT}
+\subsubsection{Object-Level Fragment of 2LTT}
 The purely object-level syntactic fragment of 2LTT can be internalized as
 follows. We define externally the presheaf of object-level types as
 $|\Ty_{0,j}|\,\Gamma := \Ty_{0,j}\,\emb{\Gamma}$, and the displayed presheaf of
@@ -1583,7 +1583,7 @@ straightforward in each case.
 \endgroup
 \end{definition}
 
-\subsubsection{Preservation properties of $\re$}
+\subsubsection{Preservation Properties of $\re$}
 First, we note that $\re$ strictly preserves $\id$, $\blank\circ\blank$ and
 type/term substitution, and it preserves $\emptycon$ and $\blank\ext_1\blank$ up
 to isomorphism. We have the following isomorphisms internally to $\hato$:
@@ -1641,7 +1641,7 @@ obtain the following additional preservation properties:
   list of restricted terms we would get a syntactic term with list type,
   containing the same restricted terms.
 \end{itemize}
-\subsubsection{Action on lifting} We have an isomorphism $\re\,(\Lift\,A)\,\gamma \simeq
+\subsubsection{Action on Lifting} We have an isomorphism $\re\,(\Lift\,A)\,\gamma \simeq
 \Tm_{0,j}\,(\re\,A\,\gamma)$. This is given by quoting and splicing: we convert
 between restricted meta-level terms with type $\Lift\,A$ and restricted
 object-level terms with type $A$. Hence, we write components of this isomorphism
@@ -1656,7 +1656,7 @@ operations. With this, we also have $\re\,\qut{t}\,\gamma =
 This is because substitutions targeting $\Gamma \ext_0 A$ are the same as
 pairs of substitutions and terms, by the specification of $\blank\!\ext_0\!\blank$.
 
-\subsubsection{Action on object-level types and terms} $\re$ preserves all structure
+\subsubsection{Action on Object-Level Types and Terms} $\re$ preserves all structure
 in the object-level fragment of 2LTT. This follows from the $\re$ specification:
 an external type $A : \Ty_{0,j}\,\Gamma$ is directly internalized as an element
 of $\Ty_{0,j}$, and the same happens for $t : \Tm_{0,j}\,\Gamma\,A$.
@@ -1684,12 +1684,12 @@ terms, we get soundness statements: evaluation via $\ev$ followed by embedding
 back to 2LTT is the same as restriction to object-level contexts. We describe
 the $\blank\rel$ interpretation in the following.
 
-\subsubsection{Syntactic category and terminal object}
+\subsubsection{Syntactic Category and Terminal Object}
 Here, we simply have $\id\rel\,\gamma\rel := \gamma\rel$ and $(\sigma \circ
 \delta)\rel\,\gamma\rel := \sigma\rel\,(\delta\rel\,\gamma\rel)$. The terminal
 object is interpreted as $\emptycon\rel\,\gamma\,\gamma' := \top$.
 
-\subsubsection{Meta-level family structure}
+\subsubsection{Meta-Level Family Structure}
 We interpret context extension and type/term substitution as follows. Note the
 usage of the pattern matching notation on the $\rexti$ isomorphism.
 \begin{alignat*}{4}
@@ -1706,7 +1706,7 @@ A)\,\Gamma$, $\p : \Sub\,(\Gamma\ext A)\,\Gamma$ and $\q : \Tm_{1,j}\,(\Gamma
   & (\sigma,\,t)\rel\,\gamma\rel := (\sigma\rel\,\gamma\rel,\,t\rel\,\gamma\rel) \hspace{2em} \p\rel\,(\gamma\rel,\,t\rel) := \gamma\rel \hspace{2em} \q\rel\,(\gamma\rel,\,t\rel) := t\rel
 \end{alignat*}
 
-\subsubsection{Meta-level natural numbers} First, we have to define a relation:
+\subsubsection{Meta-Level Natural Numbers} First, we have to define a relation:
 \begin{alignat*}{4}
   & (\Nat_{1,j})\rel : \Gamma\rel\,\gamma\,\gamma' \to \mbb{N} \to \re\,\Nat_{1,j}\,\gamma' \to \whset_j\\
   & (\Nat_{1,j})\rel\,\gamma\rel\,n\,n' := (\re_{\mbb{N}}\,n = n')
@@ -1750,7 +1750,7 @@ $z$, and we can use $|\ev\,n|\,\gamma$-many applications of $s\rel$ to $z\rel$
 to witness the goal type. The $\beta$-rules for $\msf{NatElim}$ are also respected
 by this definition.
 
-\subsubsection{Meta-level $\Sigma$-types} We define relatedness pointwise. Pairing and projection
+\subsubsection{Meta-Level $\Sigma$-Types} We define relatedness pointwise. Pairing and projection
 are interpreted as meta-level pairing and projection.
 \begin{alignat*}{3}
   &(\Sigma\,A\,B)\rel\,\gamma\rel : ((\alpha : \ev\,A\,\gamma) \times \ev\,B\,(\gamma,\,\alpha))
@@ -1759,7 +1759,7 @@ are interpreted as meta-level pairing and projection.
              (\alpha\rel : A\rel\,\gamma\rel\,\alpha\,\alpha') \times B\rel\,(\gamma\rel,\,\alpha\rel)\,\beta\,\beta'
 \end{alignat*}
 
-\subsubsection{Meta-level $\Pi$-types} We again use a pointwise definition. Note that we need to use
+\subsubsection{Meta-Level $\Pi$-Types} We again use a pointwise definition. Note that we need to use
 $\re_{\app}$ to apply $t' : \re\,(\Pi\,A\,B)\,\gamma'$ to $\alpha'$.
 \begin{alignat*}{3}
   &(\Pi\,A\,B)\rel\,\gamma\rel : ((\alpha : \ev\,A\,\gamma) \to \ev\,B\,(\gamma,\,\alpha))
@@ -1774,7 +1774,7 @@ For abstraction and application, we use a curry-uncurry definition:
   &(\app\,t)\rel\,(\gamma\rel,\,\alpha\rel) &&:= t\rel\,\gamma\rel\,\alpha\,\alpha'\,\alpha\rel
 \end{alignat*}
 
-\subsubsection{Meta-level universes} We interpret $\U_{1,j}$ as a semantic relation space:
+\subsubsection{Meta-Level Universes} We interpret $\U_{1,j}$ as a semantic relation space:
 \begin{alignat*}{3}
   &(\U_{1,j})\rel\,\gamma\rel : \whset_j \to \re\,\U_{1,j}\,\gamma' \to \whset_{j+1} \\
   &(\U_{1,j})\rel\,\gamma\rel\,t\,t' := t \to \re_{\El}\,t' \to \whset_{j}
@@ -1788,7 +1788,7 @@ The types coincide because of the equation $\re\,(\El\,t)\,\gamma' =
 \re_{\El}\,(\re\,t\,\gamma')$. Therefore we can interpret $\El$ and $\Code$ as
 identity maps, as $(\El\,t)\rel := t\rel$ and $(\Code\,t)\rel := t\rel$.
 
-\subsubsection{Object-level family structure} We interpret extended contexts as follows.
+\subsubsection{Object-Level Family Structure} We interpret extended contexts as follows.
 \begin{alignat*}{3}
   & (\Gamma \ext_0 A)\rel\,(\gamma,\,\alpha)\,(\rextizero\,(\gamma',\,\alpha')) := (\gamma\rel : \Gamma\rel\,\gamma\,\gamma') \times (\emb{\alpha} = \alpha')
 \end{alignat*}
@@ -1808,7 +1808,7 @@ $A\rel\,(\sigma\rel\,\gamma\rel)$.  Similarly,
   & (\sigma,\,t)\rel\,\gamma\rel &&:= (\sigma\rel\,\gamma\rel,\,t\rel\,\gamma\rel)\hspace{2em}&& \q\rel\,(\gamma\rel,\,\alpha\rel) &&:= \alpha\rel
 \end{alignat*}
 
-\subsubsection{Lifting structure}
+\subsubsection{Lifting Structure}
 \begin{alignat*}{3}
   &(\Lift\,A)\rel : \Gamma\rel\,\gamma\,\gamma' \to \Tm_{\mbbo j}\,(\ev\,A\,\gamma) \to \re\,(\Lift\,A)\,\gamma' \to \whset_j\\
   &(\Lift\,A)\rel\,\gamma\rel\,t\,t' := (\emb{t} = \spl t')
@@ -1824,7 +1824,7 @@ by $t\rel\,\gamma\rel$. For splicing, we need
 where the goal type computes to $\emb{F\,t\,\gamma} = \spl(\re\,t\,\gamma')$,
 but this again follows directly from $t\rel\,\gamma\rel$.
 
-\subsubsection{Object-level type formers}
+\subsubsection{Object-Level Type Formers}
 Lastly, object-level type formers are straightforward. For types, we need
 $\emb{\ev\,A\,\gamma} = \re\,A\,\gamma'$, and likewise for terms. Note that
 $\ev$ and $\emb{\blank}$ preserve all structure, and $\re$ preserves all
@@ -1880,7 +1880,7 @@ bijective on types and terms, hence $\Ty_{\mbbo j}\,\Gamma \simeq \Ty_{0,j}\,\em
 $\Tm_{\mbbo j}\,\Gamma\,A \simeq \Tm_{0,j}\,\emb{\Gamma}\,\emb{A}$.
 \end{corollary}
 
-\subsubsection{Alternative presentations}
+\paragraph{Alternative presentations}
 The above conservativity proof could be rephrased as an instance of more modern
 techniques which let us implicitly handle stability under 2LTT substitutions as
 well, not just $\mbbo$ substitutions. This amounts to working in a \emph{modal}
@@ -1965,7 +1965,7 @@ A more direct way to show infeasibility of $\msf{decEq}$ in $\hato$ is to note
 that definitional \emph{inequality} for object-level terms is not stable under
 substitution, since inequal variables can be mapped to equal terms.
 
-\subsubsection{Stability under weakening only}
+\paragraph{Stability under weakening only}
 We can move to different 2LTT setups, where stability under substitution is not
 required. We may have \emph{weakenings} only as morphisms in $\mbbo$.  A
 weakening from $\Gamma$ to $\Delta$ describes how $\Gamma$ can be obtained by
@@ -1986,7 +1986,7 @@ cases, for example the monomorphization setup in Section
 \ref{sec:monomorphization}. Here, we only have weakening as definitional
 equality in the object theory, and we do not have $\beta\eta$-rules.
 
-\subsubsection{Closed modalities}\label{sec:closed-modalities}
+\paragraph{Closed modalities}\label{sec:closed-modalities}
 Another option is to add a \emph{closed} or \emph{crisp} modality
 \cite{licata2018internal} for tracking object-level values which will become
 closed terms after staging. Since closed terms are not affected by substitution,
@@ -2015,18 +2015,18 @@ could be merged into a single instance of gluing along the $\re$ morphism; this
 merges staging and its soundness proof. We split this construction to two parts
 in order to get a self-contained presentation of the staging algorithm.
 
-The multi-stage calculus in \cite{multi-stage-calculus}
-supports staging operations and type dependencies. However, there are major
-differences to the current work. First, ibid.\ does not have large elimination,
-hence it does not support computing types by staging. Second, it does not
-support staged compilation in the sense of Definition \ref{def:staging}; rather,
-it is a system for runtime code manipulation and evaluation (which we may call
-staged \emph{computation}). In other words, programs may manipulate code
-fragments during execution, in more liberal ways than in 2LTT, but there is no
-judgment which ensures that a purely ``object-level'' program can be extracted
-from a multi-stage program. Similar considerations apply to systems with the S4
-modality (see e.g.\ \cite{DBLP:journals/jacm/DaviesP01}),
-where there is no judgment that guarantees elimination of modal operations.
+The multi-stage calculus in \cite{multi-stage-calculus} supports staging
+operations and type dependencies. However, there are major differences to the
+current work. First, ibid.\ does not have large elimination, hence it does not
+support computing types by staging. Second, it does not support staged
+compilation in the sense of Definition \ref{def:staging}; rather, it is a system
+for runtime code manipulation and evaluation (which we may call staged
+\emph{computation}). In other words, programs may manipulate code fragments
+during execution, in more liberal ways than in 2LTT, but there is no judgment
+which ensures that a purely ``object-level'' program can be extracted from a
+multi-stage program. Similar considerations apply to systems with the S4
+modality (see e.g.\ \cite{DBLP:journals/jacm/DaviesP01}) where there is no
+judgment that guarantees elimination of modal operations.
 
 %% We make a
 %% disctinction between staged compilation and staged computation. For the former,
@@ -2068,7 +2068,7 @@ restrictions; everything is enforced by typing.
 previous system for staged compilation does the same. It appears to the author
 that the main missing component in previous systems is \emph{dependent types at
 the meta level}, rather than staging operations; staging operations in 2LTT and
-MetaML are already quite similar. For example, any interesting operation on
+MetaOCaml are already quite similar. For example, any interesting operation on
 the static-length vectors in Section \ref{sec:staged-programming} requires
 meta-level dependent types, even if the object language is simply typed.
 

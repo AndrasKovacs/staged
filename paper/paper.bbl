@@ -2,7 +2,7 @@
 %%% Do NOT edit. File created by BibTeX with style
 %%% ACM-Reference-Format-Journals [18-Jan-2012].
 
-\begin{thebibliography}{49}
+\begin{thebibliography}{52}
 
 %%% ====================================================================
 %%% NOTE TO THE USER: you can override these defaults by providing
@@ -407,6 +407,36 @@
 \newblock
 
 
+\bibitem[Hofmann(1999)]%
+        {DBLP:conf/lics/Hofmann99}
+\bibfield{author}{\bibinfo{person}{Martin Hofmann}.}
+  \bibinfo{year}{1999}\natexlab{}.
+\newblock \showarticletitle{Semantical Analysis of Higher-Order Abstract
+  Syntax}. In \bibinfo{booktitle}{\emph{14th Annual {IEEE} Symposium on Logic
+  in Computer Science, Trento, Italy, July 2-5, 1999}}.
+  \bibinfo{publisher}{{IEEE} Computer Society}, \bibinfo{pages}{204--213}.
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.1109/LICS.1999.782616}
+\showDOI{\tempurl}
+
+
+\bibitem[Hu et~al\mbox{.}(2022)]%
+        {DBLP:journals/corr/abs-2206-02831}
+\bibfield{author}{\bibinfo{person}{Jason Z.~S. Hu}, \bibinfo{person}{Brigitte
+  Pientka}, {and} \bibinfo{person}{Ulrich Sch{\"{o}}pp}.}
+  \bibinfo{year}{2022}\natexlab{}.
+\newblock \showarticletitle{A Category Theoretic View of Contextual Types: from
+  Simple Types to Dependent Types}.
+\newblock \bibinfo{journal}{\emph{CoRR}}  \bibinfo{volume}{abs/2206.02831}
+  (\bibinfo{year}{2022}).
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.48550/arXiv.2206.02831}
+\showDOI{\tempurl}
+\showeprint[arXiv]{2206.02831}
+
+
 \bibitem[Huber(2016)]%
         {huber-thesis}
 \bibfield{author}{\bibinfo{person}{Simon Huber}.}
@@ -415,6 +445,22 @@
 \newblock \bibinfo{thesistype}{Ph.\,D. Dissertation}.
   \bibinfo{school}{University of Gothenburg}.
 \newblock
+
+
+\bibitem[Jang et~al\mbox{.}(2022)]%
+        {DBLP:journals/pacmpl/JangGMP22}
+\bibfield{author}{\bibinfo{person}{Junyoung Jang}, \bibinfo{person}{Samuel
+  G{\'{e}}lineau}, \bibinfo{person}{Stefan Monnier}, {and}
+  \bibinfo{person}{Brigitte Pientka}.} \bibinfo{year}{2022}\natexlab{}.
+\newblock \showarticletitle{M{\oe}bius: metaprogramming using contextual types:
+  the stage where system f can pattern match on itself}.
+\newblock \bibinfo{journal}{\emph{Proc. {ACM} Program. Lang.}}
+  \bibinfo{volume}{6}, \bibinfo{number}{{POPL}} (\bibinfo{year}{2022}),
+  \bibinfo{pages}{1--27}.
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.1145/3498700}
+\showDOI{\tempurl}
 
 
 \bibitem[Jones et~al\mbox{.}(1993)]%

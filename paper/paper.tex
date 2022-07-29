@@ -1987,19 +1987,23 @@ cases, for example the monomorphization setup in Section
 equality in the object theory, and we do not have $\beta\eta$-rules.
 
 \paragraph{Closed modalities}\label{sec:closed-modalities}
-Another option is to add a \emph{closed} or \emph{crisp} modality
-\cite{licata2018internal} for tracking object-level values which will become
-closed terms after staging. Since closed terms are not affected by substitution,
-we are free to analyze them. Such analysis can be viewed as an internalization
-of canonicity for closed object-level terms. For example, a closed $\Bool_0$
-term will be either $\true_0$ or $\false_0$ after staging, so it makes sense to
-be able to eliminate from it to $\Bool_1$. This can be also viewed as a safe
-implementation of a \emph{run} function in the style of MetaML \cite{metaml}.
-In our case \emph{scope extrusion} would be prevented by the closed modality.
-
-\emph{Function pointers} in the style of the C programming language could be also
-an interesting use case, since these must become closed after staging (as they
+Another option is to add a \emph{closed} or \emph{crisp} modality for modeling
+closed object-level terms \cite{licata2018internal}. Since closed terms are not
+affected by substitution, we are able to analyze them, and we can also recover
+open terms by explicitly abstracting over contexts
+\cite{DBLP:conf/lics/Hofmann99,DBLP:journals/corr/abs-2206-02831}. \emph{Function
+pointers} in the style of the C programming language could be also an
+interesting use case, since these must become closed after staging (as they
 cannot capture closure environments).
+
+%% for tracking object-level values which will become
+%% closed terms after staging. Since closed terms are not affected by substitution,
+%% we are free to analyze them. Such analysis can be viewed as an internalization
+%% of canonicity for closed object-level terms. For example, a closed $\Bool_0$
+%% term will be either $\true_0$ or $\false_0$ after staging, so it makes sense to
+%% be able to eliminate from it to $\Bool_1$. This can be also viewed as a safe
+%% implementation of a \emph{run} function in the style of MetaML \cite{metaml}.
+%% In our case \emph{scope extrusion} would be prevented by the closed modality.
 
 \section{Related Work}\label{sec:related-work}
 
@@ -2015,18 +2019,24 @@ could be merged into a single instance of gluing along the $\re$ morphism; this
 merges staging and its soundness proof. We split this construction to two parts
 in order to get a self-contained presentation of the staging algorithm.
 
+In \cite{DBLP:conf/lics/Hofmann99}, it is described how to model higher-order
+abstract syntax of simply typed object languages in presheaves over various
+syntactic categories. In the case where syntactic morphisms are substitutions,
+the internal language described by Hofmann can be viewed as an alternative
+syntax for a 2LTT, where we only have a single family structure and the object
+level is modeled with a Tarski-style universe.
+
 The multi-stage calculus in \cite{multi-stage-calculus} supports staging
 operations and type dependencies. However, there are major differences to the
 current work. First, ibid.\ does not have large elimination, hence it does not
 support computing types by staging. Second, it does not support staged
-compilation in the sense of Definition \ref{def:staging}; rather, it is a system
-for runtime code manipulation and evaluation (which we may call staged
-\emph{computation}). In other words, programs may manipulate code fragments
-during execution, in more liberal ways than in 2LTT, but there is no judgment
-which ensures that a purely ``object-level'' program can be extracted from a
-multi-stage program. Similar considerations apply to systems with the S4
-modality (see e.g.\ \cite{DBLP:journals/jacm/DaviesP01}) where there is no
-judgment that guarantees elimination of modal operations.
+compilation in the sense of Definition \ref{def:staging}; there is no judgment
+which ensures that staging operations can be eliminated and a purely
+``object-level'' program can be extracted from a multi-stage program. Rather, the system
+supports \emph{runtime} code generation. There are several modal multi-stage
+systems which support runtime code generation but not staged compilation, such
+as those based on S4 modalities (e.g.\ \cite{DBLP:journals/jacm/DaviesP01}) or
+contextual modalities (\cite{DBLP:journals/pacmpl/JangGMP22}).
 
 %% We make a
 %% disctinction between staged compilation and staged computation. For the former,
@@ -2072,13 +2082,17 @@ MetaOCaml are already quite similar. For example, any interesting operation on
 the static-length vectors in Section \ref{sec:staged-programming} requires
 meta-level dependent types, even if the object language is simply typed.
 
-In MetaML and MetaOCaml, there is a \emph{run} function for evaluating closed
-object-level terms: as we mentioned in Section \ref{sec:closed-modalities}, we
-believe that the proper way to implement it in 2LTT would be to use a closed
-modality. This use case is closely related to \cite{licata2018internal}. In
-ibid.\ a semantics is sketched for this modality in a presheaf topos, and we
-could directly adapt it to our presheaf model of 2LTT. That said, working
-out the practical details of this modality remains future work.
+In MetaOCaml, there is a \emph{run} function for evaluating closed object-level
+terms, however, this can fail during staging since closedness is not statically
+ensured. In our setting, this could be reproduced in a safe way using a closed
+modality; this is part of future work.
+
+%% as we mentioned in Section \ref{sec:closed-modalities}, we
+%% believe that the proper way to implement it in 2LTT would be to use a closed
+%% modality. This use case is closely related to \cite{licata2018internal}. In
+%% ibid.\ a semantics is sketched for this modality in a presheaf topos, and we
+%% could directly adapt it to our presheaf model of 2LTT. That said, working
+%% out the practical details of this modality remains future work.
 
 Additionally, 2LTT only supports two stages, while the other noted systems allow
 countable stages. It remains future work to develop NLTT (N-level type theory),

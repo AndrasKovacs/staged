@@ -2019,12 +2019,11 @@ could be merged into a single instance of gluing along the $\re$ morphism; this
 merges staging and its soundness proof. We split this construction to two parts
 in order to get a self-contained presentation of the staging algorithm.
 
-In \cite{DBLP:conf/lics/Hofmann99}, it is described how to model higher-order
-abstract syntax of simply typed object languages in presheaves over various
-syntactic categories. In the case where syntactic morphisms are substitutions,
-the internal language described by Hofmann can be viewed as an alternative
-syntax for a 2LTT, where we only have a single family structure and the object
-level is modeled with a Tarski-style universe.
+\cite{DBLP:conf/lics/Hofmann99} models higher-order abstract syntax of simply
+typed object languages in presheaves over various syntactic categories. The main
+difference between HOAS and 2LTT is that the former represents object-level binders
+using meta-level functions while the latter has a primitive notion of object-level
+binding.
 
 The multi-stage calculus in \cite{multi-stage-calculus} supports staging
 operations and type dependencies. However, there are major differences to the

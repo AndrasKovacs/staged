@@ -331,6 +331,14 @@ let map0 : {A B : U0}(n : _) → (A → B) → Vec0 n A → Vec0 n B
 let map03 : {A B : U0} → (A → B) → Vec0 n3 A → Vec0 n3 B
   := map0 n3;
 
+Code :: * -> *
+
+Int -> Code Int
+
+-- ScopedTypeVariables
+-- inlineMap :: forall (a b  :: Code Type0)
+--       -> (Code $$a -> Code $$b) -> Code [$$a] -> Code [$$b]
+
 {-
 output:
    λ f as.

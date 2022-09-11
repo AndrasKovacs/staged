@@ -16,6 +16,11 @@ data and iterators. I think that this is not a bad idea at all, and I generally
 prefer explicitly marked fusion in performance-oriented languages.
 -}
 
+  -- ^(List0 A) ≃ ^((L : U0) → (A → L → L) → L → L)
+  -- ≃ (L : ^U0) → (^[A] → ^[L] → ^[L]) → ^[L] → ^[L]
+  -- (foldr-build)
+
+
 
 let id : {A} → A → A
   = λ x. x;

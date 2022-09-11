@@ -218,7 +218,6 @@ Features:
 \item Supports efficient \emph{staging-by-evaluation}.
 \end{enumerate}
 \vspace{1em}
-\pause
 \end{frame}
 
 \begin{frame}{This talk}
@@ -240,11 +239,11 @@ For \textbf{formal details}, see the paper.
   \begin{enumerate}
     \item Two universes $\U_0$, $\U_1$, closed under arbitrary type formers.
       \begin{itemize}
-        \item $\U_0$ is the universe of runtime types.
-        \item $\U_1$ is the universe of meta-level types.
+        \item $\U_0$ is the universe of runtime (object-level) types.
+        \item $\U_1$ is the universe of compile-time (meta-level) types.
       \end{itemize}
     \pause
-    \item No elimination is allowed from one universe to the other.
+    \item All type/term formers and eliminators stay within the same universe.
     \pause
     \item \emph{Lifting:} for $\msA : \U_0$, we have $\Lift \msA : \U_1$.
     \pause
@@ -334,7 +333,9 @@ Input:
 \begin{alignat*}{4}
   & \msA &&: \Lift\U_0 \\
   & \spl\msA &&: \U_0 \\
-  & \Lift\,\spl\msA &&: \U_1
+  & \Lift\,\spl\msA &&: \U_1\\
+  & \qut{\msx} &&: \Lift\Bool_0\\
+  & \qut{\msx} &&: \Lift\,\spl\qut{\Bool_0}
 \end{alignat*}
 
 \end{column}

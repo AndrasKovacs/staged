@@ -443,11 +443,11 @@ $\blank\!+_0\!\blank : \Nat_0 \to \Nat_0 \to \Nat_0$ and $\mit{ns} :
 \begin{alignat*}{3}
   & &&\spl(\mit{map}\,\qut{\Nat_0}\,\qut{\Nat_0}\,(\lambda\,n.\,\qut{\spl n +_0 10})\,\qut{\mit{ns}})\\
   & =\hspace{0.3em}&&\spl\qut{\msf{foldr}_0\,
-        \spl \qut{\Nat_0}\,\spl \qut{\List_0\,\spl\qut{Nat_0}}\\
+        \spl \qut{\Nat_0}\,(\List_0\,\spl\qut{\Nat_0})\\
   & && \hspace{3.5em}(\lambda\,a\,\mit{bs}.\, \cons_0\,\spl\qut{\Nat_0}\,\spl\qut{\spl\qut{a} +_0 10}\,\mit{bs})\,
         (\nil_0\,\spl \qut{\Nat_0})\,
         \spl\qut{\mit{ns}}}\\
-  & =\hspace{0.3em} &&\msf{foldr_0}\,\Nat_0\,(\List_0\,\Nat_0)\,\,(\lambda\,a\,bs.\,\cons_0\,(a +_0 10)\,bs)\,(\nil_0\,\Nat_0)\,\mit{ns}
+  & =\hspace{0.3em} &&\msf{foldr_0}\,\Nat_0\,(\List_0\,\Nat_0)\,\,(\lambda\,a\,bs.\,\cons_0\,\Nat_0\,(a +_0 10)\,bs)\,(\nil_0\,\Nat_0)\,\mit{ns}
 \end{alignat*}
 
 By using meta-level functions and lifted types, we already have control over
@@ -597,7 +597,10 @@ type, it is brought to a form which can be binding-time improved. For instance,
 consider foldr-build fusion for lists \cite{short-cut}, which is employed in GHC
 Haskell.  Starting from $\Lift (\List_0\,A)$, we use Böhm-Berarducci encoding
 \cite{boehm-berarducci} under the lifting to get
-\[ \Lift((L : \U_0) \to (A \to L \to L) \to L \to L) \simeq ((L : \Lift\,U_0) \to (\Lift\,A \to \Lift\,\spl L \to \Lift\,\spl L)). \]
+\begin{alignat*}{3}
+         &\Lift((L : \U_0) \to (A \to L \to L) \to L \to L)\\
+  \simeq\,\,&((L : \Lift\,U_0) \to (\Lift\,A \to \Lift\,\spl L \to \Lift\,\spl L) \to \Lift\,\spl L \to \Lift\,\spl L).
+\end{alignat*}
 Alternatively, for \emph{stream fusion} \cite{stream-fusion}, we embed $\List\,A$ into the
 coinductive colists (i.e.\ the possibly infinite lists), and use a terminal
 lambda-encoding. The embedding into the ``larger'' structure enables some staged

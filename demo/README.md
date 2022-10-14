@@ -1,7 +1,7 @@
 
 ## Demo implementation of staged compilation with two-level type theory
 
-This package serves as supplement and demonstration to the preprint "Staged Compilation With Two-Level Type Theory". It contains a command-line
+This package serves as supplement and demonstration to the paper "Staged Compilation With Two-Level Type Theory". It contains a command-line
 tool for elaborating and staging input programs, and several example files. Short summary of features:
 - Two stages, a compile time and a runtime one.
 - We have dependent functions, type-in-type and natural numbers at both stages. We can use type-in-type to lambda-encode a wide variety of data types for demo purposes. The built-in natural numbers are used for examples where proper dependent elimination is needed.
@@ -48,12 +48,12 @@ See [examples/Tutorial.2ltt](examples/Tutorial.2ltt) for a tutorial on language 
 
 -----
 
-### Comparison to the preprint
+### Comparison to the paper
 
-- The preprint has a countable hierarchy of universes at each stage, closed under pi and sigma types and natural numbers. In contrast, the demo
+- The paper has a countable hierarchy of universes at each stage, closed under pi and sigma types and natural numbers. In contrast, the demo
 here has type-in-type, and does not have sigma types. Type-in-type makes implementation much easier, and allows us to lambda-encode a variety of
 type formers (without dependent elimination). We can also encode unit and sigma types, without eta-rules, but this is sufficient for examples.
-- The preprint writes splicing as `~t`, while the demo has it as `[t]`. The latter is much easier to parse and print than the paper's notation, and it's not much more verbose. Unfortunately, `[_]` is not viable in the paper because it's already severely overloaded there.
+- The paper writes splicing as `~t`, while the demo has it as `[t]`. The latter is much easier to parse and print than the paper's notation, and it's not much more verbose. Unfortunately, `[_]` is not viable in the paper because it's already severely overloaded there.
 
 ### Notes on implementation
 

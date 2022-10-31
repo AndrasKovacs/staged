@@ -72,7 +72,7 @@ invert gamma sp = do
       go SNatElim{} = impossible -- should be already split off
 
   (dom, domvars, sub, pr, isLinear) <- go sp
-  pure (PSub Nothing dom gamma sub, pr <$ guard isLinear)
+  pure (PSub Nothing dom gamma sub, pr <$ guard (not $ isLinear))
 
 
 -- | Remove some arguments from a closed iterated Pi type.

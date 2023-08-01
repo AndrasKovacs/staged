@@ -1,0 +1,501 @@
+
+
+\documentclass[dvipsnames,aspectratio=169]{beamer}
+\usetheme{Madrid}
+
+%% kill footline
+\setbeamertemplate{footline}[frame number]{}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}{}
+
+%% bibliography
+\bibliographystyle{alpha}
+\setbeamerfont{bibliography item}{size=\footnotesize}
+\setbeamerfont{bibliography entry author}{size=\footnotesize}
+\setbeamerfont{bibliography entry title}{size=\footnotesize}
+\setbeamerfont{bibliography entry location}{size=\footnotesize}
+\setbeamerfont{bibliography entry note}{size=\footnotesize}
+\setbeamertemplate{bibliography item}{}
+
+%% kill ball enumeration
+\setbeamertemplate{enumerate items}[circle]
+\setbeamertemplate{section in toc}[circle]
+
+%% kill block shadows
+\setbeamertemplate{blocks}[rounded][shadow=false]
+\setbeamertemplate{title page}[default][colsep=-4bp,rounded=true]
+
+%% kill ball itemize
+\setbeamertemplate{itemize items}[circle]
+
+%% --------------------------------------------------------------------------------
+
+\usepackage[utf8]{inputenc}
+\usepackage{hyperref}
+\usepackage{amsmath}
+\usepackage{cite}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{amsfonts}
+\usepackage{mathpartir}
+\usepackage{scalerel}
+\usepackage{stmaryrd}
+\usepackage{bm}
+\usepackage{graphicx}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  urlcolor=blue}
+
+%% --------------------------------------------------------------------------------
+
+\renewcommand{\mit}[1]{\mathit{#1}}
+\newcommand{\msf}[1]{\mathsf{#1}}
+\newcommand{\mbb}[1]{\mathbb{#1}}
+\newcommand{\mbf}[1]{\mathbf{#1}}
+\newcommand{\bs}[1]{\boldsymbol{#1}}
+\newcommand{\wh}[1]{\widehat{#1}}
+\newcommand{\ext}{\triangleright}
+\newcommand{\Code}{\msf{Code}}
+\newcommand{\El}{\msf{El}}
+\newcommand{\lam}{\msf{lam}}
+\newcommand{\app}{\msf{app}}
+\newcommand{\NatElim}{\msf{NatElim}}
+\newcommand{\y}{\msf{y}}
+
+\newcommand{\Lift}{{\Uparrow}}
+\newcommand{\spl}{{\sim}}
+\newcommand{\qut}[1]{{<}#1{>}}
+
+\newcommand{\mbbc}{\mbb{C}}
+\newcommand{\mbbo}{\mbb{O}}
+\newcommand{\ob}{_\mbbo}
+
+\newcommand{\U}{\msf{U}}
+\newcommand{\Con}{\msf{Con}}
+\newcommand{\Sub}{\msf{Sub}}
+\newcommand{\Ty}{\msf{Ty}}
+\newcommand{\Tm}{\msf{Tm}}
+\newcommand{\Cono}{\msf{Con}_{\mbbo}}
+\newcommand{\Subo}{\msf{Sub}_{\mbbo}}
+\newcommand{\Tyo}{\msf{Ty}_{\mbbo}}
+\newcommand{\Tmo}{\msf{Tm}_{\mbbo}}
+\newcommand{\hCon}{\wh{\msf{Con}}}
+\newcommand{\hSub}{\wh{\msf{Sub}}}
+\newcommand{\hTy}{\wh{\msf{Ty}}}
+\newcommand{\hTm}{\wh{\msf{Tm}}}
+
+\newcommand{\p}{\mathsf{p}}
+\newcommand{\q}{\mathsf{q}}
+
+\newcommand{\refl}{\msf{refl}}
+\newcommand{\Bool}{\msf{Bool}}
+\newcommand{\true}{\msf{true}}
+\newcommand{\false}{\msf{false}}
+\newcommand{\True}{\msf{True}}
+\newcommand{\False}{\msf{False}}
+\newcommand{\List}{\msf{List}}
+\newcommand{\nil}{\msf{nil}}
+\newcommand{\cons}{\msf{cons}}
+\newcommand{\Nat}{\msf{Nat}}
+\newcommand{\zero}{\msf{zero}}
+\newcommand{\suc}{\msf{suc}}
+\renewcommand{\tt}{\msf{tt}}
+\newcommand{\fst}{\msf{fst}}
+\newcommand{\snd}{\msf{snd}}
+\newcommand{\mylet}{\msf{let}}
+\newcommand{\emptycon}{\scaleobj{.75}\bullet}
+\newcommand{\id}{\msf{id}}
+
+\newcommand{\Set}{\mathsf{Set}}
+\newcommand{\Prop}{\mathsf{Prop}}
+\newcommand{\Rep}{\msf{Rep}}
+\newcommand{\blank}{{\mathord{\hspace{1pt}\text{--}\hspace{1pt}}}}
+\newcommand{\emb}[1]{\ulcorner#1\urcorner}
+
+\newcommand{\Stage}{\msf{Stage}}
+\newcommand{\hato}{\bm\hat{\mbbo}}
+\newcommand{\ev}{\mbb{E}}
+\newcommand{\re}{\mbb{R}}
+
+\theoremstyle{remark}
+\newtheorem{notation}{Notation}
+
+\newcommand{\whset}{\wh{\Set}}
+\newcommand{\rexti}{\re_{\ext_1}^{-1}}
+\newcommand{\rextizero}{\re_{\ext_0}^{-1}}
+
+\newcommand{\rel}{^{\approx}}
+\newcommand{\yon}{\msf{y}}
+
+\newcommand{\Vect}{\msf{Vec}}
+\newcommand{\msA}{\msf{A}}
+\newcommand{\msB}{\msf{B}}
+\newcommand{\mst}{\msf{t}}
+\newcommand{\msu}{\msf{u}}
+\newcommand{\msv}{\msf{v}}
+\newcommand{\msx}{\msf{x}}
+\newcommand{\msy}{\msf{y}}
+\newcommand{\msz}{\msf{z}}
+\newcommand{\msas}{\msf{as}}
+\newcommand{\msbs}{\msf{bs}}
+\newcommand{\msxs}{\msf{xs}}
+\newcommand{\msys}{\msf{ys}}
+\newcommand{\msff}{\msf{f}}
+\newcommand{\msg}{\msf{g}}
+\newcommand{\msh}{\msf{h}}
+\newcommand{\msa}{\msf{a}}
+\newcommand{\msn}{\msf{n}}
+
+%% --------------------------------------------------------------------------------
+
+
+\title{Staged Compilation with Two-Level Type Theory}
+\author{András Kovács}
+\institute{
+  {Eötvös Loránd University}
+}
+\date{18 January 2022, TKP Workshop}
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}{Staged Compilation}
+
+\begin{block}{}
+\textbf{Staged compilation} is about writing code-generating code with good ergonomics
+and safety guarantees.
+\end{block}
+\vspace{1em}
+\pause
+
+Examples:
+\begin{itemize}
+  \item (Typed) Template Haskell.
+  \item C++ templates.
+  \item Rust traits, macros \& generics.
+\end{itemize}
+\vspace{1em}
+\pause
+
+Motivations:
+\begin{itemize}
+  \item Low-cost abstraction.
+  \item DSLs.
+  \item Inlining \& fusion with strong guarantees.
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{Two-Level Type Theory (2LTT)}
+
+Comes from \textbf{homotopy type theory}:
+\begin{itemize}
+  \item \emph{Voevodsky: A simple type system with two identity types}.
+  \item \emph{Annekov, Capriotti, Kraus, Sattler: Two-Level Type Theory and Applications}.
+  \item Motivation: meta-programming and modular axioms for HoTT.
+\end{itemize}
+\vspace{1em}
+\pause
+
+2LTT is directly applicable to two-stage compilation.
+\vspace{1em}
+\pause
+
+Features:
+\begin{enumerate}
+\item Integrates a compile-time (``meta'') language and a runtime (``object'') language.
+\pause
+\item Guaranteed well-typing of code output, guaranteed well-staging.
+\pause
+\item Supports a wide range of runtime and meta-languages.
+  \begin{itemize}
+  \pause
+  \item \alert{Including dependent types}.
+  \end{itemize}
+\pause
+\item Supports efficient \emph{staging-by-evaluation}.
+\end{enumerate}
+\vspace{1em}
+\end{frame}
+
+\begin{frame}{This talk}
+
+This talk mostly contains \textbf{small programming examples}.
+\vspace{1em}
+\pause
+
+There is a \textbf{paper} and an \textbf{implementation}:
+\begin{itemize}
+  \item AK: \emph{Staged Compilation with Two-Level Type Theory}, in the proceedings of ICFP 2022.
+\end{itemize}
+\vspace{1em}
+\pause
+
+For a \textbf{tutorial} and \textbf{larger programming examples}, see the implementation.
+\vspace{1em}
+\pause
+
+For \textbf{formal details}, see the paper.
+
+\end{frame}
+
+\begin{frame}{Rules of 2LTT}
+
+  \begin{enumerate}
+    \item Two universes $\U_0$, $\U_1$, closed under arbitrary type formers.
+      \begin{itemize}
+        \item $\U_0$ is the universe of runtime (object-level) types.
+        \item $\U_1$ is the universe of compile-time (meta-level) types.
+      \end{itemize}
+    \pause
+    \item All type/term formers and eliminators stay within the same universe.
+    \pause
+    \item \emph{Lifting:} for $\msA : \U_0$, we have $\Lift \msA : \U_1$.
+    \pause
+    \item \emph{Quoting:} for $\msA : \U_0$ and $\mst : \msA$, we have $\qut{\mst} : \Lift \msA$.
+    \pause
+    \item \emph{Splicing:} for $\mst : \Lift \msA$, we have $\spl{\mst} : \msA$.
+    \pause
+    \item $\qut{\spl{\mst}} \equiv \mst$ and $\spl{\qut{\mst}} \equiv \mst$.
+  \end{enumerate}
+\vspace{1em}
+\pause
+
+\begin{block}{}
+\textbf{Staging} runs all metaprograms in splices and inserts their result
+in the code output.
+\end{block}
+
+\end{frame}
+
+\begin{frame}{Inlined definitions}
+
+Staging input:
+\begin{alignat*}{4}
+  &\msf{two} : \Lift \Nat_0 \\
+  &\msf{two} = \qut{\suc_0\,(\suc_0\,\zero_0)} \\
+  & \\
+  & \msff : \Nat_0 \to \Nat_0 \\
+  & \msff = \lambda\,\msx.\, \msx + \spl{\msf{two}}
+\end{alignat*}
+\pause
+Output:
+\begin{alignat*}{4}
+  & \msff : \Nat_0 \to \Nat_0 \\
+  & \msff = \lambda\,\msx.\, \msx + \suc_0\,(\suc_0\,\zero_0)
+\end{alignat*}
+
+
+\end{frame}
+
+\begin{frame}{Compile-time identity function}
+
+Input:
+\begin{alignat*}{4}
+  & \id : (\msA : \U_1) \to \msA \to \msA\\
+  & \id = \lambda\,\msA\,\msx.\,\msx     \\
+  & \\
+  & \msf{idBool_0} : \Bool_0 \to \Bool_0\\
+  & \msf{idBool_0} = \lambda\,\msx.\,\spl(\id\,(\Lift \Bool_0)\,\qut{\msx})
+\end{alignat*}
+\pause
+Output:
+\begin{alignat*}{4}
+  & \msf{idBool_0} : \Bool_0 \to \Bool_0\\
+  & \msf{idBool_0} = \lambda\,\msx.\,\msx
+\end{alignat*}
+
+\end{frame}
+
+\begin{frame}{An alternative identity function}
+
+%%   \begin{columns}
+%% \begin{column}{0.5\textwidth}
+%%    some text here some text here some text here some text here some text here
+%% \end{column}
+%% \begin{column}{0.5\textwidth}  %%<--- here
+%%     \begin{center}
+%%      \includegraphics[width=0.5\textwidth]{image1.jpg}
+%%      \end{center}
+%% \end{column}
+%% \end{columns}
+
+Input:
+\begin{columns}
+\begin{column}{0.5\textwidth}
+\begin{alignat*}{4}
+  & \id_\Lift : (\msA : \Lift\U_0) \to \Lift\,\spl{\msA} \to \Lift\,\spl{\msA}\\
+  & \id_\Lift = \lambda\,\msA\,\msx.\,\msx     \\
+  & \\
+  & \msf{idBool_0} : \Bool_0 \to \Bool_0\\
+  & \msf{idBool_0} = \lambda\,\msx.\,\spl(\id_\Lift\,\qut{\Bool_0}\,\qut{\msx})
+\end{alignat*}
+\end{column}
+\pause
+\begin{column}{0.5\textwidth}
+\emph{Note that}
+\vspace{-1em}
+\begin{alignat*}{4}
+  & \msA &&: \Lift\U_0 \\
+  & \spl\msA &&: \U_0 \\
+  & \Lift\,\spl\msA &&: \U_1\\
+  & \qut{\msx} &&: \Lift\Bool_0\\
+  & \qut{\msx} &&: \Lift\,\spl\qut{\Bool_0}
+\end{alignat*}
+
+\end{column}
+\end{columns}
+\vspace{1em}
+\pause
+Output:
+\begin{alignat*}{4}
+  & \msf{idBool_0} : \Bool_0 \to \Bool_0\\
+  & \msf{idBool_0} = \lambda\,\msx.\,\msx
+\end{alignat*}
+
+%% Input:
+%% \begin{alignat*}{4}
+%%   & \id_\Lift : (\msA : \Lift\U_0) \to \Lift\,\spl{\msA} \to \Lift\,\spl{\msA}\\
+%%   & \id_\Lift = \lambda\,\msA\,\msx.\,\msx     \\
+%%   & \\
+%%   & \msf{idBool_0} : \Bool_0 \to \Bool_0\\
+%%   & \msf{idBool_0} = \lambda\,\msx.\,\spl(\id_\Lift\,\qut{\Bool_0}\,\qut{\msx})
+%% \end{alignat*}
+%% \pause
+%% Output:
+%% \begin{alignat*}{4}
+%%   & \msf{idBool_0} : \Bool_0 \to \Bool_0\\
+%%   & \msf{idBool_0} = \lambda\,\msx.\,\msx
+%% \end{alignat*}
+
+
+\end{frame}
+
+
+\begin{frame}{$\msf{map}$ with inlining}
+
+Input:
+\begin{alignat*}{4}
+  & \msf{inlMap} : \{\msA\,\msB : \Lift \U_0\} \to (\Lift\,\spl\msA \to \Lift\,\spl\msB) \to \Lift(\msf{List_0}\,\spl\msA) \to \Lift(\msf{List_0}\,\spl\msB) \\
+  & \msf{inlMap} = \lambda\,\msff\,\msas.\,\qut{\msf{foldr_0}\,
+    (\lambda\,\msa\,\msbs.\,\cons_0\,\spl(\msff\,\qut{\msa})\,\msbs)\,
+    \nil_0\,
+    \spl{\msas}
+    }\\
+  & \\
+  & \msf{f} : \List_0\,\Nat_0 \to \List_0\,\Nat_0\\
+  & \msf{f} = \lambda\,\msxs.\,\,\spl(\msf{inlMap}\,(\lambda\,\msf{n}.\,\qut{\spl\msf{n} + 2})
+     \,\qut{\msxs})
+\end{alignat*}
+\pause
+Output:
+\begin{alignat*}{4}
+  & \msf{f} : \List_0\,\Nat_0 \to \List_0\,\Nat_0\\
+  & \msf{f} = \lambda\,\msxs.\, \msf{foldr}_0\,(\lambda\,\msa\,\msbs.\,\cons_0\,(\msa + 2)\,\msbs)\,\nil_0\,\msxs
+\end{alignat*}
+
+\end{frame}
+
+\begin{frame}{Inference for staging operations}
+
+Lifting preserves negative types up to definitional isomorphism:
+\begin{alignat*}{4}
+  \Lift\,\top_0 &\simeq \top_1 \\
+  \Lift\,((\msa : \msA) \to \msB\,\msa) &\simeq ((\msa : \Lift\msA) \to \Lift(\msB\,\spl\msa)) \\
+  \Lift\,((\msa : \msA) \times \msB\,\msa) &\simeq ((\msa : \Lift\msA) \times \Lift(\msB\,\spl\msa))
+\end{alignat*}
+\pause
+We can use \textbf{bidirectional elaboration} \& \textbf{coercive subtyping along isos} to
+infer most quotes and splices.
+\begin{alignat*}{4}
+  & \msf{inlMap} : \{\msA\,\msB : \Lift \U_0\} \to (\Lift\,\msA \to \Lift\,\msB) \to \Lift(\msf{List_0}\,\msA) \to \Lift(\msf{List_0}\,\msB) \\
+  & \msf{inlMap} = \lambda\,\msff.\,\msf{foldr_0}\,
+    (\lambda\,\msa\,\msbs.\,\cons_0\,(\msff\,\msa)\,\msbs)\,
+    \nil_0
+    \\
+  & \\
+  & \msf{f} : \List_0\,\Nat_0 \to \List_0\,\Nat_0\\
+  & \msf{f} = \msf{inlMap}\,(\lambda\,\msf{n}.\,\msf{n} + 2)
+\end{alignat*}
+
+
+
+\end{frame}
+
+\begin{frame}{Staging types}
+
+Input:
+\begin{alignat*}{4}
+  & \rlap{$\Vect : \Nat_1 \to \Lift \U_0 \to \Lift \U_0$}\\
+  & \Vect\,&&\zero_1       \,&&\msA = \qut{\top_0}\\
+  & \Vect\,&&(\suc_1\,\msn)\,&&\msA = \qut{\spl \msA \times \spl(\Vect\,\msn\,\msA)}\\
+  & \\
+  & \rlap{$\msf{Tuple3} : \U_0 \to \U_0$} \\
+  & \rlap{$\msf{Tuple3}\,\msA = \spl(\Vect\,3\,\qut{\msA})$}
+\end{alignat*}
+\pause
+Output:
+\begin{alignat*}{4}
+  &\msf{Tuple3} : \U_0 \to \U_0 \\
+  &\msf{Tuple3}\,\msA = \msA \times (\msA \times (\msA \times \top_0))
+\end{alignat*}
+
+\end{frame}
+
+\begin{frame}{$\msf{map}$ for $\Vect$}
+
+Input:
+\begin{alignat*}{3}
+  &\msf{map} : \{\msA\,\msB : \Lift \U_0\} \to
+  (\msn : \Nat_1) \to (\Lift\,\spl\msA \to \Lift\,\spl\msB) \\
+  & \hspace{7.7em} \to \Lift(\Vect\,\msn\,\msA) \to \Lift(\Vect\,\msn\,\msB)\\
+  &\msf{map}\,\zero_1\hspace{1.25em}\msff\,\msas = \qut{\tt_0} \\
+  &\msf{map}\,(\suc_1\,\msn)\,\msff\,\msas =
+    \qut{(\spl(\msff\,\qut{\fst_0\,\spl \msas}),\,\spl(\msf{map}\,\msn\,\msff\,\qut{\snd_0\,\spl \msas}))} \\
+  & \\
+  & \msf{f} : \spl(\Vect\,2\,\qut{\Nat_0}) \to \spl(\Vect\,2\,\qut{\Nat_0}) \\
+  & \msf{f}\,\msxs = \spl(\msf{map}\,2\,(\lambda\,\msx.\,\qut{\spl\msx + 2})\,\qut{\msxs})
+\end{alignat*}
+\pause
+Output:
+\begin{alignat*}{3}
+  & \msf{f} : \Nat_0 \times (\Nat_0 \times \top_0) \to \Nat_0 \times (\Nat_0 \times \top_0) \\
+  & \msf{f}\,\msxs = (\fst_0\,\msxs + 2,\,(\fst_0\,(\snd_0\,\msxs) + 2,\,\tt_0))
+\end{alignat*}
+
+\end{frame}
+
+\begin{frame}{}
+
+More in the paper \& implementation:
+\begin{itemize}
+  \item Correctness of staging.
+  \item Staged foldr/build fusion.
+  \item Well-typed staged STLC interpreter.
+  \item Monadic let-insertion.
+\end{itemize}
+\vspace{1em}
+\pause
+
+Possible future research:
+\begin{itemize}
+  \item Staging to low-level (e.g.\ first-order) languages.
+  \item Staged fusion.
+  \item Partially static data types.
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{}
+
+\begin{center}
+  \Large {Thank you!}
+\end{center}
+
+\end{frame}
+
+
+
+\end{document}

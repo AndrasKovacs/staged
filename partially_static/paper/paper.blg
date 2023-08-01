@@ -1,0 +1,58 @@
+This is BibTeX, Version 0.99d (TeX Live 2022/dev/Debian)
+Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
+The top-level auxiliary file: paper.aux
+The style file: ACM-Reference-Format.bst
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Reallocated wiz_functions (elt_size=4) to 6000 items from 3000.
+Database file #1: references.bib
+Warning--I didn't find a database entry for "TODO"
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Reallocated glb_str_ptr (elt_size=4) to 20 items from 10.
+Reallocated global_strs (elt_size=200001) to 20 items from 10.
+Reallocated glb_str_end (elt_size=4) to 20 items from 10.
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Warning--no number and no volume in twolevel
+Warning--page numbers missing in both pages and numpages fields in twolevel
+You've used 3 entries,
+            5981 wiz_defined-function locations,
+            1498 strings with 18476 characters,
+and the built_in function-call counts, 3693 in all, are:
+= -- 587
+> -- 87
+< -- 0
++ -- 27
+- -- 28
+* -- 238
+:= -- 319
+add.period$ -- 15
+call.type$ -- 3
+change.case$ -- 20
+chr.to.int$ -- 3
+cite$ -- 5
+duplicate$ -- 299
+empty$ -- 213
+format.name$ -- 36
+if$ -- 959
+int.to.chr$ -- 2
+int.to.str$ -- 1
+missing$ -- 12
+newline$ -- 74
+num.names$ -- 21
+pop$ -- 101
+preamble$ -- 1
+purify$ -- 44
+quote$ -- 0
+skip$ -- 100
+stack$ -- 0
+substring$ -- 292
+swap$ -- 32
+text.length$ -- 0
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 48
+warning$ -- 2
+while$ -- 19
+width$ -- 0
+write$ -- 105
+(There were 3 warnings)

@@ -1,0 +1,70 @@
+
+Modeling MLTT-lock in presheaves
+
+functor on base cats:
+  F : 1 → Syn
+  F = K ∙
+
+precomposition:
+  F* : Syn̂ → Set
+  F* Γ = Γ ∘ K ∙
+
+left adjoint:
+  F! : Set → Syn̂
+  |F! X| i = ((j : |∙|) × Sub i (F j) × |X|j)/~ where (i, σ, x[δ]) ~ (j, Fδ ∘ σ, x)
+           ≃ ((Sub i ∙) × X)/~ where (σ, x[id]) ~ (Fid ∘ σ, x)
+	   ≃ X
+  x[f] = x
+
+  i.e.:
+    F! X = K X
+
+unit:
+
+  η : X → F* (F! X)
+  η x = x
+
+dep version of F*
+
+  F* : Syn̂.Ty (F! Γ) → Set.Ty Γ
+  (F* A) γ = |A| ∙ γ
+
+RA of F*:
+
+  Fₛ : Set → Syn̂
+  |Fₛ X| i = Sub ∙ i → X
+  x[f] = λ σ. x (σ ∘ f)
+
+dep version of RA of F*
+
+  Fₛ : Set.Ty (F* Γ) → Syn̂.Ty Γ
+  |Fₛ A| i γ = (σ : Sub ∙ i) → A (γ[σ])
+
+
+comonad:
+  F!F* : Syn̂ → Syn̂
+  F!F* Γ = K (|Γ|∙)
+
+  ◻ = F!F*
+
+monad:
+  FₛF* : Syn̂ → Syn̂
+  |FₛF* Γ|i = Sub ∙ i → |Γ|∙
+
+but we have
+  ◻ ⊣ FₛF*
+
+and we need a left adjoint & dep version to ◻
+
+is FₛF* ⊣ ◻ ?
+
+  Sub (FₛF* Γ) Δ ≃ Sub Γ (◻ Δ)
+
+  lhs:
+  f : ∀ i. (Sub ∙ i → |Γ|∙) → |Δ|i
+  f (γ ∘ (∘σ)) = (f γ)[σ]
+
+
+  rhs:
+  f : ∀ i. |Γ|i → |Δ|∙
+  f (γ[σ]) = f γ

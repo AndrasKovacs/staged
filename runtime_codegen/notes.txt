@@ -1,0 +1,26 @@
+
+eval 0 : computes all redexes
+eval (suc n) : doesn't compute any redex
+
+eval γ n <t> = <eval γ (suc n) t>
+
+eval γ 0 ~t  = case eval γ 0 t of
+                 <t>  -> eval idγ (quote t)
+  							 ne t -> ne ~t
+
+eval γ (suc n) ~t =
+               case eval γ n t of
+                 <t>  -> t
+								 ne t -> ne ~t
+
+-- eta-long ⇑A?
+⇑ quotiented by η?
+
+
+
+
+
+
+
+
+xx

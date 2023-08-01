@@ -1,0 +1,75 @@
+
+Staged normalization for HOAS embedded TT in 2LTT
+
+Models:
+
+   Ty : U₁
+   Tm : Ty → U₁
+
+   Π : (A : Ty) → (Tm A → Ty) → Ty
+   (app,lam) : Tm (Π A B) ≃ ((a : Tm A) → Tm (B a))
+
+   Bool  : Ty
+   true  : Tm Bool
+   false : Tm Bool
+
+   Elim : Ty → Ty → Tm Bool → Ty
+   Elim t f true = t
+   Elim t f false = f
+
+   elim : (B : Tm Bool → Ty) → Tm (B true) → Tm (B false) → ∀ b → Tm (B b)
+   elim B t f true  = t
+   elim B t f false = f
+
+
+Normalization (FAIL, context dependencies must be interpreted non-uniformly)
+--------------------------------------------------------------------------------
+
+Ty : U₁
+Ty = (_ᴰ : U₀) × (_ˢ : U₁) × (q : _ˢ → _ᴰ) × (u : _ᴰ → _ˢ) × (q ∘ u = id)
+
+Tm : Ty → U₁
+Tm A = (_ᴰ : Aᴰ) × (_ˢ : Aˢ) × (q _ˢ = _ᴰ)
+
+Π (A : Ty) (B : Tm A → Ty) : Ty
+  (Π A B)ᴰ = ((a : Aᴰ) → (B (a, u a, _)))
+  (Π A B)ˢ = (fᴰ : (a : Aᴰ) → (B (a, u a, _))ᴰ) × (fˢ : (a : Aˢ) → (B (q a, a, _))ˢ)
+
+  q (fᴰ, fˢ) = fᴰ
+  u f = (f, λ a. u (f (q a)))
+
+    f : (a : Aᴰ) → (B (a, u a, _))ᴰ
+    f (q a) : (B (q a, u (q a), _))ᴰ
+
+    doesn't work.
+
+Try 2, logical predicates
+--------------------------------------------------------------------------------
+
+Ty = (_ᴰ : U₀) × (_ˢ : _ᴰ → U₁) × (u : ∀ a → _ˢ a)
+Tm A = (_ᴰ : Aᴰ) × (_ˢ : Aˢ _ᴰ)
+
+(Π A B)ᴰ = (a : Aᴰ) → (B (a, u a))ᴰ
+(Π A B)ˢ = λ f. ∀ a → (B (a, u a))ˢ (f a)
+u f = λ (a : Aᴰ). u (f a)
+
+(lam t)ᴰ : (a : Aᴰ) → (B (a, u a))ᴰ
+         = λ a. (t (a, u a))ᴰ
+
+(lam t)ˢ : ∀ a. (B (a, u a))ˢ (t (a, u a))ᴰ
+         = λ a. (t (a, u a))ˢ
+
+
+  t : Tm (Π A B)   u : Tm A    goal : Tm (B u)
+
+(app t u)ᴰ : (B u)ᴰ
+
+   tᴰ : (a : Aᴰ) → (B (a, u a))ᴰ
+   u : Tm A
+
+   uᴰ : Aᴰ
+   uˢ : Aˢ uᴰ
+
+   tᴰ uᴰ : (B (uᴰ, u uᴰ))ᴰ
+
+Still doesn't work! Dependencies need to be separated...

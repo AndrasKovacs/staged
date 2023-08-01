@@ -1,0 +1,259 @@
+%% build: latexmk -pdf -pvc paper.tex
+
+\documentclass[acmsmall,review,screen]{acmart}
+
+%% \setcopyright{acmcopyright}
+%% \copyrightyear{2018}
+%% \acmYear{2018}
+%% \acmDOI{XXXXXXX.XXXXXXX}
+
+\bibliographystyle{ACM-Reference-Format}
+\citestyle{acmauthoryear}
+
+%% --------------------------------------------------------------------------------
+
+\usepackage{xcolor}
+\usepackage{mathpartir}
+\usepackage{todonotes}
+\presetkeys{todonotes}{inline}{}
+\usepackage{scalerel}
+\usepackage{bm}
+
+\newcommand{\mit}[1]{\mathit{#1}}
+\newcommand{\msf}[1]{\mathsf{#1}}
+\newcommand{\mbb}[1]{\mathbb{#1}}
+\newcommand{\mbf}[1]{\mathbf{#1}}
+\newcommand{\bs}[1]{\boldsymbol{#1}}
+\newcommand{\wh}[1]{\widehat{#1}}
+\newcommand{\ext}{\triangleright}
+\newcommand{\Code}{\msf{Code}}
+\newcommand{\El}{\msf{El}}
+\newcommand{\lam}{\msf{lam}}
+\newcommand{\app}{\msf{app}}
+\newcommand{\NatElim}{\msf{NatElim}}
+\newcommand{\y}{\msf{y}}
+
+\newcommand{\Lift}{{\Uparrow}}
+\newcommand{\spl}{{\sim}}
+\newcommand{\qut}[1]{\langle #1\rangle}
+
+\newcommand{\mbbc}{\mbb{C}}
+\newcommand{\mbbo}{\mbb{O}}
+\newcommand{\ob}{_\mbbo}
+
+\newcommand{\U}{\msf{U}}
+\newcommand{\Con}{\msf{Con}}
+\newcommand{\Sub}{\msf{Sub}}
+\newcommand{\Ty}{\msf{Ty}}
+\newcommand{\Tm}{\msf{Tm}}
+\newcommand{\Cono}{\msf{Con}_{\mbbo}}
+\newcommand{\Subo}{\msf{Sub}_{\mbbo}}
+\newcommand{\Tyo}{\msf{Ty}_{\mbbo}}
+\newcommand{\Tmo}{\msf{Tm}_{\mbbo}}
+\newcommand{\hCon}{\wh{\msf{Con}}}
+\newcommand{\hSub}{\wh{\msf{Sub}}}
+\newcommand{\hTy}{\wh{\msf{Ty}}}
+\newcommand{\hTm}{\wh{\msf{Tm}}}
+
+\newcommand{\p}{\mathsf{p}}
+\newcommand{\q}{\mathsf{q}}
+
+\newcommand{\refl}{\msf{refl}}
+\newcommand{\Bool}{\msf{Bool}}
+\newcommand{\true}{\msf{true}}
+\newcommand{\false}{\msf{false}}
+\newcommand{\True}{\msf{True}}
+\newcommand{\False}{\msf{False}}
+\newcommand{\List}{\msf{List}}
+\newcommand{\nil}{\msf{nil}}
+\newcommand{\cons}{\msf{cons}}
+\newcommand{\Nat}{\msf{Nat}}
+\newcommand{\zero}{\msf{zero}}
+\newcommand{\suc}{\msf{suc}}
+\renewcommand{\tt}{\msf{tt}}
+\newcommand{\fst}{\msf{fst}}
+\newcommand{\snd}{\msf{snd}}
+\newcommand{\mylet}{\msf{let}}
+\newcommand{\emptycon}{\scaleobj{.75}\bullet}
+\newcommand{\id}{\msf{id}}
+
+\newcommand{\Set}{\mathsf{Set}}
+\newcommand{\Prop}{\mathsf{Prop}}
+\newcommand{\Rep}{\msf{Rep}}
+\newcommand{\blank}{{\mathord{\hspace{1pt}\text{--}\hspace{1pt}}}}
+\newcommand{\emb}[1]{\ulcorner#1\urcorner}
+
+\newcommand{\Stage}{\msf{Stage}}
+\newcommand{\hato}{\bm\hat{\mbbo}}
+\newcommand{\ev}{\mbb{E}}
+\newcommand{\re}{\mbb{R}}
+
+\theoremstyle{remark}
+\newtheorem{notation}{Notation}
+
+\newcommand{\whset}{\wh{\Set}}
+\newcommand{\rexti}{\re_{\ext_1}^{-1}}
+\newcommand{\rextizero}{\re_{\ext_0}^{-1}}
+
+\newcommand{\rel}{^{\approx}}
+\newcommand{\yon}{\msf{y}}
+
+
+%% --------------------------------------------------------------------------------
+
+\begin{document}
+
+%%
+%% The "title" command has an optional parameter,
+%% allowing the author to define a "short title" to be used in page headers.
+\title{Partially Static Types and Staged Partial Evaluation in Two-Level Type Theory}
+
+%%
+%% The "author" command and its associated commands are used to define
+%% the authors and their affiliations.
+%% Of note is the shared affiliation of the first two authors, and the
+%% "authornote" and "authornotemark" commands
+%% used to denote shared contribution to the research.
+\author{András Kovács}
+\email{kovacsandras@inf.elte.hu}
+\orcid{0000-0002-6375-9781}
+\affiliation{%
+  \institution{Eötvös Loránd University}
+  \country{Hungary}
+  \city{Budapest}
+}
+
+%% The abstract is a short summary of the work to be presented in the
+%% article.
+\begin{abstract}
+  Two-level type theory (2LTT) is a system that can be used for two-stage
+  compilation, which allows dependent types both in metaprograms and in
+  generated code output. Partially static data types are used in staged
+  compilation in situations where only some parts of structures are known at
+  compile time. We investigate partially static types and partial evaluation in
+  the context of 2LTT. A key question is whether we can mechanically obtain
+  partially static types from non-staged data types, and likewise lift
+  non-staged operations to operations on partially static data. We show that all
+  types and constructions in a Martin-Löf type theory (MLTT) can be given a
+  partially static interpretation. Moreover, this interpretation yields a staged
+  partial evaluator for MLTT, defined within 2LTT, which can be used to compile
+  embedded MLTT syntax to normalized object code. We show that the
+  interpretation can be used to partially mechanize the construction of staged
+  normalizers for certain algebras. Finally, we compare and investigate free
+  extensions of algebras (``frex'') in 2LTT as an alternative generic approach to
+  partially static types.
+\end{abstract}
+
+\begin{CCSXML}
+<ccs2012>
+   <concept>
+       <concept_id>10003752.10003790.10011740</concept_id>
+       <concept_desc>Theory of computation~Type theory</concept_desc>
+       <concept_significance>500</concept_significance>
+       </concept>
+   <concept>
+       <concept_id>10011007.10011006.10011041.10011047</concept_id>
+       <concept_desc>Software and its engineering~Source code generation</concept_desc>
+       <concept_significance>500</concept_significance>
+       </concept>
+ </ccs2012>
+\end{CCSXML}
+
+\ccsdesc[500]{Theory of computation~Type theory}
+\ccsdesc[500]{Software and its engineering~Source code generation}
+\keywords{type theory, two-level type theory, staged compilation, partial evaluation}
+\maketitle
+
+\section{Introduction}\label{sec:introduction}
+
+In most practical programming languages it is possible to write code-generating
+code by simply manipulating strings or syntax trees, but this tends to be
+tedious, unsafe and non-composable. The purpose of \emph{staged compilation} is
+to support metaprogramming with better ergonomics and more safety guarantees. In
+two-stage systems, user-written metaprograms are executed at compile time to
+produce code that is processed in further compilation.
+
+\emph{Two-level type theory} (2LTT) is a framework which supports two-stage
+compilation with strong safety and correctness properties. It is also compatible
+with a wide range of object-level and meta-level language features; in
+particular it allows dependent types at both levels. 2LTT was originally used in
+a purely mathematical context in synthetic homotopy theory \cite{twolevel}, but
+it can be also applied in staged compilation \cite{2ltt-staged}.
+
+A common application of staging is to use embedded languages without
+interpretative overhead, using \emph{staged interpretation}, or going further,
+to optimize embedded programs or partially evaluate them at compile
+time. \emph{Partially static data} is commonly used in staged interpreters and
+partial evaluators \cite{TODO}. Such data contains a mixture of expressions of
+the object language and actual structured data that is computed at compile time.
+A simple example is a compile-time list whose elements are object-level expressions.
+
+In this paper, we investigate partially static types and partial evaluation in
+the context of 2LTT. In this context, we have a full-powered mathematical
+language at our disposal on the meta level. Our object language is a bit simpler
+but still highly expressive. Hence, we can internalize much of the formal
+reasoning about staging in 2LTT itself, and internalize constructions which were
+not feasible in systems with weaker type systems.
+
+\subsection{Overview \& Contributions}\label{sec:overview}
+\begin{itemize}
+\item In \textbf{Section \ref{sec:2ltt}} we describe the specific variant of 2LTT used
+      in this paper and give a short overview of its staging features.
+\item In \textbf{Section \ref{sec:ps-interp}} we consider deep embeddings of a
+      Martin-Löf type theory (MLTT) into 2LTT, and describe its staged
+      interpretation and partial evaluation. The former maps embedded MLTT syntax to
+      object-level code. The latter is similar, but it can also perform
+      $\beta\eta$-normalization and could serve as a basis for more sophisticated
+      compile-time optimization. We define a model of MLTT where each type is
+      interpreted as an object-level type (``dynamic'' type) together with a
+      partially static type, and there is an embedding of the former into the
+      latter.  The interpretation of MLTT syntax in this model corresponds to staged
+      partial evaluation.
+      \begin{itemize}
+        \item  From another point of view, this model explains how to extend all MLTT types
+               with neutral values representing object-level expressions, obtaining partially
+               static types.
+        \item Since MLTT terms are also modeled, any function in MLTT can be
+              interpreted as a function operating on partially static types in 2LTT.
+      \end{itemize}
+\item In \textbf{Section \ref{sec:ps-alg}} we describe an application of the
+  partially static interpretation in normalization for algebraic structures.  In
+  some cases it is possible to replace an algebra with an equivalent algebra,
+  but in which some or all equations hold definitionally. Then, we can take the
+  partially static interpretation of such strict algebras. This yields a staged
+  normalizer with respect to the definitional equations.
+
+\item In \textbf{Section \ref{sec:frex}} we look at free extensions of algebras,
+  called \emph{frex} in prior literature
+  \cite{DBLP:journals/pacmpl/YallopGK18}. A key advantage here is that algebras
+  can be extended with decidable or even finite sets of variables, which makes
+  it possible to compute more normal forms. For example, normalization for free
+  groups require decidable equality of variables. Some subtleties arise here
+  from the 2LTT staging setup and the fact that we internally verify algebraic
+  laws. Free extensions always exist, but only those can be actually interpreted in
+  object-level algebras which have a ``fully normalized'' presentation that does not
+  use quotients.
+\end{itemize}
+
+\section{Overview of Two-Level Type Theory}\label{sec:2ltt}
+
+\section{Staged Interpretation and Normalization for Martin-Löf Type Theory}\label{sec:ps-interp}
+
+\section{Partially Static Types in Normalization of Algebras}\label{sec:ps-alg}
+
+\section{Free Extensions of Algebras in Two-Level Type Theory}\label{sec:frex}
+
+\section{Related Work \& Conclusions}\label{sec:conclusion}
+
+
+
+
+
+
+
+
+\interlinepenalty=10000
+\bibliography{references}
+
+\end{document}
+\endinput

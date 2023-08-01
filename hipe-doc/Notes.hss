@@ -1,0 +1,383 @@
+.section .rodata.str,"aMS",@progbits,1
+.align 1
+.align 1
+.globl Notes_zdtczqLeaf3_bytes
+.type Notes_zdtczqLeaf3_bytes, @object
+Notes_zdtczqLeaf3_bytes:
+	.string "'Leaf"
+.section .rodata.str,"aMS",@progbits,1
+.align 1
+.align 1
+.globl Notes_zdtczqNode3_bytes
+.type Notes_zdtczqNode3_bytes, @object
+Notes_zdtczqNode3_bytes:
+	.string "'Node"
+.section .rodata.str,"aMS",@progbits,1
+.align 1
+.align 1
+.globl Notes_zdtcTree3_bytes
+.type Notes_zdtcTree3_bytes, @object
+Notes_zdtcTree3_bytes:
+	.string "Tree"
+.section .rodata.str,"aMS",@progbits,1
+.align 1
+.align 1
+.globl Notes_zdtrModule2_bytes
+.type Notes_zdtrModule2_bytes, @object
+Notes_zdtrModule2_bytes:
+	.string "Notes"
+.section .rodata.str,"aMS",@progbits,1
+.align 1
+.align 1
+.globl Notes_zdtrModule4_bytes
+.type Notes_zdtrModule4_bytes, @object
+Notes_zdtrModule4_bytes:
+	.string "main"
+.section .text
+.align 8
+.align 8
+	.quad	4294967301
+	.quad	0
+	.long	14
+	.long	0
+.globl Notes_foo_info
+.type Notes_foo_info, @function
+Notes_foo_info:
+.LcDe:
+	leaq -16(%rbp),%rax
+	cmpq %r15,%rax
+	jb .LcDf
+.LcDg:
+	movq %r14,%rax
+	andl $7,%r14d
+	cmpq $1,%r14
+	je .LcDj
+.LcDc:
+	movq $.LcDw_info,-16(%rbp)
+	movq 6(%rax),%r14
+	movq 14(%rax),%rax
+	movq %rax,-8(%rbp)
+	addq $-16,%rbp
+	jmp Notes_foo_info
+.LcDf:
+	leaq Notes_foo_closure(%rip),%rbx
+	jmp *-8(%r13)
+.align 8
+	.quad	0
+	.long	30
+	.long	0
+.LcDi_info:
+.LcDi:
+	addq $8,%rbp
+.LnDT:
+	movq %rbx,%rax
+.LcDj:
+	addq $16,%r12
+	cmpq 856(%r13),%r12
+	ja .LcDr
+.LcDq:
+	movq 7(%rax),%rax
+	addq $10,%rax
+	movq $Notes_Leaf_con_info,-8(%r12)
+	movq %rax,(%r12)
+	leaq -7(%r12),%rbx
+	jmp *(%rbp)
+.LcDr:
+	movq $16,904(%r13)
+	movq $.LcDi_info,-8(%rbp)
+	movq %rax,%rbx
+	addq $-8,%rbp
+	jmp stg_gc_unpt_r1
+.align 8
+	.quad	1
+	.long	30
+	.long	0
+.LcDw_info:
+.LcDw:
+	movq $.LcDA_info,(%rbp)
+	movq 8(%rbp),%r14
+	movq %rbx,8(%rbp)
+	jmp Notes_foo_info
+.align 8
+	.quad	1
+	.long	30
+	.long	0
+.LcDA_info:
+.LcDA:
+	addq $24,%r12
+	cmpq 856(%r13),%r12
+	ja .LcDJ
+.LcDI:
+	movq $Notes_Node_con_info,-16(%r12)
+	movq 8(%rbp),%rax
+	movq %rax,-8(%r12)
+	movq %rbx,(%r12)
+	leaq -14(%r12),%rbx
+	addq $16,%rbp
+	jmp *(%rbp)
+.LcDJ:
+	movq $24,904(%r13)
+	jmp stg_gc_unpt_r1
+	.size Notes_foo_info, .-Notes_foo_info
+.section .data
+.align 8
+.align 1
+.globl Notes_foo_closure
+.type Notes_foo_closure, @object
+Notes_foo_closure:
+	.quad	Notes_foo_info
+.section .data
+.align 8
+.align 1
+.globl Notes_zdtrModule3_closure
+.type Notes_zdtrModule3_closure, @object
+Notes_zdtrModule3_closure:
+	.quad	ghczmprim_GHCziTypes_TrNameS_con_info
+	.quad	Notes_zdtrModule4_bytes
+.section .data
+.align 8
+.align 1
+.globl Notes_zdtrModule1_closure
+.type Notes_zdtrModule1_closure, @object
+Notes_zdtrModule1_closure:
+	.quad	ghczmprim_GHCziTypes_TrNameS_con_info
+	.quad	Notes_zdtrModule2_bytes
+.section .data
+.align 8
+.align 1
+.globl Notes_zdtrModule_closure
+.type Notes_zdtrModule_closure, @object
+Notes_zdtrModule_closure:
+	.quad	ghczmprim_GHCziTypes_Module_con_info
+	.quad	Notes_zdtrModule3_closure+1
+	.quad	Notes_zdtrModule1_closure+1
+	.quad	3
+.section .data
+.align 8
+.align 1
+.LrzS_closure:
+	.quad	ghczmprim_GHCziTypes_KindRepTyConApp_con_info
+	.quad	ghczmprim_GHCziTypes_zdtcIntzh_closure+1
+	.quad	ghczmprim_GHCziTypes_ZMZN_closure+1
+	.quad	3
+.section .data
+.align 8
+.align 1
+.LrzT_closure:
+	.quad	ghczmprim_GHCziTypes_BoxedRep_con_info
+	.quad	ghczmprim_GHCziTypes_Unlifted_closure+2
+	.quad	3
+.section .data
+.align 8
+.align 1
+.globl Notes_zdtcTree1_closure
+.type Notes_zdtcTree1_closure, @object
+Notes_zdtcTree1_closure:
+	.quad	ghczmprim_GHCziTypes_KindRepTYPE_con_info
+	.quad	.LrzT_closure+4
+	.quad	3
+.section .data
+.align 8
+.align 1
+.globl Notes_zdtcTree2_closure
+.type Notes_zdtcTree2_closure, @object
+Notes_zdtcTree2_closure:
+	.quad	ghczmprim_GHCziTypes_TrNameS_con_info
+	.quad	Notes_zdtcTree3_bytes
+.section .data
+.align 8
+.align 1
+.globl Notes_zdtcTree_closure
+.type Notes_zdtcTree_closure, @object
+Notes_zdtcTree_closure:
+	.quad	ghczmprim_GHCziTypes_TyCon_con_info
+	.quad	Notes_zdtrModule_closure+1
+	.quad	Notes_zdtcTree2_closure+1
+	.quad	Notes_zdtcTree1_closure+5
+	.quad	-60458506118376288
+	.quad	5755136854281659011
+	.quad	0
+	.quad	3
+.section .data
+.align 8
+.align 1
+.LrzU_closure:
+	.quad	ghczmprim_GHCziTypes_KindRepTyConApp_con_info
+	.quad	Notes_zdtcTree_closure+1
+	.quad	ghczmprim_GHCziTypes_ZMZN_closure+1
+	.quad	3
+.section .data
+.align 8
+.align 1
+.LrzV_closure:
+	.quad	ghczmprim_GHCziTypes_KindRepFun_con_info
+	.quad	.LrzU_closure+1
+	.quad	.LrzU_closure+1
+	.quad	3
+.section .data
+.align 8
+.align 1
+.globl Notes_zdtczqNode1_closure
+.type Notes_zdtczqNode1_closure, @object
+Notes_zdtczqNode1_closure:
+	.quad	ghczmprim_GHCziTypes_KindRepFun_con_info
+	.quad	.LrzU_closure+1
+	.quad	.LrzV_closure+4
+	.quad	3
+.section .data
+.align 8
+.align 1
+.globl Notes_zdtczqNode2_closure
+.type Notes_zdtczqNode2_closure, @object
+Notes_zdtczqNode2_closure:
+	.quad	ghczmprim_GHCziTypes_TrNameS_con_info
+	.quad	Notes_zdtczqNode3_bytes
+.section .data
+.align 8
+.align 1
+.globl Notes_zdtczqNode_closure
+.type Notes_zdtczqNode_closure, @object
+Notes_zdtczqNode_closure:
+	.quad	ghczmprim_GHCziTypes_TyCon_con_info
+	.quad	Notes_zdtrModule_closure+1
+	.quad	Notes_zdtczqNode2_closure+1
+	.quad	Notes_zdtczqNode1_closure+4
+	.quad	7890029755262832986
+	.quad	6913554622407098905
+	.quad	0
+	.quad	3
+.section .data
+.align 8
+.align 1
+.globl Notes_zdtczqLeaf1_closure
+.type Notes_zdtczqLeaf1_closure, @object
+Notes_zdtczqLeaf1_closure:
+	.quad	ghczmprim_GHCziTypes_KindRepFun_con_info
+	.quad	.LrzS_closure+1
+	.quad	.LrzU_closure+1
+	.quad	3
+.section .data
+.align 8
+.align 1
+.globl Notes_zdtczqLeaf2_closure
+.type Notes_zdtczqLeaf2_closure, @object
+Notes_zdtczqLeaf2_closure:
+	.quad	ghczmprim_GHCziTypes_TrNameS_con_info
+	.quad	Notes_zdtczqLeaf3_bytes
+.section .data
+.align 8
+.align 1
+.globl Notes_zdtczqLeaf_closure
+.type Notes_zdtczqLeaf_closure, @object
+Notes_zdtczqLeaf_closure:
+	.quad	ghczmprim_GHCziTypes_TyCon_con_info
+	.quad	Notes_zdtrModule_closure+1
+	.quad	Notes_zdtczqLeaf2_closure+1
+	.quad	Notes_zdtczqLeaf1_closure+4
+	.quad	1770508952597215548
+	.quad	-2513561833223711891
+	.quad	0
+	.quad	3
+.section .text
+.align 8
+.align 8
+	.quad	4294967300
+	.quad	0
+	.long	14
+	.long	0
+.globl Notes_Leaf_info
+.type Notes_Leaf_info, @function
+Notes_Leaf_info:
+.LcEg:
+	addq $16,%r12
+	cmpq 856(%r13),%r12
+	ja .LcEk
+.LcEj:
+	movq $Notes_Leaf_con_info,-8(%r12)
+	movq %r14,(%r12)
+	leaq -7(%r12),%rbx
+	jmp *(%rbp)
+.LcEk:
+	movq $16,904(%r13)
+	leaq Notes_Leaf_closure(%rip),%rbx
+	jmp *-8(%r13)
+	.size Notes_Leaf_info, .-Notes_Leaf_info
+.section .data
+.align 8
+.align 1
+.globl Notes_Leaf_closure
+.type Notes_Leaf_closure, @object
+Notes_Leaf_closure:
+	.quad	Notes_Leaf_info
+.section .text
+.align 8
+.align 8
+	.quad	8589934607
+	.quad	0
+	.long	14
+	.long	0
+.globl Notes_Node_info
+.type Notes_Node_info, @function
+Notes_Node_info:
+.LcEt:
+	addq $24,%r12
+	cmpq 856(%r13),%r12
+	ja .LcEx
+.LcEw:
+	movq $Notes_Node_con_info,-16(%r12)
+	movq %r14,-8(%r12)
+	movq %rsi,(%r12)
+	leaq -14(%r12),%rbx
+	jmp *(%rbp)
+.LcEx:
+	movq $24,904(%r13)
+	leaq Notes_Node_closure(%rip),%rbx
+	jmp *-8(%r13)
+	.size Notes_Node_info, .-Notes_Node_info
+.section .data
+.align 8
+.align 1
+.globl Notes_Node_closure
+.type Notes_Node_closure, @object
+Notes_Node_closure:
+	.quad	Notes_Node_info
+.section .rodata.str,"aMS",@progbits,1
+.align 1
+.align 1
+iEC_str:
+	.string "main:Notes.Leaf"
+.section .text
+.align 8
+.align 8
+	.quad	iEC_str-(Notes_Leaf_con_info)+0
+	.quad	4294967296
+	.long	3
+	.long	0
+.globl Notes_Leaf_con_info
+.type Notes_Leaf_con_info, @object
+Notes_Leaf_con_info:
+.LcEB:
+	incq %rbx
+	jmp *(%rbp)
+	.size Notes_Leaf_con_info, .-Notes_Leaf_con_info
+.section .rodata.str,"aMS",@progbits,1
+.align 1
+.align 1
+iEH_str:
+	.string "main:Notes.Node"
+.section .text
+.align 8
+.align 8
+	.quad	iEH_str-(Notes_Node_con_info)+0
+	.quad	2
+	.long	4
+	.long	1
+.globl Notes_Node_con_info
+.type Notes_Node_con_info, @object
+Notes_Node_con_info:
+.LcEG:
+	addq $2,%rbx
+	jmp *(%rbp)
+	.size Notes_Node_con_info, .-Notes_Node_con_info
+.section .note.GNU-stack,"",@progbits
+.ident "GHC 9.6.2"

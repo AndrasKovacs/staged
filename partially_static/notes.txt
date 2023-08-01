@@ -1,0 +1,305 @@
+
+Staged interpreter: Contexts are static, Ty is dynamic.
+Standard in literature for simple theories.
+Compiles to object code, while computing cxts and subst but not tys and tms
+--------------------------------------------------------------------------------
+
+Con     := U₁
+Sub Γ Δ := Γ → Δ
+Ty Γ    := Γ → ↑U₀
+Tm Γ A  := (γ : Γ) → A γ
+...
+
+
+-- Partially static model
+-- Performs full βη normalization while compiling to object code
+--------------------------------------------------------------------------------
+
+Con     := (Γᵈ : U₁) × (Γᵖ : U₁) × (q : Γᵖ → Γᵈ)
+
+Sub Γ Δ := (σᵈ : Γᵈ → Δᵈ) × (σᵖ : Γᵖ → Δᵖ) × (q ∘ σᵖ = σᵈ ∘ q)
+
+Ty Γ    := (Aᵈ : Γᵈ → ↑U₀) × (Aᵖ : Γᵖ → U₁)
+         × (q : Aᵖ γ → ↑~(Aᵈ (q γ)))
+         × (u : ↑~(Aᵈ (q γ)) → Aᵖ γ)
+         × (q ∘ u = id)
+
+Tm Γ A  := (tᵈ : (γ : Γᵈ) → ↑~(Aᵈ γ))
+         × (tᵖ : (γ : Γᵖ) → Aᵖ γ)
+         × (q ∘ tᵖ = tᵈ ∘ q)
+
+category, terminal obj obvious
+
+(Γ ▶ A)ᵈ = (γ : Γᵈ) × Aᵈ γ
+(Γ ▶ A)ᵖ = (γ : Γᵖ) × Aᵖ γ
+q (γ, α) = (q γ, q α)
+
+family obvious
+Sub Γ (Δ ▶ A) ≃ (σ : Sub Γ Δ) × Tm Γ A[σ]
+
+-- ⊥
+--------------------------------------------------------------------------------
+
+⊥ᵈ _ :=
+
+
+-- ⊤
+--------------------------------------------------------------------------------
+
+⊤ᵈ _ := ⊤₀
+⊤ᵖ _ := ⊤₁
+q _  := tt₀
+u _  := tt₁
+
+-- Bool
+--------------------------------------------------------------------------------
+
+Boolᵈ _ := <Bool₀>
+Boolᵖ _ := ↑Bool₀ + Bool₁
+q (inl t)      := t
+q (inr true₁)  := true₀
+q (inr false₁) := false₀
+u t            := inl t
+
+BoolElim : (A : Ty (Γ ▶ Bool)) → Tm Γ (A[id,true]) → Tm Γ (A[id,false])
+         → (b : Tm Γ Bool) → Tm Γ (A[id, b])
+
+(BoolElim A t f b)ᵈ γ : ↑(~(Aᵈ (γ, bᵈ γ))
+  := <BoolElim₀ (λ b. ~(Aᵈ (γ, <b>)))
+                      ~(tᵈ γ)
+                                                                ~(fᵈ γ)
+                                                                ~(bᵈ γ)>
+
+  -- short:
+  := BoolElim₀ (tᵈ γ) (fᵈ γ) (bᵈ γ)
+
+(BoolElim A t f b)ᵖ γ : Aᵖ (γ, bᵖ γ)
+  := case bᴾ γ of
+            inl b      → inl (BoolElim₀ (q (tᵖ γ)) (q (fᵖ γ)) b)
+                        inr true₁  → tᵖ γ
+                        inr false₁ → fᵖ γ
+
+
+
+-- Id
+--------------------------------------------------------------------------------
+
+
+
+-- Π
+--------------------------------------------------------------------------------
+
+(Π A B)ᵈ γ := (α : Aᵈ γ) → Bᵈ (γ, α)
+(Π A B)ᵖ γ := (f : (α : Aᵖ γ) → Bᵖ (γ, α)) ×
+              (q ∘ f = q ∘ f ∘ u ∘ q)
+
+              f must have the same action on dynamic and static
+                                                        inhabitants up to defn equality.
+
+    (x : Aᵖ γ) × u (q x) = x  are the dynamic inhabitants
+    (x : Aᵖ γ) × u (q x) ≠ x  are the static inhabitants
+
+    x ∈ image u := ∃ y (u y = x)
+
+    u (q x)
+
+    f : Boolᵖ → Boolᵖ
+
+    f (inr b) = inr (not b)
+                f (inl b) = inl b
+
+    q (f (inr true₁)) = false₀
+    q (f (u (q (inr true₁)))) = q (f (inl true₀)) = true₀
+
+-- without η-expansion: add neutrals to Πᴾ + quotient by η
+
+
+-- Σ
+--------------------------------------------------------------------------------
+
+(Σ A B)ᵈ γ := (α : Aᵈ γ) × Bᵈ (γ, α)
+(Σ A B)ᵖ γ := (α : Aᵖ γ) × Bᵖ (γ, α)
+
+q (α, β) := (q α, q β)
+u (α, β) := (u α, u β)
+
+-- without η-expansion: add neutrals to Σᵖ + quotient by η
+
+
+Coquand universes, disregarding levels
+--------------------------------------------------------------------------------
+
+-- spec
+U : Ty Γ
+Tm Γ U ≃ Ty Γ
+
+
+Uᵈ γ := U₀
+Uᵖ γ := (_ᵈ : U₀) × (_ᵖ : U₁) × (↓ : _ᵖ → _ᵈ) × (↑ : _ᵈ → _ᵖ) × (↓ ∘ ↑ = id)
+
+↓(A : Uᵖ γ)  := Aᵈ
+↑(A : Uᵈ ↓γ) := (A, A, id, id, _)
+
+
+A : Tm Γ U
+
+(El A)ᵈ γ := Aᵈ γ
+(El A)ᵖ γ := (Aᵖ γ).2
+
+↓ : (Aᵖ γ).2 → Aᵈ ↓γ          Aᵈ ↓γ = ↓(Aᵖ γ) = (Aᵖ γ).1
+  : (Aᵖ γ).2 → (Aᵖ γ).1
+↓ := (Aᵖ γ).↓
+
+↑ := (Aᵖ γ).↑
+
+A : Ty Γ
+(c A)ᵈ γ := Aᵈ γ
+(c A)ᵖ γ := (Aᵈ ↓γ, Aᵖ γ, ↓, ↑, _)
+
+
+-- Normalizers are not possible with ps-alg strictification
+--------------------------------------------------------------------------------
+
+- spose I have ps-string monoid
+- I can't really replace it with a strict one and keep the dyn monoid the same
+- concatenation of alt-lists will not be uniform ps function
+
+
+--------------------------------------------------------------------------------
+-- Frex paper 4.9:
+    Free Set A := A + Code A     (coproduct of static + dynamic)
+
+
+-- Frex
+--------------------------------------------------------------------------------
+
+- Extending algebras with neutral elements
+
+- Motivation: decidability! + normal
+
+- Less generally applicable
+   - Starting from A : U and a : A in MLTT
+     - We always have
+        - Aˢ : U₁ and Aᵈ : U₀
+        - aˢ : Aˢ and aᵈ : Aᵈ
+     - We only have coproducts, free algs, etc. statically if A is algebraic
+     - Even if A is algebraic, coprod and free alg must be "normalized",
+       else they can't be interpreted into dynamic algebras
+
+
+Starting with A : Alg
+- Algˢ, Algᵈ
+- Heterogeneous Hom : Algˢ → Algᵈ preserves structure up to =₀
+- For γ : Alg, we get γˢ : Algˢ, γᵈ : Algᵈ
+- There's not necessarily a morphism (f : Hom γˢ γᵈ)
+  For example, the monoid of ℕ → ℕ functions supports no (ℕ₁ → ℕ₁) → (ℕ₀ → ℕ₀)
+
+- Fully static free algebras and coproducts always exist
+-   "Normalized" free algebra:
+    Free : U₁ → Algˢ
+    Hom (Free A) B ≃ (A → Forget B)
+-   Normalized free algebras might not exist
+    Similarly, normalized initial algebras (s.t. there's a morphism to every dynamic algebra)
+    And normalized coproducts
+    Being normalized ≈ quotient-free (as far as I see!)
+
+    Example for normalized free algebra that does not exist:
+      - Free SK-algebra
+      - It's quotiented by β
+      - Given an arbitrary dynamic SK-algebra B + a function (A → Forget B),
+        We can't define Hom (Free A) B, because we can't model the quotients
+
+
+
+
+--------------------------------------------------------------------------------
+
+QUESTION:
+
+  - can we ad-hoc optimize functions on PS data?
+    like match on both args in list concat?
+  - such function would not be uniform!
+
+
+  Is this uniform?
+
+  []   ++ ys     = ys
+  x:xs ++ []     = x:xs
+  x:xs ++ y:ys   = x:(xs ++ y:ys)
+  x:xs ++ <ys>   = x:(xs ++ <ys>)
+  <xs> ++ []     = <xs>
+  <xs> ++ (y:ys) = <xs ++ q(y:ys)>
+  <xs> ++ <ys>   = <xs ++ ys>
+
+  to show: q (xs ++ ys) = q (qu xs ++ qu ys)
+
+  q (f [] ys) = q ys
+  q (f (u (q [])) (u (q ys))) = q (u (q ys)) = q ys OK
+
+  q (f (x:xs) []) = q (x:xs)
+  q (f (u (q (x:xs))) (u (q [])) = q (u (q (x:xs))) OK
+
+  q (x:(xs ++ y:ys)) = ... can't use induction hypothesis!
+
+  - Not uniform.
+  - If nothing depends on the definitional behavior of ++, we can define
+    non-uniform functions.
+
+  - What about "weak uniformity"? I.e. proving q∘u = id in the model?
+    I don't see any chance for that.
+
+
+--------------------------------------------------------------------------------
+
+Cat = {
+  Ob  : U
+  Hom : Ob → Ob → U
+  id  : Hom i i
+  _∘_ : Hom j k → Hom i j → Hom i k
+  idl : id ∘ f = f
+  idr : f ∘ id = f
+  ass : f ∘ (g ∘ h) = (f ∘ g) ∘ h
+  }
+
+Yoneda = :
+
+(x = y) := ∀ z. z = x → z = y
+
+_◼_ : a = b → b = c → a = c
+p ◼ q := λ z (r : z = a).
+
+
+Strict replacement:
+
+ Nat(F, G) := (ϕ : ∀ i. F i → G i)
+           ×  ((f : Hom(i,j))(x : F j) → (ϕ j x)[f] = ϕ i (x[f]))
+
+ C : Cat
+ C* : Cat
+
+    C*.Ob     := C.Ob
+    C*Hom i j := Nat(yi, yj)
+
+
+Is there an advantage to PS + strict replacement, for theorem proving?
+Nope!
+Everything that we can do with PS is already visible to the object-level defn equality!
+PS is *all about* selectively re-enabling object-level defn equalities in staging!
+
+
+
+dlist:
+
+   (List A → List A)
+   []       = id
+   xs ++ ys = xs ∘ ys
+
+uniform function:   (A ~> B) := (f : A → B) × (∀ x. q (f x) = q (f (u (q x))))
+
+DListᴾ A := Listᴾ A ~> Listᴾ A
+[] := ((λ x. x) , ...)                   -- nice if _=_ is defn irrelevant!
+(f, p) ++ (g, p') = (f ∘ g, ...)
+
+q (f, _) = (λ x. q (f (u x)), ...)
+
+q (id, _) = (λ x. q (id ux), _) = (<λ x. x>, _)

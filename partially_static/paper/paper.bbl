@@ -1,0 +1,85 @@
+%%% -*-BibTeX-*-
+%%% Do NOT edit. File created by BibTeX with style
+%%% ACM-Reference-Format-Journals [18-Jan-2012].
+
+\begin{thebibliography}{3}
+
+%%% ====================================================================
+%%% NOTE TO THE USER: you can override these defaults by providing
+%%% customized versions of any of these macros before the \bibliography
+%%% command.  Each of them MUST provide its own final punctuation,
+%%% except for \shownote{}, \showDOI{}, and \showURL{}.  The latter two
+%%% do not use final punctuation, in order to avoid confusing it with
+%%% the Web address.
+%%%
+%%% To suppress output of a particular field, define its macro to expand
+%%% to an empty string, or better, \unskip, like this:
+%%%
+%%% \newcommand{\showDOI}[1]{\unskip}   % LaTeX syntax
+%%%
+%%% \def \showDOI #1{\unskip}           % plain TeX syntax
+%%%
+%%% ====================================================================
+
+\ifx \showCODEN    \undefined \def \showCODEN     #1{\unskip}     \fi
+\ifx \showDOI      \undefined \def \showDOI       #1{#1}\fi
+\ifx \showISBNx    \undefined \def \showISBNx     #1{\unskip}     \fi
+\ifx \showISBNxiii \undefined \def \showISBNxiii  #1{\unskip}     \fi
+\ifx \showISSN     \undefined \def \showISSN      #1{\unskip}     \fi
+\ifx \showLCCN     \undefined \def \showLCCN      #1{\unskip}     \fi
+\ifx \shownote     \undefined \def \shownote      #1{#1}          \fi
+\ifx \showarticletitle \undefined \def \showarticletitle #1{#1}   \fi
+\ifx \showURL      \undefined \def \showURL       {\relax}        \fi
+% The following commands are used for tagged output and should be
+% invisible to TeX
+\providecommand\bibfield[2]{#2}
+\providecommand\bibinfo[2]{#2}
+\providecommand\natexlab[1]{#1}
+\providecommand\showeprint[2][]{arXiv:#2}
+
+\bibitem[Annenkov et~al\mbox{.}(2019)]%
+        {twolevel}
+\bibfield{author}{\bibinfo{person}{Danil Annenkov}, \bibinfo{person}{Paolo
+  Capriotti}, \bibinfo{person}{Nicolai Kraus}, {and} \bibinfo{person}{Christian
+  Sattler}.} \bibinfo{year}{2019}\natexlab{}.
+\newblock \showarticletitle{Two-Level Type Theory and Applications}.
+\newblock \bibinfo{journal}{\emph{ArXiv e-prints}} (\bibinfo{date}{may}
+  \bibinfo{year}{2019}).
+\newblock
+\urldef\tempurl%
+\url{http://arxiv.org/abs/1705.03307}
+\showURL{%
+\tempurl}
+
+
+\bibitem[Kov{\'{a}}cs(2022)]%
+        {2ltt-staged}
+\bibfield{author}{\bibinfo{person}{Andr{\'{a}}s Kov{\'{a}}cs}.}
+  \bibinfo{year}{2022}\natexlab{}.
+\newblock \showarticletitle{Staged compilation with two-level type theory}.
+\newblock \bibinfo{journal}{\emph{Proc. {ACM} Program. Lang.}}
+  \bibinfo{volume}{6}, \bibinfo{number}{{ICFP}} (\bibinfo{year}{2022}),
+  \bibinfo{pages}{540--569}.
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.1145/3547641}
+\showDOI{\tempurl}
+
+
+\bibitem[Yallop et~al\mbox{.}(2018)]%
+        {DBLP:journals/pacmpl/YallopGK18}
+\bibfield{author}{\bibinfo{person}{Jeremy Yallop}, \bibinfo{person}{Tamara von
+  Glehn}, {and} \bibinfo{person}{Ohad Kammar}.}
+  \bibinfo{year}{2018}\natexlab{}.
+\newblock \showarticletitle{Partially-static data as free extension of
+  algebras}.
+\newblock \bibinfo{journal}{\emph{Proc. {ACM} Program. Lang.}}
+  \bibinfo{volume}{2}, \bibinfo{number}{{ICFP}} (\bibinfo{year}{2018}),
+  \bibinfo{pages}{100:1--100:30}.
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.1145/3236795}
+\showDOI{\tempurl}
+
+
+\end{thebibliography}

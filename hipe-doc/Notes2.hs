@@ -1,126 +1,199 @@
-{-# language MagicHash, UnliftedDatatypes, UnboxedTuples #-}
+{-# language Strict #-}
+{-# options_ghc -O1 -fworker-wrapper-cbv #-}
 
-module Notes2 (foo) where
+module Foo (foo) where
 
-import GHC.Exts
+data Tree = Leaf Int | Node Tree Tree
 
--- data Box = Box (Int# -> Int#)
+foo :: Tree -> Tree
+foo (Leaf x) = Leaf (x + 100)
+foo (Node l r) = Node (foo l) (foo r)
 
--- foo :: Box -> Int#
--- foo (Box f) = f 100#
+       -- cE0: // global
+       --     _sCx::P64 = R2;
+       --     if (R2 & 7 == 1) goto cE3; else goto cDW;
+       -- cE2: // global
+       --     Sp = Sp + 8;
+       --     _sCx::P64 = R1;
+       --     goto cE3;
+       -- cEa: // global
+       --     _sCz::I64 = I64[_sCx::P64 + 7] + 100;
+       --     I64[Hp - 8] = Foo.Leaf_con_info;
+       --     I64[Hp] = _sCz::I64;
+       --     R1 = Hp - 7;
+       --     call (P64[Sp])(R1) args: 8, res: 0, upd: 8;
+       -- cDW: // global
+       --     I64[Sp - 16] = cEg;
+       --     R2 = P64[_sCx::P64 + 6];
+       --     P64[Sp - 8] = P64[_sCx::P64 + 14];
+       --     Sp = Sp - 16;
+       --     call Foo.$wfoo_info(R2) returns to cEg, args: 8, res: 8, upd: 8;
+       -- cEg: // global
+       --     I64[Sp] = cEk;
+       --     R2 = P64[Sp + 8];
+       --     P64[Sp + 8] = R1;
+       --     call Foo.$wfoo_info(R2) returns to cEk, args: 8, res: 8, upd: 8;
+       -- cEs: // global
+       --     I64[Hp - 16] = Foo.Node_con_info;
+       --     P64[Hp - 8] = P64[Sp + 8];
+       --     P64[Hp] = R1;
+       --     R1 = Hp - 14;
+       --     Sp = Sp + 16;
+       --     call (P64[Sp])(R1) args: 8, res: 0, upd: 8;
 
--- foo :: Bool -> Bool
--- foo True = False
--- foo x    = x
+       -- cDY: // global
+       --     if ((Sp + -16) < SpLim) (likely: False) goto cDZ; else goto cE0;
+       -- cDZ: // global
+       --     R1 = Foo.$wfoo_closure;
+       --     call (stg_gc_fun)(R2, R1) args: 8, res: 0, upd: 8;
+       -- cE0: // global
+       --     _sCx::P64 = R2;
+       --     if (R2 & 7 == 1) goto cE3; else goto cDW;
+       -- cE3: // global
+       --     Hp = Hp + 16;
+       --     if (Hp > HpLim) (likely: False) goto cEb; else goto cEa;
+       -- cEb: // global
+       --     HpAlloc = 16;
+       --     I64[Sp - 8] = cE2;
+       --     R1 = _sCx::P64;
+       --     Sp = Sp - 8;
+       --     call stg_gc_unpt_r1(R1) returns to cE2, args: 8, res: 8, upd: 8;
+       -- cE2: // global
+       --     Sp = Sp + 8;
+       --     _sCx::P64 = R1;
+       --     goto cE3;
+       -- cEa: // global
+       --     _sCz::I64 = I64[_sCx::P64 + 7] + 100;
+       --     I64[Hp - 8] = Foo.Leaf_con_info;
+       --     I64[Hp] = _sCz::I64;
+       --     R1 = Hp - 7;
+       --     call (P64[Sp])(R1) args: 8, res: 0, upd: 8;
+       -- cDW: // global
+       --     I64[Sp - 16] = cEg;
+       --     R2 = P64[_sCx::P64 + 6];
+       --     P64[Sp - 8] = P64[_sCx::P64 + 14];
+       --     Sp = Sp - 16;
+       --     call Foo.$wfoo_info(R2) returns to cEg, args: 8, res: 8, upd: 8;
+       -- cEg: // global
+       --     I64[Sp] = cEk;
+       --     R2 = P64[Sp + 8];
+       --     P64[Sp + 8] = R1;
+       --     call Foo.$wfoo_info(R2) returns to cEk, args: 8, res: 8, upd: 8;
+       -- cEk: // global
+       --     Hp = Hp + 24;
+       --     if (Hp > HpLim) (likely: False) goto cEt; else goto cEs;
+       -- cEt: // global
+       --     HpAlloc = 24;
+       --     call stg_gc_unpt_r1(R1) returns to cEk, args: 8, res: 8, upd: 8;
+       -- cEs: // global
+       --     I64[Hp - 16] = Foo.Node_con_info;
+       --     P64[Hp - 8] = P64[Sp + 8];
+       --     P64[Hp] = R1;
+       --     R1 = Hp - 14;
+       --     Sp = Sp + 16;
+       --     call (P64[Sp])(R1) args: 8, res: 0, upd: 8;
 
--- foo :: (Bool -> a) -> Bool -> a
--- foo f b = f (case b of True -> False; _ -> True)
+-- Foo_zdwfoo_info:
+-- .LcE0:
+-- 	movq %r14,%rax
+-- 	andl $7,%r14d
+-- 	cmpq $1,%r14
+-- 	je .LcEa
+-- .LcDW:
+-- 	movq $.LcEg_info,-16(%rbp)
+-- 	movq 6(%rax),%r14
+-- 	movq 14(%rax),%rax
+-- 	movq %rax,-8(%rbp)
+-- 	addq $-16,%rbp
+-- 	jmp Foo_zdwfoo_info
+-- .LcEa:
+-- 	movq 7(%rax),%rax
+-- 	addq $100,%rax
+-- 	movq %rax,(%r12)
+-- 	leaq -7(%r12),%rbx
+-- 	jmp *(%rbp)
+-- .LcEg_info:
+-- .LcEg:
+-- 	movq $.LcEs_info,(%rbp)
+-- 	movq 8(%rbp),%r14
+-- 	movq %rbx,8(%rbp)
+-- 	jmp Foo_zdwfoo_info
+-- .LcEs_info:
+-- .LcEs:
+-- 	movq 8(%rbp),%rax
+-- 	movq %rax,-8(%r12)
+-- 	movq %rbx,(%r12)
+-- 	leaq -14(%r12),%rbx
+-- 	addq $16,%rbp
+-- 	jmp *(%rbp)
 
--- data UBool :: UnliftedType where
---   UTrue :: UBool
---   UFalse :: UBool
-
--- foo :: (UBool -> a) -> UBool -> a
--- foo f b = f (case b of UTrue -> UFalse; _ -> UTrue)
-
--- -- pushes call continuation on stack
--- foo f x = f x x x x x x x x x x
-
--- foo (x :: Int#)(y :: Int#)(z :: Int#) = (# x, y, z #)
-
--- bar :: [Int] -> [Int]
--- bar x = 0 : x
--- {-# noinline bar #-}
-
--- foo (x :: [Int])(y :: Int#) =
---   let !kek = bar x
---   in I# y : kek
-
-foo (x :: Int#) = x
-
-
-{-
-Passing cont in register in LLVM?
-
-
-
-
-f x =
-  let y = g x;
-  let y' = g y;
-  let y'' = h y y'
-  ret y''
-
-f0[](k, x) =
-  push k;
-  tcall g(&f1, x)
-
-f1[k](y) =
-  push y;
-  tcall g(&f2, y)
-
-f2[k, y](y') =
-  y = pop
-  k = pop
-  tcall h(k, y, y')
-
-
--- f0[sp](k, x) =
---   tcall g[sp,k](f1, x)
-
-
-f x = g x x
-
-f[k](x) =
-  tailcall g[k](x, x)    -- hmmm
-
-- if we have tailcall, we just keep the stack or reset it, no pushin
-- if we have non-tail call, we have to push ret addresses anyway
-
-- pushing ret address on non-tail call is just fine
-- we can try to share stax
-
-
-
-
-    ...
-    let y = g x        pass k to g, push
-  k:
-    ...
-
-f [sp] k x =
-  g x \[sp, k] y ->
-  g y \[sp, k, y] y' ->
-  h [sp] y y' k
-
-
-
-
-
-
+-- 25
 
 
 
+-- Foo_zdwfoo_info:
+-- .LcDY:
+-- 	leaq -16(%rbp),%rax
+-- 	cmpq %r15,%rax
+-- 	jb .LcDZ
+-- .LcE0:
+-- 	movq %r14,%rax
+-- 	andl $7,%r14d
+-- 	cmpq $1,%r14
+-- 	je .LcE3
+-- .LcDW:
+-- 	movq $.LcEg_info,-16(%rbp)
+-- 	movq 6(%rax),%r14
+-- 	movq 14(%rax),%rax
+-- 	movq %rax,-8(%rbp)
+-- 	addq $-16,%rbp
+-- 	jmp Foo_zdwfoo_info
+-- .LcDZ:
+-- 	leaq Foo_zdwfoo_closure(%rip),%rbx
+-- 	jmp *-8(%r13)
+-- .LcE2_info:
+-- .LcE2:
+-- 	addq $8,%rbp
+-- .LnED:
+-- 	movq %rbx,%rax
+-- .LcE3:
+-- 	addq $16,%r12
+-- 	cmpq 856(%r13),%r12
+-- 	ja .LcEb
+-- .LcEa:
+-- 	movq 7(%rax),%rax
+-- 	addq $100,%rax
+-- 	movq $Foo_Leaf_con_info,-8(%r12)
+-- 	movq %rax,(%r12)
+-- 	leaq -7(%r12),%rbx
+-- 	jmp *(%rbp)
+-- .LcEb:
+-- 	movq $16,904(%r13)
+-- 	movq $.LcE2_info,-8(%rbp)
+-- 	movq %rax,%rbx
+-- 	addq $-8,%rbp
+-- 	jmp stg_gc_unpt_r1
+-- .LcEg_info:
+-- .LcEg:
+-- 	movq $.LcEk_info,(%rbp)
+-- 	movq 8(%rbp),%r14
+-- 	movq %rbx,8(%rbp)
+-- 	jmp Foo_zdwfoo_info
+-- .LcEk_info:
+-- .LcEk:
+-- 	addq $24,%r12
+-- 	cmpq 856(%r13),%r12
+-- 	ja .LcEt
+-- .LcEs:
+-- 	movq $Foo_Node_con_info,-16(%r12)
+-- 	movq 8(%rbp),%rax
+-- 	movq %rax,-8(%r12)
+-- 	movq %rbx,(%r12)
+-- 	leaq -14(%r12),%rbx
+-- 	addq $16,%rbp
+-- 	jmp *(%rbp)
+-- .LcEt:
+-- 	movq $24,904(%r13)
+-- 	jmp stg_gc_unpt_r1
 
-
-
-
-
-
--}
-
-
-
-
-
-  -- f x y =
-  --   ..
-  --   ..
-  --   ..
-  --   g ...
-
-  -- g x y =
-  --   ..
-  --   ..
-  --   ..
-  --   h ...
+-- 47

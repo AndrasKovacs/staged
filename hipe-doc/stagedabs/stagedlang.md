@@ -11,10 +11,20 @@ for practical programming. Features:
 - Good ergonomics and strong inference (of types, values and staging
   annotations) in the surface language.
 
+The main idea is to rephrase as much as possible code optimization as
+evaluation of metaprograms.
+
+- Metaprograms are deterministic, transparent and can be run efficiently.
+- General-purpose optimizers are less transparent, less robust and slower.
+
+For example, in 2LTT, fusion can be implemented with deterministic metaprograms
+and it's guaranteed to work. In Haskell, fusion relies on INLINE pragmas and the
+general-purpose simplifier, and it fails frequently.
+
 Overall, because this 2LTT is more performance-focused than Haskell or OCaml,
 there are more details to keep in mind and manage. However, it's still a
-"high-level" garbage-collected language, and we have significantly less
-bureaucracy than in Rust.
+"high-level" garbage-collected language, and we have less bureaucracy than in
+Rust.
 
 In the following I describe language features, how to use them, and how to
 compile them. I focus on examples. Programming abstractions and tiny libraries

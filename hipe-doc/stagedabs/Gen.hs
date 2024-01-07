@@ -1,9 +1,8 @@
-{-# LANGUAGE ImpredicativeTypes #-}
-{-# LANGUAGE QuantifiedConstraints #-}
 
 {-# language LambdaCase, TemplateHaskell, BlockArguments, RankNTypes,
     MultiParamTypeClasses, FunctionalDependencies, TypeApplications,
-    ScopedTypeVariables, UndecidableInstances #-}
+    ScopedTypeVariables, UndecidableInstances, QuantifiedConstraints,
+    ImpredicativeTypes, TypeFamilies #-}
 
 module Gen where
 
@@ -43,10 +42,6 @@ class Monad m => MonadGen m where
 instance MonadGen Gen where
   liftGen = id
 
-class Improve a b where
-  up   :: Up a -> b
-  down :: b -> Up a
-
 instance MonadGen m => MonadGen (StateT s m) where
   liftGen = lift . liftGen
 
@@ -61,6 +56,10 @@ gen a = liftGen $ Gen $ \k -> [|| let x = $$a in seq x $$(k [||x||]) ||]
 
 genLazy :: MonadGen m => Up a -> m (Up a)
 genLazy a = liftGen $ Gen $ \k -> [|| let x = $$a in $$(k [||x||]) ||]
+
+class Improve a b where
+  up   :: Up a -> b
+  down :: b -> Up a
 
 instance Improve Bool (Gen Bool) where
   up x = Gen \k -> [|| if $$x then $$(k True) else $$(k False) ||]
@@ -76,8 +75,8 @@ instance ImproveM m n =>
   Improve (StateT s m a) (StateT (Up s) n (Up a)) where
 
   up x = StateT \s ->
-    do as <- up [|| runStateT $$x $$s ||]
-       pure ([|| fst $$as ||], [|| snd $$as ||])
+    do (as :: Up (a, s)) <- up [|| runStateT $$x $$s ||]
+       caseUp as pure
 
   down x = [|| StateT \s -> $$(down
     do (a, s) <- runStateT x [||s||]
@@ -86,10 +85,8 @@ instance ImproveM m n =>
 
 instance ImproveM m n => Improve (ExceptT e m a) (ExceptT (Up e) n (Up a)) where
   up x = ExceptT do
-    ea <- up [|| runExceptT $$x ||]
-    liftGen $ Gen \k -> [|| case $$ea of
-      Left e  -> $$(k (Left [||e||]))
-      Right a -> $$(k (Right [||a||]))||]
+    (ea :: Up (Either e a)) <- up [|| runExceptT $$x ||]
+    caseUp ea pure
 
   down (ExceptT x) =
     [|| ExceptT $$(down (x >>= \case
@@ -101,12 +98,19 @@ instance ImproveM m n => Improve (ReaderT r m a) (ReaderT (Up r) n (Up a)) where
   up   x = ReaderT \r -> up [|| runReaderT $$x $$r ||]
   down x = [|| ReaderT \r -> $$(down (runReaderT x [|| r ||])) ||]
 
-putG :: (MonadGen m, MonadState (Up s) m) => Up s -> m ()
-putG s = do
-  s <- genLazy s
-  put s
+downM :: forall n m a. ImproveM m n => n (Up a) -> Up (m a)
+downM x = down x
 
-modifyG :: (MonadGen m, MonadState (Up s) m) => (Up s -> Up s) -> m ()
+upM :: forall m n a. ImproveM m n => Up (m a) -> n (Up a)
+upM x = up x
+
+putG :: (MonadGen m, MonadState (Up s) m) => Up s -> m (Up ())
+putG s = do
+  s <- gen s
+  put s
+  pure [||()||]
+
+modifyG :: (MonadGen m, MonadState (Up s) m) => (Up s -> Up s) -> m (Up ())
 modifyG f = do
   s <- get
   putG (f s)
@@ -117,75 +121,28 @@ localG f ma = do
   r' <- genLazy (f r)
   local (const r') ma
 
+class Split a b | a -> b where
+  split :: Up a -> Gen b
 
+instance Split Bool Bool where
+  split = up
 
+instance Split [a] (Maybe (Up a, Up [a])) where
+  split x = Gen \k -> [|| case $$x of
+    []   -> $$(k Nothing)
+    a:as -> $$(k (Just ([||a||], [||as||]))) ||]
 
+instance Split (a, b) (Up a, Up b) where
+  split x = Gen \k -> [|| case $$x of (a, b) -> $$(k ([||a||], [||b||])) ||]
 
+instance Split (Either a b) (Either (Up a) (Up b)) where
+  split x = Gen \k -> [|| case $$x of Left a -> $$(k (Left [||a||])); Right b -> $$(k (Right [||b||])) ||]
 
-{-
-instance MonadGen m => MonadGen (StateT s m) where
-  liftGen = lift . liftGen
+caseUp :: MonadGen m => Split a b => Up a -> (b -> m c) -> m c
+caseUp a f = f =<< liftGen (split a)
 
-instance MonadGen m => MonadGen (ReaderT r m) where
-  liftGen = lift . liftGen
-
-instance MonadGen m => MonadGen (ExceptT e m) where
-  liftGen = lift . liftGen
-
-gen :: MonadGen m => Up a -> m (Up a)
-gen a = liftGen $ Gen $ \k -> [|| let x = $$a in seq x $$(k [||x||]) ||]
-
-genLazy :: MonadGen m => Up a -> m (Up a)
-genLazy a = liftGen $ Gen $ \k -> [|| let x = $$a in $$(k [||x||]) ||]
-
-class MonadGen n => Fuse m n | m -> n, n -> m where
-  up   :: Up (m a) -> n (Up a)
-  down :: n (Up a) -> Up (m a)
-
-instance Fuse m n => Fuse (ExceptT e m) (ExceptT (Up e) n) where
-  up x = ExceptT do
-    ea <- up [|| runExceptT $$x ||]
-    liftGen $ Gen \k -> [|| case $$ea of
-      Left e  -> $$(k (Left [||e||]))
-      Right a -> $$(k (Right [||a||]))||]
-
-  down (ExceptT x) =
-    [|| ExceptT $$(down (x >>= \case
-          Left e  -> pure [|| Left $$e ||]
-          Right a -> pure [|| Right $$a ||]
-                        )) ||]
-
-instance Fuse Identity Gen where
-  up   x = pure [|| runIdentity $$x ||]
-  down x = [|| Identity $$(runGen x) ||]
-
-instance Fuse m n => Fuse (ReaderT r m) (ReaderT (Up r) n) where
-  up   x = ReaderT \r -> up [|| runReaderT $$x $$r ||]
-  down x = [|| ReaderT \r -> $$(down (runReaderT x [|| r ||])) ||]
-
-instance Fuse m n => Fuse (StateT s m) (StateT (Up s) n) where
-  up x = StateT \s ->
-    do as <- up [|| runStateT $$x $$s ||]
-       pure ([|| fst $$as ||], [|| snd $$as ||])
-
-  down x = [|| StateT \s -> $$(down
-    do (a, s) <- runStateT x [||s||]
-       pure [|| ($$a, $$s) ||])
-    ||]
-
-putG :: (MonadGen m, MonadState (Up s) m) => Up s -> m ()
-putG s = do
-  s <- genLazy s
-  put s
-
-modifyG :: (MonadGen m, MonadState (Up s) m) => (Up s -> Up s) -> m ()
-modifyG f = do
-  s <- get
-  putG (f s)
-
-localG :: (MonadGen m, MonadReader (Up r) m) => (Up r -> Up r) -> m a -> m a
-localG f ma = do
-  r  <- ask
-  r' <- genLazy (f r)
-  local (const r') ma
--}
+upstate :: forall s s' m a. Improve s s' => Monad m =>
+  StateT s' m a -> StateT (Up s) m a
+upstate (StateT f) = StateT \s -> do
+  (a, s) <- f (up s)
+  pure (a, down s)

@@ -18,6 +18,7 @@ import Control.Monad.Except
 import Control.Monad.Identity
 import Control.Monad.Trans
 import Control.Monad.Trans.Maybe
+import Control.Monad.Trans.Cont
 import Data.Coerce
 import Control.Applicative
 import Data.Kind
@@ -79,18 +80,18 @@ data ProdSumUp a where
   JPair   :: ProdSumUp a -> ProdSumUp b -> ProdSumUp (a, b)
   JBool   :: ProdSumUp Bool
 
-class IsProdSumUp a where
-  prodSumUp :: ProdSumUp a
-instance IsProdSumUp (Up a) where
-  prodSumUp = JUp
-instance (IsProdSumUp a, IsProdSumUp b) => IsProdSumUp (Either a b) where
-  prodSumUp = JEither prodSumUp prodSumUp
-instance (IsProdSumUp a, IsProdSumUp b) => IsProdSumUp (a, b) where
-  prodSumUp = JPair prodSumUp prodSumUp
-instance IsProdSumUp a => IsProdSumUp (Maybe a) where
-  prodSumUp = JMaybe prodSumUp
-instance IsProdSumUp Bool where
-  prodSumUp = JBool
+class Joinable a where
+  joinable :: ProdSumUp a
+instance Joinable (Up a) where
+  joinable = JUp
+instance (Joinable a, Joinable b) => Joinable (Either a b) where
+  joinable = JEither joinable joinable
+instance (Joinable a, Joinable b) => Joinable (a, b) where
+  joinable = JPair joinable joinable
+instance Joinable a => Joinable (Maybe a) where
+  joinable = JMaybe joinable
+instance Joinable Bool where
+  joinable = JBool
 
 type family Arr a r where
   Arr (Up a)       (Up r) = Up (a -> r)
@@ -128,8 +129,8 @@ unhandle (JMaybe a)    r@HUp f = maybe (unhandle JUp r (fst f) tt) (unhandle a r
 unhandle JBool         r@HUp f = \case True -> unhandle JUp r (fst f) tt; False -> unhandle JUp r (snd f) tt
 unhandle a     r@(HPair b c) f = \x -> (unhandle a b (fst f) x, unhandle a c (snd f) x)
 
-letG :: forall a m. (IsProdSumUp a, MonadGen m) => a -> m a
-letG a = liftGen (letG' prodSumUp a) where
+letG :: forall a m. (Joinable a, MonadGen m) => a -> m a
+letG a = liftGen (letG' joinable a) where
 
 letG' :: forall a. ProdSumUp a -> a -> Gen a
 letG' JUp           x = Gen \k -> [|| let y = $$x in seq y $$(k [||y||]) ||]
@@ -139,19 +140,19 @@ letG' (JPair a b)   x = (,) <$> letG' a (fst x) <*> letG' b (snd x)
 letG' JBool         x = pure x
 
 class MonadJoin m where
-  joinG :: IsProdSumUp a => m a -> m a
+  joinG :: Joinable a => m a -> m a
 
 instance MonadJoin Gen where
   joinG ma = Gen \(k :: a -> Up r) ->
-    let pa = prodSumUp :: ProdSumUp a
+    let pa = joinable :: ProdSumUp a
         pr = HUp :: ProdUp (Up r)
         pk = arrIsProdUp pa pr
     in unGen (letG' (weaken pk) (handle pa pr k)) \k -> unGen ma (unhandle pa pr k)
 
-instance (IsProdSumUp e, MonadJoin m) => MonadJoin (ExceptT e m) where
+instance (Joinable e, MonadJoin m) => MonadJoin (ExceptT e m) where
   joinG (ExceptT ma) = ExceptT $ joinG ma
 
-instance (MonadJoin m, IsProdSumUp s) => MonadJoin (StateT s m) where
+instance (MonadJoin m, Joinable s) => MonadJoin (StateT s m) where
   joinG (StateT ma) = StateT \s -> joinG (ma s)
 
 instance MonadJoin m => MonadJoin (MaybeT m) where
@@ -166,7 +167,7 @@ instance (MonadJoin m) => MonadJoin (ReaderT r m) where
 class Split a b | a -> b, b -> a where
   split :: Up a -> Gen b
 
-caseG :: (MonadGen m, MonadJoin m, IsProdSumUp c) => Split a b => Up a -> (b -> m c) -> m c
+caseG :: (MonadGen m, MonadJoin m, Joinable c) => Split a b => Up a -> (b -> m c) -> m c
 caseG a f = joinG (liftGen (split a) >>= f)
 
 caseG' :: (MonadGen m) => Split a b => Up a -> (b -> m c) -> m c
@@ -229,18 +230,18 @@ instance Improve m n => Improve (ReaderT r m) (ReaderT (Up r) n) where
 
 --------------------------------------------------------------------------------
 
-putG :: (MonadGen m, IsProdSumUp s, MonadState s m) => s -> m (Up ())
+putG :: (MonadGen m, Joinable s, MonadState s m) => s -> m (Up ())
 putG s = do
   s <- letG s
   put s
   pure Q(())
 
-modifyG :: (MonadGen m, IsProdSumUp s, MonadState s m) => (s -> s) -> m (Up ())
+modifyG :: (MonadGen m, Joinable s, MonadState s m) => (s -> s) -> m (Up ())
 modifyG f = do
   s <- get
   putG (f s)
 
-localG :: (MonadGen m, IsProdSumUp r, MonadReader r m) => (r -> r) -> m a -> m a
+localG :: (MonadGen m, Joinable r, MonadReader r m) => (r -> r) -> m a -> m a
 localG f ma = do
   r  <- ask
   r' <- letG (f r)
@@ -373,3 +374,15 @@ upBool b = liftGen $ Gen \k -> [|| if $$b then $$(k True) else $$(k False) ||]
 downBool :: Bool -> Up Bool
 downBool True  = [||True||]
 downBool False = [||False||]
+
+--------------------------------------------------------------------------------
+
+instance MonadGen m => MonadGen (ContT r m) where
+  liftGen = lift . liftGen
+
+instance (MonadJoin m, Joinable r) => MonadJoin (ContT r m) where
+  joinG x = ContT \k -> runContT x \a -> joinG (k a)
+
+instance Improve m n => Improve (ContT r m) (ContT (Up r) n) where
+  up x   = ContT \k -> up [|| runContT $$x \a -> $$(down (k [||a||])) ||]
+  down x = [|| ContT \k -> $$(down $ runContT x \a -> up [|| k $$a ||]) ||]

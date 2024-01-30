@@ -72,6 +72,8 @@ data ProdUp a where
   HUp   :: ProdUp (Up a)
   HPair :: ProdUp a -> ProdUp b -> ProdUp (a, b)
 
+data Bot
+
 -- a finite product/sum of Up-s
 data ProdSumUp a where
   JUp     :: ProdSumUp (Up a)
@@ -79,6 +81,7 @@ data ProdSumUp a where
   JMaybe  :: ProdSumUp a -> ProdSumUp (Maybe a)
   JPair   :: ProdSumUp a -> ProdSumUp b -> ProdSumUp (a, b)
   JBool   :: ProdSumUp Bool
+  JBot    :: ProdSumUp Bot
 
 class Joinable a where
   joinable :: ProdSumUp a
@@ -92,6 +95,8 @@ instance Joinable a => Joinable (Maybe a) where
   joinable = JMaybe joinable
 instance Joinable Bool where
   joinable = JBool
+instance Joinable Bot where
+  joinable = JBot
 
 type family Arr a r where
   Arr (Up a)       (Up r) = Up (a -> r)
@@ -99,6 +104,7 @@ type family Arr a r where
   Arr (Either a b) (Up r) = (Arr a (Up r), Arr b (Up r))
   Arr (Maybe a)    (Up r) = (Arr (Up ()) (Up r), Arr a (Up r))
   Arr Bool         (Up r) = (Arr (Up ()) (Up r), Arr (Up ()) (Up r))
+  Arr Bot          (Up r) = Up ()
   Arr a            (b, c) = (Arr a b, Arr a c)
 
 arrIsProdUp :: forall a r. ProdSumUp a -> ProdUp r -> ProdUp (Arr a r)
@@ -107,6 +113,7 @@ arrIsProdUp (JPair a b)   r@HUp = arrIsProdUp a (arrIsProdUp b r)
 arrIsProdUp (JEither a b) r@HUp = HPair (arrIsProdUp a r) (arrIsProdUp b r)
 arrIsProdUp (JMaybe a)    r@HUp = HPair (arrIsProdUp JUp r) (arrIsProdUp a r)
 arrIsProdUp JBool         r@HUp = HPair (arrIsProdUp JUp r) (arrIsProdUp JUp r)
+arrIsProdUp JBot          r@HUp = HUp
 arrIsProdUp a     r@(HPair b c) = HPair (arrIsProdUp a b) (arrIsProdUp a c)
 
 weaken :: ProdUp a -> ProdSumUp a
@@ -119,6 +126,7 @@ handle (JPair a b)   r@HUp f = handle a (arrIsProdUp b r) \x -> handle b r \y ->
 handle (JEither a b) r@HUp f = (handle a r (f . Left), handle b r (f . Right))
 handle (JMaybe a)    r@HUp f = (handle JUp r (const (f Nothing)), handle a r (f . Just))
 handle JBool         r@HUp f = (handle JUp r (const (f True)), handle JUp r (const (f False)))
+handle JBot          r@HUp f = Up.tt
 handle a     r@(HPair b c) f = (handle a b (fst . f), handle a c (snd . f))
 
 unhandle :: forall a r. ProdSumUp a -> ProdUp r -> Arr a r -> (a -> r)
@@ -127,6 +135,7 @@ unhandle (JPair a b)   r@HUp f = \(x, y) -> unhandle b r (unhandle a (arrIsProdU
 unhandle (JEither a b) r@HUp f = either (unhandle a r (fst f)) (unhandle b r (snd f))
 unhandle (JMaybe a)    r@HUp f = maybe (unhandle JUp r (fst f) tt) (unhandle a r (snd f))
 unhandle JBool         r@HUp f = \case True -> unhandle JUp r (fst f) tt; False -> unhandle JUp r (snd f) tt
+unhandle JBot          r@HUp f = \case
 unhandle a     r@(HPair b c) f = \x -> (unhandle a b (fst f) x, unhandle a c (snd f) x)
 
 letG :: forall a m. (Joinable a, MonadGen m) => a -> m a
@@ -137,6 +146,7 @@ letG' JUp           x = Gen \k -> [|| let y = $$x in seq y $$(k [||y||]) ||]
 letG' (JEither a b) x = either ((Left <$>). letG' a) ((Right <$>). letG' b) x
 letG' (JMaybe a)    x = maybe (pure Nothing) ((Just <$>) . letG' a) x -- we don't join up the error branch!
 letG' (JPair a b)   x = (,) <$> letG' a (fst x) <*> letG' b (snd x)
+letG' JBot          x = case x of
 letG' JBool         x = pure x
 
 class MonadJoin m where
@@ -191,6 +201,9 @@ instance Split (Either a b) (Either (Up a) (Up b)) where
   split x = Gen \k -> [|| case $$x of
     Left a  -> $$(k (Left Q(a)))
     Right b -> $$(k (Right Q(b))) ||]
+
+instance Split Bot Bot where
+  split x = Gen \_ -> [|| case $$x of ||]
 
 --------------------------------------------------------------------------------
 
@@ -321,43 +334,45 @@ traversePush :: Improve m n => (Up a -> n (Up b)) -> Push (Up a) -> Up (m [b])
 traversePush f as =
   unPush as (\a bs -> down do {bs <- up bs; b <- f a; pure [|| $$b : $$bs ||]}) (down $ pure [||[]||])
 
+
+-- Traditional pull
 --------------------------------------------------------------------------------
 
-data Pull a = forall s. Pull (Up s) (Up s -> MaybeT Gen (Up s, a))
+-- data Pull a = forall s. Pull (Up s) (Up s -> MaybeT Gen (Up s, a))
 
-data Pair a b = Pair !a !b
+-- data Pair a b = Pair !a !b
 
-instance Split (Pair a b) (Pair (Up a) (Up b)) where
-  split ab = Gen \k -> [|| case $$ab of Pair a b -> $$(k (Pair Q(a) Q(b))) ||]
+-- instance Split (Pair a b) (Pair (Up a) (Up b)) where
+--   split ab = Gen \k -> [|| case $$ab of Pair a b -> $$(k (Pair Q(a) Q(b))) ||]
 
-instance Functor Pull where
-  fmap f (Pull s step) = Pull s (fmap (fmap (fmap f)) step)
+-- instance Functor Pull where
+--   fmap f (Pull s step) = Pull s (fmap (fmap (fmap f)) step)
 
-instance Applicative Pull where
-  pure a = Pull Up.tt \s -> pure (s, a)
-  Pull s step <*> Pull s' step' =
-    Pull [||Pair $$s $$s'||] \ss' ->
-      caseG' ss' \(Pair s s') -> do
-        (s, f)  <- step s
-        (s', a) <- step' s'
-        pure ([|| Pair $$s $$s' ||], f a)
+-- instance Applicative Pull where
+--   pure a = Pull Up.tt \s -> pure (s, a)
+--   Pull s step <*> Pull s' step' =
+--     Pull [||Pair $$s $$s'||] \ss' ->
+--       caseG' ss' \(Pair s s') -> do
+--         (s, f)  <- step s
+--         (s', a) <- step' s'
+--         pure ([|| Pair $$s $$s' ||], f a)
 
-range :: Up Int -> Up Int -> Pull (Up Int)
-range x y = Pull [|| Pair $$x $$y ||] \xy ->
-  caseG xy \(Pair x y) ->
-  caseG (x Up.>= y) \case
-    True -> empty
-    _    -> pure ([|| Pair ($$x + 1) $$y ||], x)
+-- range :: Up Int -> Up Int -> Pull (Up Int)
+-- range x y = Pull [|| Pair $$x $$y ||] \xy ->
+--   caseG xy \(Pair x y) ->
+--   caseG (x Up.>= y) \case
+--     True -> empty
+--     _    -> pure ([|| Pair ($$x + 1) $$y ||], x)
 
-instance ToPush (Pull a) a where
-  push (Pull s step) = Push \c n ->
-    [|| let go s = seq s $$(unGen (runMaybeT (step [||s||])) \case
-                           Nothing     -> n
-                           Just (s, a) -> c a [||go $$s||]) in
-        go $$s ||]
+-- instance ToPush (Pull a) a where
+--   push (Pull s step) = Push \c n ->
+--     [|| let go s = seq s $$(unGen (runMaybeT (step [||s||])) \case
+--                            Nothing     -> n
+--                            Just (s, a) -> c a [||go $$s||]) in
+--         go $$s ||]
 
-tee :: Functor f => f a -> f (a, a)
-tee = fmap (\a -> (a, a))
+-- tee :: Functor f => f a -> f (a, a)
+-- tee = fmap (\a -> (a, a))
 
 --------------------------------------------------------------------------------
 
@@ -386,3 +401,70 @@ instance (MonadJoin m, Joinable r) => MonadJoin (ContT r m) where
 instance Improve m n => Improve (ContT r m) (ContT (Up r) n) where
   up x   = ContT \k -> up [|| runContT $$x \a -> $$(down (k [||a||])) ||]
   down x = [|| ContT \k -> $$(down $ runContT x \a -> up [|| k $$a ||]) ||]
+
+
+--------------------------------------------------------------------------------
+
+data Pull a where
+  Pull :: ProdSumUp s -> s -> (s -> MaybeT Gen (s, a)) -> Pull a
+
+instance Functor Pull where
+  fmap f (Pull ps s step) = Pull ps s $ fmap (fmap (fmap f)) step
+
+instance Applicative Pull where
+  pure a = Pull JUp Up.tt \s -> pure (s, a)
+  Pull ps s step <*> Pull ps' s' step' =
+    Pull (JPair ps ps') (s, s') \(s, s') -> do
+      (s, f) <- step s
+      (s', a) <- step' s'
+      pure ((s, s'), f a)
+
+instance Semigroup (Pull a) where
+  Pull ps s step <> Pull ps' s' step' =
+    Pull (JEither ps ps') (Left s) \case
+      Left s   -> do {(s, a) <- step s; pure (Left s, a)}
+      Right s' -> do {(s', a) <- step' s'; pure (Right s', a)}
+
+instance Monoid (Pull a) where
+  mempty = Pull JUp Up.tt \_ -> empty
+
+
+--------------------------------------------------------------------------------
+
+pp :: Either (Up Int) (Up Bool)
+  -> (Either (Up Int) (Up Bool) -> MaybeT Gen (Either (Up Int) (Up Bool), a)) -> Push a
+pp s step = Push \cons nil ->
+  [|| let f n = $$(unGen (runMaybeT (step (Left [||n||]))) \case
+                      Nothing     -> nil
+                      Just (s, a) -> case s of
+                        Left s   -> cons a [|| f $$s ||]
+                        Right s' -> cons a [|| g $$s' ||]
+                      )
+          g n = $$(unGen (runMaybeT (step (Right [||n||]))) \case
+                      Nothing     -> nil
+                      Just (s, a) -> case s of
+                        Left s   -> cons a [|| f $$s ||]
+                        Right s' -> cons a [|| g $$s' ||]
+                      )
+      in $$(either (\n -> [|| f $$n ||]) (\n -> [|| g $$n ||]) s)
+   ||]
+
+
+-- pp :: Pull a -> Push a
+-- pp (Pull ps s step) = Push \c n -> _
+
+
+-- (a + b) -> Gen ((a + b)*x + 1)
+
+-- a -> Gen ((a + b)*x + 1)
+-- b -> Gen ((a + b)*x + 1)
+
+-- FinRep a => Gen a           forall r. (a -> Up r) -> Up r
+--                             forall r. Arr a (Up r) -> Up r
+
+
+-- Gen (Either (Up a) (Up b)) -> Either (Up a) (Up b)
+
+--        forall r. ((s * a) + 1 -> Up r) -> Up r
+--        forall r. (s * a -> Up r, 1 -> Up r) -> Up r
+--        forall r.

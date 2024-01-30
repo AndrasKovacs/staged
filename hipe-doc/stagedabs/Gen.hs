@@ -146,3 +146,5 @@ upstate :: forall s s' m a. Improve s s' => Monad m =>
 upstate (StateT f) = StateT \s -> do
   (a, s) <- f (up s)
   pure (a, down s)
+
+--------------------------------------------------------------------------------

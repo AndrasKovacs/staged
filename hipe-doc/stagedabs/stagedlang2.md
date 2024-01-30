@@ -1,4 +1,5 @@
 
+
 # Two-stage functional programming from the ground up
 
 This document describes a programming language and develops a programming toolbox inside it. The

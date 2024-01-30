@@ -1,0 +1,109 @@
+
+Object lang metatheory:
+
+First-order PCF with finitary inductive types
+Value types, types, let-def, fixpoints
+
+Inductives: μ (X : ValTy). (A : ValTy)        -- type operators are in the metatheory?
+                                              -- any ValTy -> ValTy function is strictly pos
+
+Operational semantics:
+  - beta-reduction only happens at value types
+
+-- Type language
+--------------------------------------------------------------------------------
+
+ValTy   : Set
+Functor : Set
+
+K       : ValTy → Functor
+_*_ _+_ : Functor → Functor → Functor
+Id      : Functor
+
+⊤       : ValTy
+_*_ _+_ : ValTy → ValTy → ValTy
+μ       : Functor → ValTy
+
+Ty  : Set
+_⇒_ : ValTy → Ty → Ty
+val : ValTy → Ty
+
+⟦_⟧ : Functor → ValTy → ValTy
+⟦K A  ⟧ X = A
+⟦F * G⟧ X = ⟦F⟧ X * ⟦G⟧ X
+⟦F + G⟧ X = ⟦F⟧ X + ⟦G⟧ X
+⟦Id⟧    X = X
+
+-- Term language
+--------------------------------------------------------------------------------
+Tm    : Con → Ty → Set
+
+var   : Var Γ A → Tm Γ A
+let   : Tm Γ A → Tm (Γ,A) B → Tm Γ B
+fix   : Tm (Γ, A) A → Tm Γ A
+
+lam   : Tm (Γ,A) B → Tm Γ (A ⇒ B)
+app   : Tm Γ (A ⇒ B) → Tm Γ (val A) → Tm Γ B
+
+pair  : Tm Γ (val A) → Tm Γ (val B) → Tm Γ (val (A * B))
+fst   : Tm Γ (val (A * B)) → Tm Γ (val A)
+snd   : Tm Γ (val (A * B)) → Tm Γ (val B)
+
+tt    : Tm Γ (val ⊤)
+
+left  : Tm Γ (val A) → Tm Γ (val (A + B))
+right : Tm Γ (val B) → Tm Γ (val (A + B))
+case  : Tm Γ (val (A + B)) → Tm (Γ,val A) C → Tm (Γ, val B) C → Tm Γ C
+
+in    : Tm Γ (val (⟦F⟧ (μ F))) → Tm Γ (val (μ F))
+out   : Tm Γ (val (μ F)) → (val (⟦F⟧ (μ F)))
+
+-- Opsem
+--------------------------------------------------------------------------------
+
+data isVal : Tm ∙ (val A) → Set where
+  _ : isVal t -> isVal (left t)
+  _ : isVal t -> isVal (right t)
+  _ : isVal tt
+  _ : isVal t -> isVal u -> isVal (pair t u)
+  _ : isVal t -> isVal (in t)
+
+Val A := (t : Tm ∙ (val A)) × {isVal t}
+
+data Spine : Ty → ValTy → Set where
+  []  : Spine (val A) A
+  _∷_ : Val A → Spine B C → Spine (A ⇒ B) C
+
+
+-- BIG-STEP OPSEM WITH SUBSTITUTION OPERATION
+--------------------------------------------------------------------------------
+
+red : Tm ∙ A → Spine A B → Tm ∙ (val B)
+red (let x : A = t; u) sp = case A of val _ -> red (u[x ↦ red t []]) sp
+                                      _ ⇒ _ -> red (u[x ↦ t]) sp
+red (fix x. t)         sp = red (t[x ↦ fix x.t]) sp
+red (lam x. t)   (u ∷ sp) = red (t[x ↦ u]) sp
+red (app t u)          sp = red t (red u [] ∷ sp)
+red (pair t u)         [] = pair (red t []) (red u [])
+red (fst t)            [] = case red t [] of pair t u -> t
+red (snd t)            [] = case red t [] of pair t u -> u
+red tt                 [] = tt
+red (left t)           [] = left (red t [])
+red (right t)          [] = right (red t [])
+red (case t x.u x.v)   sp = case red t [] of left t  -> red (u[x ↦ t]) sp
+                                             right t -> red (v[x ↦ t]) sp
+red (in t)             [] = in (red t [])
+red (out t)            [] = case red t [] of in t -> t
+
+
+-- ABSTRACT MACHINE
+--------------------------------------------------------------------------------
+
+state: term, value heap, function signature, control stack
+
+data Stack
+  = LetBody Tm Stack
+  |
+
+
+(let x : val _ = t; u | hp | fs | st) ~> (t | hp | fs | LetBody u st

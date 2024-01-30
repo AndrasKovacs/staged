@@ -8,6 +8,7 @@ module Up where
 
 import Prelude (Num(..))
 import qualified Prelude as P
+import Data.Bits
 
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax
@@ -47,3 +48,9 @@ instance P.Ord a => Ord a where
   (<=) x y = [|| (P.<=)  $$x $$y ||]
   (>)  x y = [|| (P.>)  $$x $$y ||]
   (>=) x y = [|| (P.>=)  $$x $$y ||]
+
+even :: Up P.Int -> Up P.Bool
+even n = [|| $$n .&. 1 P.== 0 ||]
+
+odd :: Up P.Int -> Up P.Bool
+odd n = [|| $$n .&. 1 P.== 1 ||]

@@ -1,8 +1,6 @@
 
 module ObjectLang5 where
 
-{- Large product, large unit, letrec -}
-
 open import Relation.Binary.PropositionalEquality
   renaming (subst to tr; sym to infix 5 _⁻¹; trans to infixr 4 _◼_;
             cong to ap)
@@ -12,7 +10,7 @@ open import Data.Product
   renaming (proj₁ to ₁; proj₂ to ₂)
   hiding (_<*>_)
 
-open import Data.Maybe
+open import Data.Maybe hiding (ap)
 open import Data.Nat hiding (_+_; _*_)
 open import Function
 open import Data.Unit
@@ -91,9 +89,10 @@ data Var : Con → Ty → Set where
   suc  : Var Γ A → Var (Γ ▶ B) A
 
 data Tm (Γ : Con) : Ty → Set where
-  var    : Var Γ A → Tm Γ A
-  let'   : Tm Γ A → Tm (Γ ▶ A) B → Tm Γ B
-  letrec : Tm (Γ ▶ ℂ α) (ℂ α) → Tm (Γ ▶ ℂ α) B → Tm Γ B
+  varC   : Var Γ (ℂ α) → Tm Γ (ℂ α)
+  varV   : Var Γ (V a) → Tm Γ (V a)
+  letV   : Tm Γ (V a) → Tm (Γ ▶ V a) B → Tm Γ B
+  letC   : Tm (Γ ▶ ℂ α) (ℂ α) → Tm (Γ ▶ ℂ α) B → Tm Γ B
   lam    : Tm (Γ ▶ V a) B → Tm Γ (ℂ (a ⇒ B))
   app    : Tm Γ (ℂ (a ⇒ B)) → Tm Γ (V a) → Tm Γ B
   pair   : Tm Γ (V a) → Tm Γ (V b) → Tm Γ (V (a * b))
@@ -119,60 +118,138 @@ mutual
     wrap   : Val (⟦ F ⟧ (μ F)) → Val (μ F)
 
   data Env : Con → Set where
-    nil       : Env ∙
-    defVal    : Env Γ → Val a → Env (Γ ▶ V a)
-    defComp   : Env Γ → Tm Γ (ℂ α) → Env (Γ ▶ ℂ α)
-    defRec    : Env Γ → Tm (Γ ▶ ℂ α) (ℂ α) → Env (Γ ▶ ℂ α)
+    nil    : Env ∙
+    defV : Env Γ → Val a → Env (Γ ▶ V a)
+    defC : Env Γ → Tm (Γ ▶ ℂ α) (ℂ α) → Env (Γ ▶ ℂ α)
 
 data Args : Ty → ValTy → Set where
   []   : Args (V a) a
   app  : Args B c → Val a → Args (ℂ (a ⇒ B)) c
 
--- Fuel only counts function variable calls! (recursive or not)
+lookupV : Var Γ (V a) → Env Γ → Val a
+lookupV zero    (defV γ v) = v
+lookupV (suc x) (defV γ _) = lookupV x γ
+lookupV (suc x) (defC γ _) = lookupV x γ
 
 mutual
-  evalVar : Var Γ A → ℕ → Env Γ → Args A b → Maybe (Val b)
-  evalVar zero    k       (defVal env v)  [] = return v
-  evalVar zero    (suc k) (defComp env t) sp = eval t k env sp
-  evalVar zero    zero    (defComp env t) sp = nothing
-  evalVar zero    (suc k) (defRec env t)  sp = eval t k (defRec env t) sp
-  evalVar zero    zero    (defRec env t)  sp = nothing
-  evalVar (suc x) k       (defVal env _)  sp = evalVar x k env sp
-  evalVar (suc x) k       (defComp env _) sp = evalVar x k env sp
-  evalVar (suc x) k       (defRec env _)  sp = evalVar x k env sp
-
-  bindLet : Tm Γ A → ℕ → Env Γ → Maybe (Env (Γ ▶ A))
-  bindLet {A = V _} t k env = defVal env <$> eval t k env []
-  bindLet {A = ℂ _} t k env = return (defComp env t)
-
-  evalSplit : ∀{d}(l : Tm (Γ ▶ V a) C)(r : Tm (Γ ▶ V b) C) → Val (a + b) → ℕ → Env Γ → Args C d → Maybe (Val d)
-  evalSplit l r (inl v) k e args = eval l k (defVal e v) args
-  evalSplit l r (inr v) k e args = eval r k (defVal e v) args
+  call : Var Γ (ℂ α) → ℕ → Env Γ → Args (ℂ α) b → Maybe (Val b)
+  call zero    zero    (defC _ _) _  = nothing
+  call zero    (suc k) (defC γ t) as = eval t k (defC γ t) as
+  call (suc x) k       (defV γ _) as = call x k γ as
+  call (suc x) k       (defC γ _) as = call x k γ as
 
   eval : Tm Γ A → ℕ → Env Γ → Args A b → Maybe (Val b)
-  eval (var x)       k env args       = evalVar x (k) env args
-  eval (let' t u)    k env args       = do env ← bindLet t k env
-                                           eval u k env args
-  eval (letrec t u)  k env args       = eval u k (defRec env t) args
-  eval (lam t)       k env (app as v) = eval t k (defVal env v) as
-  eval (app t u)     k env args       = do v ← eval u k env []
-                                           eval t k env (app args v)
-  eval (pair t u)    k env []         = pair <$> eval t k env [] <*> eval u k env []
-  eval (fst t)       k env []         = do pair v _ ← eval t k env []
-                                           return v
-  eval (snd t)       k env []         = do pair _ v ← eval t k env []
-                                           return v
-  eval tt            k env []         = return tt
-  eval (inl t)       k env []         = inl <$> eval t k env []
-  eval (inr t)       k env []         = inr <$> eval t k env []
-  eval (split t l r) k env args       = do v ← eval t k env []
-                                           evalSplit l r v k env args
-
-  eval (wrap t)      k env []         = wrap <$> eval t k env []
-  eval (unwrap t)    k env []         = do wrap v ← eval t k env []
-                                           return v
+  eval (varV x)      k γ []         = return (lookupV x γ)
+  eval (varC x)      k γ as         = call x k γ as
+  eval (letV t u)    k γ as         = do v ← eval t k γ []; eval u k (defV γ v) as
+  eval (letC t u)    k γ as         = eval u k (defC γ t) as
+  eval (lam t)       k γ (app as v) = eval t k (defV γ v) as
+  eval (app t u)     k γ as         = do v ← eval u k γ []
+                                         eval t k γ (app as v)
+  eval (pair t u)    k γ []         = pair <$> eval t k γ [] <*> eval u k γ []
+  eval (fst t)       k γ []         = do pair v _ ← eval t k γ []
+                                         return v
+  eval (snd t)       k γ []         = do pair _ v ← eval t k γ []
+                                         return v
+  eval tt            k γ []         = return tt
+  eval (inl t)       k γ []         = inl <$> eval t k γ []
+  eval (inr t)       k γ []         = inr <$> eval t k γ []
+  eval (split t l r) k γ as         = do v ← eval t k γ []
+                                         case v of λ where
+                                           (inl v) → eval l k (defV γ v) as
+                                           (inr v) → eval r k (defV γ v) as
+  eval (wrap t)      k γ []         = wrap <$> eval t k γ []
+  eval (unwrap t)    k γ []         = do wrap v ← eval t k γ []
+                                         return v
 
 --------------------------------------------------------------------------------
+
+Ren : Con → Con → Set
+Ren Γ Δ = ∀ {A} → Var Δ A → Var Γ A
+
+wk : Ren Γ Δ → Ren (Γ ▶ A) Δ
+wk σ = suc ∘ σ
+
+idr : Ren Γ Γ
+idr = id
+
+renameTop : Ren Γ Δ → Var Γ A → Ren Γ (Δ ▶ A)
+renameTop σ x zero    = x
+renameTop σ x (suc y) = σ y
+
+keep : Ren Γ Δ → Ren (Γ ▶ A) (Δ ▶ A)
+keep σ = renameTop (wk σ) zero
+
+_[_] : Tm Γ A → Ren Δ Γ → Tm Δ A
+varC x      [ σ ] = varC (σ x)
+varV x      [ σ ] = varV (σ x)
+letV t u    [ σ ] = letV (t [ σ ]) (u [ keep σ ])
+letC t u    [ σ ] = letC (t [ keep σ ]) (u [ keep σ ])
+lam t       [ σ ] = lam (t [ keep σ ])
+app t u     [ σ ] = app (t [ σ ]) (u [ σ ])
+pair t u    [ σ ] = pair (t [ σ ]) (u [ σ ])
+fst t       [ σ ] = fst (t [ σ ])
+snd t       [ σ ] = snd (t [ σ ])
+tt          [ σ ] = tt
+inl t       [ σ ] = inl (t [ σ ])
+inr t       [ σ ] = inr (t [ σ ])
+split t l r [ σ ] = split (t [ σ ]) (l [ keep σ ]) (r [ keep σ ])
+wrap t      [ σ ] = wrap (t [ σ ])
+unwrap t    [ σ ] = unwrap (t [ σ ])
+
+--------------------------------------------------------------------------------
+
+data RenEnv : ∀ {Γ Δ} → (σ : Ren Γ Δ) → Env Γ → Env Δ → Set where
+  identity   : ∀ {γ} → RenEnv (idr {Γ}) γ γ
+  renameTopV : ∀ {σ : Ren Γ Δ}{γ γ'}(x : Var Γ (V a)) → RenEnv σ γ γ' → RenEnv (renameTop σ x) γ (defV γ' (lookupV x γ))
+  dropV      : ∀ {σ : Ren Γ Δ}{γ γ'}{v : Val a} → RenEnv σ γ γ' → RenEnv (wk σ) (defV γ v) γ'
+  keepC      : ∀ {σ : Ren Γ Δ}{γ γ'}{t : Tm (Δ ▶ ℂ α) (ℂ α)} → RenEnv σ γ γ' → RenEnv (keep σ) (defC γ (t [ keep σ ])) (defC γ' t)
+
+ren-lookupV : ∀ {σ : Ren Δ Γ}(x : Var Γ (V a)) {γ γ'} (p : RenEnv σ γ γ') → lookupV (σ x) γ ≡ lookupV x γ'
+ren-lookupV x       identity         = refl
+ren-lookupV zero    (renameTopV y p) = refl
+ren-lookupV (suc x) (renameTopV y p) = ren-lookupV x p
+ren-lookupV x       (dropV p)        = ren-lookupV x p
+ren-lookupV (suc x) (keepC p)        = ren-lookupV x p
+
+mutual
+  ren-call : ∀ {σ : Ren Δ Γ}(x : Var Γ (ℂ α)) k {γ γ'} (p : RenEnv σ γ γ'){b} as → call {b = b}(σ x) k γ as ≡ call x k γ' as
+  ren-call x       k       identity                  as = refl
+  ren-call (suc x) k       (renameTopV y p)          as = ren-call x k  p as
+  ren-call x       k       (dropV p)                 as = ren-call x k  p as
+  ren-call zero    zero    (keepC p)                 as = refl
+  ren-call zero    (suc k) (keepC {σ = σ} {t = t} p) as = ren-eval (keep σ) t k (keepC p) as
+  ren-call (suc x) k       (keepC p)                 as = ren-call x k p as
+
+  ren-eval : ∀ (σ : Ren Δ Γ)(t : Tm Γ A) k {γ γ'} (p : RenEnv σ γ γ'){b} as → eval {b = b}(t [ σ ]) k γ as ≡ eval t k γ' as
+  ren-eval σ (varC x) k      p as = ren-call x k p as
+  ren-eval σ (varV x) k      p [] = ap just (ren-lookupV x p)
+  ren-eval σ (letV t u) k    p as = {!!}
+  ren-eval σ (letC t u) k    p as = {!!}
+  ren-eval σ (lam t) k       p as = {!!}
+  ren-eval σ (app t u) k     p as = {!!}
+  ren-eval σ (pair t u) k    p as = {!!}
+  ren-eval σ (fst t) k       p as = {!!}
+  ren-eval σ (snd t) k       p as = {!!}
+  ren-eval σ tt k            p as = {!!}
+  ren-eval σ (inl t) k       p as = {!!}
+  ren-eval σ (inr t) k       p as = {!!}
+  ren-eval σ (split t l r) k p as = {!!}
+  ren-eval σ (wrap t) k      p as = {!!}
+  ren-eval σ (unwrap t) k    p as = {!!}
+
+
+{-
+
+to show: Rel σ γ γ' → evalₖ t[σ] γ as = eval t γ' as
+
+Not bad idea, but my program equivalence is tooo strictttt!!!!
+
+-}
+
+
+--------------------------------------------------------------------------------
+
 
 {-
 
@@ -227,7 +304,8 @@ REFLEXIVITY: ∀ t. t ~ t
       if k = 0 then OK
       if k = suc k then
         goal: evalₖ t (defRec γ t) as ≡ evalₖ t' (defRec γ' t') as
-        t~ (wk γ~ , t~) as OK
+        t~ (wk γ~ , t~) as OK   -- NOT good here!   we neeed t ▶~ₖ t', but t~ is t ~ₖ t' !!!
+
 
   case (let t u), at (V A) type
      t~ : t ~ t
@@ -349,8 +427,17 @@ CONGRUENCE for _~_:
 
   TODO REST
 
+
 --------------------------------------------------------------------------------
 
+RENAMING
+
+Ren : Con → Con → Set
+id  : Ren Γ Γ
+_,_ : Ren Γ Δ → Var Γ A → Ren Γ (Δ ▶ A)
+
+action on terms defined as usual
+_[_] : Tm Γ A → Ren Δ Γ → Tm Δ A
 
 
 

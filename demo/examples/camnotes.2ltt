@@ -1,0 +1,96 @@
+
+-- 2LTT: Voevodsky (HTS), Annekov et al.
+--   metaprogramming for HoTT
+
+-- note:
+--   staged compilation /= runtime code generation
+
+-- U0  universe of runtime types
+-- U1  universe of meta-level types ("static"
+--       "compile tile")
+
+-- A : U1
+-- t : A : U1
+
+-- let typeInType : U0 = U1;
+-- let typeInType : U1 = U1;
+
+let id : (A : U1) → A → A
+  = λ A x. x;
+
+-- Nat0 : U0, Nat1 : U1
+-- zero0 : Nat0
+
+-- staging constructions:
+--   if I have A : U0,  then ^A : U1
+--   t : A  s.t. A : U0, then <t> : ^A
+--   t : ^A, then [t]
+--   [<t>] = t
+--   <[t]> = t
+
+-- No other ways to cross between stages!
+
+-- A : U0    B : U0     A → B : U0
+-- A : U1    B : U1     A → B : U1
+
+-- Nat1 → ^Nat0
+-- Bool1 ≃ ^Bool0
+
+-- id : (A : U1) → A → A
+-- id (^Nat0) <zero0>
+
+-- let foo : ^(Nat0 → Nat0) =
+--    <λ (x : Nat0). [id (^Nat0) <<x>>]>;
+
+-- let foo : ^(Nat0 → Nat0)
+--   = id;
+
+let id : {A:U1} → A → A
+  = λ x. x;
+
+-- id zero1 : Nat1
+-- id <zero0> : ^Nat0
+
+let id0 : {A : U0} → A → A
+  = λ x. x;
+
+let idLift : {A : ^U0} → ^[A] → ^[A]
+  = λ {A} x. x;
+
+-- A    : ^U0
+-- [A]  : U0
+-- ^[A] : U1
+
+let foo = idLift {<Nat0>} <zero0>;
+  -- idLift {<Nat0>} : ^[<Nat0>] → ^[<Nat0>]
+  --                 : ^Nat0 → ^Nat0
+  -- idLift {<Nat0>} <zero0> : ^Nat0
+
+let foo := zero0;
+
+let inlineZero = zero0;   -- inline constant
+
+let map : {A B : ^U0} → (^[A] → ^[B])
+          → ^(List0 [A]) → ^(List0 [B])
+
+-- let map : {A B : ^U0} → ^([A → B) → List0 A → List0 B
+
+-- ^(A → B) ≃ (^A → ^B)
+-- (binding-time improvement)
+
+-- let idLift : {A : ^U0} → ^([A] → [A])
+--    = λ {A}. <λ x. x>
+--   [idLift {<Nat0}] zero0
+--   (λ x. x) zero0
+
+-- ^(A × B) ≃ (^A × ^B)
+-- ^Bool0 ≄ Bool1
+
+-- Trick :
+--   A → ^B   if A is finite
+--   then (A → ^B) is isomorphic to ^C
+--   in 2LTT : cofibrancy of A
+
+
+
+U0

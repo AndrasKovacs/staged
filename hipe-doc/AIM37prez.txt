@@ -1,0 +1,338 @@
+
+Staged Programming from Ground Up
+------------------------------------------------------------
+
+Summary:
+
+  - PL that I'd like to use
+     for implementing proof assistants (assassins)
+
+  - Lots of abstraction features in GHC
+    (significant cost of abstractions)
+    HOF, classes, laziness  (space leaks (non-compositional))
+    - no guarantee
+    - you have to look at Core to get good performance
+
+Outline of PL
+
+  - Moderately more noisy (more detail) than GHC/Ocaml to use
+  - Good bang for buck
+  - WAY WAY more guarantees about code generation
+  - (in particular: fusion works, closures & thunks are
+     controlled by typing)
+
+  - Two stages:
+     - compile time: like Agda
+     - runtime (object) language:
+         - simply typed, very simple, fairly low-level
+	 - basic version: we don't even have HOF-s
+	                  (already very usable)
+
+------------------------------------------------------------
+
+Universes:
+
+  MTy   : "Meta", universe of metatypes
+          if A : MTy, then A only exists at compile time
+	  MTy supports "Agda" features
+	  simplification: MTy : MTy (type-in-type)
+
+  Ty    : universe of object types
+          if A : Ty, then A is a type in the object language
+	  Ty : MTy
+
+  CTy   : CTy ⊆ Ty   ("computation types"),
+          A : CTy  implies  A : Ty
+	  - function types are in CTy
+
+  VTy   : VTy ⊆ Ty   ("value types")
+
+          - all ADTs are VTy
+	  -   all *fields* of constructors are in VTy
+	  - primitive types (Int, Word, Char) are VTy
+
+Object function types:
+   _→_ : VTy → Ty → CTy
+
+not possible:
+  - data Foo : VTy = MkFoo (Bool → Bool)    BAD
+  - f : (Bool → Bool) → Bool                BAD
+
+Closures:
+  Close : CTy → VTy
+
+  - data Foo : VTy = MkFoo (Close (Bool → Bool))
+
+Thunks:
+  Lazy : VTy → VTy
+
+(Not CBPV!)
+(to check out: λμμ~ calculus)  (Hugo Herbelin)
+
+-- Compiling object language
+------------------------------------------------------------
+
+  -  _→_ can be compiled without closures
+  -  compile in two ways:
+      - tail-called local "join point"
+      - lambda-lifted to a top-level function definition
+      - every →-call be made to be saturated,
+        "statically known" call
+
+   foo : Int → Int → Int
+   foo := λ x y.
+     let f := add x;
+     let g := mul y;
+     f x (g y 10)
+
+   g y x := mul y x
+
+   foo : Int → Int → Int
+   foo := λ x y.
+     letjoin f y := add x y;     ("join" : only tail-called
+                                   local function)
+     f (g y 10)
+
+-- Staging
+------------------------------------------------------------
+
+1. If A : Ty then ↑A : MTy
+   ↑A is the type of metaprograms which return object expressions
+   of type A
+
+2. If a : A : Ty  then <a> : ↑A
+   ("quote")
+   <a> is the metaprogram which immediately returns "a"
+
+3. If a : ↑A  then ~a : A
+   "splice"
+
+   ~a runs a metaprogram and inserts the output expression
+   into object code
+
+Defn equalities:
+   ~<a> ≡ a
+   <~a> ≡ a
+
+-- convention:
+   object-level definitions:  :=
+   meta-level definitions:    =
+
+compare TH:
+   [|     |]
+   $
+
+   [||   ||[
+   $$
+
+data Bool : VTy = True | False
+data Nat : VTy = Zero | Suc Nat
+
+
+three : Nat
+three := Suc (Suc (Suc Zero))
+
+three' : ↑Nat
+three' = <Suc (Suc (Suc Zero))>
+
+f : Nat → Nat
+f n := add n ~three'
+
+-- with stage inference:
+
+three : Nat
+three := Suc (Suc (Suc Zero))
+
+three' : Nat
+three' = Suc (Suc (Suc Zero))
+
+f : Nat → Nat
+f n := add n three'
+
+------------------------------------------------------------
+
+id : {A : MTy} → A → A
+id {A} x = x
+
+idNat : Nat → Nat
+idNat x := ~(id {↑Nat} <x>)
+
+-- after staging:
+idNat : Nat → Nat
+idNat x := x
+
+-- with stage inference
+
+id : {A : MTy} → A → A
+id {A} x = x
+
+idNat : Nat → Nat
+idNat := id       -- stage-directed coercive subtyping
+
+------------------------------------------------------------
+
+data List (A : VTy) : VTy = Nil | Cons A (List A)
+
+-- fully explicitly:
+-- object language has: let, letrec, case
+-- ~ binds stronger than function application
+
+map : {A B : VTy} → (↑A → ↑B) → ↑(List A) → ↑(List B)
+map {A}{B} f as =
+   < letrec go : List A → List B
+            go as := case as of
+	      Nil       -> Nil
+	      Cons a as -> Cons ~(f <a>) (go as);
+     go ~as>
+
+foo : List Nat → List Nat
+foo ns := ~(map {Nat}{Nat} (λ n. <~n + 10>) <ns>)
+
+-- after staging:
+   letrec go : List A → List B
+          go as := case as of
+	      Nil       -> Nil
+	      Cons a as -> Cons (a + 10) (go as);
+   go
+
+-- with inference
+
+↑(A → B)    ~(<λ x. x>) 10   -->  (λ x. x) 10
+↑A → ↑B     ~((λ x. x) <10>) -->  10
+
+map : {A B : VTy} → (A → B) → List A → List B
+map f as =
+   letrec go : List A → List B
+            go as := case as of
+	      Nil       -> Nil
+	      Cons a as -> Cons (f a) (go as);
+   go as
+
+foo : List Nat → List Nat
+foo := map (λ x. add x 10)
+
+
+-- Functor, Applicative, Monad
+------------------------------------------------------------
+
+-- type classes are only in metalanguage
+
+-- Ty, VTy, CTy, MTy
+
+class Functor (F : MTy → MTy) where
+  fmap : {A B : MTy} → (A → B) → F A → F B
+
+class Applicative (F : MTy → MTy) where
+  ...
+
+class Monad (M : MTy → MTy) where
+  ...
+
+-- abstractions go into MTy
+-- we need some custom bridging between object/meta
+
+as : List A
+toList (map f (iter as))
+down (map f (up as))
+map f as
+
+Reader monad
+------------------------------------------------------------
+
+Reader₀ : VTy → Ty → CTy
+Reader₀ R A = R → A
+
+Reader : MTy → MTy → MTy
+Reader R A = R → A
+
+instance Functor Reader
+         Applicative Reader
+	 Monad Reader
+
+Reader ↑Nat ↑Nat ≡ ↑Nat → ↑Nat
+
+down : Reader ↑A ↑B → ↑(Reader₀ A B)
+up   : ↑(Reader₀ A B) → Reader ↑A ↑B
+
+foo : Reader ↑Nat ↑(Nat, Nat)
+foo = do
+   x <- ask
+   pure (x, x)
+
+runReader (down foo (x + x))
+-- after staging
+
+(x + x, x + x) -- issue of forcing object evaluations
+
+foo = do
+  modify (λ x. x + x)
+  modify (λ x. x + x)
+  pure ()
+
+<(x + x) + (x + x)>
+λ x. ((), (x + x) + (x + x))
+
+------------------------------------------------------------
+
+-- "let-insertion": force object computation by
+-- <let x = y + y; ...>
+
+-- Code generation monad:
+-- allows us to force object-level computation by inserting
+-- a "let"
+
+Gen : MTy → MTy
+Gen A = (R : Ty) → (A → ↑R) → ↑R
+
+-- instance Functor, Applicative, Monad
+
+gen : {A : Ty} → ↑A → Gen ↑A
+gen {A} a R cont = <let x := ~a; ~(cont <x>)>
+
+runGen : Gen ↑A → ↑A
+runGen f = f id
+
+-- MTL-style
+-- class MonadGen M
+-- class MonadState M
+--   put, get, gen, modify, <-   (should be gen-ed computation)
+
+-- (<-)  -- should stand for gen-ed result
+-- (<=)  -- unforced binding
+
+foo : StateT ↑Nat Gen ↑Nat
+foo = do
+   x <- get
+   x <- gen (x + x)
+   put x
+   ...
+
+λ x.
+  let x' := x + x;
+  ...
+
+up   : ↑(State Nat Nat) → StateT ↑Nat Gen ↑Nat
+down : ...
+
+bar : StateT ↑Nat Gen ↑Nat
+bar = ...
+
+bar' : State Nat Nat
+
+
+foo : State Nat Nat
+foo := do
+  modify (+10)
+  x <- bar
+  x <- bar'
+  x <- bar'
+  pure (x + x)
+
+  -- generally speaking:
+---   extra noise compared to GHC
+---   up, down, :=, =
+--    or:  :=, =
+
+------------------------------------------------------------
+
+up: ↑(List A) → ((L : Ty) → (↑A → ↑L → ↑L) → ↑L → ↑L)

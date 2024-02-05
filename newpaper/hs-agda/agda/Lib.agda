@@ -4,7 +4,7 @@ module Lib where
 open import Relation.Binary.PropositionalEquality
   renaming (subst to tr; sym to infix 5 _⁻¹; trans to infixr 4 _◼_;
             cong to ap)
-  hiding ([_])
+  renaming ([_] to hide)
   public
 
 open import Data.Product

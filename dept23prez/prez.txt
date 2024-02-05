@@ -1,0 +1,192 @@
+
+
+                       Dysfunctional Programming
+                             András Kovács
+               Dept. of Programming Languages and Compilers
+                      Dept. Workshop, Feb 8 2023
+
+--------------------------------------------------------------------------------
+
+A huge amount of software abstraction is based on first-class functions:
+- HOFs in FP
+- Virtual methods in OOP
+- Callbacks, closures in many settings
+
+They cause lot of headache in compilation:
+- Dynamic calls block static analysis & inlining.
+- Implementation of closures / vtables is a lot of complexity.
+
+--------------------------------------------------------------------------------
+
+Do we need function values?
+
+    map : (A -> B) -> List A -> List B
+    map f nil         = nil
+    map f (cons a as) = cons (f a) (map f as)
+
+    g : List Int -> List Int
+    g = map (+1)
+
+Instead:
+
+    g : List Int -> List Int
+    g nil         = nil
+    g (cons a as) = cons (a + 1) (g as)
+
+--------------------------------------------------------------------------------
+
+Getting rid of functions:
+  1. Code generation: inline functions sufficiently
+    - challenge: how to guarantee that no functions remain in code
+  2. Defunctionalization
+
+Setting for 1:
+  Staged Compilation With Two-Level Type Theory, ICFP 2022
+
+--------------------------------------------------------------------------------
+
+CONSIDER: (skip rules altogether)
+
+Setup (simplified)
+
+  - MetaTy             is the type of compile-time types
+  - Rep : MetaTy       has Fun and Val as values ("representation")
+  - Ty : Rep -> MetaTy
+  - Ty Fun             is the type of runtime function types
+  - Ty Val             is the type of runtime value types
+  - "MetaTy" has dependent types
+  - "Ty rep" has simple types only
+  - Functions in Ty Fun have Ty Val arguments.
+  - Data constructors in Ty Val can only have Ty Val fields.
+  - We can compute "Ty rep" values from MetaTy but not vice versa.
+
+--------------------------------------------------------------------------------
+
+At compile time we can use dependent types like in Agda.
+
+Every program is by default a metaprogram.
+
+Compilation first runs all metaprograms to get generated code.
+
+Generated code is guaranteed to
+  - be well-typed
+  - monomorphic & non-dependent
+  - not use function values
+
+--------------------------------------------------------------------------------
+
+    data List (A : Ty Val) : Ty Val where  -- "Ty Val" (runtime value type)
+      nil  : List A
+      cons : A → List A → List A
+
+    map : {A B : Ty Val} → (A → B) → List A → List B
+    map = ...
+
+    g : List Int -> List Int
+    g := map (+1)
+
+--------------------------------------------------------------------------------
+
+Is List a Functor/Applicative/Monad?
+
+    class Functor (F : Ty Val → Ty Val) where
+      fmap : {A B : Ty Val} → (A → B) → F A → F B
+
+Issue with \texttt{Applicative}:
+
+    class Applicative (F : Ty Val → Ty Val) where
+      pure : A → F A
+      ap   : F (A → B) → F A → F B  -- (A → B) is not a value type!
+
+Solution:
+
+    class Applicative (F : Ty Val → Ty Val) where
+      point : F ()
+      zip   : F A → F B → F (A, B)
+
+Also:
+
+    class Monad (M : Ty Val → Ty Val) where
+      bind : M A → (A → M B) → M B
+
+--------------------------------------------------------------------------------
+
+Is State a Functor/Applicative/Monad?
+
+    State : Ty Val → Ty Val → Ty Fun
+    State S A = S → (A, S)
+
+or:
+
+    State : forall rep. Ty rep → Ty rep → MetaTy
+    State S A = S → (A, S)
+
+
+*Relative* Functor/Applicative/Monad
+
+
+
+Relative Functor/Applicative/Monad
+
+    class Functor (F : Ty Val → Ty Fun)
+      fmap : (A → B) → F A → F B
+
+    class Functor (F : Ty rep → MetaTy)
+      fmap : (A → B) → F A → F B
+
+  TODO
+
+--------------------------------------------------------------------------------
+
+Difference lists in Haskell:
+
+    type DList a = [a] -> [a]
+
+    append :: DList a -> DList a -> DList a
+    append xs ys = xs . ys
+
+    toDList a as = a : as
+    fromDList xs = xs []
+
+defunction MyFun a b
+
+(\x -> whatever) : MyFun a b
+
+class Whatever
+
+It's actually better without functions!
+
+    data DList a = Chunk [a] | Append (DList a) (DList a)
+
+    data Fun a b =
+       ...
+       ...
+       ...
+
+    apply :: Fun a b -> a -> b
+    apply f a = case f of
+      ..  -> _
+      ..  -> _
+
+    toDList = Chunk
+
+    fromDList xs = go xs [] where
+      go (Chunk a)      acc = xs ++ acc
+      go (Append xs ys) acc = go xs (go ys acc)
+
+Defunctionalization
+
+MLTon
+
+--------------------------------------------------------------------------------
+
+This is called *defunctionalization*
+
+    map : (A → B) → List A → List A
+
+foo = map (+1) . map (+2) . map (+3)
+
+map f . map g = map (f . g)
+
+-- map, foldr, foldl, sum, zip, ..., concatMap
+-- {-# REWRITE     #-}

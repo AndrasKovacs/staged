@@ -2,8 +2,8 @@
 module Renaming where
 
 open import Lib
-open import ObjectSyntax
-open import ObjectInterpreter
+open import Syntax
+open import Interpreter
 
 Ren : Con → Con → Set
 Ren Γ Δ = ∀ {A} → Var Δ A → Var Γ A
@@ -49,6 +49,9 @@ data RenEnv : ∀ {Γ Δ} → (σ : Ren Γ Δ) → Env Γ → Env Δ → Set whe
 
 keepV : ∀ {σ : Ren Γ Δ}{γ γ'}{v : Val a} → RenEnv σ γ γ' → RenEnv (keep σ) (defV γ v) (defV γ' v)
 keepV p = renameTopV zero (dropV p)
+
+wkV-idr : ∀ (γ : Env Γ) (v : Val a) → RenEnv (wk idr) (defV γ v) γ
+wkV-idr γ v = dropV identity
 
 ren-lookupV : ∀ {σ : Ren Δ Γ}(x : Var Γ (V a)) {γ γ'} (p : RenEnv σ γ γ') → lookupV (σ x) γ ≡ lookupV x γ'
 ren-lookupV x       identity         = refl

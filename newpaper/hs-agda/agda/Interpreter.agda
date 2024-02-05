@@ -1,8 +1,8 @@
 
-module ObjectInterpreter where
+module Interpreter where
 
 open import Lib
-open import ObjectSyntax
+open import Syntax
 
 mutual
   data Val : ValTy → Set where

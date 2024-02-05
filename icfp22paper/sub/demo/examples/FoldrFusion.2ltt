@@ -1,0 +1,134 @@
+
+{-
+In this file we demonstrate basic foldr/build fusion.
+
+What we don't have compared to GHC, is that back-and-forth CPS conversion is by
+*definition* the identity function. The CPS isomorphism is not provable up to
+any notion of equality in usual type theories; this only works in theories with
+internal parametricity. The definitional CPS iso could be also added as some
+kind of rewrite rule here too. All other fusion computation does work, and comes
+with a formal guarantee of staging.
+
+Note that in many languages, implicit GHC-style fusion is *not* used: In
+Rust/C++, we have explicit conversion between fusible and non-fusible
+representations. For instance, Rust has explicit conversion between concrete
+data and iterators. I think that this is not a bad idea at all, and I generally
+prefer explicitly marked fusion in performance-oriented languages.
+-}
+
+
+let id : {A} → A → A
+  = λ x. x;
+
+let comp : {A B C} → (B → C) → (A → B) → A → C
+  = λ f g x. f (g x);
+
+
+-- Runtime Bool
+------------------------------------------------------------
+
+let Bool : U0
+  := (Bool : U0)(true : Bool)(false : Bool) → Bool;
+
+let true : Bool
+  := λ _ t f. t;
+
+let false : Bool
+  := λ _ t f. f;
+
+let case : {A} → Bool → A → A → A
+  := λ b. b _;
+
+
+-- Runtime Nat functions
+------------------------------------------------------------
+
+let iter0 : {A} → Nat0 → (A → A) → A → A
+  := λ {A} n f a. NatElim0 (λ _. A) (λ _. f) a n;
+
+let add0 : Nat0 → Nat0 → Nat0
+  := λ a b. iter0 a suc0 b;
+
+
+-- Runtime lists
+------------------------------------------------------------
+
+let List : U0 → U0
+  := λ A. (L : U0)(cons : A → L → L)(nil : L) → L;
+
+let nil : {A} → List A
+  := λ L c n. n;
+
+let cons : {A} → A → List A → List A
+  := λ a as L c n. c a (as L c n);
+
+let foldr : {A B} → (A → B → B) → B → List A → B
+  := λ f z as. as _ f z;
+
+
+-- Fusible lists
+------------------------------------------------------------
+
+let FList : U0 → U1
+  = λ A. (L : U0)(cons : A → L → L)(nil : L) → L;
+
+let fnil : {A : U0} → FList A
+  = λ L c n. n;
+
+let fcons : {A : U0} → A → FList A → FList A
+  = λ a as L c n. c a (as L c n);
+
+let fpure : {A : U0} → A → FList A
+  = λ a. fcons a fnil;
+
+let fmap : {A B : U0} → (A → B) → FList A → FList B
+  = λ f as L c n. as L (λ a bs. c (f a) bs) n;
+
+let fbind : {A B : U0} → FList A → (A → FList B) → FList B
+  = λ as f L c n. as L (λ a l. f a L c l) n;
+
+let ffilter : {A : U0} → (A → Bool) → FList A → FList A
+  = λ f as L c n. as L (λ a l. case (f a) (c a l) l) n;
+
+let fappend : {A : U0} → FList A → FList A → FList A
+ = λ xs ys L c n. xs L c (ys L c n);
+
+
+-- conversion between runtime and fusible lists
+------------------------------------------------------------
+
+let up : {A : U0} → List A → FList A
+  = λ as L c n. foldr c n as;
+
+let down : {A : U0} → FList A → List A
+  = λ as. as _ cons nil;
+
+
+-- fusion examples
+------------------------------------------------------------
+
+let f1 : List Nat0 → List Nat0
+  := λ xs. down (fmap id (fmap suc0 (fmap suc0 (up xs))));
+
+-- output: λ xs. foldr (λ x x1. cons (suc0 (suc0 x)) x1) nil xs
+
+let f2 : List Nat0 → List Nat0
+  := λ as. down (fappend (fmap suc0 (up as)) (fmap (comp suc0 suc0) (up as)));
+
+-- output:
+--    λ as. foldr (λ x x1. cons (suc0 x) x1)
+--                (foldr (λ x x1. cons (suc0 (suc0 x)) x1) nil as)
+--                as
+
+let f3 : List Nat0 → List Nat0
+  := λ as. down (
+    fmap (add0 (suc0 zero0)) (
+      fbind (up as) (λ x.
+      fbind (up as) (λ y.
+      fpure (add0 x y)))));
+
+-- output:
+--   λ as. foldr (λ x x1. foldr (λ x2 x3. cons (add0 (suc0 zero0) (add0 x x2)) x3) x1 as)
+--               nil as
+
+U0

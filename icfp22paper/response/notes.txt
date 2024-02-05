@@ -1,0 +1,61 @@
+I appreciate the comments. I agree that I should try to improve accessibility by connecting more to conventional PL formalism. I'd like to talk in a bit more detail about the usage of quotients; I don't want to impose on the reviewers, but I think there should be enough time until the revision submission deadline to try to better understand our positions. I'll comment on conditions 1-2 at the end.
+
+#### constructive quotients and syntax
+
+I realize that there was a lot of implicit baggage in my mind regarding the usage of quotients, which I did not explain in the paper at all, and which are far from obvious. I try to elaborate on these in the following.
+
+First, quotients in a constructive setting do not erase or hide any information. A quotient merely enforces the preservation of some relations internally to some language ("internal language"). Externally, we can "escape" from quotients. For a simple example, a closed term with quotient type $t : A/R$ can be defined in cubical Agda, but externally we can obtain a closed term $t' : A$ because we can compute the term to a canonical embedding (by the canonicity property of Agda), and just pluck out the A witness.
+
+More generally, constructive quotients can be modeled in (constructive) setoids. This implies in particular that any closed internal $f : \mathsf{Tm}\,\Gamma\,A \to \mathsf{Tm}\,\Gamma\,A$ function can be interpreted as a function on *non-quotiented* terms which preserves conversion.  Unfortunately there's no previous research for this in the generality of quotient inductive-inductive types, but any specific QIIT is not difficult to model, and in particular the 2LTT in the paper could be presented using setoids.
+
+See also Peter Dybjer's "Internal type theory" for a discussion of setoid-based models. The non-quotiented notion of syntax is obtained as an *inductive-inductive* type, as the initial setoid-based model. James Chapman's "Type Theory Should Eat Itself" uses a similar definition.
+
+In the cubical normalization paper (https://arxiv.org/pdf/2101.11479.pdf), Corollary 47 expresses a similar justification of "algorithm extraction", using a realizability argument instead of the setoid interpretation, while eliding a large amount of technical details.
+
+In summary, quotients can be viewed as a concise shorthand for working with un-quotiented syntax and conversion relations, whenever we only want to do constructions which respect conversion. Hence, I find no practical or philosophical issue calling the QIIT definition of 2LTT "syntax". No information is lost, quotients merely enforce conversion preservation. It could be a point of contention that we get an explicit substitution calculus for syntax, but I personally find no issue with that. Moreover, categories-with-families are the closest to informal syntax among the categorical notions of models; as far as I know, cwfs are the most direct definition of dependently typed explicit substitutions.
+
+#### issues with staging modulo conversion
+
+As Review A points out, sometimes interesting properties don't respect conversion, and we have to switch away from quotients.
+
+In relation to this I do realize now that my definition of "correctness" of staging is not the whole picture: *a staging algorithm should only compute meta-level redexes, and should compute no object-level redex*. Let's call this property "parsimony" for now. I can't talk about this property if the object syntax is quotiented by $\beta$-rules and let-unfolding rules! There's an easy solution: if the object theory is simply typed, we can just omit all quotients from it, and then every correct staging algorithm is parsimonious. Many practical use cases (e.g. all monomorphizing setups) are covered by this. But for dependently typed object languages, well-typing depends on conversion, so we can't just omit it. In this case, we have to show parsimony by looking at the extracted algorithm. Internalizing parsimony doesn't seem easy to me. It was suggested to me by Jon Sterling that "A cost-aware logical framework" (https://arxiv.org/abs/2107.04663) could be used, perhaps. This could be in future work.
+
+In the light of this, I am thinking about changing the terminology of "correctness" in the paper. I welcome suggestions. Perhaps "correctness" should be reserved for "correctness + parsimony" as above, and "correctness" could be renamed to "soundness" or "adequacy".
+
+#### regarding condition 2
+
+If reviewers find it acceptable, I would like to include the above points about quotients in the paper. I feel that it is not widely known that we can move from algebraic models to representations with more operational details, by escaping the quotients.
+
+If I can include this, then I would also prefer to keep my usage of "syntax" as well, for the reasons that I mentioned. I can also point to prior works where "syntax" is used in exactly the same way, e.g. in in https://lmcs.episciences.org/4005.
+
+Of course, I will change my terminology accordingly if reviewers are not convinced by the above points.
+
+#### regarding condition 1
+
+As to (a), I agree that presenting type/term formers as rules would be helpful for PL-oriented audience.
+
+As to (b), I don't really see the point of presenting the cited interpretation function.
+
+On one hand, if the goal is to justify the usage of surface syntax, the mentioned interpretation function isn't adequate. For that, we need *elaboration* instead, analogously to what happens in actual practical implementations of type theories.
+
+Elaboration maps from raw (untyped, unscoped) syntax trees to typed syntax (in our case, typed syntax is additionally quotiented). Given a piece of informal surface notation, elaboration tells us which formal construction it denotes, if there is one.
+
+In contrast, the cited interpretation function takes as input preterms which are already assumed to be well-typed. We have no algorithm which tells us if a piece of surface notation is well-formed, we cannot typecheck our notation.
+
+On the other hand, if the goal is similar to Streicher's original goal, i.e. relating two different formal presentations, then it's not clear to me that my paper needs to introduce two different formal presentations; there is already an informal notation and a formal one, and elaboration should map from the former to the latter. I especially don't see reason to introduce an alternative presentation which refers to *untyped terms*, because typing is never violated in the paper. I do see value in talking about elaboration in more detail, but I'm not sure if there's enough space to do it justice.
+
+---
+
+To summarize, I propose the following revisions:
+  - Presenting formal type/term formers with a derivation rule notation
+  - Explaining the usage and meaning of quotients and algebraic notions of models, and comparing them to lower-level specifications with preterms+relations
+  - Discussing extraction of algorithms from internal formal definitions
+  - Discussing "parsimony" of staging on the top of the previous "correctness" property, mentioning the inability
+    to talk about it internally in our current choice of language
+
+This looks doable to me, using the extra 2 pages and some revision of existing content.
+
+Finally, I repeat that I'll discard the above plan and follow the letter and hopefully the spirit of conditions 1-2, if reviewers don't find my arguments compelling,
+or if I find myself compelled by arguments.
+
+I apologize for being long-winded, and I thank you for your reviewing effort.

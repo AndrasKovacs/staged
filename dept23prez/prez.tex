@@ -1,0 +1,410 @@
+
+
+\documentclass[dvipsnames,aspectratio=169]{beamer}
+\usetheme{Madrid}
+
+%% kill footline
+\setbeamertemplate{footline}[frame number]{}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}{}
+
+%% bibliography
+\bibliographystyle{alpha}
+\setbeamerfont{bibliography item}{size=\footnotesize}
+\setbeamerfont{bibliography entry author}{size=\footnotesize}
+\setbeamerfont{bibliography entry title}{size=\footnotesize}
+\setbeamerfont{bibliography entry location}{size=\footnotesize}
+\setbeamerfont{bibliography entry note}{size=\footnotesize}
+\setbeamertemplate{bibliography item}{}
+
+%% kill ball enumeration
+\setbeamertemplate{enumerate items}[circle]
+\setbeamertemplate{section in toc}[circle]
+
+%% kill block shadows
+\setbeamertemplate{blocks}[rounded][shadow=false]
+\setbeamertemplate{title page}[default][colsep=-4bp,rounded=true]
+
+%% kill ball itemize
+\setbeamertemplate{itemize items}[circle]
+
+%% --------------------------------------------------------------------------------
+
+\usepackage[utf8]{inputenc}
+\usepackage{hyperref}
+\usepackage{amsmath}
+\usepackage{cite}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{amsfonts}
+\usepackage{mathpartir}
+\usepackage{scalerel}
+\usepackage{stmaryrd}
+\usepackage{bm}
+\usepackage{graphicx}
+\usepackage{fontspec}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  urlcolor=blue}
+
+\setmonofont[SizeFeatures={Size=8}]{DejaVu Sans Mono}
+
+%% --------------------------------------------------------------------------------
+
+\renewcommand{\mit}[1]{\mathit{#1}}
+\newcommand{\msf}[1]{\mathsf{#1}}
+\newcommand{\mbb}[1]{\mathbb{#1}}
+\newcommand{\mbf}[1]{\mathbf{#1}}
+\newcommand{\bs}[1]{\boldsymbol{#1}}
+\newcommand{\wh}[1]{\widehat{#1}}
+\newcommand{\ext}{\triangleright}
+\newcommand{\Code}{\msf{Code}}
+\newcommand{\El}{\msf{El}}
+\newcommand{\lam}{\msf{lam}}
+\newcommand{\app}{\msf{app}}
+\newcommand{\NatElim}{\msf{NatElim}}
+\newcommand{\y}{\msf{y}}
+
+\newcommand{\Lift}{{\Uparrow}}
+\newcommand{\spl}{{\sim}}
+\newcommand{\qut}[1]{{<}#1{>}}
+
+\newcommand{\mbbc}{\mbb{C}}
+\newcommand{\mbbo}{\mbb{O}}
+\newcommand{\ob}{_\mbbo}
+
+\newcommand{\U}{\msf{U}}
+\newcommand{\Con}{\msf{Con}}
+\newcommand{\Sub}{\msf{Sub}}
+\newcommand{\Ty}{\msf{Ty}}
+\newcommand{\Tm}{\msf{Tm}}
+\newcommand{\Cono}{\msf{Con}_{\mbbo}}
+\newcommand{\Subo}{\msf{Sub}_{\mbbo}}
+\newcommand{\Tyo}{\msf{Ty}_{\mbbo}}
+\newcommand{\Tmo}{\msf{Tm}_{\mbbo}}
+\newcommand{\hCon}{\wh{\msf{Con}}}
+\newcommand{\hSub}{\wh{\msf{Sub}}}
+\newcommand{\hTy}{\wh{\msf{Ty}}}
+\newcommand{\hTm}{\wh{\msf{Tm}}}
+
+\newcommand{\p}{\mathsf{p}}
+\newcommand{\q}{\mathsf{q}}
+
+\newcommand{\refl}{\msf{refl}}
+\newcommand{\Bool}{\msf{Bool}}
+\newcommand{\true}{\msf{true}}
+\newcommand{\false}{\msf{false}}
+\newcommand{\True}{\msf{True}}
+\newcommand{\False}{\msf{False}}
+\newcommand{\List}{\msf{List}}
+\newcommand{\nil}{\msf{nil}}
+\newcommand{\cons}{\msf{cons}}
+\newcommand{\Nat}{\msf{Nat}}
+\newcommand{\zero}{\msf{zero}}
+\newcommand{\suc}{\msf{suc}}
+\renewcommand{\tt}{\msf{tt}}
+\newcommand{\fst}{\msf{fst}}
+\newcommand{\snd}{\msf{snd}}
+\newcommand{\mylet}{\msf{let}}
+\newcommand{\emptycon}{\scaleobj{.75}\bullet}
+\newcommand{\id}{\msf{id}}
+
+\newcommand{\Set}{\mathsf{Set}}
+\newcommand{\Prop}{\mathsf{Prop}}
+\newcommand{\Rep}{\msf{Rep}}
+\newcommand{\blank}{{\mathord{\hspace{1pt}\text{--}\hspace{1pt}}}}
+\newcommand{\emb}[1]{\ulcorner#1\urcorner}
+
+\newcommand{\Stage}{\msf{Stage}}
+\newcommand{\hato}{\bm\hat{\mbbo}}
+\newcommand{\ev}{\mbb{E}}
+\newcommand{\re}{\mbb{R}}
+
+\theoremstyle{remark}
+\newtheorem{notation}{Notation}
+
+\newcommand{\whset}{\wh{\Set}}
+\newcommand{\rexti}{\re_{\ext_1}^{-1}}
+\newcommand{\rextizero}{\re_{\ext_0}^{-1}}
+
+\newcommand{\rel}{^{\approx}}
+\newcommand{\yon}{\msf{y}}
+
+\newcommand{\Vect}{\msf{Vec}}
+\newcommand{\msA}{\msf{A}}
+\newcommand{\msB}{\msf{B}}
+\newcommand{\mst}{\msf{t}}
+\newcommand{\msu}{\msf{u}}
+\newcommand{\msv}{\msf{v}}
+\newcommand{\msx}{\msf{x}}
+\newcommand{\msy}{\msf{y}}
+\newcommand{\msz}{\msf{z}}
+\newcommand{\msas}{\msf{as}}
+\newcommand{\msbs}{\msf{bs}}
+\newcommand{\msxs}{\msf{xs}}
+\newcommand{\msys}{\msf{ys}}
+\newcommand{\msff}{\msf{f}}
+\newcommand{\msg}{\msf{g}}
+\newcommand{\msh}{\msf{h}}
+\newcommand{\msa}{\msf{a}}
+\newcommand{\msn}{\msf{n}}
+
+%% --------------------------------------------------------------------------------
+
+
+\title{Dysfunctional Programming}
+\author{András Kovács}
+\institute{
+  {Eötvös Loránd University, Dept. of Programming Languages and Compilers}
+}
+\date{9 February 2023, Department Workshop}
+\begin{document}
+
+\frame{\titlepage}
+
+%% ------------------------------------------------------------
+
+\begin{frame}{First-class functions}
+
+A huge amount of software abstraction is based on first-class functions:
+\begin{itemize}
+\item HOFs in FP
+\item Virtual methods in OOP
+\item Callbacks, closures in many settings
+\end{itemize}
+\vspace{1em}
+\pause
+
+Lots of headache in compilation:
+\begin{itemize}
+\item Dynamic calls block static analysis \& inlining
+\item Implementation of closures/vtables adds complexity
+\end{itemize}
+\vspace{1em}
+\pause
+
+\begin{block}{}
+\textbf{What can we do without first-class functions?}
+\end{block}
+
+\end{frame}
+
+%% ------------------------------------------------------------
+
+\begin{frame}[fragile]{}
+
+Do we need function values here?
+
+\begin{exampleblock}{}
+\begin{verbatim}
+    map : (A → B) → List A → List B
+    map f nil         = nil
+    map f (cons a as) = cons (f a) (map f as)
+
+    g : List Int → List Int
+    g = map (+1)
+\end{verbatim}
+\end{exampleblock}
+\pause
+
+Instead:
+
+\begin{exampleblock}{}
+\begin{verbatim}
+    g : List Int → List Int
+    g nil         = nil
+    g (cons a as) = cons (a + 1) (g as)
+\end{verbatim}
+\end{exampleblock}
+\pause
+Function elimination by inlining.
+
+\end{frame}
+
+%% ------------------------------------------------------------
+
+\begin{frame}{Getting rid of function values}
+
+  \begin{enumerate}
+  \item Metaprogramming: use first-class functions only at compile time, generate first-order code.
+        Inlining is a special case of this.
+  \item Defunctionalization: replace closures by explicit first-order data.
+  \end{enumerate}
+\vspace{1em}
+
+We focus on \textbf{1}, using \textbf{two-level type theory}.
+\vspace{1em}
+\pause
+
+There is a dependently typed compile-time language for metaprogramming.
+\vspace{1em}
+\pause
+
+Object-level \& meta-level code is freely mixed in programs.
+\vspace{1em}
+\pause
+
+Generated code is guaranteed to be \emph{well-typed}, \emph{simply typed} and \emph{only have first-order functions}.
+
+\end{frame}
+
+%% ------------------------------------------------------------
+
+\begin{frame}[fragile]{}
+\begin{block}{Rules, informally}
+  \begin{itemize}
+  \item Compile-time types and runtime types have different types (``universes'').
+  \item Function and non-function (``value'') types at runtime stage are distinguished.
+  \item There are only first-order function types at runtime.
+  \item We can't store functions in runtime data.
+  \end{itemize}
+\end{block}
+
+\begin{exampleblock}{}
+\begin{verbatim}
+    data List (A : Ty Val) : Ty Val where
+      nil  : List A
+      cons : A → List A → List A
+
+    map : {A B : Ty Val} → (A → B) → List A → List B
+
+    g : List Int -> List Int
+    g := map (+1)
+\end{verbatim}
+\end{exampleblock}
+\end{frame}
+
+%% ------------------------------------------------------------
+
+\begin{frame}[fragile]{Is List a Functor/Applicative/Monad?}
+
+OK:
+\begin{exampleblock}{}
+\begin{verbatim}
+    class Functor (F : Ty Val → Ty Val) where
+      fmap : (A → B) → F A → F B
+\end{verbatim}
+\end{exampleblock}
+\pause
+
+Issue with \texttt{Applicative}:
+\begin{exampleblock}{}
+\begin{verbatim}
+    class Applicative (F : Ty Val → Ty Val) where
+      pure : A → F A
+      ap   : F (A → B) → F A → F B
+\end{verbatim}
+\end{exampleblock}
+\pause
+
+Solution:
+
+\begin{exampleblock}{}
+\begin{verbatim}
+    class Applicative (F : Ty Val → Ty Val) where
+      point : F ()
+      zip   : F A → F B → F (A, B)
+\end{verbatim}
+\end{exampleblock}
+\pause
+
+Monad is also OK:
+
+\begin{exampleblock}{}
+\begin{verbatim}
+    bind : M A → (A → M B) → M B
+\end{verbatim}
+\end{exampleblock}
+\end{frame}
+
+\begin{frame}[fragile]{Is State a Functor/Applicative/Monad?}
+
+\begin{exampleblock}{}
+\begin{verbatim}
+    State : Ty Val → Ty Val → MetaTy
+    State S A = S → (A, S)
+\end{verbatim}
+\end{exampleblock}
+\vspace{1em}
+
+Using the previous Functor/Applicative/Monad definitions, no!
+\vspace{1em}
+\pause
+
+But it is a \emph{relative} Functor/Applicative/Monad:
+
+\begin{exampleblock}{}
+\begin{verbatim}
+    class RelFunctor (F : Ty Val → MetaTy) where ...
+    class RelApplicative (F : Ty Val → MetaTy) where ...
+    class RelMonad (M : Ty Val → MetaTy) where ...
+    instance RelMonad (State S) where ...
+\end{verbatim}
+\end{exampleblock}
+\end{frame}
+
+\begin{frame}[fragile]{Defunctionalization}
+
+Difference lists in Haskell:
+\vspace{1em}
+
+\begin{exampleblock}{}
+\begin{verbatim}
+    type DList a = [a] -> [a]
+
+    append :: DList a -> DList a -> DList a
+    append xs ys = xs . ys
+
+    toDList a as = a : as
+    fromDList xs = xs []
+\end{verbatim}
+\end{exampleblock}
+\end{frame}
+
+\begin{frame}[fragile]{Defunctionalization}
+
+No functions needed:
+\vspace{1em}
+
+\begin{exampleblock}{}
+\begin{verbatim}
+    data DList a = Chunk [a] | Append (DList a) (DList a)
+
+    apply :: DList a -> [a] -> [a]
+    apply (Chunk xs)     ys = xs ++ ys
+    apply (Append xs ys) zs = apply xs (apply ys zs)
+
+    toDList :: [a] -> DList a
+    toDList xs = Chunk xs
+
+    fromDList :: DList a -> [a]
+    fromDList xs = apply xs []
+\end{verbatim}
+\end{exampleblock}
+\end{frame}
+
+\begin{frame}{Summary \& further topics}
+
+\begin{itemize}
+\item Not having first-class functions makes compilation much easier.
+  \begin{itemize}
+  \item In most cases: metaprogramming can replace first-class functions.
+  \item In most remaining cases: defunctionalization can replace first-class functions.
+  \item In the remaining cases: we can distinguish closures \emph{in the type system}.
+  \end{itemize}
+  \vspace{1em}
+\item Trade-off between programming convenience and performance.
+  \vspace{1em}
+\item Trade-off between code size and performance.
+  \vspace{1em}
+\item Other things to try to do without functions:
+  \begin{itemize}
+  \item Fusion optimizations.
+  \item More things from the Haskell/ML literature.
+  \end{itemize}
+\end{itemize}
+
+\end{frame}
+\end{document}

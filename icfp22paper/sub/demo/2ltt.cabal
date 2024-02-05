@@ -1,0 +1,59 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.34.4.
+--
+-- see: https://github.com/sol/hpack
+
+name:           2ltt
+version:        0.1.0.0
+description:    Small implementation of a two-level type theory, for demonstrating staged compilation
+category:       Language
+license:        MIT
+license-file:   LICENSE
+build-type:     Simple
+
+executable 2ltt
+  main-is: Main.hs
+  other-modules:
+      Common
+      Cxt
+      Elaboration
+      Errors
+      Evaluation
+      Metacontext
+      Parser
+      Presyntax
+      Pretty
+      Staging
+      Syntax
+      Tests
+      Unification
+      Value
+      Paths_2ltt
+  hs-source-dirs:
+      ./
+  default-extensions:
+      BangPatterns
+      BlockArguments
+      ConstraintKinds
+      ConstraintKinds
+      DeriveAnyClass
+      DerivingVia
+      EmptyCase
+      FlexibleContexts
+      GeneralizedNewtypeDeriving
+      LambdaCase
+      OverloadedStrings
+      PatternSynonyms
+      ScopedTypeVariables
+      StandaloneDeriving
+      StandaloneKindSignatures
+      Strict
+      TupleSections
+      ViewPatterns
+  ghc-options: -Wall -Wno-name-shadowing -Wno-missing-signatures -Wno-unused-do-bind -Wno-unused-matches -O -rtsopts -with-rtsopts= "-A64M"
+  build-depends:
+      base >=4.7 && <5
+    , containers
+    , megaparsec
+  default-language: Haskell2010

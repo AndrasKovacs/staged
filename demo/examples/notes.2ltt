@@ -1,0 +1,110 @@
+
+let Bool : U0
+  := (Bool : U0)(true : Bool)(false : Bool) → Bool;
+
+let true : Bool
+  := λ _ t f. t;
+
+let false : Bool
+  := λ _ t f. f;
+
+let case : {A} → Bool → A → A → A
+  := λ b. b _;
+
+let not : Bool → Bool
+  := λ b _ t f. b _ f t;
+
+let Pair0 : U0 → U0 → U0
+  := λ A B. (P : U0) → (A → B → P) → P;
+
+let pair0 : {A B} → A → B → Pair0 A B
+  := λ a b P p. p a b;
+
+let fst0 : {A B} → Pair0 A B → A
+  := λ p. p _ (λ a b. a);
+
+let snd0 : {A B} → Pair0 A B → B
+  := λ p. p _ (λ a b. b);
+
+let Pair1 : U1 → U1 → U1
+  = λ A B. (P : U1) → (A → B → P) → P;
+
+let pair1 : {A B} → A → B → Pair1 A B
+  = λ a b P p. p a b;
+
+let fst1 : {A B} → Pair1 A B → A
+  = λ p. p _ (λ a b. a);
+
+let snd1 : {A B} → Pair1 A B → B
+  = λ p. p _ (λ a b. b);
+
+let Top : U0
+  := (Top : U0) → Top → Top;
+
+let tt : Top
+  := λ _ x. x;
+
+let Top1 : U1
+  = (Top1 : U1) → Top1 → Top1;
+
+let tt1 : Top1
+  = λ _ x. x;
+
+------------------------------------------------------------
+
+let State0 : U0 → U0 → U0
+  := λ S A. S → Pair0 A S;
+
+let M : U1 → U1 → U1
+  = λ S A. S → (R : U0) → (A → S → R) → R;
+
+let ret : {S A} → A → M S A
+  = λ a s R k. k a s;
+
+let gen : {A : U0}{S : U1} → A → M S A
+  = λ {A}{S} a s R k. <let x : [A] := a; [k <x> s]>;
+
+let bind : {S A B} → M S A → (A → M S B) → M S B
+  = λ {S}{A}{B} ma f s R k. ma s R (λ a s. f a s R k);
+
+let down : {A S : U0} → M S A → State0 S A
+  = λ {A}{S} ma s. ma s (Pair0 A S) pair0;
+
+let up : {A S : U0} → State0 S A → M S A
+  = λ {A}{S} ma s R k. let x := [ma] [s]; k (fst0 x) (snd0 x);
+
+------------------------------------------------------------
+
+let get : {S} → M S S
+  = λ s R k. k s s;
+
+let put : {S : U0} → S → M S Top
+  = λ s. bind (gen s) (λ s _ R k. k tt s);
+
+let mod : {S : U0} → (S → S) → M S Top
+  = λ f. bind get (λ s. put (f s));
+
+------------------------------------------------------------
+
+let foo : M Bool Top
+  = bind get (λ b.
+      up (case b
+        (down (ret tt))
+        (down (mod not))
+      )
+    );
+
+------------------------------------------------------------
+
+let bar := down foo;
+
+{-
+let bar
+  := λ s.
+    let x := case s (λ s1. pair0 tt s1)
+                    (λ s1. let x := not s1; pair0 tt x) s;
+    pair0 (fst0 x) (snd0 x);
+-}
+
+
+bar

@@ -1,0 +1,20 @@
+\frametitle{Defunctionalization}
+
+No functions needed:
+\vspace{1em}
+
+\begin{exampleblock}{}
+\begin{verbatim}
+    data DList a = Chunk [a] | Append (DList a) (DList a)
+
+    apply :: DList a -> [a] -> [a]
+    apply (Chunk xs)     ys = xs ++ ys
+    apply (Append xs ys) zs = apply xs (apply ys zs)
+
+    toDList :: [a] -> DList a
+    toDList xs = Chunk xs
+
+    fromDList :: DList a -> [a]
+    fromDList xs = apply xs []
+\end{verbatim}
+\end{exampleblock}

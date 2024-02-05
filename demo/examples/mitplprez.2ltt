@@ -1,0 +1,213 @@
+
+{-
+Overview:
+- 2LTT intro, programming examples
+- In reaction to committee notes: metaprogramming in proof assistants?
+-}
+
+------------------------------------------------------------
+------------------------------------------------------------
+
+-- 3 stages
+
+-- object level
+-- meta level
+-- +1 meta level: supports stage polymorphism over 0-1
+
+-- U(i, j)     i sizing level,   j is a staging level
+
+
+{-
+2LTT:
+  (origin of name & rules: homotopy type theory)
+
+  U0 : universe of object-level types
+  U1 : universe of meta-level types
+
+  We can put any kind of type formers in U0 in U1
+  Introduction and elimination rules cannot cross stages!
+
+   A : U0
+  ──────── lifting          ^A  type of *metaprograms*
+  ^A : U1                    (code)  (Exp)
+
+  A : U0   t : A
+  ──────────────  quotation      trivial metaprogram which return "t"
+     <t> : ^A                     [|| t ||]
+
+  A : U0   t : ^A
+  ─────────────── splicing      run metaprogram, insert output to code
+     [t] : A                      ~t    $$t
+
+  [<t>] ≡ t
+  <[t]> ≡ t
+
+The whole program has type A : U0.
+
+Staging: inserts the code outputs of all metaprograms in splices.
+The output is guaranteed to *only* have object-level programs.
+
+Generally, the object and meta theories can be wildly different!
+(This demo: they're the same)
+
+-}
+
+-- let id0 : {A : U0} → A → A := λ x. x;
+-- id0
+
+
+-- Object-level "let" is ":=", has operational meaning
+-- let id0 : {A : U0} → A → A := λ x. x;
+-- let foo := id0 U0;
+-- foo
+
+
+-- staging error:
+-- U1
+
+
+-- Meta-level "let =", introduces a compile-time (meta-level) definition
+-- let id1 : {A : U1} → A → A = λ x. x;
+-- U0
+
+-- [let id1 : {A : U1} → A → A
+--   = λ x. x;
+-- <U0>]
+-- <U0>  -- metaprogram which immediately returns U0
+
+-- Using meta-level id1 in object-level code.
+-- let id1 : {A : U1} → A → A = λ x. x;
+-- let foo := id1 U0;
+-- foo
+
+-- let id1 : {A : U1} → A → A = λ x. x;
+-- let comp : {A B C : U1} → (B → C) → (A → B) → (A → C) =
+--   λ f g x. f (g x);
+-- let foo := (comp id1 (comp id1 id1)) U0;
+-- foo
+
+-- Staged Nat exponentiation
+let iter0 : {A} → Nat0 → (A → A) → A → A
+  := λ {A} n f a. NatElim0 (λ _. A) (λ _. f) a n;
+
+let add0 : Nat0 → Nat0 → Nat0
+  := λ a b. iter0 a suc0 b;
+
+let mul0 : Nat0 → Nat0 → Nat0
+  := λ a b. iter0 a (add0 b) zero0;
+
+let iter1 : {A} → Nat1 → (A → A) → A → A
+  = λ {A} n f a. NatElim1 (λ _. A) (λ _. f) a n;
+
+let add1 : Nat1 → Nat1 → Nat1
+  = λ a b. iter1 a suc1 b;
+
+let mul1 : Nat1 → Nat1 → Nat1
+  = λ a b. iter1 a (add1 b) zero1;
+
+let exp : Nat1 → Nat0 → Nat0
+  = λ a b. iter1 a (mul0 b) (suc0 zero0);
+
+let cube : Nat0 → Nat0
+  := exp (suc1 (suc1 (suc1 zero1)));
+
+cube
+
+-- +fusion, staged DSL-s
+
+
+{-
+------------------------------------------------------------
+
+
+Compare & contrast:
+  macros, monomorphized generics, Template Haskell, MetaOCaml
+
+- Formal guarantee of well-typing, well-staging
+- Most staging annotations inferable
+- Many object and metatheories are covered
+- Staging is efficient, metaprograms can be machine-code compiled
+
+
+------------------------------------------------------------
+
+Primary staging motivation
+
+- High-performance high-level programming
+- Nice combination:
+    - expressive compile-time languages + simple object languages
+    - (what about *first-order* object languages?)
+
+- User-programmable compilation
+- Generativity
+  - *Many* powerful tricks in the literature for working with
+    purely generative staging!
+
+------------------------------------------------------------
+
+What about proof tactics?
+
+- It is the hardest metaprogramming problem that I know!
+  No clear applicability of 2LTT to proof tactics.
+
+
+------------------------------------------------------------
+
+THE TRADE-OFF
+
+- Ad-hoc metaprogramming: printing string or untyped ASTs
+  - You can do anything
+  - You have to manually handle scoping, variables, substitution all the time
+  - No guarantees about well-formedness
+
+- 2LTT
+  - You can *not* do everything!
+    All constructions must be stable under object-theoretic substitution.
+  - But we get:
+     - fully implicit scoping, substitution, guarantee of well-typing
+     - (HOAS vs FOAS)
+
+- Proof tactics:
+ - inspection of structure of object-level expressions
+
+------------------------------------------------------------
+
+Example for instability:
+
+  DecideEq : (t u : ^Bool0) → (t =₁ u) ∨ (t ≠₁ u)
+
+  Take two distinct variables x, y
+
+    - If (DecideEq x y) computes to a proof of (x ≠ y):
+      Then this is *unstable*:
+
+         (DecideEq x y)[x ↦ true, y ↦ true] /= DecideEq true true
+
+   - If (DecideEq x y) doesn't compute to anything, this is *incomplete*,
+     because x and y are really inequal in the object syntax!
+
+
+You can only have 3 our of 4 (as far as we know!)
+   1 Dependently typed object theory
+   2 Implicit object contexts à la 2LTT (HOAS)
+   3 Inspecting structure of object-level expressions
+   4 Well-typing guarantee of code output
+
+
+------------------------------------------------------------
+
+Possible solutions:
+  - Give up dependent object theories  (code inspection works!)
+  - Use closed/contextual modalities (see: Moebius, Cocon) (not HOAS)
+  - Give up well-typing (see: MTac2)
+  - Give up inspection of syntax (my 2LTT demo)
+  - (use some new staging semantics?)
+
+------------------------------------------------------------
+
+In proof tactics:
+  - Well-scoping + typing (as much as we can get)
+  - API for analysing structure of arbitrary (neutral) expressions
+  - Effects: metavariables, unification, backtracking, cuts/errors
+
+-}

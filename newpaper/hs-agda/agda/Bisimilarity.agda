@@ -1,18 +1,12 @@
 
 module Bisimilarity where
 
-{-
-Strong bisimilarity of terms.
--}
+-- Strong bisimilarity of terms.
 
 open import Lib
-open import ObjectSyntax
-open import ObjectInterpreter
+open import Syntax
+open import Interpreter
 open import Renaming
-
-open import Relation.Unary
-open import Induction.WellFounded
-
 
 --------------------------------------------------------------------------------
 
@@ -170,3 +164,46 @@ sim-letC {t = t} {t'} {u} {u'} t~ u~ n k lt γ γ' γ~ as = u~ _ _ lt (defC γ t
 
 sim-lam : ∀ {t t' : Tm (Γ ▶ V a) B} → ∀sim t t' → ∀sim (lam t) (lam t')
 sim-lam {t = t} {t'} t~ n k lt γ γ' γ~ (app as v) = t~ _ _ lt (defV γ v) (defV γ' v) (γ~ , refl) as
+
+sim-app : ∀ {t t' : Tm Γ (ℂ (a ⇒ B))}{u u' : Tm Γ (V a)} → ∀sim t t' → ∀sim u u' → ∀sim (app t u) (app t' u')
+sim-app {t = t} {t'} {u} {u'} t~ u~ n k lt γ γ' γ~ as rewrite u~ _ _ lt _ _ γ~ [] with eval u' k γ' []
+... | nothing = refl
+... | just v  = t~ _ _ lt _ _ γ~ (app as v)
+
+sim-pair : ∀ {t t' : Tm Γ (V a)}{u u' : Tm Γ (V b)} → ∀sim t t' → ∀sim u u' → ∀sim (pair t u) (pair t' u')
+sim-pair {t = t} {t'} {u} {u'} t~ u~ n k lt γ γ' γ~ [] =
+ ap (λ x y → pair <$> x <*> y) (t~ _ _ lt _ _ γ~ []) ⊗ u~ _ _ lt _ _ γ~ []
+
+sim-fst : ∀ {t t' : Tm Γ (V (a * b))} → ∀sim t t' → ∀sim (fst t) (fst t')
+sim-fst {t = t} {t'} t~ n k lt γ γ' γ~ [] rewrite t~ _ _ lt _ _ γ~ [] = refl
+
+sim-snd : ∀ {t t' : Tm Γ (V (a * b))} → ∀sim t t' → ∀sim (snd t) (snd t')
+sim-snd {t = t} {t'} t~ n k lt γ γ' γ~ [] rewrite t~ _ _ lt _ _ γ~ [] = refl
+
+sim-tt : ∀sim {Γ} tt tt
+sim-tt _ _ _ _ _ _ [] = refl
+
+sim-inl : ∀ {t t' : Tm Γ (V a)} → ∀sim t t' → ∀sim (inl {b = b} t) (inl t')
+sim-inl {t = t} {t'} t~ n k lt γ γ' γ~ [] rewrite t~ _ _ lt _ _ γ~ [] = refl
+
+sim-inr : ∀ {t t' : Tm Γ (V b)} → ∀sim t t' → ∀sim (inr {a = a} t) (inr t')
+sim-inr {t = t} {t'} t~ n k lt γ γ' γ~ [] rewrite t~ _ _ lt _ _ γ~ [] = refl
+
+sim-split :
+  ∀ {t t' : Tm Γ (V (a + b))}{l l' : Tm (Γ ▶ V a) B}{r r' : Tm (Γ ▶ V b) B}
+  → ∀sim t t'
+  → ∀sim l l'
+  → ∀sim r r'
+  → ∀sim (split t l r) (split t' l' r')
+sim-split {t = t} {t'} {l} {l'}{r}{r'} t~ l~ r~ n k lt γ γ' γ~ as rewrite t~ _ _ lt _ _ γ~ [] with eval t' k γ' []
+... | nothing      = refl
+... | just (inl v) = l~ _ _ lt (defV γ v) (defV γ' v) (γ~ , refl) as
+... | just (inr v) = r~ _ _ lt (defV γ v) (defV γ' v) (γ~ , refl) as
+
+sim-wrap : ∀ {t t' : Tm Γ (V (⟦ F ⟧ (μ F)))} → ∀sim t t' → ∀sim (wrap {F = F} t) (wrap t')
+sim-wrap {t = t} {t'} t~ n k lt γ γ' γ~ [] rewrite t~ _ _ lt _ _ γ~ [] = refl
+
+sim-unwrap : ∀ {t t' : Tm Γ (V (μ F))} → ∀sim t t' → ∀sim (unwrap {F = F} t) (unwrap t')
+sim-unwrap {t = t} {t'} t~ n k lt γ γ' γ~ [] rewrite t~ _ _ lt _ _ γ~ [] = refl
+
+--------------------------------------------------------------------------------

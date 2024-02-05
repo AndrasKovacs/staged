@@ -1,5 +1,5 @@
 
-module ObjectSyntax where
+module Syntax where
 
 mutual
   data ValTy : Set where
@@ -38,8 +38,8 @@ infixl 3 _▶_
 
 variable
   Γ Δ : Con
-  A B C : Ty
-  a b c : ValTy
+  A B C D : Ty
+  a b c d : ValTy
   α β γ : CompTy
   F G : Functor
 

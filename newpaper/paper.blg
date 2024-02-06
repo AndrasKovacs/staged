@@ -2,11 +2,11 @@ This is BibTeX, Version 0.99d (TeX Live 2022/dev/Debian)
 Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
 The top-level auxiliary file: paper.aux
 The style file: ACM-Reference-Format.bst
-I found no \citation commands---while reading file paper.aux
 Reallocated singl_function (elt_size=4) to 100 items from 50.
 Reallocated singl_function (elt_size=4) to 100 items from 50.
 Reallocated wiz_functions (elt_size=4) to 6000 items from 3000.
 Database file #1: references.bib
+Warning--I didn't find a database entry for "TODO"
 Reallocated singl_function (elt_size=4) to 100 items from 50.
 Reallocated glb_str_ptr (elt_size=4) to 20 items from 10.
 Reallocated global_strs (elt_size=200001) to 20 items from 10.
@@ -14,7 +14,7 @@ Reallocated glb_str_end (elt_size=4) to 20 items from 10.
 Reallocated singl_function (elt_size=4) to 100 items from 50.
 You've used 0 entries,
             5981 wiz_defined-function locations,
-            1473 strings with 17902 characters,
+            1475 strings with 17910 characters,
 and the built_in function-call counts, 105 in all, are:
 = -- 0
 > -- 0
@@ -53,4 +53,4 @@ warning$ -- 0
 while$ -- 0
 width$ -- 0
 write$ -- 39
-(There was 1 error message)
+(There was 1 warning)

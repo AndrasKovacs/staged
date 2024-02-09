@@ -736,7 +736,7 @@ Now we can get back to the improvement of product types. Let's have that the imp
 `↑[A, B]` is `Gen [↑A, ↑B]`.
 
     to : ↑[A, B] → Gen [↑A, ↑B]
-	  = λ x. do {x ← gen x; pure (<(~x).1>, <(~x).1>)}
+	  = λ x. do {x ← gen x; pure (<(~x).1>, <(~x).2>)}
 
 Or, without monadic notation:
 

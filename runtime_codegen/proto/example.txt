@@ -141,11 +141,13 @@ let seqList : List (◻ Nat) → List Nat
 
 -- let sumCode : ◻ Nat = sumList' list;
 
+-- let foo : Nat = ~(sumList' list);
+
 
 -- -- generating code-generating code
 -- --------------------------------------------------------------------------------
 
--- -- generate inlined code for the function which runs all expressions in a list
+-- -- -- generate inlined code for the function which runs all expressions in a list
 -- let seqListCode : ◻ (List (◻ Nat) → List Nat)
 --   = inlinedMap <◻ Nat> <Nat> (λ x. ~x);
 

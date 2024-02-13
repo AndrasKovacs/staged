@@ -410,5 +410,5 @@ instance CasePull [a] (Maybe (Up a, Up [a])) where
 --            Yield a s -> pure $ f a (call go s)
 
 
-foldrPull :: (Up a -> Up b -> Up b) -> Up b -> Pull (Up a) -> Up b
-foldrPull f b (Pull @s seed step) = _
+-- foldrPull :: (Up a -> Up b -> Up b) -> Up b -> Pull (Up a) -> Up b
+-- foldrPull f b (Pull @s seed step) = _

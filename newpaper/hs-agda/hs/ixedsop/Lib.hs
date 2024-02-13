@@ -21,7 +21,6 @@ import Data.Coerce
 import Data.Kind
 import GHC.Exts
 import Language.Haskell.TH hiding (ListT, ListE, Type, BindS)
-import Data.Typeable
 
 import Prelude
 import qualified Prelude as P
@@ -228,9 +227,8 @@ local' f ma = do
   r' <- gen (f r)
   local (const r') ma
 
+--------------------------------------------------------------------------------
 
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
 
 data Step s a = Stop | Yield a s | Skip s deriving Functor
 
@@ -286,129 +284,231 @@ instance Applicative Pull where
 
 --------------------------------------------------------------------------------
 
+data Nat = Zero | Suc Nat
+
+data instance Sing (n :: Nat) where
+  SZero :: Sing 'Zero
+  SSuc  :: Sing n -> Sing ('Suc n)
+
+instance SingI Zero               where sing = SZero
+instance SingI n => SingI (Suc n) where sing = SSuc sing
+
+data Vec (a :: Type) :: Nat -> Type where
+  VNil  :: Vec a Zero
+  VCons :: a -> Vec a n -> Vec a (Suc n)
+
+data instance Sing (v :: Vec a n) where
+  SVNil :: Sing VNil
+  SVCons :: Sing (x :: a) -> Sing (v :: Vec a n) -> Sing (VCons x v)
+
+instance SingI VNil where
+  sing = SVNil
+instance (SingI (x :: a), SingI (v :: Vec a n)) => SingI (VCons x v) where
+  sing = SVCons sing sing
+
+data Fin (n :: Nat) where
+  FZero :: Fin (Suc n)
+  FSuc  :: Fin n -> Fin (Suc n)
+
+type Ix :: forall (a :: Type)(n :: Nat)(as :: Vec a n)(i :: Fin n) -> a
+type family Ix a n as i where
+  Ix a (Suc n) (VCons x xs) FZero    = x
+  Ix a (Suc n) (VCons x xs) (FSuc i) = Ix a n xs i
+
+data instance Sing (i :: Fin n) where
+  SFZero :: Sing FZero
+  SFSuc  :: Sing (i :: Fin n) -> Sing (FSuc i)
+
+instance SingI FZero where sing = SFZero
+instance SingI (i :: Fin n) => SingI (FSuc i) where sing = SFSuc sing
+
+data S' (v :: Vec [Type] n) where
+  S' :: Sing (i :: Fin n) -> P (Ix [Type] n v i) -> S' v
+
+data BindS (ass :: Vec [Type] n) (bss :: Vec [Type] n) where
+  BindS :: Sing (i :: Fin n) -> P (Ix [Type] n ass i) -> P (Ix [Type] n bss i) -> BindS ass bss
+
+instance IsSOP (BindS ass bss) where
+
+data BindStuff n ass b where
+  BindStuff :: forall n (ass :: Vec [Type] n) (bss :: Vec [Type] n) b.
+       (forall (i :: Fin n). Sing i -> P (Ix [Type] n ass i) -> P (Ix [Type] n bss i))
+    -> (forall (i :: Fin n). Sing i -> P (Ix [Type] n ass i) -> P (Ix [Type] n bss i)
+         -> Gen (Step (P (Ix [Type] n bss i)) b))
+    -> BindStuff n ass b
+
 undefinedP :: Sing as -> P as
 undefinedP SNil         = Nil
 undefinedP (SCons a as) = Cons [||undefined||] (undefinedP as)
 
-data Pull' as b where
-  Pull' :: forall s as b. IsSOP s => (P as -> s) -> (P as -> s -> Gen (Step s b)) -> Pull' as b
+makeBindStuff :: forall n (ass :: Vec [Type] n) b. Sing ass -> (S' ass -> Pull b) -> BindStuff n ass b
+makeBindStuff SVNil f =
+  BindStuff @Zero @VNil @VNil (\i -> case i of) (\i -> case i of)
+makeBindStuff (SVCons as ass) f = case makeBindStuff ass (\(S' i a) -> f (S' (SFSuc i) a)) of
+  BindStuff @_ @_ @bss @_ seed step -> case f (S' SFZero (undefinedP undefined)) of
+    Pull @s _ _ ->  _
+      -- BindStuff @_ @_ @(VCons (Rep s)
 
-unravel :: Sing as -> (P as -> Pull b) -> Pull' as b
-unravel as f = case f (undefinedP as) of
-  Pull @s seed step ->
-    Pull' @s (\xs -> case f xs of Pull seed _ -> unsafeCoerce# seed)
-             (\xs -> case f xs of Pull _ step -> unsafeCoerce# step)
+-- goBind :: forall n (ass :: Vec [Type] n) (bss :: Vec [Type] n) b.
+--      Pull (S' ass)
+--   -> (forall (i :: Fin n). Sing i -> P (Ix [Type] n ass i) -> P (Ix [Type] n bss i))
+--   -> (forall (i :: Fin n). Sing i -> P (Ix [Type] n ass i) -> P (Ix [Type] n bss i)
+--        -> Gen (Step (P (Ix [Type] n bss i)) b))
+--   -> Pull b
+-- goBind (Pull @s seed step) seed' step' =
+--   Pull @(s, Maybe (BindS ass bss)) (seed, Nothing) \(s, s') -> case s' of
+--     Nothing -> step s >>= \case
+--       Stop             -> pure Stop
+--       Skip s           -> pure $ Skip (s, Nothing)
+--       Yield (S' n a) s -> pure $ Skip (s, Just (BindS n a (seed' n a)))
+--     Just (BindS n a s') -> step' n a s' >>= \case
+--       Stop       -> pure $ Skip (s, Nothing)
+--       Skip s'    -> pure $ Skip (s, Just (BindS n a s'))
+--       Yield b s' -> pure $ Yield b $ (s, Just (BindS n a s'))
 
-singleP :: Up a -> P '[ a ]
-singleP a = Cons a Nil
-
-unSingleP :: P '[ a ] -> Up a
-unSingleP (Cons a Nil) = a
-
-unravel1 :: (Up a -> Pull b) -> Pull' '[ a ] b
-unravel1 f = unravel sing (f . unSingleP)
-
-unravel2 :: ((Up a, Up b) -> Pull c) -> Pull' '[a, b] c
-unravel2 f = unravel sing (\(Cons a (Cons b Nil)) -> f (a, b))
-
-bind :: forall a b. Pull (Up a) -> (Up a -> Pull b) -> Pull b
-bind (Pull @s seed step) (unravel1 -> Pull' @s' seed' step') =
-  Pull @(s, Maybe (Up a, s')) (seed, Nothing) \case
-    (s, Nothing) -> step s <&> \case
-      Stop       -> Stop
-      Skip s     -> Skip (s, Nothing)
-      Yield a s  -> Skip (s, Just (a, seed' (singleP a)))
-    (s, Just (a, s')) -> step' (singleP a) s' <&> \case
-      Stop       -> Skip (s, Nothing)
-      Skip s'    -> Skip (s, Just (a, s'))
-      Yield b s' -> Yield b (s, Just (a, s'))
-
---------------------------------------------------------------------------------
-
-class CasePull a b | a -> b, b -> a where
-  casePull :: Up a -> (b -> Pull c) -> Pull c
-
-instance CasePull Bool Bool where
-  casePull b f = case (f True, f False) of
-    (Pull @s seed step, Pull @s' seed' step') ->
-      Pull @(Maybe (Either s s')) Nothing \case
-        Nothing -> case' b \case True  -> pure $ Skip (Just (Left seed))
-                                 False -> pure $ Skip (Just (Right seed'))
-        Just (Left s)   -> step s >>= \case
-          Stop      -> pure Stop
-          Skip s    -> pure $ Skip (Just (Left s))
-          Yield c s -> pure $ Yield c (Just (Left s))
-        Just (Right s') -> step' s' >>= \case
-          Stop      -> pure Stop
-          Skip s    -> pure $ Skip (Just (Right s))
-          Yield c s -> pure $ Yield c (Just (Right s))
-
-instance CasePull (Either a b) (Either (Up a) (Up b)) where
-  casePull x f = case (unravel1 (f . Left), unravel1 (f . Right)) of
-    (Pull' @s seed step, Pull' @s' seed' step') ->
-      Pull @(Maybe (Either (Up a, s) (Up b, s'))) Nothing \case
-        Nothing -> case' x \case
-          Left a    -> pure $ Skip (Just (Left  (a, seed  (singleP a))))
-          Right b   -> pure $ Skip (Just (Right (b, seed' (singleP b))))
-        Just (Left (a, s)) -> step (singleP a) s >>= \case
-          Stop      -> pure Stop
-          Skip s    -> pure $ Skip (Just (Left (a, s)))
-          Yield c s -> pure $ Yield c (Just (Left (a, s)))
-        Just (Right (b, s)) -> step' (singleP b) s >>= \case
-          Stop      -> pure Stop
-          Skip s    -> pure $ Skip (Just (Right (b, s)))
-          Yield c s -> pure $ Yield c (Just (Right (b, s)))
-
-instance CasePull (Maybe a) (Maybe (Up a)) where
-  casePull x f = case (f Nothing, unravel1 (f . Just)) of
-    (Pull @s seed step, Pull' @s' seed' step') ->
-      Pull @(Maybe (Either s (Up a, s'))) Nothing \case
-        Nothing -> case' x \case
-          Nothing   -> pure $ Skip (Just (Left  seed))
-          Just a    -> pure $ Skip (Just (Right (a, seed' (singleP a))))
-        Just (Left s) -> step s >>= \case
-          Stop      -> pure Stop
-          Skip s    -> pure $ Skip (Just (Left s))
-          Yield c s -> pure $ Yield c (Just (Left s))
-        Just (Right (a, s)) -> step' (singleP a) s >>= \case
-          Stop      -> pure Stop
-          Skip s    -> pure $ Skip (Just (Right (a, s)))
-          Yield c s -> pure $ Yield c (Just (Right (a, s)))
-
-instance CasePull [a] (Maybe (Up a, Up [a])) where
-  casePull x f = case (f Nothing, unravel2 (f . Just)) of
-    (Pull @s seed step, Pull' @s' seed' step') ->
-      Pull @(Maybe (Either s (Up a, Up [a], s'))) Nothing \case
-        Nothing -> case' x \case
-          Nothing      -> pure $ Skip (Just (Left  seed))
-          Just (a, as) -> pure $ Skip (Just (Right (a, as, seed' (Cons a (Cons as Nil)))))
-        Just (Left s) -> step s >>= \case
-          Stop      -> pure Stop
-          Skip s    -> pure $ Skip (Just (Left s))
-          Yield c s -> pure $ Yield c (Just (Left s))
-        Just (Right (a, as, s)) -> step' (Cons a (Cons as Nil)) s >>= \case
-          Stop      -> pure Stop
-          Skip s    -> pure $ Skip (Just (Right (a, as, s)))
-          Yield c s -> pure $ Yield c (Just (Right (a, as, s)))
+-- goBind :: forall ass bss b.
+--         Pull (S' ass) -> (forall n. Sing n -> Ix n ass -> Ix n bss)
+--                       -> (forall n. Sing n -> Ix n ass -> Ix n bss -> Gen (Step (Ix n bss) b))
+--                       -> Pull b
+-- goBind (Pull @s seed step) seed' step' =
+--   Pull @(s, Maybe (BindS ass bss)) (seed, Nothing) \(s, s') -> case s' of
+--     Nothing -> step s >>= \case
+--       Stop             -> pure Stop
+--       Skip s           -> pure $ Skip (s, Nothing)
+--       Yield (S' n a) s -> pure $ Skip (s, Just (BindS n a (seed' n a)))
+--     Just (BindS n a s') -> step' n a s' >>= \case
+--       Stop       -> pure $ Skip (s, Nothing)
+--       Skip s'    -> pure $ Skip (s, Just (BindS n a s'))
+--       Yield b s' -> pure $ Yield b $ (s, Just (BindS n a s'))
 
 
--- foldr: try to mimic mutual letrec with computation product types!
---------------------------------------------------------------------------------
--- (s -> Gen (Step s (Up a)))
--- (S ass -> Gen (Step (S ass) (Up a)))
--- P_i (P as_i -> Gen (Step (S ass) (Up a)))      -- Big product!
-
--- type of fun:
--- (a_i -> b)
--- (a_i -> b)
--- (a_i -> b)
-
--- let go : Prod i (as_i -> b) =
---       (\as_i -> runGen (fs_i) (pack as_i) >>= \case
---            Stop      -> pure bstart
---            Skip s    -> go s
---            Yield a s -> pure $ f a (call go s)
 
 
-foldrPull :: (Up a -> Up b -> Up b) -> Up b -> Pull (Up a) -> Up b
-foldrPull f b (Pull @s seed step) = _
+
+
+
+
+-- type family Ix (xs :: [[Type]]) (n :: Fin (Len xs)) :: Type where
+--   Ix (as ': ass) FZero = P as
+
+-- type family Ix (n :: Nat) (xs :: [[Type]]) :: Type where
+--   Ix Zero    (as ': ass) = P as
+--   Ix (Suc n) (as ': ass) = Ix n ass
+
+-- data S' (ass :: [[Type]]) where
+--   S' :: forall n ass. Sing n -> Ix n ass -> S' ass
+
+
+-- data BindS ass bss where
+--   BindS :: forall ass bss n. Sing n -> Ix n ass -> Ix n bss -> BindS ass bss
+
+-- instance IsSOP (BindS ass bss) where
+
+
+-- data BindStuff ass b where
+--   BindStuff :: forall ass bss b.
+--                           (forall n. Sing n -> Ix n ass -> Ix n bss)
+--                        -> (forall n. Sing n -> Ix n ass -> Ix n bss -> Gen (Step (Ix n bss) b))
+--                        -> BindStuff ass b
+
+-- stuff :: Sing ass -> (S' ass -> Pull b) -> BindStuff ass b
+-- stuff SNil           f =
+--   BindStuff @'[] @'[] (\n a -> undefined) (\n a s' -> undefined)
+-- stuff (SCons as ass) f = case stuff ass ( of
+--   foo -> _
+
+-- goBind :: forall ass bss b.
+--         Pull (S' ass) -> (forall n. Sing n -> Ix n ass -> Ix n bss)
+--                       -> (forall n. Sing n -> Ix n ass -> Ix n bss -> Gen (Step (Ix n bss) b))
+--                       -> Pull b
+-- goBind (Pull @s seed step) seed' step' =
+--   Pull @(s, Maybe (BindS ass bss)) (seed, Nothing) \(s, s') -> case s' of
+--     Nothing -> step s >>= \case
+--       Stop             -> pure Stop
+--       Skip s           -> pure $ Skip (s, Nothing)
+--       Yield (S' n a) s -> pure $ Skip (s, Just (BindS n a (seed' n a)))
+--     Just (BindS n a s') -> step' n a s' >>= \case
+--       Stop       -> pure $ Skip (s, Nothing)
+--       Skip s'    -> pure $ Skip (s, Just (BindS n a s'))
+--       Yield b s' -> pure $ Yield b $ (s, Just (BindS n a s'))
+
+
+-- bind :: Pull (
+
+-- data Pull' as b where
+--   Pull' :: forall s as b. IsSOP s => (P as -> s) -> (P as -> s -> Gen (Step s b)) -> Pull' as b
+
+-- undefinedP :: Sing as -> P as
+-- undefinedP SNil         = Nil
+-- undefinedP (SCons a as) = Cons [||undefined||] (undefinedP as)
+
+-- untangleP :: Sing as -> (P as -> Pull b) -> Pull' as b
+-- untangleP as f = case f (undefinedP as) of
+--   Pull @s _ _ -> Pull' @s (\as -> case f as of Pull seed _ -> unsafeCoerce# seed)
+--                           (\as -> case f as of Pull _ step -> unsafeCoerce# step)
+
+-- type family Untangle (ass :: [[Type]]) (b :: Type) :: Type where
+--   Untangle '[]         b = ()
+--   Untangle (as ': ass) b = (Pull' as b, Untangle ass b)
+
+-- untangle :: Sing ass -> (S ass -> Pull b) -> Untangle ass b
+-- untangle SNil           f = ()
+-- untangle (SCons as ass) f = (untangleP as (f . Here), untangle ass (f . There))
+
+-- (S ass -> Pull b)
+
+-- makeSigma :: forall ass b. Sing ass -> (S ass -> Pull b) -> MakeSigma ass b
+-- makeSigma = _
+
+-- -> Sum (0 to i) (ass[i], s'[i])
+
+-- From (Sing ass) (f :: S ass -> Pull b)
+
+-- Compute an existential type (Sigma a f1)
+-- Such
+
+
+
+
+
+
+-- bind' :: forall ass b. SingI ass => Pull (S ass) -> (S ass -> Pull b) -> Pull b
+-- bind' (Pull @s seed step) f =
+--   let f' = untangle sing f in
+--   Pull @(s, Maybe (S ass, ())) _ _
+
+
+-- bind :: forall a b. IsSOP a => Pull a -> (a -> Pull b) -> Pull b
+-- bind as f =
+--   let f' = untangle (singRep @a) (f . decode)
+--   in _
+
+-- bundle :: (Up a -> Pull b) -> Pull' a b
+-- bundle f = case f [||undefined||] of
+--   Pull @s seed step ->
+--     Pull' @s (\a -> case f a of Pull seed _ -> unsafeCoerce# seed)
+--              (\a -> case f a of Pull _ step -> unsafeCoerce# step)
+
+-- bind :: forall a b. Pull (Up a) -> (Up a -> Pull b) -> Pull b
+-- bind (Pull @s seed step) (bundle -> Pull' @s' seed' step') =
+--   Pull @(s, Maybe (Up a, s')) (seed, Nothing) \case
+--     (s, Nothing) -> step s <&> \case
+--       Stop       -> Stop
+--       Skip s     -> Skip (s, Nothing)
+--       Yield a s  -> Skip (s, Just (a, seed' a))
+--     (s, Just (a, s')) -> step' a s' <&> \case
+--       Stop       -> Skip (s, Nothing)
+--       Skip s'    -> Skip (s, Just (a, s'))
+--       Yield b s' -> Yield b (s, Just (a, s'))
+
+-- bind :: forall ass b. Pull (S ass) -> (S ass -> Pull b) -> Pull b
+-- bind = _
+
+
+
+-- eitherPull :: Up (Either a b) -> (Up a -> Pull c) -> (Up b -> Pull c) -> Pull c
+-- eitherPull ab (bundle -> Pull' @s seed step) (bundle -> Pull' @s' seed' step') =
+--   Pull
+
+-- foldrPull :: (Up a -> Up b -> Up b) -> Up b -> Pull (Up a) -> Up b
+-- foldrPull f b (Pull seed step) = _

@@ -1,12 +1,12 @@
 # Fdb version 3
-["bibtex paper"] 1707488982 "paper.aux" "paper.bbl" "paper" 1707489650
+["bibtex paper"] 1707747392 "paper.aux" "paper.bbl" "paper" 1707747393
   "./ACM-Reference-Format.bst" 1703899315 90332 18dc4e5c9b5c2ddd337e9f97727d04f1 ""
-  "paper.aux" 1707489650 5046 f5ff79d6bd104773bf5a1ab5d24336c2 "pdflatex"
+  "paper.aux" 1707747393 6486 f9c4fc93e304cc25cc3d452ef145943a "pdflatex"
   "references.bib" 1659199748 178075 d25e62724ce99c22aadc6a71784a05b4 ""
   (generated)
   "paper.bbl"
   "paper.blg"
-["pdflatex"] 1707489649 "paper.tex" "paper.pdf" "paper" 1707489650
+["pdflatex"] 1707747392 "paper.tex" "paper.pdf" "paper" 1707747393
   "/etc/texmf/web2c/texmf.cnf" 1699607946 475 c0e671620eb5563b2130f56340a5fde8 ""
   "/usr/share/texlive/texmf-dist/fonts/enc/dvips/inconsolata/i4-t1-4.enc" 1558214095 7693 0f2dce6d313c82989ec3a67fc24df2a0 ""
   "/usr/share/texlive/texmf-dist/fonts/enc/dvips/libertine/lbtn_25tcsq.enc" 1490131464 2921 8ca0eb0831f9bc5da080d3697cfe67bf ""
@@ -305,10 +305,10 @@
   "/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map" 1699607959 4379155 98693266ff65f58d9f98aff394de12d2 ""
   "/var/lib/texmf/web2c/pdftex/pdflatex.fmt" 1699607975 2798264 f3a335f35d438dc74d3f1f4369dd83b5 ""
   "acmart.cls" 1703877510 116239 9dd8d2e7e28589ec246149e1cf4aec06 ""
-  "paper.aux" 1707489650 5046 f5ff79d6bd104773bf5a1ab5d24336c2 "pdflatex"
-  "paper.bbl" 1707488983 1785 8ed37e936ba16de73718c10d329b7108 "bibtex paper"
-  "paper.out" 1707489650 2268 0c7dcd09770cd79a38b0609c4cce6e2d "pdflatex"
-  "paper.tex" 1707489647 51516 2b4d3953316e67f127a0caec1da3cf04 ""
+  "paper.aux" 1707747393 6486 f9c4fc93e304cc25cc3d452ef145943a "pdflatex"
+  "paper.bbl" 1707747392 1785 8ed37e936ba16de73718c10d329b7108 "bibtex paper"
+  "paper.out" 1707747393 2986 d512bbb69f8852ac6b2e58b6228cebd5 "pdflatex"
+  "paper.tex" 1707747391 67574 346ebc2f34cfe443d6288b31ca863778 ""
   (generated)
   "paper.aux"
   "paper.log"

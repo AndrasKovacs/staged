@@ -95,7 +95,7 @@
 \newcommand{\ext}{\triangleright}
 
 \newcommand{\Int}{\msf{Int}}
-\newcommand{\List}{\msf{List}\,}
+\newcommand{\List}{\msf{List}}
 \newcommand{\Nil}{\msf{Nil}}
 \newcommand{\Cons}{\msf{Cons}}
 \newcommand{\Reader}{\msf{Reader}}
@@ -155,16 +155,50 @@
 \newcommand{\lift}{\mit{lift}}
 \newcommand{\liftGen}{\mit{liftGen}}
 \newcommand{\MonadGen}{\msf{MonadGen}}
+\newcommand{\MonadState}{\msf{MonadState}}
+\newcommand{\MonadReader}{\msf{MonadReader}}
 \newcommand{\RA}{\Rightarrow}
 \newcommand{\EitherT}{\msf{EitherT}}
 \newcommand{\StateT}{\msf{StateT}}
 \newcommand{\Identity}{\msf{Identity}}
+
+\newcommand{\Stop}{\msf{Stop}}
+\newcommand{\Skip}{\msf{Skip}}
+\newcommand{\Yield}{\msf{Yield}}
+
 \newcommand{\runIdentity}{\mit{runIdentity}}
+\newcommand{\runReaderT}{\mit{runReaderT}}
 \newcommand{\newtype}{\mbf{newtype}\,}
 \newcommand{\runMaybeT}{\mit{runMaybeT}}
+\newcommand{\runStateT}{\mit{runStateT}}
+\newcommand{\runState}{\mit{runState}}
 \newcommand{\dlr}{\,\$\,}
 \newcommand{\ImproveF}{\msf{ImproveF}}
 \newcommand{\ExceptT}{\msf{ExceptT}}
+\newcommand{\State}{\msf{State}}
+\newcommand{\SumVS}{\msf{SumVS}}
+\newcommand{\ProdCS}{\msf{ProdCS}}
+\newcommand{\Here}{\msf{Here}}
+\newcommand{\There}{\msf{There}}
+\newcommand{\IsSumVS}{\msf{IsSumVS}}
+\newcommand{\MonadJoin}{\msf{MonadJoin}}
+\newcommand{\Stream}{\msf{Stream}}
+\newcommand{\join}{\mit{join}}
+\newcommand{\modify}{\mit{modify}}
+\newcommand{\get}{\mit{get}}
+\newcommand{\mput}{\mit{put}}
+\newcommand{\mAs}{\mit{As}}
+\newcommand{\Rep}{\mit{Rep}}
+\newcommand{\encode}{\mit{encode}}
+\newcommand{\decode}{\mit{decode}}
+\newcommand{\mindex}{\mit{index}}
+\newcommand{\mtabulate}{\mit{tabulate}}
+\newcommand{\States}{\mit{States}}
+\newcommand{\seed}{\mit{seed}}
+\newcommand{\step}{\mit{step}}
+\newcommand{\Step}{\msf{Step}}
+\newcommand{\Pull}{\msf{Pull}}
+\newcommand{\MkPull}{\msf{MkPull}}
 
 %% --------------------------------------------------------------------------------
 
@@ -275,6 +309,8 @@ argument contains the polymorphic second-order $(\bind)$ method.
 Compiling $\msf{mapM}$ efficiently relies on inlining the instance dictionary,
 then inlining the methods contained there, and also inlining the functions
 that the higher-order binding method is applied to.
+
+\todo{REORG intro, trim, contrib, motivate monadtrans \& stream fusion}
 
 GHC's optimization efforts are respectable, and it has gotten quite good over
 its long history of development. However, there is no strong guarantee that
@@ -400,6 +436,8 @@ relevant to the current paper, so we shall omit levels. Note that universe
 levels have nothing to do with staged compilation; they are about sizing for the
 purpose of logical consistency.
 
+\todo{If we won't use Sigma notation, get rid of it}
+
 We use Agda-like syntax for functions and implicit arguments. A basic example:
 \begin{alignat*}{3}
   &\id : \{A : \MTy\} \to A \to A\\
@@ -424,8 +462,8 @@ we write $()$ for the unit type, and also for its inhabitant.
 Inductive types can be introduced using a Haskell-like ADT notation, or with a GADT-style one:
 \begin{alignat*}{3}
   &                                           &&\hspace{4em}\data\,\Bool_\M &&: \MTy\,\where\\
-  & \data\,\Bool_\M : \MTy = \True\,|\,\False &&\hspace{4em}\ind\ind \True &&: \Bool_\M\\
-  &                                           &&\hspace{4em}\ind\ind \False &&: \Bool_\M
+  & \data\,\Bool_\M : \MTy = \True_\M\,|\,\False_\M &&\hspace{4em}\ind\ind \True_\M &&: \Bool_\M\\
+  &                                           &&\hspace{4em}\ind\ind \False_\M &&: \Bool_\M
 \end{alignat*}
 Note that we added an $_\M$ subscript to the type; when analogous types can be
 defined both on the meta and object levels, we will sometimes use this subscript
@@ -481,16 +519,19 @@ $\mbf{let}$ is also allowed, and can be used to shadow binders:
   &f : \Nat \to \Nat\\
   &f\,x := \letdef x := x + 10; \letdef x := x + 20; x * 10
 \end{alignat*}
+We also allow $\mbf{newtype}$ definitions, both in $\VTy$ and $\CTy$. These are
+assumed to be erased at runtime. In the Haskell adaptation they are important
+for aiding type class resolution, and we think that the explicit wrapping
+makes many definitions more comprehensible in CFTT as well.
+
 Values are call-by-value at runtime; they are computed eagerly in function
 applications and $\mbf{let}$-s. $\mbf{let}$-definitions can be used to define
 inhabitants of any type, and the type of the $\mbf{let}$ body can be also
 arbitrary. Additionally, the right hand sides of $\case$ branches can also have
 arbitrary types. So the following is well-formed:
 \begin{alignat*}{3}
-  &\hspace{-1em}f : \mathrlap{\Bool \to \Nat \to \Nat}\\
-  &\hspace{-1em}f\,b\,\mathrlap{:= \case b\,\of}\\
-  &\hspace{-1em}\ind \True  &&\to \lam x.\, x + 10;\\
-  &\hspace{-1em}\ind \False &&\to \lam x.\, x * 10;
+  &f : \mathrlap{\Bool \to \Nat \to \Nat}\\
+  &f\,b := \case b\,\of \True \to (\lam x.\, x + 10); \False &&\to (\lam x.\, x * 10)
 \end{alignat*}
 
 What about \textbf{definitional equality} at the object level? This is a
@@ -613,13 +654,13 @@ staging can be used instead of laziness to implement short-circuiting, and with
 generally better runtime performance, avoiding the overhead of thunking. Consider
 the $\map$ function now:
 \begin{alignat*}{3}
-  & \hspace{-5em}\mathrlap{\map : \{A\,B : \VTy\} \to (\Up A \to \Up B) \to \Up (\List A) \to \Up(\List B)}\\
+  & \hspace{-5em}\mathrlap{\map : \{A\,B : \VTy\} \to (\Up A \to \Up B) \to \Up (\List\,A) \to \Up(\List\,B)}\\
   & \hspace{-5em}\mathrlap{\map\,f\,\vas = \ql\letrec \go\,\vas := \case \vas\,\of}\\
   & \hspace{-5em}\ind\ind\ind\ind\ind \ind\Nil           &&\to \Nil;\\
   & \hspace{-5em}\ind\ind\ind\ind\ind \ind\Cons\,a\,\vas &&\to \Cons\,\spl(f\,\ql a \qr)\,(\go\,\vas);\\
   & \hspace{-5em}\ind\ind\ind\ind\ind\go\,\spl\vas \qr
 \end{alignat*}
-For example, this can be used as $\letdef f\,\vas : \List \Nat \to \List \Nat :=
+For example, this can be used as $\letdef f\,\vas : \List\,\Nat \to \List\,\Nat :=
 \spl(\map\,(\lam x.\,\ql \spl x + 10 \qr)\,\qt{\vas}) $.  This is staged to a recursive
 definition where the mapping function is inlined into the $\Cons$ case as
 $\Cons\,a\,\vas \to \Cons\,(a + 10)\,(\go\,\vas)$.  Note that $\map$ has to
@@ -631,20 +672,26 @@ black box that computes object code. If we have $f : \Up(A \to B)$, and $f$ is
 staged to $\ql \lam x.\,t\qr$, then $\spl f u$ is staged to an
 undesirable ``administrative'' $\beta$-redex $(\lam x.\,t)\,u$.
 
-\section{Staged Programming in CFTT}\label{sec:abstractions-in-cftt}
+\section{Monads \& Monad Transformers}\label{sec:monad-transformers}
+
+In this section we build a library for monads and monad transformers. We believe
+that this is a good demonstration of CFTT-s abilities, since monads are
+ubiquitous in practical Haskell programming, and they also introduce a great
+amount of abstraction and that should be optimized away.
 
 \subsection{Binding-Time Improvements}\label{sec:binding-time-improvements}
 
-We saw that $\Up A \to \Up B$ is usually preferable to $\Up(A \to B)$. The two
-types are actually equivalent up to the runtime semantics of object programs,
-and we can convert back and forth in CFTT:
+We start with some preparatory work before getting to monads. We saw that $\Up
+A \to \Up B$ is usually preferable to $\Up(A \to B)$. The two types are actually
+equivalent up to the runtime semantics of object programs, and we can convert
+back and forth in CFTT:
 \begin{alignat*}{3}
   &\mup : \Up (A \to B) \to \Up A \to \Up B && \ind\ind \mdown : (\Up A \to \Up B) \to \Up (A \to B) \\
   &\mup\,f\,a = \ql \spl f\, \spl a\qr   && \ind\ind \mdown\,f = \ql \lam a.\,\spl(f\,\ql a \qr) \qr
 \end{alignat*}
 We can not show internally, using propositional equality, that these functions are
 inverses, since we do not have $\beta\eta$-rules for object functions; but we
-will not need that in the rest of the paper.
+will not need this proof in the rest of the paper.
 
 In the staged compilation and partial evaluation literature, the term
 \textbf{binding time improvement} is used to refer to such conversions, where
@@ -684,8 +731,8 @@ cannot introduce object binders in meta-level code.
 
 \subsection{The Code Generation Monad}\label{sec:the-code-generation-monad}
 
-Our solution is to use a monad which freely extends $\MTy$ with the ability to
-generate object-level code and introduce object binders.
+Our solution is to use a monad which extends $\MTy$ with the ability to
+freely generate object-level code and introduce object binders.
 \begin{alignat*}{3}
   & \newtype \Gen\,A = \Gen\,\{\unGen : \{R : \Ty\} \to (A \to \Up R) \to \Up R\}
 \end{alignat*}
@@ -732,7 +779,7 @@ also have access to the full metalanguage. Also, the whole point of staging is
 that \emph{eventually} all metaprograms will be used for the purpose of code
 generation, so ultimately we always want to $\runGen$ our actions. So why not
 just always work in $\Gen$? We may not want to do that, because we would like to
-reason about the size and content of the code we are generating, and the
+reason about the size and makeup of the code we are generating, and the
 implicit code generation in $\Gen$ is not very transparent. This is a bit
 similar to the $\msf{IO}$ monad in Haskell, where eventually everything needs
 to run in $\msf{IO}$, but we may prefer to not write most of our program in
@@ -740,7 +787,7 @@ $\msf{IO}$.
 
 \subsection{Monads}\label{sec:monads}
 
-Let us start with the $\Maybe$ monad. We have $\data \Maybe\,A : \VTy :=
+Let us start with the $\Maybe$ monad. We have $\data \Maybe\,A :=
 \Nothing\,|\,\Just\,A$, and $\Maybe$ itself is available as a $\VTy \to \VTy$
 metafunction. However, we cannot directly fashion a monad out of $\Maybe$, since
 we do not have enough type formers in $\VTy$. We could try to use the following
@@ -750,10 +797,10 @@ This works, but the definition necessarily uses runtime case splits on $\Maybe$
 values, many of which could be optimized away during staging. Also, not having
 a ``real'' monad is inconvenient for the purpose of code reuse.
 
-Instead, our strategy is to only use ordinary monads in $\MTy$, and convert
+Instead, our strategy is to only use proper monads in $\MTy$, and convert
 between object types and meta-monads when necessary, as a form of binding-time
 improvement. Assume that $\Maybe_M$ is a meta-level monad, and $\MaybeT_\M$ is
-the monad transformer defined as follows:
+the monad transformer with the standard definition:
 \[ \newtype \MaybeT_\M\,M\,A = \MaybeT_\M\,\{\runMaybeT_\M : M\,(\Maybe_\M\,A)\} \]
 Then the object-level $\Maybe$ is binding-time improved as follows:
 \begin{alignat*}{3}
@@ -761,7 +808,6 @@ Then the object-level $\Maybe$ is binding-time improved as follows:
   %% &\ind \mup : \Up\,(\Maybe\,A) \to \MaybeT_\M\,\Gen\,(\Up\,A) \\
   &\ind \mup\,x = \MaybeT_\M \dlr \Gen \dlr \lam k.\\
   &\ind\ind \qt{\case \spl x\,\of \Nothing \to \spl(k\,\Nothing_\M);\Just\,a \to \spl(k\,(\Just_\M\qt{a}))}\\
-  &\\
   %% &\ind \mdown : \MaybeT_\M\,\Gen\,(\Up\,A) \to \Up\,(\Maybe\,A) \\
   &\ind \mdown\,(\MaybeT_\M\,(\Gen\,\vma)) = \\
   &\ind\ind \vma\,(\lam x.\,\case x\,\of \Nothing_\M \to \qt{\Nothing}; \Just_\M\,a \to \qt{\Just\,\spl a})
@@ -817,20 +863,23 @@ We can generate code for a case split, returning a view on it:
 \end{alignat*}
 Now, in any $\MonadGen$, we may write
 \begin{alignat*}{3}
-  &\mdo && \mit{sp} \fro \liftGen \dlr \mit{split}\,\vas\\
-  &     && \case \mit{sp}\,\of \\
-  &     && \ind \Nil' \to ... \\
-  &     && \ind \Cons'\,a\,\vas \to ...
+  &\mdo \{\mit{sp} \fro \liftGen\;(\!\mit{split}\,\vas);(\case \mit{sp}\,\of \Nil' \to ...;\Cons'\,a\,\vas \to ...)\}
 \end{alignat*}
+%% \begin{alignat*}{3}
+%%   &\mdo && \mit{sp} \fro \liftGen \dlr \mit{split}\,\vas\\
+%%   &     && \case \mit{sp}\,\of \\
+%%   &     && \ind \Nil' \to ... \\
+%%   &     && \ind \Cons'\,a\,\vas \to ...
+%% \end{alignat*}
 This can be generalized to any splitting on object values. In the supplemental
 Haskell implementation, we overload $\mit{split}$ with a type class. However, in
 a native implementation of CFTT it might make sense to simply extend
 $\mdo$-notation with an elaboration of $\mbf{case}$ on $\Up A$-typed data to an
-application of the appropriate $\mit{split}$ function. We adopt this in
-the rest of this paper. So we will simply write
-\[ \mdo \{\case \vas\,\of \Nil \to ...; \Cons\,a\,\vas \to ...\}. \]
+application of the appropriate $\mit{split}$ function, so we can simply write a
+$\case\,\vas\,\of\,...$ in a $\mdo$-block. We adopt this in the rest of this
+paper.
 
-\subsection{Building a Monad Transformer Library}\label{monad-transformers}
+\subsection{Monad Transformers}\label{monad-transformers}
 
 At this point, it makes sense to aim for a monad transformer library where
 binding-time improvement is defined compositionally, by recursion on the
@@ -855,8 +904,7 @@ With this, improvement can be generally defined for $\MaybeT$:
   &\ind\ind \vma \fro \mup\,\qt{\runMaybeT\,\spl x}\\
   &\ind\ind \case \vma\,\of \Nothing \to \return \Nothing_\M\\
   &\hspace{6.5em}         \Just\,a \hspace{1.15em}\to \return (\Just_\M\,a)\\
-  &\\
-  &\ind \mdown\,(\MaybeT_\M\,x) = \qt{\MaybeT\,\spl(\mdown \dlr x \bind \lambda\case\\
+  &\ind \mdown\,(\MaybeT_\M\,x) = \qt{\MaybeT\,\spl(\mdown \dlr x \bind \lam x.\,\case x\,\of\\
   &\ind\ind\Nothing_\M \to \return \qt{\Nothing}\\
   &\ind\ind\Just_\M\,a\hspace{1.15em} \to \return \qt{\Just\,\spl a})}
 \end{alignat*}
@@ -875,48 +923,280 @@ the CFTT setting:
 \end{itemize}
 From $\msf{mtl}$, only the continuation monad transformer fails to support
 binding-time-improvement in CFTT, because of the obvious need for dynamic
-closures. In the following we present only $\ReaderT$ and $\StateT$.
+closures. In the following we present only $\StateT$ and $\ReaderT$. Starting
+with $\StateT$, we assume $\StateT_\M$ as the standard meta-level definition.
+The object-level $\StateT$ has type $(S : \VTy)(F : \VTy \to \VTy)(A : \VTy) \to
+\VTy$; the state parameter $S$ has to be a value type, since it is an input to
+an object-level function.
 \begin{alignat*}{3}
-  &\instance \ImproveF\,F\,M \RA \Improve\,(\MaybeT\,F\,A)\,(\MaybeT_\M\,M\,(\Up A))\,\where\\
-  &\ind \mup\,x = \MaybeT_\M \dlr \mdo\\
-  &\ind\ind \vma \fro \mup\,\qt{\runMaybeT\,\spl x}\\
-  &\ind\ind \case \vma\,\of \Nothing \to \return \Nothing_\M\\
-  &\hspace{6.5em}         \Just\,a \hspace{1.15em}\to \return (\Just_\M\,a)\\
-  &\\
-  &\ind \mdown\,(\MaybeT_\M\,x) = \qt{\MaybeT\,\spl(\mdown \dlr x \bind \lambda\case\\
-  &\ind\ind\Nothing_\M \to \return \qt{\Nothing}\\
-  &\ind\ind\Just_\M\,a\hspace{1.15em} \to \return \qt{\Just\,\spl a})}
+  &\instance \ImproveF\,F\,M \RA \Improve\,(\StateT\,S\,F\,A)\,(\StateT_\M\,(\Up S)\,M\,(\Up A))\,\where\\
+  &\ind \mup\,x = \StateT_\M \dlr \lam s.\,\mdo\\
+  &\ind\ind \mit{as} \fro \mup\,\qt{\runStateT\,\spl x\,\spl s}\\
+  &\ind\ind \case \mit{as}\,\,\of (a,\,s) \to \return (a,\,s)\\
+  &\ind \mdown\,x = \qt{ \StateT\,(\lam s.\, \spl(\mdown \dlr \mdo\\\
+  &\ind \ind (a,\,s) \fro \runStateT_\M\,x\,\qt{s}\\
+  &\ind \ind \return \qt{(\spl a,\, \spl s)}))}
+\end{alignat*}
+Like before in $\MaybeT$, we rely on object-level case splitting in the
+definition of $\mup$. For $\Reader$, the environment parameter also has to be a
+value type, and we define improvement as follows.
+\begin{alignat*}{3}
+  &\instance \ImproveF\,F\,M \RA \Improve\,(\ReaderT\,R\,F\,A)\,(\ReaderT_\M\,(\Up R)\,M\,(\Up A))\,\where\\
+  &\ind \mup\,x   = \ReaderT_\M \dlr \lam r.\, \mup\,\qt{\runReaderT\,\spl x\,\spl r}\\
+  &\ind \mdown\,x = \qt{\ReaderT\,(\lam r.\,\spl(\mdown\,(\runReaderT_M\,x\,\qt{r})))}
 \end{alignat*}
 
+\subsubsection{$\State$ and $\Reader$ operations} Now, if we try to use
+the $\modify$ function that we already have for $\State_\M$, a curious thing
+happens. The meaning of $\modify\,(\lam x.\,\qt{\spl x + \spl x})$ is to replace
+the current state $x$, as an object expression, with the expression $\qt{\spl x
+  + \spl x}$, and this happens at staging time. This behaves as an ``inline''
+modification which replaces every subsequent mention of the state with a different
+expression. For instance, ignoring newtype wrappers for now,
+\[ \mdown \dlr \mdo \{\modify\,(\lam x.\,\qt{\spl x + \spl x}); \modify\,(\lam x.\,\qt{\spl x + \spl x});\return\,\qt{()}\} \]
+is staged to
+\[ \qt{\lam x.\,((),\,(x + x) + (x + x))} \]
+which duplicates the evaluation of $x + x$. The solution is to force the
+evaluation of the new state in the object language, by let-insertion. A similar
+phenomenon happens with the $\mit{local}$ function in $\Reader$. So we define
+``stricter'' versions of these operations. We also return $\Up ()$ from
+actions instead of $()$ --- the former is more convenient, because it can
+be immediately lowered with $\mdown$.
+\begingroup
+\allowdisplaybreaks
+\begin{alignat*}{3}
+  & \mput' : (\MonadState\,(\Up S)\,M,\,\MonadGen\,M) \RA \Up S \to M\,(\Up ()) \\
+  & \mput'\,s = \mdo \{s \fro \gen\,s; \mput\,s; \return \qt{()}\}\\
+  &\\
+  & \modify' : (\MonadState\,(\Up S)\,M,\,\MonadGen\,M) \RA (\Up S \to \Up S) \to M\,(\Up ()) \\
+  & \modify'\,f = \mdo \{s \fro \get; \mput'\,(f\,s)\}\\
+  &\\
+  & \mit{local'} : (\MonadReader\,(\Up R)\,M,\,\MonadGen\,M) \RA (\Up R \to \Up R) \to M\,A \to M\,A\\
+  & \mit{local'}\,f\,\vma = \mdo \{r \fro \mit{ask}; r \fro \gen\,(f\,r);\mit{local}\,(\lam \_.\,r)\,\vma\}
+\end{alignat*}
+\endgroup
+Now,
+\[ \mdown \dlr \mdo \{\modify'\,(\lam x.\,\qt{\spl x + \spl x}); \modify'\,(\lam x.\,\qt{\spl x + \spl x})\} \]
+is staged to
+\[ \qt{\lam x.\,\letdef x := x + x; \letdef x := x + x; ((),\,x)} \]
 
-%% instance (Improve m n) => Improve (StateT s m) (StateT (Up s) n) where
+\subsection{Joining Control Flow in Monads}\label{sec:joining-control-flow-in-monads}
 
-%%   up x = StateT \s ->
-%%     do as <- up [|| runStateT $$x $$s ||]
-%%        caseGen as pure
+There is a deficiency in our library so far. Assuming $b : \Bool$, consider:
+\begin{alignat*}{3}
+  & \mdown \dlr \mdo \\
+  & \ind \case b\,\of\\
+  & \ind \ind \True  \hspace{0.2em}\to \mput' \qt{10}\\
+  & \ind \ind \False \to \mput' \qt{20}\\
+  & \ind \modify' (\lam x. \qt{\spl x + 10})
+\end{alignat*}
+The $\modify' (\lam x. \qt{\spl x + 10})$ action gets inlined in both case
+branches during staging! This follows from the definition of monadic binding in
+$\Gen$ and the $\mit{split}$ function in the desugaring of $\mbf{case}$. Code
+generation is continued in two branches with the same action. If we have
+multiple $\mbf{case}$ splits sequenced after each other, that yields exponential
+code size. Right now, we can fix this by let-binding the problematic action:
+\begin{alignat*}{3}
+  & \mdown \dlr \mdo \\
+  & \ind x \fro \gen \dlr \mdown \dlr \case b\,\of\\
+  & \ind \ind \True  \hspace{0.2em}\to \mput' \qt{10}\\
+  & \ind \ind \False \to \mput' \qt{20}\\
+  & \ind \mup\,x\\
+  & \ind \modify' (\lam x. \qt{\spl x + 10})
+\end{alignat*}
+This removes code duplication by round-tripping through an object-level
+$\mbf{let}$. However, while this solution is fairly good in a state monad, where
+we can reasonably expect that product types can be unboxed by the object
+compiler, it introduces unnecessary runtime constructors for $\Maybe$ and
+other monads containing sum types. For $\Maybe$, $\mdown$ introduces a runtime
+$\Just$ or $\Nothing$, and $\mup$ introduces a runtime case split. A better
+solution would be to introduce two let-bound \emph{join points} before the
+offending $\mbf{case}$, one for returning a $\Just$ and one for returning
+$\Nothing$, but fusing away the actual runtime constructors. So, we would like
+to produce object code for a $\mbf{case}$ which looks like the following:
+\begin{alignat*}{3}
+  & \letdef\,\mit{joinJust}\,n := ...\\
+  & \letdef\,\mit{joinNothing}\,() := ...\\
+  & \case x == 10\,\of\\
+  & \ind \True \hspace{0.2em}\to \mit{joinJust}\,(x + 10) \\
+  & \ind \False \to \mit{joinNothing}\,()
+\end{alignat*}
+Such fused returns are possible whenever we have a $\Gen\,A$ action at the
+bottom of the transformer stack, such that $A$ is isomorphic to a finite
+meta-level sum of value types. Recall that $\Gen\,A$ is defined as $\{R : \VTy\}
+\to (A \to \Up R) \to \Up R$. Here, the $A \to \Up R$ continuation represents
+all possible code points where we can return to, and if $A$ is a finite sum, we
+can rearrange $A \to \Up R$ to a finite product of functions. Hence, we need a modest
+amount of generic programming with sums of values and products of computations.
+\begin{alignat*}{3}
+  & \data \SumVS : \List\,\VTy \to \MTy\,\where\,...\\
+  & \data \ProdCS : \List\,\CTy \to \MTy\,\where\,...
+\end{alignat*}
+%% \begin{alignat*}{3}
+%%   & \mathrlap{\data \SumVS : \List\,\VTy \to \MTy\,\where}\\
+%%   & \ind \Here &&: \Lift A \to \SumVS\,(\Cons\,A\,\mAs) \\
+%%   & \ind \There &&: \SumVS\,\mAs \to \SumVS\,(\Cons\,A\,\mAs)\\
+%%   & \mathrlap{\data \ProdCS : \List\,\CTy \to \MTy\,\where}\\
+%%   & \ind \Nil  &&: \ProdCS\,\Nil \\
+%%   & \ind \Cons &&: \Lift A \to \ProdCS\,\mAs \to \SumVS\,(\Cons\,A\,\mAs)
+%% \end{alignat*}
+%% Here, we overload $\List$ to refer to meta-level lists, dropping the $_\M$
+%% subscripts. We also overload the list constructors for $\ProdCS$.
+We use a class for types that have a $\SumVS$ representation:
+\begin{alignat*}{3}
+  & \hspace{-3em}\mathrlap{\tyclass\,\IsSumVS\,(A : \MTy)\,\where} \\
+  & \hspace{-3em}\ind \Rep    &&: \List\,\VTy \\
+  & \hspace{-3em}\ind \encode &&: A \to \SumVS\,\Rep \\
+  & \hspace{-3em}\ind \decode &&: \SumVS\,\Rep \to A
+\end{alignat*}
+We also define the mentioned isomorphism for $\Gen$ continuations.
+\begin{alignat*}{3}
+  &\mtabulate &&: (\SumVS\,\mAs \to \Lift B) \to \ProdCS\,(\map\,(\lam\,A.\,A\to B)\,\mAs)\\
+  &\mindex    &&: \ProdCS\,(\mit{map}\,(\lam\,A.\,A\to B)\,\mAs) \to (\SumVS\,\mAs \to \Lift B)
+\end{alignat*}
+We omit the definitions of $\mtabulate$, $\mindex$ and the $\IsSumVS$ instances,
+since they amount to standard generic programming; see e.g. \cite{TODO}. The
+last basic definition we need is to let-bind all computations in a generic
+product:
+\begin{alignat*}{3}
+  & \mathrlap{\mit{genProdCS} : \ProdCS\,\mAs \to \Gen\,(\ProdCS\,\mAs)}\\
+  & \mit{genProdCS}\,\Nil                 &&= \return\,\Nil\\
+  & \mit{genProdCS}\,(\Cons\,c\,\mit{cs}) &&= \Cons \fmap \gen\,c \ap \mit{genProdCS}\,\mit{cs}
+\end{alignat*}
+We introduce a class for monads that support control flow joining.
+\[ \tyclass\,\MonadJoin\,M\,\where\,\join : \IsSumVS\,A \RA M\,A \to M\,A \]
+The most interesting instance is for $\Gen$.
+\begin{alignat*}{3}
+  &\instance \MonadJoin\,\Gen\,\where\\
+  &\ind \join\,\vma = \Gen \dlr \lam k.\,\runGen \dlr \mdo\\
+  &\ind \ind \mit{joinpoints} \fro \mit{genProdCS}\,(\mtabulate\,(k \circ \decode))\\
+  &\ind \ind a \fro \vma\\
+  &\ind \ind \return \dlr \mindex\,\mit{joinpoints}\,(\encode\,a)
+\end{alignat*}
+Here we first convert $k : A \to \Lift R$ to a product of join points and
+let-bind each of them. Then we adjust the return code points of $\vma$ by
+looking up the corresponding continuation from the list of join points, using
+$\mindex$. We also need $\MonadJoin$ instances for the other transformers in our
+library, but these are all essentially just lifting $\join$. In $\StateT_\M$ we
+must have $\IsSumVS$ for $S$ because $S$ appears in the transformer stack's
+return value.
+\begin{alignat*}{3}
+  & \instance\,(\MonadJoin\,M) \RA \MonadJoin\,(\MaybeT_\M\,M)\,\where\\
+  & \ind \join\,(\MaybeT_\M\,\vma) = \MaybeT_\M\,(\join\,\vma)\\
+  & \instance\,(\MonadJoin\,M) \RA \MonadJoin\,(\ReaderT_\M\,R\,M)\,\where\\
+  & \ind \join\,(\ReaderT_\M\,\vma) = \ReaderT_\M\,(\join \circ \vma)\\
+  & \instance\,(\MonadJoin\,M,\,\IsSumVS\,S) \RA \MonadJoin\,(\StateT_\M\,S\,M)\,\where\\
+  & \ind \join\,(\StateT_\M\,\vma) = \StateT_\M\,(\join \circ \vma)
+\end{alignat*}
+Now, whenever the return value of a $\mbf{case}$-splitting action is a sum of
+values (this includes just returning an object value, which is by far the most
+common situation), we can use $\join \dlr \case x\,\of ...$ to block inlining
+into the branches, without creating any runtime sum types.
 
-%%   down x = [|| StateT \s -> $$(down
-%%     do (a, s) <- runStateT x [||s||]
-%%        pure [||($$a, $$s)||]
-%%        )||]
+\todo{bigger example}
 
+\subsection{Discussion}
 
+So far, we have a monad transformer library with the following features:
+\begin{itemize}
+\item Almost all definitions from the well-known Haskell ecosystem of monads and monad transformers
+      can be directly reused, in the meta level.
+\item We can quite liberally pattern match on object-level values in monadic code, insert object-level $\mbf{let}$-s
+      with $\gen$ and control code size by $\join$-s.
+\item In monadic code, object-level data constructors are only ever created by $\mdown$, and switching on object-level data is only
+      created by $\mit{split}$ and $\mup$. Everything else is fully fused, and all function calls can be compiled to
+      statically known saturated calls.
+\end{itemize}
 
-%% instance Improve m n => Improve (MaybeT m) (MaybeT n) where
-%%   up x = MaybeT do
-%%     ma <- up [||runMaybeT $$x||]
-%%     caseGen ma pure
+As to potential weaknesses, first, the system as described in this section has
+quite a bit of syntactic noise and requires extra attention from programmers.
+We believe that the code noise can be mitigated very effectively in a native
+CFTT implementation. Kovács \cite{TODO} demonstrated in a prototype elaborator
+that almost all quotes and splices are unambiguously inferable in 2LTT programs,
+if we make the concession that stages of let-definitions are always specified
+(as we do here). Moreover, $\mup$ and $\mdown$ should be also effectively
+inferable, using bidirectional elaboration, but it would make sense to limit
+inferred binding-time improvement to monads only. With stage inference and
+binding-time improvement inference, code in CFTT would look only modestly more
+complicated than in Haskell, and we would get far more robust and controllable
+code generation.
 
-%%   down (MaybeT x) =
-%%     [|| MaybeT $$(down (x >>= \case
-%%           Nothing -> pure [||Nothing||]
-%%           Just a -> pure [||Just $$a||])) ||]
+Second, in CFTT we cannot store most monadic actions in runtime data structures,
+those that are implemented using functions, nor can we have functions in
+$\State$ state, or in $\Reader$ environments. However:
+\begin{itemize}
+  \item Essential usage of this is rare in practice.
+  \item It is possible to extend CFTT with a closure type former, converting computations to values,
+        in which case there is no such limitation anymore. Here, closure-freedom is still available;
+        we can choose to use or abstain from the explicit closure type.
+\end{itemize}
 
-%% instance Improve m n => Improve (ReaderT r m) (ReaderT (Up r) n) where
-%%   up   x = ReaderT \r -> up [||runReaderT $$x $$r||]
-%%   down x = [|| ReaderT \r -> $$(down (runReaderT x [||r||])) ||]
+\subsection{Haskell Implementation}
 
+We implemented all features in this section in typed Template Haskell
+\cite{TODO}, using only the strongly typed interface. The organization of the
+code is essentially the same as here, but some changes are necessary:
+\begin{itemize}
+  \item TH cannot properly handle scoping of type variables across quotations,
+        generating ill-typed code in some cases. It is fairly easy to work around
+        this using term-level proxy values.
+  \item We do not bother tracking value and computation types. This could be done,
+        using dummy type classes, but we would not get any extra guarantees from it
+        in downstream compilation.
+  \item When we take the product of generic sums in CFTT, we simply take the
+        object-level product of component types, pairwise. We do this because we
+        assume that the downstream compiler can represent products without
+        overheads, in an unboxed manner, and also erase unit types. In Haskell we do
+        not rely on this, and instead use a slightly more complicated
+        sum-of-products-of-values representation, and also fuse away product types
+        during staging.
+  \item We make heavy use of \emph{singleton types} \cite{TODO} in generic sums-of-products, to emulate
+        dependent types. This adds significant noise compared to a native dependently typed
+        version.
+  \item We have two separate type classes for binding-time improvement, one for
+        base types and one for monads specifically. This is because the quantified
+        constraints in \ref{TODO} yield poor type inference for $\mup$ and $\mdown$,
+        by preventing \emph{functional dependencies} \cite{TODO} between the class
+        parameters. We expect that in a native CFTT implementation, the extra staging
+        information in type universes would help inference in this case.
+\end{itemize}
 
+\section{Stream Fusion}
+
+Stream fusion refers to a collection of techniques for generating efficient code
+from declarative definitions involving streams of values, where intermediate
+data structures are eliminated. For example, mapping twice over a list produces
+an intermediate list in a naive implementation but does not do so in a fused
+implementation.
+
+Fusion techniques can be broadly grouped into \emph{push} fusion, which is based
+on Church-encodings of inductive lists, and $\emph{pull}$ fusion, which is based
+on Church-encodings of coinductive lists, which manifests as \emph{state
+machines}. The two styles have different trade-offs, and in practical
+programming it is a good idea to support both, but in this section we focus on
+pull fusion.
+
+The reason is partly lack of space, but also that pull fusion has been
+historically the more difficult to reliably compile, and we can demonstrate
+significant improvements in CFTT, in robustness and expressive power. Our fusion
+always goes through, and we also support a $\mit{concatMap}$ operation, which
+has been elusive in guaranteed fusion. We believe that our implementation also
+provides valuable conceptual clarity.
+
+\subsection{Streams}
+
+A pull stream is a meta-level specification of a state machine:
+\begin{alignat*}{3}
+  & \data \Step\,S\,A = \Stop\,|\,\Yield\,A\,S\,|\,\Skip\,S\\
+  & \data \Pull\,(A : \MTy) : \MTy\,\where\\
+  & \ind \MkPull : (S : \MTy) \to \IsSumVS\,S \RA S \to (S \to \Gen\,(\Step\,S\,A)) \to \Pull\,A
+\end{alignat*}
+In $\MkPull$, $S$ is the type of the internal state which is required to be a
+finite sum of values by the $\IsSumVS\,S$ constraint. The next $S$-typed field
+is the initial state, while $S \to \Gen\,(\Step\,S\,A)$ represents all
+transitions. Possible transitions are stopping ($\Stop$), transitioning to a
+new state while outputting a value ($\Yield$) and making a silent transition to
+a new state ($\Skip$).
 
 
 \section{TODOS}

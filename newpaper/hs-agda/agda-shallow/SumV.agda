@@ -3,6 +3,7 @@ module SumV where
 
 open import Lib
 open import Object
+open import Gen
 
 data SumV : List VTy → Set where
   here  : ∀ {A As} → ↑V A → SumV (A ∷ As)
@@ -55,6 +56,28 @@ unpairSV {a ∷ A} {B} abs with eitherSV {a ×VSV B} {A ×SV B} abs
 ... | left  x = case unpairVSV x of λ {(x , y) → (here x) , y}
 ... | right y = case unpairSV {A}{B} y of λ {(x , y) → (there x) , y}
 
+-- Closure under Σ
+--------------------------------------------------------------------------------
+
+postulate
+  generative : ∀ {A} → (f : ↑ A → List VTy) → ∀ {x y} → f x ≡ f y
+
+ΣSV : (A : List VTy) → (SumV A → List VTy) → List VTy
+ΣSV []      B = []
+ΣSV (a ∷ A) B = a ×VSV B (here loop∘) ++ ΣSV A (B ∘ there)
+
+pairΣSV : ∀ {A B} → (a : SumV A) → SumV (B a) → SumV (ΣSV A B)
+pairΣSV {a ∷ A}{B} (here x)  y =
+  leftSV  {a ×VSV B (here loop∘)}{ΣSV A (B ∘ there)}
+          (tr (λ x → SumV (a ×VSV x)) (generative (B ∘ here)) (pairVSV x y))
+pairΣSV {a ∷ A}{B} (there x) y =
+  rightSV {a ×VSV B (here loop∘)}{ΣSV A (B ∘ there)} (pairΣSV x y)
+
+unpairΣSV : ∀ {A B} → SumV (ΣSV A B) → Σ (SumV A) (SumV ∘ B)
+unpairΣSV {a ∷ A} {B} x with eitherSV {a ×VSV B (here loop∘)} {ΣSV A (B ∘ there)} x
+... | left  x = case unpairVSV x of λ {(x , y) → (here x) , tr SumV (generative (B ∘ here)) y}
+... | right x = case unpairΣSV {A}{B ∘ there} x of λ {(x , y) → (there x) , y}
+
 --------------------------------------------------------------------------------
 
 record IsSumV (A : Set) : Set where
@@ -103,6 +126,15 @@ instance
   IsSumV.encode (SumV↑V {A}) x = here x
   IsSumV.decode (SumV↑V {A}) (here x) = x
 
+  SumVΣ : ∀ {A B} ⦃ _ : IsSumV A ⦄ ⦃ _ : ∀ {a} → IsSumV (B a) ⦄ → IsSumV (Σ A B)
+  IsSumV.Rep    (SumVΣ {A} {B}) = ΣSV (Rep {A}) (λ x → Rep {B (decode x)})
+  IsSumV.encode (SumVΣ {A} {B} ⦃ p ⦄ ⦃ q ⦄) (x , y) =
+    pairΣSV {Rep {A}}{λ x → Rep {B (decode x)}} (encode x) {!encode y!}
+  IsSumV.decode (SumVΣ {A} {B}) = {!!}
+
+-- Yep..
+
+-- tabulated continuations
 --------------------------------------------------------------------------------
 
 data ProdC : List CTy → Set where
@@ -121,3 +153,7 @@ tabulate {a ∷ A} f = Λ (f ∘ here) ∷ tabulate (f ∘ there)
 index : ∀ {A B} → ProdC (A →SVT B) → (SumV A → ↑ B)
 index (f ∷ fs) (here x)  = f ∙ x
 index (f ∷ fs) (there x) = index fs x
+
+genLetPC : ∀ {A} → ProdC A → Gen (ProdC A)
+genLetPC []       = return []
+genLetPC (x ∷ xs) = _∷_ <$> genLet x <*> genLetPC xs

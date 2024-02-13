@@ -77,3 +77,7 @@ postulate
   Identity∘    : VTy → Ty
   identity∘    : ∀ {A} → ↑V A → ↑ (Identity∘ A)
   runIdentity∘ : ∀ {A} → ↑ (Identity∘ A) → ↑V A
+
+
+loop∘ : ∀ {A} → ↑ A
+loop∘ {A} = LetRec {⊤∘ ⇒ A} (λ f → f) (λ f → f ∙ tt∘)

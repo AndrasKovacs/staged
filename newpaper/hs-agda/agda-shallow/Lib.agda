@@ -5,11 +5,12 @@ module Lib where
 open import Agda.Primitive public
 open import Relation.Binary.PropositionalEquality
   renaming (cong to ap; sym to infix 6 _⁻¹; trans to infixr 4 _◼_; subst to tr)
-  hiding ([_])
+  renaming ([_] to hide)
   public
 open import Data.Product hiding (_<*>_; map; zip) renaming (proj₁ to ₁; proj₂ to ₂) public
 open import Function public
 open import Data.List hiding (tabulate) public
+open import Data.Empty public
 
 record ⊤ : Set where
   constructor tt
@@ -23,6 +24,19 @@ data Maybe (A : Set) : Set where
 data Either (A B : Set) : Set where
   left : (x : A)  → Either A B
   right : (y : B) → Either A B
+
+either : ∀ {A B}{C : Set} → Either A B → (A → C) → (B → C) → C
+either (left x) l r = l x
+either (right y) l r = r y
+
+case× : ∀ {A : Set}{B : A → Set}{C : ∀ a → B a → Set} → (ab : Σ A B) → (∀ a b → C a b) → C (ab .₁) (ab .₂)
+case× (fst , snd) f = f fst snd
+
+coe : ∀ {A B : Set} → A ≡ B → A → B
+coe refl x = x
+
+UIP : ∀ {A : Set}{x y : A}(p q : x ≡ y) → p ≡ q
+UIP refl refl = refl
 
 data ℕ : Set where
 

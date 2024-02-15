@@ -166,6 +166,8 @@ foldrPull {A} {B} (pull S seed step) f b =
                      (yield a s) → f a (callFun fs (encode s)))
          (λ fs → callFun fs (encode seed))
 
+--------------------------------------------------------------------------------
+
 toList : ∀ {A} → Pull (↑V A) → ↑V (List∘ A)
 toList as = foldrPull as cons∘ nil∘
 

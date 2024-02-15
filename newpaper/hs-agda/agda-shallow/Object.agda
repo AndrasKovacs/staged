@@ -28,7 +28,7 @@ infixr 4 _,∘_ _,C_
 
 postulate
   Let    : ∀ {A B} → ↑ A → (↑ A → ↑ B) → ↑ B
-  LetRec : ∀ {A B} → (↑C A → ↑C A) → (↑C A → ↑ B) → ↑ B
+  LetRec : ∀ A {B} → (↑C A → ↑C A) → (↑C A → ↑ B) → ↑ B
 
   _⇒_ : VTy → Ty → CTy
   Λ   : ∀ {A B} → (↑V A → ↑ B) → ↑C (A ⇒ B)
@@ -88,7 +88,7 @@ postulate
   runIdentity∘ : ∀ {A} → ↑ (Identity∘ A) → ↑V A
 
 loop∘ : ∀ {A} → ↑ A
-loop∘ {A} = LetRec {⊤∘ ⇒ A} (λ f → f) (λ f → f ∙ tt∘)
+loop∘ {A} = LetRec (⊤∘ ⇒ A) (λ f → f) (λ f → f ∙ tt∘)
 
 fieldC1 : ∀ {A B} → ↑C (A ×C B) → ↑C A
 fieldC1 x = fst∘ x

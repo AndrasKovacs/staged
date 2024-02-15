@@ -1,4 +1,3 @@
-{-# OPTIONS --type-in-type #-}
 
 module Split where
 
@@ -6,7 +5,7 @@ open import Lib
 open import Object
 open import Gen
 
-record Split (A : VTy) : Set where
+record Split (A : VTy) : Set₁ where
   field
     SplitTo  : Set
     splitGen : ↑V A → Gen SplitTo

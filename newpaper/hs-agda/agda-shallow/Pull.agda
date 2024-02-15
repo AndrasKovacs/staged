@@ -1,4 +1,4 @@
-{-# OPTIONS --type-in-type #-}
+{-# OPTIONS --type-in-type #-} -- Because Pull : Set → Set₁ is annoying
 
 module Pull where
 
@@ -159,7 +159,7 @@ absFun {a ∷ A} {B} f = lamₚₜ (f ∘ here) ,C absFun {A}{B} (f ∘ there)
 
 foldrPull : ∀ {A B} → Pull A → (A → ↑ B → ↑ B) → ↑ B → ↑ B
 foldrPull {A} {B} (pull S seed step) f b =
-  LetRec {funTypes (Rep {S}) B} {B}
+  LetRec (funTypes (Rep {S}) B)
          (λ fs → absFun λ s → unGen (step (decode s)) λ where
                      stop        → b
                      (skip s)    → callFun fs (encode s)
@@ -181,52 +181,7 @@ zip as bs = _,∘_ <$> as <*> bs
 casePull : ∀ {A B}⦃ _ : Split A ⦄ ⦃ _ : IsSOP (SplitTo {A}) ⦄ → ↑V A → (SplitTo {A} → Pull B) → Pull B
 casePull {A} {B} a f = forEach (mapGen (single a) split) f
 
---------------------------------------------------------------------------------
-
 sumPull : Pull (↑V ℕ∘) → ↑V ℕ∘
 sumPull as = foldlPull as _+∘_ 0
 
-test1 : Pull (↑V ℕ∘)
-test1 = single 10 <> single 20
-
-test2 : Pull (↑V ℕ∘)
-test2 = mempty
-
-test3 : Pull (↑V ℕ∘)
-test3 = forEach (take 10 count) λ x →
-        forEach (take 5  count) λ y →
-        single (x +∘ y)
-
-sumPullTest3Code =
-  LetRec
-  (λ fs →
-     (Λ λ a → Λ λ x →
-         caseBool∘ (a ==∘ 0)
-           (Λ (λ b → b))
-           (fieldC2 fs ∙ (a -∘ 1) ∙ (x +∘ 1) ∙ x ∙ 5 ∙ 0))
-     ,C
-     (Λ λ a → Λ λ a₁ → Λ λ a₂ → Λ λ a₃ → Λ λ x →
-                    caseBool∘ (a₃ ==∘ 0)
-                      (fieldC1 fs ∙ a ∙ a₁)
-                      (fieldC3 fs ∙ a ∙ a₁ ∙ a₂ ∙ (a₃ -∘ 1) ∙ (x +∘ 1) ∙ x))
-     ,C
-     (Λ λ a → Λ λ a₁ → Λ λ a₂ → Λ λ a₃ → Λ λ a₄ → Λ λ x → Λ λ b →
-                          fieldC4 fs ∙ a ∙ a₁ ∙ a₂ ∙ a₃ ∙ a₄ ∙ x ∙ (b +∘ (a₂ +∘ x)))
-
-     ,C (Λ λ a → Λ λ a₁ → Λ λ a₂ → Λ λ a₃ → Λ λ a₄ → Λ λ x → fieldC2 fs ∙ a ∙ a₁ ∙ a₂ ∙ a₃ ∙ a₄)
-
-     ,C ttC)
-  (λ fs → fst∘ fs ∙ 10 ∙ 0)
-  ∙ 0
-
-test4 : Pull (↑ (V ℕ∘))
-test4 = _*∘_ <$> take (lit∘ 10) count <*> take (lit∘ 10) (countFrom (lit∘ 20))
-
-test5 : Pull (↑ (V ℕ∘))
-test5 = _+∘_ <$> test3 <*> test3
-
-test6 : Pull (↑ (V ℕ∘))
-test6 = forEach (take 20 count) λ x →
-        casePull (x <∘ 10) λ where
-          true  → forEach (take 10 count) λ y → single (x *∘ y)
-          false → single $ x *∘ 5
+--------------------------------------------------------------------------------

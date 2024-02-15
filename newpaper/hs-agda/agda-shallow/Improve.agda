@@ -1,4 +1,3 @@
-{-# OPTIONS --type-in-type #-}
 
 module Improve where
 
@@ -7,7 +6,7 @@ open import Object
 open import Gen
 open import Split
 
-record Improve (F : VTy → Ty) (M : Set → Set) : Set where
+record Improve (F : VTy → Ty) (M : Set → Set) : Set₁ where
   field
     ⦃ MGM ⦄ : MonadGen M
     up      : ∀ {A} → ↑ (F A) → M (↑V A)

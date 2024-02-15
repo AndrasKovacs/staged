@@ -12,12 +12,12 @@ Add identity type, W-type
 
 
 --------------------------------------------------------------------------------
-Random potential citations
+Random potential citations:
 
-  kinds are calling conventions
-
-  ANF translation early paper using CPS gen
-
+  "kinds are calling conventions"
+  ANF translation early paper using CPS gen (citation from "staged selective parser")
+  Hinze et al: "theory and practice of fusion"
+  GHC call arity paper
 
 --------------------------------------------------------------------------------
 
@@ -62,13 +62,11 @@ More generally:
 axiom : Tm (A : Ty, a a' : ↑A, f : ↑A → Ty) (Id (f a) (f a'))
 
   ∀ Γ. (A : Ty)(a a' : Tm Γ A) (f : ∀ Δ (σ : Sub (Δ,Γ)) → Tm Δ A → Ty) → f Γ id a = f Γ id a'
-
   f Γ id a =
   f Γ (wkₓ ∘ (id, x ↦ a)) a
   f Γ (wkₓ ∘ (id, x ↦ a))(x[x ↦ a])
   (f (Γ,x) wkₓ x)[x ↦ a]
   (f (Γ,x) wkₓ x)
-
   f Γ id a' =      similarly
   (f (Γ,x) wkₓ x)
 
@@ -79,39 +77,6 @@ naturality of axiom:
 
 for valTy, if I have f : ↑A → ValTy, then (V ∘ f) : ↑A → Ty is constant by axiom
 
-Virtual Σ and Π in object frament:
-
-A : ValTy  B : ↑A → ValTy
-
-loop : {A : ValTy} → ↑A
-loop {A} = <letrec f : ⊤ → A = λ x. f x; f tt>
-
-Σ* A B : ValTy
-Σ* A B = A × B loop
-
-fst* : ↑(Σ* A B) → ↑A
-fst* x = <fst ~x>
-
-snd* : (x : ↑(Σ* A B)) → ↑(B (fst* x))
-snd* x = coerce from  ↑(B loop) to ↑(B (fst* x))
-                by axiom
-		<snd ~x>
-
-pair* : (a : ↑A) → ↑(B a) → ↑(Σ* A B)
-pair* a b =
-  cast from ↑(A × B a)) to ↑(A × B loop)) by axiom
-  <(~a, ~b)>
-
-no β-eta rule, but we don't have that anyway for object types!
-
-Π* : (A : ValTy) → (↑A → Ty) → CompTy
-Π* A B = (A → B loop)
-
-app* : ((a : ↑A) → ↑(B a)) → Π* A B
-app* = ...
-
-lam* : Π* A B → (a : ↑A) → ↑(B a)
-lam* = ...
 
 NOTE :
   generativity axiom is compatible with case on Ty!!!

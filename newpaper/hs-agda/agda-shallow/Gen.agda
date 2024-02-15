@@ -1,4 +1,3 @@
-{-# OPTIONS --type-in-type #-}
 
 module Gen where
 
@@ -22,7 +21,7 @@ instance
 runGen : ∀{A} → Gen (↑ A) → ↑ A
 runGen ga = unGen ga id
 
-record MonadGen (M : Set → Set) : Set  where
+record MonadGen (M : Set → Set) : Set₁  where
   field
     ⦃ monadM ⦄ : Monad M
     liftGen : ∀ {A} → Gen A → M A
@@ -31,9 +30,22 @@ record MonadGen (M : Set → Set) : Set  where
   genLet a = liftGen $ gen (Let a)
 
   genLetRec : ∀ {A} → (↑C A → ↑C A) → M (↑C A)
-  genLetRec f = liftGen $ gen (LetRec f)
-
+  genLetRec f = liftGen $ gen (LetRec _ f)
 open MonadGen ⦃...⦄ public
+
+record IsTy (A : Set) : Set₁ where
+  field
+    A'   : Ty
+    isTy : A ≡ ↑ A'
+
+  genLetIsTy : ∀ {M} ⦃ _ : MonadGen M ⦄ → A → M A
+  genLetIsTy {M} a = tr M (isTy ⁻¹) (genLet (coe isTy a))
+open IsTy ⦃...⦄
+
+instance
+  IsTyTy : ∀ {A} → IsTy (↑ A)
+  IsTy.A' (IsTyTy {A}) = A
+  IsTy.isTy IsTyTy = refl
 
 instance
   MGenGen : MonadGen Gen
@@ -48,3 +60,20 @@ instance
 
   MGenMaybeT : ∀ {M} ⦃ _ : MonadGen M ⦄ → MonadGen (MaybeT M)
   MonadGen.liftGen MGenMaybeT ga = lift (liftGen ga)
+
+local' : ∀ {M A}
+  ⦃ _ : MonadReader M ⦄
+  ⦃ _ : IsTy (ReaderTy {M}) ⦄
+  ⦃ _ : MonadGen M ⦄
+  → (ReaderTy {M} → ReaderTy {M}) → M A → M A
+local' f ma = do
+  r ← ask
+  r ← genLetIsTy (f r)
+  local (λ _ → r) ma
+
+put' : ∀ {M}⦃ _ : MonadState M ⦄ ⦃ _ : IsTy (StateTy {M}) ⦄ ⦃ _ : MonadGen M ⦄ → StateTy {M} → M (↑V ⊤∘)
+put' s = do s ← genLetIsTy s; put s; pure tt∘
+
+modify' : ∀ {M}⦃ _ : MonadState M ⦄ ⦃ _ : IsTy (StateTy {M}) ⦄ ⦃ _ : MonadGen M ⦄
+          → (StateTy {M} → StateTy {M}) → M (↑V ⊤∘)
+modify' f = do s ← get; put' (f s)

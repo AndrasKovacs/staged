@@ -1,4 +1,3 @@
-{-# OPTIONS --type-in-type #-}
 
 module Lib where
 
@@ -60,7 +59,7 @@ record Monoid (A : Set) : Set where
     {{ semigroupA }} : Semigroup A
 open Monoid ⦃...⦄ public
 
-record Applicative (F : Set → Set) : Set where
+record Applicative (F : Set → Set) : Set₁ where
   field
     pure  : ∀ {A} → A → F A
     _<*>_ : ∀ {A B} → F (A → B) → F A → F B
@@ -76,7 +75,7 @@ record Applicative (F : Set → Set) : Set where
 
 open Applicative ⦃...⦄ public
 
-record Monad (M : Set → Set) : Set where
+record Monad (M : Set → Set) : Set₁ where
   field
     _>>=_  : ∀ {A B} → M A → (A → M B) → M B
     {{ applicativeM }} : Applicative M
@@ -114,7 +113,7 @@ record MaybeT (M : Set → Set)(A : Set) : Set where
     runMaybeT : M (Maybe A)
 open MaybeT public
 
-record MonadTrans (T : (Set → Set) → Set → Set) : Set where
+record MonadTrans (T : (Set → Set) → Set → Set) : Set₁ where
   field
     ⦃ monadM ⦄ : ∀ {M}⦃ _ : Monad M ⦄ → Monad (T M)
     lift : ∀ {M A}⦃ _ : Monad M ⦄ → M A → T M A
@@ -185,19 +184,28 @@ instance
   MTStateT : ∀ {S} → MonadTrans (StateT S)
   MonadTrans.lift MTStateT ma = stateT λ s → do a ← ma; pure (a , s)
 
-record MonadReader (R : Set)(M : Set → Set) : Set where
+record MonadReader (M : Set → Set) : Set₁ where
   field
-    ⦃ monadM ⦄ : Monad M
-    ask    : M R
-    local  : ∀ {A} → (R → R) → M A → M A
+    ReaderTy : Set
+    ask      : M ReaderTy
+    local    : ∀ {A} → (ReaderTy → ReaderTy) → M A → M A
 open MonadReader ⦃...⦄ public
 
-record MonadState (S : Set)(M : Set → Set) : Set where
+record MonadState (M : Set → Set) : Set₁ where
   field
-    ⦃ monadM ⦄ : Monad M
-    get : M S
-    put : S → M ⊤
+    StateTy : Set
+    get     : M StateTy
+    put     : StateTy → M ⊤
+
+  modify : ⦃ _ : Monad M ⦄ → (StateTy → StateTy) → M ⊤
+  modify f = do s ← get; put (f s)
 open MonadState ⦃...⦄ public
+
+record MonadFail (M : Set → Set) : Set₁ where
+  field
+    fail  : ∀ {A} → M A
+    catch : ∀ {A} → M A → M A → M A
+open MonadFail ⦃...⦄ public
 
 State : Set → Set → Set
 State S A = StateT S Identity A
@@ -206,10 +214,51 @@ Reader : Set → Set → Set
 Reader R A = ReaderT R Identity A
 
 instance
-  ReaderReaderT : ∀ {M R}⦃ _ : Monad M ⦄ → MonadReader R (ReaderT R M)
+  ReaderReaderT : ∀ {M R}⦃ _ : Monad M ⦄ → MonadReader (ReaderT R M)
+  MonadReader.ReaderTy (ReaderReaderT {_}{R}) = R
   MonadReader.ask ReaderReaderT = readerT λ r → pure r
   MonadReader.local ReaderReaderT f (readerT ma) = readerT λ r → ma (f r)
 
-  ReaderStateT : ∀ {S M R}⦃ _ : MonadReader R M ⦄ → MonadReader R (StateT S M)
-  MonadReader.ask ReaderStateT   = lift ask
-  MonadReader.local ReaderStateT f (stateT ma) = stateT λ s → local f (ma s)
+  ReaderStateT : ∀ {S M}⦃ _ : MonadReader M ⦄ ⦃ _ : Monad M ⦄  → MonadReader (StateT S M)
+  MonadReader.ReaderTy (ReaderStateT {M = M}) = ReaderTy {M}
+  MonadReader.ask      ReaderStateT = lift ask
+  MonadReader.local    ReaderStateT f (stateT ma) = stateT λ s → local f (ma s)
+
+  ReaderMaybeT : ∀ {M} ⦃ _ : MonadReader M ⦄ ⦃ _ : Monad M ⦄ → MonadReader (MaybeT M)
+  MonadReader.ReaderTy (ReaderMaybeT {M}) = ReaderTy {M}
+  MonadReader.ask ReaderMaybeT   = lift ask
+  MonadReader.local ReaderMaybeT f (maybeT ma) = maybeT (local f ma)
+
+  StateStateT : ∀ {M S}⦃ _ : Monad M ⦄ → MonadState (StateT S M)
+  MonadState.StateTy (StateStateT {S = S}) = S
+  MonadState.get StateStateT = stateT λ s → pure (s , s)
+  MonadState.put StateStateT s = stateT λ _ → pure (tt , s)
+
+  StateReaderT : ∀ {M R}⦃ _ : MonadState M ⦄ ⦃ _ : Monad M ⦄ → MonadState (ReaderT R M)
+  MonadState.StateTy (StateReaderT {M}) = StateTy {M}
+  MonadState.get StateReaderT = lift get
+  MonadState.put StateReaderT s = lift (put s)
+
+  StateMaybeT : ∀ {M}⦃ _ : MonadState M ⦄ ⦃ _ : Monad M ⦄ → MonadState (MaybeT M)
+  MonadState.StateTy (StateMaybeT {M}) = StateTy {M}
+  MonadState.get StateMaybeT = lift get
+  MonadState.put StateMaybeT s = lift (put s)
+
+  FailMaybe : MonadFail Maybe
+  MonadFail.fail FailMaybe = nothing
+  MonadFail.catch FailMaybe (just x) y = just x
+  MonadFail.catch FailMaybe nothing y = y
+
+  FailMaybeT : ∀ {M}⦃ _ : Monad M ⦄ → MonadFail (MaybeT M)
+  MonadFail.fail FailMaybeT = maybeT (pure nothing)
+  MonadFail.catch FailMaybeT x y = maybeT $ runMaybeT x >>= λ where
+      (just a) → pure $ just a
+      nothing  → runMaybeT y
+
+  FailReaderT : ∀ {R M}⦃ _ : MonadFail M ⦄ ⦃ _ : Monad M ⦄ → MonadFail (ReaderT R M)
+  MonadFail.fail FailReaderT = lift fail
+  MonadFail.catch FailReaderT x y = readerT λ r → catch (runReaderT x r) (runReaderT y r)
+
+  FailStateT : ∀ {S M}⦃ _ : MonadFail M ⦄ ⦃ _ : Monad M ⦄ → MonadFail (StateT S M)
+  MonadFail.fail FailStateT = lift fail
+  MonadFail.catch FailStateT x y = stateT λ s → catch (runStateT x s) (runStateT y s)

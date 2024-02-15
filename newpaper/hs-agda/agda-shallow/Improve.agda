@@ -23,12 +23,12 @@ instance
   Improve.up ImpMaybeT x = maybeT do x ← up (runMaybeT∘ x); split x
   Improve.down ImpMaybeT (maybeT x) = maybeT∘ $ down do
     x >>= λ where
-      nothing  → return nothing∘
-      (just a) → return (just∘ a)
+      nothing  → pure nothing∘
+      (just a) → pure (just∘ a)
 
   ImpStateT : ∀ {F M S} → ⦃ _ : Improve F M ⦄ → Improve (StateT∘ S F) (StateT (↑V S) M)
   Improve.up   ImpStateT x          = stateT λ s → do as ← up (runStateT∘ x s); split as
-  Improve.down ImpStateT (stateT x) = stateT∘ λ s → down (do (a , s) ← x s; return (a ,∘ s))
+  Improve.down ImpStateT (stateT x) = stateT∘ λ s → down (do (a , s) ← x s; pure (a ,∘ s))
 
   ImpReaderT : ∀ {F M S} → ⦃ _ : Improve F M ⦄ → Improve (ReaderT∘ S F) (ReaderT (↑V S) M)
   Improve.up ImpReaderT   x           = readerT (up ∘ runReaderT∘ x)

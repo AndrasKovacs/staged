@@ -12,8 +12,11 @@ record Gen (A : Set) : Set where
 open Gen public
 
 instance
+  AGen : Applicative Gen
+  Applicative.pure AGen a = gen λ k → k a
+  Applicative._<*>_ AGen gf ga = gen λ k → unGen gf λ f → unGen ga λ a → k (f a)
+
   MGen : Monad Gen
-  Monad.return MGen a         = gen λ k → k a
   Monad._>>=_ MGen (gen ga) f = gen λ k → ga (λ a → unGen (f a) k)
 
 runGen : ∀{A} → Gen (↑ A) → ↑ A

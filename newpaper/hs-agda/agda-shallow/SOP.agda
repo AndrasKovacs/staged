@@ -5,16 +5,19 @@ open import Lib
 open import Object
 open import Gen
 
+open import Agda.Builtin.TrustMe
+
+--------------------------------------------------------------------------------
+
 Uₚ = List VTy
-Uₛ = List Uₚ
 
 data Elₚ : Uₚ → Set where
   []  : Elₚ []
   _∷_ : ∀ {a A} → ↑V a → Elₚ A → Elₚ (a ∷ A)
 
-data Elₛ : Uₛ → Set where
-  here  : ∀ {a A} → Elₚ a → Elₛ (a ∷ A)
-  there : ∀ {a A} → Elₛ A → Elₛ (a ∷ A)
+loopₚ : ∀ {A} → Elₚ A
+loopₚ {[]}    = []
+loopₚ {a ∷ A} = loop∘ ∷ loopₚ
 
 ⊤ₚ : Uₚ
 ⊤ₚ = []
@@ -41,6 +44,30 @@ unpairₚ {a ∷ A} (x ∷ y) = case× (unpairₚ {A} y) λ xs ys → x ∷ xs ,
 *ₚη : ∀ {A B}(x : Elₚ (A *ₚ B)) → pairₚ (unpairₚ {A}{B} x .₁) (unpairₚ x .₂) ≡ x
 *ₚη {[]}        x        = refl
 *ₚη {a ∷ A} {B} (x ∷ xs) = ap (x ∷_) (*ₚη {A}{B} xs)
+
+infix 3 _→PT_
+_→PT_ : Uₚ → Ty → CTy
+[]            →PT B = ⊤∘ ⇒ B
+a ∷ []        →PT B = a ⇒ B
+a ∷ A@(_ ∷ _) →PT B = a ⇒ C (A →PT B)
+
+appₚₜ : ∀ {A B} → ↑C (A →PT B) → Elₚ A → ↑ B
+appₚₜ {[]}            {B} f []       = f ∙ tt∘
+appₚₜ {a ∷ []}        {B} f (x ∷ []) = f ∙ x
+appₚₜ {a ∷ A@(_ ∷ _)} {B} f (x ∷ xs) = appₚₜ {A}{B} (f ∙ x) xs
+
+lamₚₜ : ∀ {A B} → (Elₚ A → ↑ B) → ↑C (A →PT B)
+lamₚₜ {[]}            {B} f = Λ λ _ → f []
+lamₚₜ {a ∷ []}        {B} f = Λ λ x → f (x ∷ [])
+lamₚₜ {a ∷ A@(_ ∷ _)} {B} f = Λ λ a → lamₚₜ {A}{B} (λ as → f (a ∷ as))
+
+
+--------------------------------------------------------------------------------
+Uₛ = List Uₚ
+
+data Elₛ : Uₛ → Set where
+  here  : ∀ {a A} → Elₚ a → Elₛ (a ∷ A)
+  there : ∀ {a A} → Elₛ A → Elₛ (a ∷ A)
 
 ⊥ₛ : Uₛ
 ⊥ₛ = []
@@ -139,13 +166,9 @@ unpairₛ {a ∷ A}{B} x = either (eitherₛ {a *ₚₛ B} {A *ₛ B} x)
 -- Closure under Σ
 --------------------------------------------------------------------------------
 
-postulate
-  -- TODO: make this compute
-  generative : ∀ {A} → (f : Elₚ A → Uₛ) → ∀ x y → f x ≡ f y
-
-loopₚ : ∀ {A} → Elₚ A
-loopₚ {[]}    = []
-loopₚ {a ∷ A} = loop∘ ∷ loopₚ
+-- POSTULATE
+generative : ∀ {A} → (f : Elₚ A → Uₛ) → ∀ x y → f x ≡ f y
+generative f x y = primTrustMe
 
 Σₛ : (A : Uₛ) → (Elₛ A → Uₛ) → Uₛ
 Σₛ []      B = []
@@ -271,28 +294,27 @@ instance
   IsSOP.p (↑SOP {A}) (here (x ∷ [])) = refl
   IsSOP.q (↑SOP {A}) x = refl
 
-
--- This is not an instance because usually we only want the vanilla × instance instead,
+-- This is not an instance because usually we only want the vanilla _×_ instance instead,
 -- and this one would overlap with it.
-ΣSOP : ∀ {A}{B : A → Set}⦃ _ : IsSOP A ⦄ ⦃ _ : ∀ {x} → IsSOP (B x) ⦄ → IsSOP (Σ A B)
-IsSOP.Rep (ΣSOP {A} {B}) = Σₛ (Rep {A}) (λ x → Rep {B (decode x)})
-IsSOP.encode (ΣSOP {A} {B} ⦃ sopA ⦄ ⦃ sopB ⦄) (x , y) =
+SOPΣ : ∀ {A}{B : A → Set}⦃ _ : IsSOP A ⦄ ⦃ _ : ∀ {x} → IsSOP (B x) ⦄ → IsSOP (Σ A B)
+IsSOP.Rep (SOPΣ {A} {B}) = Σₛ (Rep {A}) (λ x → Rep {B (decode x)})
+IsSOP.encode (SOPΣ {A} {B} ⦃ sopA ⦄ ⦃ sopB ⦄) (x , y) =
 
   pairΣₛ (encode x)
          (tr (λ x → Elₛ (IsSOP.Rep (sopB {x}))) (IsSOP.q sopA x ⁻¹) (encode y))
 
-IsSOP.decode (ΣSOP {A} {B} ⦃ sopA ⦄ ⦃ sopB ⦄) x =
+IsSOP.decode (SOPΣ {A} {B} ⦃ sopA ⦄ ⦃ sopB ⦄) x =
   case× (unpairΣₛ {Rep{A}}{λ x → Rep{B (decode x)}} x)
   λ x y → decode x , decode y
 
-IsSOP.p (ΣSOP {A} {B} ⦃ sopA ⦄ ⦃ sopB ⦄) x
+IsSOP.p (SOPΣ {A} {B} ⦃ sopA ⦄ ⦃ sopB ⦄) x
   rewrite IsSOP.p sopB (₂ (unpairΣₛ {Rep{A}}{λ x → Rep{B (decode x)}} x))
   | UIP (IsSOP.q sopA (IsSOP.decode sopA (₁ (unpairΣₛ x))) ⁻¹)
          (ap (IsSOP.decode sopA) ((IsSOP.p sopA (₁ (unpairΣₛ x))) ⁻¹))
   with (IsSOP.encode sopA (IsSOP.decode sopA (₁ (unpairΣₛ x)))) | IsSOP.p sopA (₁ (unpairΣₛ x))
 ... | _ | refl = Σₛη {Rep{A}} {λ x → Rep{B (decode x)}} x
 
-IsSOP.q (ΣSOP {A} {B} ⦃ sopA ⦄ ⦃ sopB ⦄) (x , y)
+IsSOP.q (SOPΣ {A} {B} ⦃ sopA ⦄ ⦃ sopB ⦄) (x , y)
   rewrite
       Σₛβ {Rep{A}}{λ x → Rep{B (decode x)}} (IsSOP.encode sopA x)
       (tr (λ x → Elₛ (IsSOP.Rep (sopB {x}))) (IsSOP.q sopA x ⁻¹) (IsSOP.encode sopB y))

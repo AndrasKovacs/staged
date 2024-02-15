@@ -9,8 +9,18 @@ open import Relation.Binary.PropositionalEquality
   public
 open import Data.Product hiding (_<*>_; map; zip) renaming (proj₁ to ₁; proj₂ to ₂) public
 open import Function public
-open import Data.List hiding (tabulate) public
+open import Data.List hiding (tabulate; take; drop; foldr; foldl; zip; concatMap; filter) public
 open import Data.Empty public
+open import Data.Nat using (ℕ; zero; suc) public
+
+record Number {a} (A : Set a) : Set a where
+  field fromNat : ℕ → A
+open Number ⦃...⦄ public
+{-# BUILTIN FROMNAT fromNat #-}
+
+instance
+  Numℕ : Number ℕ
+  Number.fromNat Numℕ x = x
 
 record ⊤ : Set where
   constructor tt
@@ -38,35 +48,63 @@ coe refl x = x
 UIP : ∀ {A : Set}{x y : A}(p q : x ≡ y) → p ≡ q
 UIP refl refl = refl
 
-data ℕ : Set where
+record Semigroup (A : Set) : Set where
+  field
+    _<>_ : A → A → A
+  infixr 6 _<>_
+open Semigroup ⦃...⦄ public
+
+record Monoid (A : Set) : Set where
+  field
+    mempty : A
+    {{ semigroupA }} : Semigroup A
+open Monoid ⦃...⦄ public
+
+record Applicative (F : Set → Set) : Set where
+  field
+    pure  : ∀ {A} → A → F A
+    _<*>_ : ∀ {A B} → F (A → B) → F A → F B
+
+  infixl 4 _<$>_ _<*>_
+
+  _<$>_ : ∀ {A B} → (A → B) → F A → F B
+  f <$> fa = pure f <*> fa
+
+  infixl 1 _<&>_
+  _<&>_ : ∀ {A B} → F A → (A → B) → F B
+  fa <&> f = f <$> fa
+
+open Applicative ⦃...⦄ public
 
 record Monad (M : Set → Set) : Set where
   field
-    return : ∀ {A} → A → M A
     _>>=_  : ∀ {A B} → M A → (A → M B) → M B
+    {{ applicativeM }} : Applicative M
   infixl 1 _>>=_ _>>_
 
   _>>_ : ∀ {A B} → M A → M B → M B
   _>>_ ma mb = ma >>= λ _ → mb
 
-  infixl 4 _<$>_ _<*>_
-  _<$>_ : ∀ {A B} → (A → B) → M A → M B
-  f <$> ma = ma >>= λ a → return (f a)
-
-  _<*>_ : ∀ {A B} → M (A → B) → M A → M B
-  mf <*> ma = mf >>= λ f → ma >>= λ a → return (f a)
-
 open Monad ⦃...⦄ public
 
 instance
+  ApplicativeMaybe : Applicative Maybe
+  Applicative.pure ApplicativeMaybe = just
+  (ApplicativeMaybe Applicative.<*> just f) (just a) = just (f a)
+  (ApplicativeMaybe Applicative.<*> _) _ = nothing
+
   MonadMaybe : Monad Maybe
-  Monad.return MonadMaybe = just
   (MonadMaybe Monad.>>= nothing) f = nothing
   (MonadMaybe Monad.>>= just x)  f = f x
 
 instance
+  ApplicativeEither : ∀ {A} → Applicative (Either A)
+  Applicative.pure ApplicativeEither = right
+  Applicative._<*>_ ApplicativeEither (right f) (right a) = right (f a)
+  Applicative._<*>_ ApplicativeEither (left e) _ = left e
+  Applicative._<*>_ ApplicativeEither _ (left e) = left e
+
   MonadEither : ∀ {A} → Monad (Either A)
-  Monad.return MonadEither = right
   (MonadEither Monad.>>= left x) f = left x
   (MonadEither Monad.>>= right y) f = f y
 
@@ -83,10 +121,13 @@ record MonadTrans (T : (Set → Set) → Set → Set) : Set where
 open MonadTrans ⦃...⦄ public
 
 instance
+  AMaybeT : ∀ {M : Set → Set} ⦃ _ : Applicative M ⦄ → Applicative (MaybeT M)
+  Applicative.pure AMaybeT a = maybeT (pure (just a))
+  Applicative._<*>_ AMaybeT mf ma = maybeT (_<*>_ <$> runMaybeT mf <*> runMaybeT ma)
+
   MMaybeT : ∀ {M : Set → Set} ⦃ _ : Monad M ⦄ → Monad (MaybeT M)
-  Monad.return MMaybeT a   = maybeT (return (just a))
   Monad._>>=_ MMaybeT ma f = maybeT do x ← runMaybeT ma; case x of λ where
-    nothing  → return nothing
+    nothing  → pure nothing
     (just x) → runMaybeT (f x)
 
 instance
@@ -100,8 +141,11 @@ record Identity (A : Set) : Set where
 open Identity public
 
 instance
+  AIdentity : Applicative Identity
+  Applicative.pure AIdentity = identity
+  Applicative._<*>_ AIdentity (identity f) (identity a) = identity (f a)
+
   MonadIdentity : Monad Identity
-  Monad.return MonadIdentity = identity
   Monad._>>=_ MonadIdentity (identity a) f = f a
 
 record ReaderT (R : Set)(M : Set → Set)(A : Set) : Set where
@@ -111,8 +155,11 @@ record ReaderT (R : Set)(M : Set → Set)(A : Set) : Set where
 open ReaderT public
 
 instance
+  AReaderT : ∀{R M}⦃ _ : Applicative M ⦄ → Applicative (ReaderT R M)
+  Applicative.pure AReaderT a = readerT λ _ → pure a
+  Applicative._<*>_ AReaderT mf ma = readerT λ r → runReaderT mf r <*> runReaderT ma r
+
   MonadReaderT : ∀{R M}⦃ _ : Monad  M ⦄ → Monad (ReaderT R M)
-  Monad.return MonadReaderT a             = readerT λ _ → return a
   Monad._>>=_ MonadReaderT (readerT ma) f = readerT λ r → ma r >>= λ a → runReaderT (f a) r
 
 instance
@@ -126,13 +173,17 @@ record StateT (S : Set)(M : Set → Set)(A : Set) : Set where
 open StateT
 
 instance
+  AStateT : ∀ {S M}⦃ _ : Monad M ⦄ → Applicative (StateT S M)
+  Applicative.pure AStateT a = stateT λ s → pure (a , s)
+  Applicative._<*>_ AStateT mf ma = stateT λ s → do
+    f , s ← runStateT mf s; a , s ← runStateT ma s; pure (f a , s)
+
   MonadStateT : ∀ {S M}⦃ _ : Monad M ⦄ → Monad (StateT S M)
-  Monad.return MonadStateT a = stateT λ s → return (a , s)
   Monad._>>=_ MonadStateT (stateT ma) f = stateT λ s → do a , s ← ma s; runStateT (f a) s
 
 instance
   MTStateT : ∀ {S} → MonadTrans (StateT S)
-  MonadTrans.lift MTStateT ma = stateT λ s → do a ← ma; return (a , s)
+  MonadTrans.lift MTStateT ma = stateT λ s → do a ← ma; pure (a , s)
 
 record MonadReader (R : Set)(M : Set → Set) : Set where
   field
@@ -156,7 +207,7 @@ Reader R A = ReaderT R Identity A
 
 instance
   ReaderReaderT : ∀ {M R}⦃ _ : Monad M ⦄ → MonadReader R (ReaderT R M)
-  MonadReader.ask ReaderReaderT = readerT λ r → return r
+  MonadReader.ask ReaderReaderT = readerT λ r → pure r
   MonadReader.local ReaderReaderT f (readerT ma) = readerT λ r → ma (f r)
 
   ReaderStateT : ∀ {S M R}⦃ _ : MonadReader R M ⦄ → MonadReader R (StateT S M)

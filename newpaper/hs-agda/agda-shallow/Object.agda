@@ -2,6 +2,7 @@
 module Object where
 
 open import Data.Nat
+open import Lib
 
 infixr 3 _⇒_
 
@@ -19,10 +20,11 @@ postulate
 ↑V = λ A → ↑ (V A)
 
 infixl 8 _∙_
-infixl 5 _+∘_
+infixl 5 _+∘_ _-∘_
 infixl 6 _*∘_
-infix 4 _==_
-infixr 4 _×∘_
+infix 4 _==∘_ _<∘_
+infixr 4 _×∘_ _×C_
+infixr 4 _,∘_ _,C_
 
 postulate
   Let    : ∀ {A B} → ↑ A → (↑ A → ↑ B) → ↑ B
@@ -45,17 +47,24 @@ postulate
   false∘ : ↑V Bool∘
   caseBool∘ : ∀ {A} → ↑V Bool∘ → ↑ A → ↑ A → ↑ A
 
-  ℕ∘   : VTy
-  lit  : ℕ → ↑V ℕ∘
-  _+∘_ : ↑V ℕ∘ → ↑V ℕ∘ → ↑V ℕ∘
-  _*∘_ : ↑V ℕ∘ → ↑V ℕ∘ → ↑V ℕ∘
-  _==_ : ↑V ℕ∘ → ↑V ℕ∘ → ↑V Bool∘
+  ℕ∘    : VTy
+  lit∘  : ℕ → ↑V ℕ∘
+  _+∘_  : ↑V ℕ∘ → ↑V ℕ∘ → ↑V ℕ∘
+  _*∘_  : ↑V ℕ∘ → ↑V ℕ∘ → ↑V ℕ∘
+  _-∘_  : ↑V ℕ∘ → ↑V ℕ∘ → ↑V ℕ∘
+  _==∘_ : ↑V ℕ∘ → ↑V ℕ∘ → ↑V Bool∘
+  _<∘_  : ↑V ℕ∘ → ↑V ℕ∘ → ↑V Bool∘
 
   _×∘_   : VTy → VTy → VTy
   _,∘_   : ∀ {A B} → ↑V A → ↑V B → ↑V (A ×∘ B)
   case×∘ : ∀ {A B C} → ↑V (A ×∘ B) → (↑V A → ↑V B → ↑ C) → ↑ C
-  fst∘   : ∀ {A B} → ↑V (A ×∘ B) → ↑V A
-  snd∘   : ∀ {A B} → ↑V (A ×∘ B) → ↑V B
+
+  _×C_ : CTy → CTy → CTy
+  _,C_ : ∀ {A B} → ↑C A → ↑C B → ↑C (A ×C B)
+  fst∘ : ∀ {A B} → ↑C (A ×C B) → ↑C A
+  snd∘ : ∀ {A B} → ↑C (A ×C B) → ↑C B
+  ⊤C   : CTy
+  ttC  : ↑C ⊤C
 
   List∘     : VTy → VTy
   nil∘      : ∀ {A} → ↑V (List∘ A)
@@ -78,6 +87,24 @@ postulate
   identity∘    : ∀ {A} → ↑V A → ↑ (Identity∘ A)
   runIdentity∘ : ∀ {A} → ↑ (Identity∘ A) → ↑V A
 
-
 loop∘ : ∀ {A} → ↑ A
 loop∘ {A} = LetRec {⊤∘ ⇒ A} (λ f → f) (λ f → f ∙ tt∘)
+
+fieldC1 : ∀ {A B} → ↑C (A ×C B) → ↑C A
+fieldC1 x = fst∘ x
+
+fieldC2 : ∀ {A B C} → ↑C (A ×C B ×C C) → ↑C B
+fieldC2 x = fst∘ (snd∘ x)
+
+fieldC3 : ∀ {A B C D} → ↑C (A ×C B ×C C ×C D) → ↑C C
+fieldC3 x = fst∘ (snd∘ (snd∘ x))
+
+fieldC4 : ∀ {A B C D E} → ↑C (A ×C B ×C C ×C D ×C E) → ↑C D
+fieldC4 x = fst∘ (snd∘ (snd∘ (snd∘ x)))
+
+fieldC5 : ∀ {A B C D E F} → ↑C (A ×C B ×C C ×C D ×C E ×C F) → ↑C E
+fieldC5 x = fst∘ (snd∘ (snd∘ (snd∘ (snd∘ x))))
+
+instance
+  Numℕ∘ : Number (↑V ℕ∘)
+  Number.fromNat Numℕ∘ x = lit∘ x

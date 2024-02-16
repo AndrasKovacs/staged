@@ -19,6 +19,12 @@ loopₚ : ∀ {A} → Elₚ A
 loopₚ {[]}    = []
 loopₚ {a ∷ A} = loop∘ ∷ loopₚ
 
+headₚ : ∀ {A B} → Elₚ (A ∷ B) → ↑V A
+headₚ (x ∷ _) = x
+
+tailₚ : ∀ {A B} → Elₚ (A ∷ B) → Elₚ B
+tailₚ (_ ∷ xs) = xs
+
 ⊤ₚ : Uₚ
 ⊤ₚ = []
 

@@ -169,7 +169,7 @@ record StateT (S : Set)(M : Set → Set)(A : Set) : Set where
   constructor stateT
   field
     runStateT : S → M (A × S)
-open StateT
+open StateT public
 
 instance
   AStateT : ∀ {S M}⦃ _ : Monad M ⦄ → Applicative (StateT S M)

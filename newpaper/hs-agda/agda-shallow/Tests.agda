@@ -9,6 +9,7 @@ open import Join
 open import Split
 open import SOP
 open import Improve
+open import MonadTailRec
 
 --------------------------------------------------------------------------------
 
@@ -106,19 +107,23 @@ test9 = Λ λ x → down $
       false → fail)
     (modify' (_+∘_ 11))
 
--- recursive Monadic function on a list
--- Loses some efficiency because it could be tail recursive, but this version isn't
--- (tests the final (up (rec ∙ ns)) call for nothing!)
+-- Monadic tail recursion on lists
 test10 : ↑C (List∘ ℕ∘ ⇒ StateT∘ ℕ∘ (MaybeT∘ Identity∘) ⊤∘)
-test10 = LetRec _
-  (λ rec → Λ λ ns → down do
-    case' ns λ where
-      nil         → pure tt∘
-      (cons n ns) → case' (n ==∘ 10) λ where
-        true  → fail
-        false → do modify (_+∘_ 20); up (rec ∙ ns)
-  )
-  id
+test10 = downRecM λ ns → case' ns λ where
+  nil         → pure $ exit tt∘
+  (cons n ns) → case' (n ==∘ 10) λ where
+    true  → fail
+    false → do modify' (_+∘_ 20); pure $ call ns
 
--- TODO: monadic tailrec!
---------------------------------------------------------------------------------
+-- Non-tail recursion on lists
+test11 : ↑C (List∘ ℕ∘ ⇒ StateT∘ ℕ∘ (MaybeT∘ Identity∘) (List∘ ℕ∘))
+test11 = DefRec λ rec → Λ λ ns → down do
+  case' ns λ where
+    nil         → pure nil∘
+    (cons n ns) → do
+      ns ← up (rec ∙ ns)
+      case' (n ==∘ 10) λ where
+        true  → fail
+        false → do
+          modify' (_*∘ 10)
+          pure $ cons∘ (n +∘ 1) ns

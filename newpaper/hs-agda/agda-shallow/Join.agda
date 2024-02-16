@@ -34,7 +34,6 @@ genLetPC (x ∷ xs) = _∷_ <$> genLet x <*> genLetPC xs
 
 record MonadJoin (M : Set → Set) : Set₁ where
   field
-    ⦃ monadM ⦄ : Monad M
     join : ∀ {A} ⦃ _ : IsSOP A ⦄ → M A → M A
 open MonadJoin ⦃...⦄ public
 

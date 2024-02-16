@@ -16,6 +16,10 @@ postulate
   CTy : Set
   C   : CTy → Ty
 
+{-# INJECTIVE ↑ #-}
+{-# INJECTIVE V #-}
+{-# INJECTIVE C #-}
+
 ↑C = λ A → ↑ (C A)
 ↑V = λ A → ↑ (V A)
 
@@ -107,6 +111,10 @@ fieldC4 x = fst∘ (snd∘ (snd∘ (snd∘ x)))
 
 fieldC5 : ∀ {A B C D E F} → ↑C (A ×C B ×C C ×C D ×C E ×C F) → ↑C E
 fieldC5 x = fst∘ (snd∘ (snd∘ (snd∘ (snd∘ x))))
+
+↓Bool : Bool → ↑V Bool∘
+↓Bool true = true∘
+↓Bool false = false∘
 
 instance
   Numℕ∘ : Number (↑V ℕ∘)

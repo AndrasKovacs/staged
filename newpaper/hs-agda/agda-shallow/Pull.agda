@@ -1,4 +1,3 @@
-{-# OPTIONS --type-in-type #-} -- Because Pull : Set → Set₁ is annoying
 
 module Pull where
 
@@ -14,6 +13,9 @@ data Step (S A : Set) : Set where
   skip  : S → Step S A
   yield : A → S → Step S A
 
+-- Pull can be equivalently written using St : Uₛ instead, which yields Pull A : Set₀, but
+-- St : Set is just more convenient to use in Agda.
+{-# NO_UNIVERSE_CHECK #-}
 record Pull (A : Set) : Set where
   constructor pull
   field
@@ -115,7 +117,7 @@ count = countFrom (lit∘ 0)
 take : ∀ {A} → ↑V ℕ∘ → Pull A → Pull A
 St    (take n as) = ↑V ℕ∘ × St as
 seed  (take n as) = n , seed as
-step  (take n as) (i , s) = case' (i ==∘ lit∘ 0) λ where
+step  (take n as) (i , s) = caseM (i ==∘ lit∘ 0) λ where
   true  → pure stop
   false → step as s <&> λ where
     stop        → stop
@@ -125,7 +127,7 @@ step  (take n as) (i , s) = case' (i ==∘ lit∘ 0) λ where
 drop : ∀ {A} → ↑V ℕ∘ → Pull A → Pull A
 St   (drop n as) = Either (↑V ℕ∘) (St as)
 seed (drop n as) = left n
-step (drop n as) (left i)  = case' (i ==∘ lit∘ 0) λ where
+step (drop n as) (left i)  = caseM (i ==∘ lit∘ 0) λ where
   true  → pure $ skip $ right (seed as)
   false → pure $ skip $ left (i -∘ lit∘ 1)
 step (drop n as) (right s) = step as s <&> λ where

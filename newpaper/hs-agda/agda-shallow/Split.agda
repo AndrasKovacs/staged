@@ -13,8 +13,8 @@ record Split (A : VTy) : Set₁ where
   split : ∀ {M}⦃ _ : MonadGen M ⦄ → ↑V A → M SplitTo
   split a = liftGen (splitGen a)
 
-  case' : ∀ {M B}⦃ _ : MonadGen M ⦄ → ↑V A → (SplitTo → M B) → M B
-  case' a f = do x ← split a; f x
+  caseM : ∀ {M B}⦃ _ : MonadGen M ⦄ → ↑V A → (SplitTo → M B) → M B
+  caseM a f = do x ← split a; f x
 open Split ⦃...⦄ public
 
 data SplitListTy (A : VTy) : Set where

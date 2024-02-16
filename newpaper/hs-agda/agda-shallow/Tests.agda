@@ -13,6 +13,21 @@ open import MonadTailRec
 
 --------------------------------------------------------------------------------
 
+-- Comment this in for streamlined printing:
+
+{-# DISPLAY stateT∘ x = x #-}
+{-# DISPLAY maybeT∘ x = x #-}
+{-# DISPLAY identity∘ x = x #-}
+{-# DISPLAY runIdentity∘ x = x #-}
+{-# DISPLAY runMaybeT∘ x = x #-}
+{-# DISPLAY runStateT∘ x = x #-}
+{-# DISPLAY _∙_ f x = f x #-}
+{-# DISPLAY lit∘ x = x #-}
+{-# DISPLAY C x = x #-}
+{-# DISPLAY V x = x #-}
+
+--------------------------------------------------------------------------------
+
 
 test1 : Pull (↑V ℕ∘)
 test1 = single 10 <> single 20
@@ -66,32 +81,32 @@ test6 = forEach (take 20 count) λ x →
 -- everything gets inlined in case branches.
 test7 : ↑C (ℕ∘ ⇒ StateT∘ ℕ∘ (MaybeT∘ Identity∘) ⊤∘)
 test7 = Λ λ x → down do
-  case' (x ==∘ 10) λ where
+  caseM (x ==∘ 10) λ where
     true  → modify' (_+∘_ 10)
     false → modify' (_+∘_ 20)
-  case' (x ==∘ 10) λ where
+  caseM (x ==∘ 10) λ where
     true  → modify' (_+∘_ 10)
     false → modify' (_+∘_ 20)
-  case' (x ==∘ 10) λ where
+  caseM (x ==∘ 10) λ where
     true  → modify' (_+∘_ 10)
     false → modify' (_+∘_ 20)
-  case' (x ==∘ 10) λ where
+  caseM (x ==∘ 10) λ where
     true  → modify' (_+∘_ 10)
     false → modify' (_+∘_ 20)
 
 -- Code size is linear.
 test8 : ↑C (ℕ∘ ⇒ StateT∘ ℕ∘ (MaybeT∘ Identity∘) ⊤∘)
 test8 = Λ λ x → down do
-  join $ case' (x ==∘ 10) λ where
+  join $ caseM (x ==∘ 10) λ where
     true  → modify' (_+∘_ 10)
     false → modify' (_+∘_ 20)
-  join $ case' (x ==∘ 10) λ where
+  join $ caseM (x ==∘ 10) λ where
     true  → modify' (_+∘_ 10)
     false → modify' (_+∘_ 20)
-  join $ case' (x ==∘ 10) λ where
+  join $ caseM (x ==∘ 10) λ where
     true  → modify' (_+∘_ 10)
     false → modify' (_+∘_ 20)
-  case' (x ==∘ 10) λ where
+  caseM (x ==∘ 10) λ where
     true  → modify' (_+∘_ 10)
     false → modify' (_+∘_ 20)
 
@@ -99,31 +114,67 @@ test8 = Λ λ x → down do
 test9 : ↑C (ℕ∘ ⇒ StateT∘ ℕ∘ (MaybeT∘ Identity∘) ⊤∘)
 test9 = Λ λ x → down $
   catch (do
-    join $ case' (x ==∘ 10) λ where
+    join $ caseM (x ==∘ 10) λ where
       true  → modify' (_+∘_ 10)
       false → fail
-    case' (x ==∘ 15) λ where
+    caseM (x ==∘ 15) λ where
       true  → modify' (_+∘_ 10)
       false → fail)
     (modify' (_+∘_ 11))
 
 -- Monadic tail recursion on lists
 test10 : ↑C (List∘ ℕ∘ ⇒ StateT∘ ℕ∘ (MaybeT∘ Identity∘) ⊤∘)
-test10 = downRecM λ ns → case' ns λ where
-  nil         → pure $ exit tt∘
-  (cons n ns) → case' (n ==∘ 10) λ where
-    true  → fail
-    false → do modify' (_+∘_ 20); pure $ call ns
+test10 = DefRec λ rec → Λ λ ns → downTC do
+  caseM ns λ where
+    nil         → ret tt∘
+    (cons n ns) → caseM (n ==∘ 10) λ where
+      true  → fail
+      false → do modify' (_+∘_ 20); tailcall1 rec ns
+
+-- Same but with less-efficient non-tail call
+test10' : ↑C (List∘ ℕ∘ ⇒ StateT∘ ℕ∘ (MaybeT∘ Identity∘) ⊤∘)
+test10' = DefRec λ rec → Λ λ ns → down do
+  caseM ns λ where
+    nil         → pure tt∘
+    (cons n ns) → caseM (n ==∘ 10) λ where
+      true  → fail
+      false → do modify' (_+∘_ 20); up $ rec ∙ ns
 
 -- Non-tail recursion on lists
 test11 : ↑C (List∘ ℕ∘ ⇒ StateT∘ ℕ∘ (MaybeT∘ Identity∘) (List∘ ℕ∘))
 test11 = DefRec λ rec → Λ λ ns → down do
-  case' ns λ where
+  caseM ns λ where
     nil         → pure nil∘
     (cons n ns) → do
       ns ← up (rec ∙ ns)
-      case' (n ==∘ 10) λ where
+      caseM (n ==∘ 10) λ where
         true  → fail
         false → do
           modify' (_*∘ 10)
           pure $ cons∘ (n +∘ 1) ns
+
+filterM : ∀ {F M A}⦃ _ : Improve F M ⦄ → (↑V A → M Bool) → ↑C (List∘ A ⇒ F (List∘ A))
+filterM f = DefRec λ rec → Λ λ as → down $ caseM as λ where
+  nil         → pure nil∘
+  (cons a as) → do
+    as ← up $ rec ∙ as
+    f a >>= λ where
+      true  → pure (cons∘ a as)
+      false → pure as
+
+-- Interesting!
+filterM' : ∀ {F M A}⦃ _ : Improve F M ⦄ → (↑V A → M Bool) → ↑C (List∘ A ⇒ F (List∘ A))
+filterM' f = DefRec λ rec → Λ λ as → down $ caseM as λ where
+  nil         → pure nil∘
+  (cons a as) → (λ {true as → cons∘ a as; false as → as}) <$> f a <*> up (rec ∙ as)
+
+myfilter : ↑C (List∘ ℕ∘ ⇒ MaybeT∘ Identity∘ (List∘ ℕ∘))
+myfilter = filterM λ n → caseM (n ==∘ 10) λ where
+  true  → pure false
+  false → caseM (n ==∘ 0) λ where
+    true  → fail
+    false → pure true
+
+
+
+--------------------------------------------------------------------------------

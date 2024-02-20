@@ -1231,9 +1231,9 @@ as a result value.
 \end{alignat*}
 
 Now, whenever the return value of a $\mbf{case}$-splitting action is a sum of
-values (this includes just returning an object value, which is by far the most
-common situation), we can use $\join \dlr \case \vx\,\of ...$ to eliminate code
-duplication, without creating runtime sum types.
+products of values (this includes just returning an object value, which is by
+far the most common situation), we can use $\join \dlr \case \vx\,\of ...$ to
+eliminate code duplication, without creating runtime sum types.
 
 \todo{bigger example, non-tail-recursive list function with some effects, input, output, mentioned tail rec}
 
@@ -1366,7 +1366,7 @@ are stopping ($\Stop$), transitioning to a new state while outputting a value
 ($\Yield$) and making a silent transition to a new state ($\Skip$).
 
 Let us see some operations on streams now. First, $\Pull$ is a ``zippy''
-applicative functor, where $\pure$ infinitely repeats a value and $(\!\ap\!)$
+applicative functor, where $\mit{pure}$ infinitely repeats a value and $({\ap})$
 applies a stream of functions to a stream of values, pointwise.
 \begin{alignat*}{3}
   &\mit{pure} : \vA \to \Pull\,\vA\\
@@ -1385,7 +1385,7 @@ applies a stream of functions to a stream of values, pointwise.
 \end{alignat*}
 In $\mit{pure}$, the state is the unit type, while in $(\!\ap\!)$ we take the
 product of the stream states and do synchronous transitions. In both
-definitions, the $\IsSOP\,S$ constraint is implicitly dispatched by instance
+definitions, the $\IsSOP\,\vS$ constraint is implicitly dispatched by instance
 resolution; this works in the Agda and Haskell versions too. We can derive the
 usual $\mit{zip}$ and $\mit{zipWith}$ operations from $(\!\ap\!)$. $\Pull$
 is also a monoid with stream appending as the binary operation.
@@ -1406,7 +1406,7 @@ is also a monoid with stream appending as the binary operation.
 These definitions are standard for streams; note though that compared to the
 unstaged definitions in previous literature, the only additional noise is just
 the $\Gen$ monad in the transitions. Likewise, we can give standard definitions
-for the usual stream functions such as $\msf{filter}$, $\msf{take}$ or
+for usual stream functions such as $\msf{filter}$, $\msf{take}$ or
 $\msf{drop}$.
 
 \subsection{Running Streams with Mutual Recursion}
@@ -1418,7 +1418,7 @@ treatment of join points, we tabulate the $\vS \to \Gen\,\Step\,\vS\,\vA$
 transition function to a product of functions. However, these functions need to
 be \emph{mutually recursive}, since it is possible to transition from any state
 to any other state, and each such transition is represented as a function call.
-The problem of generating well-typed mutual blocks was addressed by Yallop and
+This problem of generating well-typed mutual blocks was addressed by Yallop and
 Kiselyov in \cite{TODO}. Unlike ibid., which used control effects and mutable
 references in MetaOCaml, we present a solution that does not use side effects
 in the metalanguage.
@@ -1478,15 +1478,15 @@ the compiler to eliminate the intermediate closures \cite{TODO}.
 
 We saw that $\Pull$ is $\Applicative$, but what about having a list-like
 $\Monad$ instance as well, with singleton streams for $\return$ and $\concatMap$
-for binding? This is not possible. If we have
+for binding? This is not possible. Aiming at
 \[ \concatMap : (\vA \to \Pull\,\vB) \to \Pull\,\vA \to \Pull\,\vB, \]
-that means that $\vA \to \Pull\,\vB$ can contain an infinite number of different
-machine state types, which can never be represented in a finite amount of object
+the $\vA \to \Pull\,\vB$ function can contain an infinite number of different
+machine state types, which cannot be represented in a finite amount of object
 code.\footnote{Although in two-level type theories that are not used for
 staging, the representability of countably infinite products of object types is
 sometimes assumed as an axiom; this axiom is called ``cofibrancy of
 $\mathbb{N}$'' \cite{TODO}.} Here by ``infinite'' we mean the notion that is
-internally available in the meta type-theory. For instance, we can define a
+internally available in the meta type theory. For instance, we can define a
 $\Nat_\M \to \Pull\,\vB$ function which for each $\vn : \Nat_\M$ produces a
 concatenation of $\vn$ streams. Hence, we shall have the following function
 instead:
@@ -1495,12 +1495,12 @@ The idea is the following: if $\USOP$ is closed under dependent sum types, we
 can directly define this $\concatMap$, by taking the appropriate dependent sum
 of the $\vA \to \USOP$ family of machine states, which we extract from the $\vA
 \to \Pull\,\vB$ function. Let us write $\Sigma\,\vA\,\vB : \MTy$ for dependent
-sums, for $\vA : \MTy$ and $\vB : \vA \to \MTy$, and reuse $({,})$ for pairing
-and $\fst$ and $\snd$ for projections. We use the following field projection functions:
-$\mit{projS} : \Pull\,\vA \to \MTy$, $\mit{projSeed} : (\vas : \Pull\,\vA) \to
-\mit{projS}\,\vas$, and $\mit{projStep} : (\vas : \Pull\,\vA) \to
-\mit{projS}\,\vas \to \Gen\,(\Step\,(\mit{projS}\,\vas)\,\vA)$.
-For now, we assume that the following instance exists:
+sums, for $\vA : \MTy$ and $\vB : \vA \to \MTy$, and reuse $({,})$ for pairing.
+We also use the following field projection functions: $\mit{projS} : \Pull\,\vA
+\to \MTy$, $\mit{projSeed} : (\vas : \Pull\,\vA) \to \mit{projS}\,\vas$, and
+$\mit{projStep} : (\vas : \Pull\,\vA) \to \mit{projS}\,\vas \to
+\Gen\,(\Step\,(\mit{projS}\,\vas)\,\vA)$.  For now, we assume that the following
+instance exists:
 \[ \instance (\IsSOP\,\vA,\,\{\va : \vA\} \to \IsSOP\,(\vB\,\va)) \RA \IsSOP\,(\Sigma\,\vA\,\vB) \]
 Above, $\{\va : \vA\} \to \IsSOP\,(\vB\,\va)$ is a universally quantified
 instance constraint; this is available in Agda and, less generally, in Haskell
@@ -1521,7 +1521,7 @@ instance constraint; this is available in Agda and, less generally, in Haskell
 Here, $\Nothing$ marks the states where we are in the ``outer'' loop, trying to
 run the $\Pull\,\vA$ stream until we get the next value. $\Just$ marks the
 states of the ``inner'' loop, where we have a concrete $\va : \vA$ value and
-we run the $\vf\,\va$ stream until it ends. In the inner loop, the machine state
+we run the $(\vf\,\va)$ stream until it stops. In the inner loop, the machine state
 type depends on the $\va : \vA$ value, hence the need for $\Sigma$.
 
 How do we get $\IsSOP$ for $\Sigma$? The key observations are:
@@ -1598,19 +1598,17 @@ Since $\Pull$ is not a monad, it cannot be $\MonadGen$ in our framework,
 but we still support some forms of let-insertion. First, we note that $\Pull$ can be
 mapped over by functions returning in $\Gen$:
 \begin{alignat*}{3}
-  &\hspace{-3em}\mathrlap{\mit{mapGen} : \Pull\,\vA \to (\vA \to \Gen\,\vB) \to \Pull\,\vB }\\
-  &\hspace{-3em}\mathrlap{\mit{mapGen}\,(\Pull\,\vS\,\seed\,\step)\,\vf = \Pull\,\vS\,\seed \dlr \lam \case}\\
+  &\hspace{-3em}\mathrlap{\mit{mapGen} : (\vA \to \Gen\,\vB) \to \Pull\,\vA \to \Pull\,\vB }\\
+  &\hspace{-3em}\mathrlap{\mit{mapGen}\,\vf\,(\Pull\,\vS\,\seed\,\step) = \Pull\,\vS\,\seed \dlr \lam \case}\\
   &\hspace{-3em} \ind \Stop            &&\to \return\,\Stop \\
   &\hspace{-3em} \ind \Skip\,\vs       &&\to \return \dlr \Skip\,\vs\\
   &\hspace{-3em} \ind \Yield\,\va\,\vs &&\to \mdo \{\vb \fro \vf\,\va; \return \dlr \Yield\,\vb\,\vs\}
 \end{alignat*}
-Now, for some $\vas : \Pull\,(\Lift \vA)$, we may use
-\[ \mit{mapGen}\,\vas\,\gen : \Pull\,(\Lift \vA) \]
-to let-bind all yielded expressions in the stream. This can be useful when some
-stream operations duplicate yielded values. For example, the function with type
-$\Pull\,\vA \to \Pull\,(\vA,\,\vA)$ is often used to avoid duplicating whole streams,
-and when $\vA$ is an object type we can use let-insertion in the definition to also
-avoid duplicating object expressions.
+Now, we may use $\mit{mapGen}\,\gen : \Pull\,(\Lift \vA) \to \Pull\,(\Lift \vA)$
+to let-bind all yielded expressions in a stream. This can be useful in stream
+operations that would otherwise duplicate yielded expressions. For example, the
+function with type $\Pull\,(\Lift \vA) \to \Pull\,(\Lift \vA,\,\Lift \vA)$
+should be defined with let-insertion.
 
 Let us now consider a more ``monadic'' style of stream programming. For this we
 need singleton streams:
@@ -1622,7 +1620,7 @@ We also write $\mit{forEach}$ for $\concatMap$ with flipped arguments. Now, a
 more monadic flavor of let-insertion is given as
 \begin{alignat*}{3}
   &\gen_{\Pull} : \Lift \vA \to \Pull\,(\Lift \vA) \\
-  &\gen_{\Pull}\,\va = \mit{mapGen}\,(\mit{single}\,\va)\,\gen.
+  &\gen_{\Pull}\,\va = \mit{mapGen}\,\gen\,(\mit{single}\,\va).
 \end{alignat*}
 We can also implement case splitting on object values. Recall from Section
 \ref{TODO} that for each value type we have a splitting function that returns a
@@ -1667,8 +1665,8 @@ in the machine state.
 
 The Agda implementation follows this section very closely, so we do not detail it.
 
-In the Haskell, there are some limitations. First, in $\concatMap$, the
-projection function $\mit{projS}$ cannot be defined, nbecause Haskell is not
+In Haskell there are some limitations. First, in $\concatMap$, the
+projection function $\mit{projS}$ cannot be defined, because Haskell is not
 dependently typed, and the other field projections are also out of reach. We
 only have a weaker ``positive'' recursion principle for existential types. It
 might be the case that a strongly typed $\concatMap$ is possible with only weak
@@ -1686,176 +1684,9 @@ Also, the generativity axiom is \emph{false} in Template Haskell, since it is
 possible to look inside quoted expressions. Instead, we use type coercions that
 can fail at staging time, when users of the library violate generativity.
 
-\section{TODOS}
-
-\todo{Introduce newtypes accordingly}
-\todo{allow arbitrary parameters (including ValTy -> ValTy functions) for object ADTs}
-\todo{extend as I have more stuff}
-\todo{FIGURE OUT: monadic tailrec}
-\todo{FIGURE OUT: Traversals}
-\todo{DEVELOP: mutual letrec based on computational product types}
 
 
-%% \section{The Object Language}\label{sec:the-object-language}
-
-%% Describe object language. Simple types + first-order fun + fixpoints + ADT-s.
-
-%% Show Agda formalization basically, types and syntax.
-
-%% Show Agda definitional interpreter. Discuss closure-free evaluation
-
-%% Examples, properties. Maybe big-step reduction? Maybe program equivalence?  Look
-%% at Harper PFPL for program equivalence reference.
-
-%% Sketch downstream compilation.
-%% \begin{itemize}
-%% \item Eta-expand function definitions to arity.
-%% \item Turn functions in immediate beta-redexes to let-bindings.
-%% \item Lambda-lift non-tail-called functions to top.
-%% \item Keep only-tail-called local functions as join points.
-%% \end{itemize}
-
-%% Downstream compilation should erase the unit type and implement products as
-%% ``flat'' unboxed structures.
-
-%% Discuss object language design choices.
-%% \begin{itemize}
-%% \item Can be more obviously first-order: e.g.\ no currying, only Val->Val
-%%   functions, or ANF functions. This requires more bureaucracy in
-%%   metaprogramming.
-%% \item Can be more flexible but less obviously first-order: allow function let
-%%   bodies, allow function case bodies. Requires more translation. More convenient
-%%   to program in. In future work.
-%% \end{itemize}
-
-%% \section{The Staged Language}\label{sec:the-staged-language}
-
-%% Don't give horizontal-bar rules.
-
-%% Meta-features:
-%% \begin{itemize}
-%% \item Pi, Sigma, Unit, Bottom, Universes (indices elided), ADT-s. Ind families probably not needed.
-%% \item Agda notation.
-%% \item Type classes informally in Haskell notation?
-%% \end{itemize}
-
-%% Explain staging ops, staging algorithm. Explain object embedding. Refer to 2LTT
-%% paper for correctness.
-
-%% Mention stage annotation inference, but we'll not use it often! To make things
-%% explicit.
-
-%% We should include a generous amount of staging examples, and some traced staging.
-
-%% Basic staging examples: identity, map, power function. Boolean short-circuiting.
-
-%% Basic staged classes, Eq, Ord, Show, Monoid, etc. Vectors with computed length.
-
-%% \section{Programming With Monads}\label{sec:programming-with-monads}
-
-%% \subsection{Basic Binding Time Improvements}\label{sec:basic-binding-time-improvements}
-
-%% Notion.
-%% For functions.
-%% For products.
-%% Note that for products there is a computation duplication problem.
-%% Mention let-insertion.
-
-%% \subsection{The Code Generation Monad}\label{sec:the-code-generation-monad}
-
-%% Is fundamental to this work.
-
-%% Definition. Explanation. Define Functor, Applicative, Monad instances.
-%% Define runGen, runGen1, runGenN etc. Define let-insertion.
-
-%% Basic examples.
-
-%% Explanation in terms of Church-coding.
-
-%% Gen Vector mapping or folding example from 2LTT repo. Without Gen, it's a
-%% big pain to get ideal linear-size map code in N. With Gen it's easy-peasy.
-
-%% \subsection{Monad Transformers}\label{sec:monad-transformers}
-
-%% Identity, ReaderT, StateT, MaybeT, ExceptT
-
-%% Strict versions of put, modify, local, runner functions.
-
-%% MTL-style overloading. MonadReader, MonadState, MonadError, MonadGen, liftGen
-
-%% Binding time improvement for monads. Up/down overloading.
-
-%% \subsection{Case Splitting in MonadGen}\label{sec:case-splitting-in-monadgen}
-
-%% It works for any object ADT.
-
-%% Introduce sums-of-values (SOV).
-
-%% Introduce syntax sugar for object case splits in MonadGen blocks.
-
-%% Basic examples.
-
-%% \subsection{Joining Control Flow}\label{sec:rejoining-control-flow}
-
-%% The problem of join points. Motivation in terms of MaybeT Gen.
-
-%% We can let-bind computations by tripping through up/down of monads,
-%% but that introduces unbox/rebox cost for Maybe \& Either.
-
-%% Works OK for Reader/State though.
-
-%% \begin{verbatim}
-%% f : Bool -> MaybeT0 Gen ^Int
-%% f = \b. ~(down do
-%%   x <- case <b> of
-%%     True  -> gen <10>
-%%     False -> gen <20>
-%%   y <- gen <~x + 10>
-%%   z <- gen <~x * 10>
-%%   pure <~x + ~y + ~z>)
-%% \end{verbatim}
-
-%% Join points using SOV-s. Description of SOV machinery. MonadJoin.
-%% instance MonadJoin Gen. MonadJoin MaybeT.
-
-%% \subsection{Monadic Tail Recursion}\label{sec:monadic-tail-recursion}
-
-%% \texttt{replicateM\_}, \texttt{find} functions working in ``any'' monad.
-%% Non-tail recursion is not possible to fuse, return addresses are dynamic.
-%% Tail recursion can return to statically known points.
-
-%% \subsection{Discussion}
-
-%% Limitations. We can't put non-value actions into structures, can't accumulate them.
-
-%% Guarantees/properties. Closure-freedom. No administrative redexes. No boxing in join points.
-%% Only boxing in monadic code comes from ``down''. No code blowup.
-
-%% \section{Fusion}\label{sec:push-pull-fusion}
-
-%% Motivation.
-
-
-%% \subsection{Push streams}\label{sec:push-streams}
-
-%% Definition.
-
-%% \subsection{Pull streams}\label{sec:pull-streams}
-
-%% Pull streams are definitely not monadic. \texttt{Nat -> Stream a} contains
-%% ``infinite'' amount of code internally.
-
-%% Pull streams are also not selective functors.
-
-%% We do have monadic binding for lifted types, plus ``case'' matching
-%% on arbitrary object values! This is practically almost as good as
-%% having unlimited monadic bind! We need to assume a ``non-dependency axiom'',
-%% that any $f : \Lift A \to \msf{ValTy}$ must be constant.
-
-%% \todo{Validate non-dependency in the psh model!}
-%% \todo{Add meta-identity type to the psh model}
-
-\interlinepenalty=10000
+%% \interlinepenalty=10000
 \bibliography{references}
 
 \end{document}

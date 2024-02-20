@@ -1,5 +1,5 @@
 
-module Pull where
+module PullGenSeed where
 
 open import Lib
 open import Object
@@ -21,7 +21,7 @@ record Pull (A : Set) : Set where
   field
     St        : Set
     {{StSOP}} : IsSOP St
-    seed      : St
+    seed      : Gen St
     step      : St → Gen (Step St A)
 open Pull public
 
@@ -30,12 +30,12 @@ getStRep (pull _ {{StSOP}} _ _) = IsSOP.Rep StSOP
 
 repeat : ∀ {A} → A → Pull A
 St    (repeat a)   = ⊤
-seed  (repeat a)   = tt
+seed  (repeat a)   = pure tt
 step  (repeat a) _ = pure $ yield a tt
 
 applyPull : ∀ {A B} → Pull (A → B) → Pull A → Pull B
 St   (applyPull fs as) = St fs × St as
-seed (applyPull fs as) = (seed fs , seed as)
+seed (applyPull fs as) = _,_ <$> seed fs <*> seed as
 step (applyPull fs as) (s , s') =
   step fs s >>= λ where
     stop        → pure stop
@@ -47,17 +47,17 @@ step (applyPull fs as) (s , s') =
 
 emptyPull : ∀ {A} → Pull A
 St   emptyPull   = ⊤
-seed emptyPull   = tt
+seed emptyPull   = pure tt
 step emptyPull _ = pure stop
 
 appendPull : ∀ {A} → Pull A → Pull A → Pull A
 St    (appendPull as as') = Either (St as) (St as')
-seed  (appendPull as as') = left (seed as)
+seed  (appendPull as as') = left <$> seed as
 step  (appendPull as as') (left s)  =
-  step as s <&> λ where
-    stop        → skip (right (seed as'))
-    (skip s)    → skip (left s)
-    (yield a s) → yield a (left s)
+  step as s >>= λ where
+    stop        → skip ∘ right <$> seed as'
+    (skip s)    → pure $ skip (left s)
+    (yield a s) → pure $ yield a (left s)
 step (appendPull as as') (right s) =
   step as' s <&> λ where
     stop        → stop
@@ -85,39 +85,38 @@ step (mapGen as f) s = step as s >>= λ where
 
 single : ∀ {A} → A → Pull A
 St    (single a) = Bool
-seed  (single a) = true
+seed  (single a) = pure true
 step (single a) true  = pure $ yield a false
 step (single a) false = pure stop
 
 forEach : ∀ {A B} ⦃ _ : IsSOP A ⦄ → Pull A → (A → Pull B) → Pull B
 St    (forEach {A} {B} as f)            = St as × Maybe (Σ A (St ∘ f))
 StSOP (forEach {A} {B} {{ sopA }} as f) = SOP× {{ StSOP as }}{{ SOPMaybe {{ SOPΣ {{ sopA }} {{ λ {x} → StSOP (f x) }}}}}}
-seed  (forEach {A} {B} as f)            = seed as , nothing
+seed  (forEach {A} {B} as f)            = _,_ <$> seed as <*> pure nothing
 
 step (forEach {A} {B} as f) (s , just (a , s')) = step (f a) s' <&> λ where
   stop         → skip (s , nothing)
   (skip s')    → skip (s , just (a , s'))
   (yield b s') → yield b (s , (just (a , s')))
-step (forEach {A} {B} as f) (s , nothing) = step as s <&> λ where
-  stop        → stop
-  (skip s)    → skip (s , nothing)
-  (yield a s) → skip (s , just (a , seed (f a)))
+step (forEach {A} {B} as f) (s , nothing) = step as s >>= λ where
+  stop        → pure stop
+  (skip s)    → pure $ skip (s , nothing)
+  (yield a s) → do s' ← seed (f a); pure {Gen} (skip (s , just (a , s')))
 
 genLetPull : ∀ {A} → ↑V A → Pull (↑V A)
 genLetPull a = mapGen (single a) genLet
 
 genLetPull' : ∀ {A B} → ↑V A → (↑V A → Pull B) → Pull B
 genLetPull' {A} {B} a f =
-  pull (Σ (↑V A) (St ∘ f)) {{SOPΣ {{↑SOP}} {{λ {x} → StSOP (f x)}}}} (a , (seed (f a))) λ where
+  pull (Σ (↑V A) (St ∘ f)) {{SOPΣ {{↑SOP}} {{λ {x} → StSOP (f x)}}}} ((a ,_) <$> (seed (f a))) λ where
     (a , s) → step (f a) s <&> λ where
       stop        → stop
       (skip s)    → skip (a , s)
       (yield b s) → yield b (a , s)
 
-
 countFrom : ↑V ℕ∘ → Pull (↑V ℕ∘)
 St   (countFrom n)   = ↑V ℕ∘
-seed (countFrom n)   = n
+seed (countFrom n)   = pure n
 step (countFrom n) s = pure $ yield s (s +∘ lit∘ 1)
 
 count : Pull (↑V ℕ∘)
@@ -125,7 +124,7 @@ count = countFrom (lit∘ 0)
 
 take : ∀ {A} → ↑V ℕ∘ → Pull A → Pull A
 St    (take n as) = ↑V ℕ∘ × St as
-seed  (take n as) = n , seed as
+seed  (take n as) = (n ,_) <$> seed as
 step  (take n as) (i , s) = caseM (i ==∘ lit∘ 0) λ where
   true  → pure stop
   false → step as s <&> λ where
@@ -135,9 +134,9 @@ step  (take n as) (i , s) = caseM (i ==∘ lit∘ 0) λ where
 
 drop : ∀ {A} → ↑V ℕ∘ → Pull A → Pull A
 St   (drop n as) = Either (↑V ℕ∘) (St as)
-seed (drop n as) = left n
+seed (drop n as) = pure $ left n
 step (drop n as) (left i)  = caseM (i ==∘ lit∘ 0) λ where
-  true  → pure $ skip $ right (seed as)
+  true  → skip ∘ right <$> seed as
   false → pure $ skip $ left (i -∘ lit∘ 1)
 step (drop n as) (right s) = step as s <&> λ where
   stop        → stop
@@ -176,7 +175,7 @@ foldrPull {A} {B} (pull S seed step) f b =
                      stop        → b
                      (skip s)    → callFun fs (encode s)
                      (yield a s) → f a (callFun fs (encode s)))
-         (λ fs → callFun fs (encode seed))
+         (λ fs → runGen $ do sd ← seed; pure $ callFun fs (encode sd))
 
 --------------------------------------------------------------------------------
 
@@ -197,7 +196,12 @@ casePull {A} {B} a f = forEach (mapGen (single a) split) f
 
 casePull' : ∀ {A B}⦃ _ : Split A ⦄ ⦃ _ : IsSOP (SplitTo {A}) ⦄ → ↑V A → (SplitTo {A} → Pull B) → Pull B
 casePull' {A} {B} {{_}}{{sopA}} a f =
-  pull (Σ (SplitTo {A}) (St ∘ f)) {{SOPΣ{{sopA}}{{λ {x} → StSOP (f x)}}}} ({!!} , {!!}) {!!}
+  pull (Σ (SplitTo {A}) (St ∘ f)) {{SOPΣ{{sopA}}{{λ {x} → StSOP (f x)}}}}
+    (do sp ← splitGen a; s ← seed (f sp); pure (_,_ {A = SplitTo {A}}{B = _} sp s)) λ where
+      (sp , s) → step (f sp) s >>= λ where
+         stop        → pure stop
+         (skip s)    → pure $ skip (sp , s)
+         (yield b s) → pure $ yield b (sp , s)
 
 sumPull : Pull (↑V ℕ∘) → ↑V ℕ∘
 sumPull as = foldlPull as _+∘_ 0

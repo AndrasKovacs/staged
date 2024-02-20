@@ -4,7 +4,7 @@ module Tests where
 open import Lib
 open import Gen
 open import Object
-open import Pull
+open import PullGenSeed
 open import Join
 open import Split
 open import SOP
@@ -70,9 +70,9 @@ test5 : Pull (↑ (V ℕ∘))
 test5 = _+∘_ <$> test3 <*> test3
 
 test6 : Pull (↑ (V ℕ∘))
-test6 = forEach (take 20 count) λ x →
-        casePull (x <∘ 10) λ where
-          true  → forEach (take 10 count) λ y → single (x *∘ y)
+test6 = forEach (take 100 count) λ x →
+        casePull' (x <∘ 50) λ where
+          true  → take 10 count <&> λ y → (x *∘ y)
           false → single (x *∘ 5)
 
 --------------------------------------------------------------------------------
@@ -175,6 +175,19 @@ myfilter = filterM λ n → caseM (n ==∘ 10) λ where
     true  → fail
     false → pure true
 
+test12 : Pull (↑V ℕ∘)
+test12 = forEach (take 30 (countFrom 0)) λ n →
+         genLetPull' (n *∘ 2) λ n →
+         casePull' (n <∘ 20) λ where
+           true  → single (n +∘ 10)
+           false → single (n +∘ 20)
+
+test12' : Pull (↑V ℕ∘)
+test12' = mapGen (take 30 (countFrom 0)) λ n → do
+  m ← genLet (n *∘ 2)
+  caseM (m <∘ 20) λ where
+    true  → pure (n +∘ 10)
+    false → pure (n +∘ 20)
 
 
 --------------------------------------------------------------------------------

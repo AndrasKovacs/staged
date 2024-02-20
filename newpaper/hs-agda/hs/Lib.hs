@@ -328,6 +328,14 @@ bind (Pull @s seed step) (unravel1 -> Pull' @s' seed' step') =
 class CasePull a b | a -> b, b -> a where
   casePull :: Up a -> (b -> Pull c) -> Pull c
 
+instance CasePull (a, b) (Up a, Up b) where
+  casePull x (unravel2 -> Pull' @s seed' step') =
+    Pull @(Maybe (Up a, Up b, s)) Nothing \case
+      Nothing -> case' x \case
+        (a, b) -> _
+
+
+
 instance CasePull Bool Bool where
   casePull b f = case (f True, f False) of
     (Pull @s seed step, Pull @s' seed' step') ->

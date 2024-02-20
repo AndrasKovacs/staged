@@ -147,6 +147,7 @@ step (filter f as) s = step as s >>= λ where
 
 --------------------------------------------------------------------------------
 
+-- TODO: this is the same as what we have for joins in the paper!
 funTypes : Uₛ → Ty → CTy
 funTypes []      B = ⊤C
 funTypes (a ∷ A) B = (a →PT B) ×C funTypes A B

@@ -81,3 +81,5 @@ for valTy, if I have f : ↑A → ValTy, then (V ∘ f) : ↑A → Ty is constan
 NOTE :
   generativity axiom is compatible with case on Ty!!!
   everything is compatible with case on Ty!!!
+
+--------------------------------------------------------------------------------

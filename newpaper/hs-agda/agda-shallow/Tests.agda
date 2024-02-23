@@ -82,10 +82,11 @@ test5 : Pull (↑ (V ℕ∘))
 test5 = _+∘_ <$>ₚ test3 <*>ₚ test3
 
 test6 : Pull (↑ (V ℕ∘))
-test6 = forEach (take 100 count) λ x →
+test6 = forEach (take 100 (countFrom 0)) λ x →
+        genLetₚ (x *∘ 2) λ y →
         caseₚ (x <∘ 50) λ where
-          true  → take 10 count <&>ₚ λ y → (x *∘ y)
-          false → single (x *∘ 5)
+          true  → take y (countFrom x)
+          false → single y
 
 --------------------------------------------------------------------------------
 

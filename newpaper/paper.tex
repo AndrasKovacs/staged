@@ -131,7 +131,9 @@
 \newcommand{\msplit}{\msf{split}}
 \newcommand{\mapGen}{\msf{mapGen}}
 \newcommand{\genPull}{\msf{gen_{Pull}}}
+\newcommand{\Set}{\msf{Set}}
 \newcommand{\casePull}{\msf{case_{Pull}}}
+\newcommand{\appull}{\ap_{\Pull}}
 
 \newcommand{\ext}{\triangleright}
 
@@ -805,6 +807,77 @@ is merely a black box that computes object code. If we have $\vf : \Up(\vA \to \
 and $\vf$ is staged to $\ql \lam \vx.\,\vt\qr$, then $\spl \vf\,\vu$ is staged to an
 undesirable ``administrative'' $\beta$-redex $(\lam \vx.\,\vt)\,\vu$.
 
+\subsection{Semantics of Staging}
+
+We give a short summary of the semantics of staging here. We reuse most of the
+semantics from \cite{TODO}, also borrowing notation and definitions, and only
+mention additions and differences. The reader may refer to ibid.\ for technical
+details.
+
+Staging is given by evaluation of CFTT into a presheaf model, where the base
+category is given as follows: objects are typing contexts of the object language
+and morphisms are parallel substitutions. The equality of morphisms is given by
+strict syntactic equality of object terms. $\Ty$ is interpreted as the presheaf
+which is constantly the set of object-theoretic types. Soundness of staging is
+proven by a separate logical relations model, internally to the mentioned
+presheaf model. Soundness means that the output of staging, viewed as a CFTT
+term, is definitionally equal to the input.
+
+The main addition in CFTT is the assumption of all inductive families in the
+meta-level. However, based on the results in \cite{TODO}, it is enough to
+extend the meta-level syntax in \cite{TODO} with W-types and identity types to
+derive all inductive families, so we consider these in the following.
+
+\subsubsection{W-types} W-types have a standard object-wise inductive definition in
+the presheaf model \cite{TODO}. Additionally, we need to give a logical relation
+interpretation to W-types, as required for the soundness proof for staging. In
+Section 5.2.\ of \cite{TODO} a serialization map is used to define the relation
+for natural numbers, however, there is no analogous map for W-types because we
+cannot build finite terms from infinitely branching trees.
+
+Instead, we give an inductive definition for the logical relation at
+W-types. First, assuming $A : \wh{\Set}$ and $B : A \to \wh{\Set}$, we have the
+usual constructor for the semantic W-type in the internal language of the
+presheaf model, as $\msf{sup} : (a : A) \to (B\,a \to \msf{W}\,A\,B) \to
+\msf{W}\,A\,B$.  Second, assuming $A : \Ty\,\Gamma$ and $B : \Ty\,(\Gamma \ext
+A)$ in CFTT, we internalize the $\msf{sup}$ constructor which constructs a term
+of a syntactic W-type from restricted terms:
+\[ \mathbb{R}_{\msf{sup}} : (\alpha : \mathbb{R}\,A\,\gamma) \to \mathbb{R}\,(B \RA (\msf{W_{CFTT}}\,A\,B)[\msf{wk}])\,(\gamma,\,\alpha) \to \mathbb{R}\,(\msf{W_{CFTT}}\,A\,B)\,\gamma \]
+Here, $\msf{W_{CFTT}}$ denotes the W-type former in CFTT, $B \RA
+(\msf{W_{CFTT}}\,A\,B)[\msf{wk}]$ is a non-dependent function type in CFTT, and
+$\msf{wk}$ is a weakening substitution.
+
+Then, assuming $\gamma^{\approx} : \Gamma^{\approx}\,\gamma\,\gamma'$, we
+inductively define a relation $\msf{W}^{\approx}$ between
+$\msf{W}\,(\mbb{E}\,A\,\gamma)\,(\lam \alpha.\,\mbb{E}\,B\,(\gamma,\,\alpha))$
+and $\mbb{R}\,(\msf{W_{CFTT}}\,A\,B)\,\gamma'$, which relates
+$\msf{sup}\,\alpha\,f$ to $\mathbb{R}_{\msf{sup}}\,\alpha'\,f'$ if $\alpha$ is
+related to $\alpha'$ at type $A$ and $f$ is related to $f'$ at type $B[\alpha']
+\RA \msf{W_{CFTT}}\,A\,B$. The relation at the non-dependent function type $\blank{\RA}\blank$
+is given as pointwise preservation of relations. With this, we can also give
+relational interpretation to the syntactic $\msf{sup}$ rule in CFTT,
+and we can use induction on $\msf{W}^{\approx}$ to interpret the syntactic
+induction rule for W. Thus, we get soundness of staging with W-types.
+
+\subsubsection{Identity type} Our treatment of the identity type is
+influenced by the following: we would like to assume identities as axioms in
+CFTT, which are true in the presheaf model (i.e.\ they are true at
+staging-time), without blocking staging as a computation. In Section \ref{TODO}
+we use such an axiom to good effect. However, axioms do block computation in
+CFTT up to definitional equality, which implies that the soundness of staging
+fails. Our solution:
+\begin{itemize}
+\item Have a standard intensional identity type in CFTT, perhaps with uniqueness of identity proofs assumed.
+\item Before staging, translate CFTT to CFTT plus equality reflection. Operationally,
+      this means erasing all identity proofs and transports.
+\item Perform staging after erasure of identity proofs.
+\end{itemize}
+In the presheaf model, we interpret the extensional identity in a standard way,
+as strict equality of sections of presheaves. With this, soundness of staging is
+trivial to show; we can pick the trivial relation for the interpretation of
+identity. Hence, we weaken the statement of soundness: every CFTT program is
+convertible to the staging output, up to erasure of identity proofs.
+
 \section{Monads \& Monad Transformers}\label{sec:monad-transformers}
 
 In this section we build a library for monads and monad transformers. We believe
@@ -1320,42 +1393,52 @@ A pull stream is a meta-level specification of a state machine:
 \end{alignat*}
 In the $\Pull$ constructor, $\vS$ is the type of the internal state which is
 required to be a sum-of-products of value types by the $\IsSumVS\,\vS$
-constraint. The next field with type $\Gen\,S$ is the initial state, while transitions
+constraint. Borrowing terminology from Coutts \cite{TODO}, we call each product-of-value-types in the
+state a \emph{state shape}.
+
+The next field with type $\Gen\,\vS$ is the initial state, while transitions
 are represented by the $\vS \to \Gen\,(\Step\,\vS\,\vA)$ field. Possible transitions
 are stopping ($\Stop$), transitioning to a new state while outputting a value
 ($\Yield$) and making a silent transition to a new state ($\Skip$).
 
-Let us see some operations on streams now. First, $\Pull$ is a ``zippy''
-applicative functor, where $\mit{pure}$ infinitely repeats a value and $({\ap})$
-applies a stream of functions to a stream of values, pointwise.
+Let us see some operations on streams now. $\Pull$ is evidently a $\Functor$. It
+is not quite a ``zippy'' applicative functor, because its application operator
+requires an extra $\IsSOP$ constraint:
 \begin{alignat*}{3}
-  &\mit{pure} : \vA \to \Pull\,\vA\\
-  &\mit{pure}\,\va = \Pull\,()\,(\return\,())\,(\lam \_.\,\return \dlr \Yield\,\va\,())
+  &\mit{repeat} : \vA \to \Pull\,\vA\\
+  &\mit{repeat}\,\va = \Pull\,()\,(\return\,())\,(\lam \_.\,\return \dlr \Yield\,\va\,())
 \end{alignat*}
 \begin{alignat*}{3}
-  &(\!\ap\!) : \Pull\,(\vA \to \vB) \to \Pull\,\vA \to \Pull\,\vB \\
-  &(\!\ap\!)\,(\Pull\,\vS\,\seed\,\step)\,(\Pull\,\vS'\,\seed'\,\step') =\\
-  & \ind \Pull\,(\vS,\,\vS')\,(({,}) \fmap \seed\,\ap\,\seed') \dlr \lam (\vs,\,\vs').\,\step\,\vs \bind \lam \case \\
-  & \ind \ind \Stop \hspace{1.20em}        \to \return \Stop \\
-  & \ind \ind \Skip\,\vs \hspace{0.75em}     \to \return \dlr \Skip\,(\vs,\,\vs') \\
-  & \ind \ind \Yield\,\vf\,\vs \to \step'\,\vs' \bind \lam \case \\
-  & \ind \ind \ind \Stop \hspace{1.7em} \to \return \Stop \\
-  & \ind \ind \ind \Skip\,\vs'\hspace{0.9em}\to \return \dlr \Skip\,(\vs,\,\vs') \\
-  & \ind \ind \ind \Yield\,\va\,\vs' \to \return \dlr \Yield\,(\vf\,\va)\,(\vs,\,\vs')
+  &\hspace{-7em}\mathrlap{({\ap_{\Pull}}) : \IsSOP\,\vA \RA \Pull\,(\vA \to \vB) \to \Pull\,\vA \to \Pull\,\vB }\\
+  &\hspace{-7em}\mathrlap{({\ap_{\Pull}})\,(\Pull\,\vS\,\seed\,\step)\,(\Pull\,\vS'\,\seed'\,\step') =}\\
+  &\hspace{-7em}\mathrlap{ \ind \Pull\,(\vS,\,\vS',\,\Maybe\,\vA)\,(({,}) \fmap \seed \ap ((,\Nothing) \fmap \seed') \dlr \lam \case }\\
+  &\hspace{-7em}\mathrlap{ \ind \ind (\vs,\,\vs',\,\Just\,\va) \to \step\,\vs \bind \lam \case}\\
+  &\hspace{-7em} \ind \ind \ind \Stop        &&\to \return \Stop \\
+  &\hspace{-7em} \ind \ind \ind \Skip\,\vs     &&\to \return \dlr \Skip\,(\vs,\,\vs',\,\Just\,\va) \\
+  &\hspace{-7em} \ind \ind \ind \Yield\,\vf\,\vs &&\to \return \dlr \Yield\,(\vf\,\va)\,(\vs,\,\vs',\,\Nothing) \\
+  &\hspace{-7em} \mathrlap{\ind \ind (\vs,\,\vs',\,\Nothing) \to \step'\,\vs' \bind \lam \case }\\
+  &\hspace{-7em} \ind \ind \ind \Stop         &&\to \return \Stop \\
+  &\hspace{-7em} \ind \ind \ind \Skip\,\vs'     &&\to \return \dlr \Skip\,(\vs,\,\vs',\,\Nothing) \\
+  &\hspace{-7em} \ind \ind \ind \Yield\,\va\,\vs' &&\to \return \dlr \Skip\,(\vs,\,\vs',\,\Just\,\va)
 \end{alignat*}
-In $\mit{pure}$, the state is the unit type, while in $(\!\ap\!)$ we take the
-product of the stream states and do synchronous transitions. In both
-definitions, the $\IsSOP\,\vS$ constraint is implicitly dispatched by instance
-resolution; this works in the Agda and Haskell versions too. We can derive the
-usual $\mit{zip}$ and $\mit{zipWith}$ operations from $(\!\ap\!)$. $\Pull$
-is also a monoid with stream appending as the binary operation.
+
+In $\mit{repeat}$, the state is the unit type, while in $({\appull})$, we take
+the product of states, and also add another $\Maybe\,\vA$ that is used to buffer
+a single $\vA$ value while we are stepping the $\Pull\,(\vA \to \vB)$ stream.
+The $\IsSOP$ constraints for the new machine states are implicitly dispatched
+by instance resolution; this works in the Agda and Haskell versions too. We can
+derive $\mit{zip}$ and $\mit{zipWith}$ from $({\appull})$ and $({\fmap})$ for
+streams, with the restriction that the zipped streams must all produce $\IsSOP$
+values.
+
+$\Pull$ is also a monoid with stream appending as the binary operation.
 \begin{alignat*}{3}
   & \mit{empty} : \Pull\,\vA\\
   & \mit{empty} = \Pull\,()\,(\return\,())\,(\lam \_.\,\return \Stop)
 \end{alignat*}
 \begin{alignat*}{5}
-  & \hspace{-5em}\mathrlap{(\!<>\!) : \Pull\,\vA \to \Pull\,\vA \to \Pull\,\vA} \\
-  & \hspace{-5em}\mathrlap{(\!<>\!)\,(\Pull\,\vS\,\seed\,\step)\,(\Pull\,\vS'\,\seed'\,\step') = \Pull\,(\Either\,\vS\,\vS')\,(\Left \fmap \seed)\,\lam \case} \\
+  & \hspace{-5em}\mathrlap{({<>}) : \Pull\,\vA \to \Pull\,\vA \to \Pull\,\vA} \\
+  & \hspace{-5em}\mathrlap{({<>})\,(\Pull\,\vS\,\seed\,\step)\,(\Pull\,\vS'\,\seed'\,\step') = \Pull\,(\Either\,\vS\,\vS')\,(\Left \fmap \seed)\,\lam \case} \\
   & \hspace{-5em}\ind \Left\,\vs &&\to \step\,s \bind \lam \case &&\Stop             &&\to (\Skip \circ \Right) \fmap \seed'\\
   & \hspace{-5em}                    &&                          &&\Skip\,\vs        &&\to \return \dlr \Skip\,(\Left\,\vs) \\
   & \hspace{-5em}                    &&                        &&\Yield\,\va\,\vs    &&\to \return \dlr \Yield\,\va\,(\Left\,\vs)\\
@@ -1363,11 +1446,11 @@ is also a monoid with stream appending as the binary operation.
   & \hspace{-5em}                    &&                        &&\Skip\,\vs'         &&\to \return \dlr \Skip\,(\Right\,\vs') \\
   & \hspace{-5em}                    &&                        &&\Yield\,\va\,\vs'   &&\to \return \dlr \Yield\,\va\,(\Right\,\vs')
 \end{alignat*}
-These definitions are standard for streams; note though that compared to the
-unstaged definitions in previous literature, the only additional noise is just
-the $\Gen$ monad in the initial states and the transitions. Likewise, we can
-give standard definitions for usual stream functions such as $\msf{filter}$,
-$\msf{take}$ or $\msf{drop}$.
+These definitions are standard for streams; compared to the unstaged definitions
+in previous literature, the only additional noise is just the $\Gen$ monad in
+the initial states and the transitions. Likewise, we can give standard
+definitions for usual stream functions such as $\msf{filter}$, $\msf{take}$ or
+$\msf{drop}$.
 
 \subsection{Running Streams with Mutual Recursion}
 
@@ -1407,20 +1490,20 @@ instead:
 \end{alignat*}
 Even for join points, this is just as efficient as the previous
 $\mit{Fun}_{\SOP\Lift}$ version, since a definition of a product of functions
-gets compiled to a sequence of function definitions. Now, we can generate object
-code from streams. There are several choices for this, but in CFTT the
-$\msf{foldr}$ function is as good as we can get.
+will get compiled to a sequence of function definitions. In addition, we can use
+it to generate object code from streams. There are several choices for this, but
+in CFTT the $\msf{foldr}$ function is as good as we can get.
 \begin{alignat*}{3}
   &\hspace{-13em}\mathrlap{\foldr : \{\vA : \MTy\}\{\vB : \Ty\} \to (\vA \to \Lift \vB \to \Lift \vB) \to \Lift \vB \to \Pull\,\vA \to \Lift\,\vB}\\
   &\hspace{-13em}\mathrlap{\foldr\,\{\vA\}\,\{\vB\}\,(\Pull\,\vS\,\seed\,\step)\,\vf\,\vb = \ql}\\
   &\hspace{-13em}\mathrlap{\ind \letrec \vfs : \mit{Fun}_{\SOP\Lift}\,(\Rep\,\{\vS\})\,\vB := \spl\big(\mtabulate \dlr \lam \vs.\,\unGen\,(\step\,(\rep^{-1}\,\vs)) \dlr \lam \case} \\
-  &\hspace{-13em}\ind \ind \Stop            &&\to \vb \\
-  &\hspace{-13em}\ind \ind \Skip\,\vs       &&\to \mindex\,\qt{\vfs}\,(\rep\,\vs) \\
-  &\hspace{-13em}\ind \ind \Yield\,\va\,\vs &&\to \vf\,\va\,(\mindex\,\qt{\vfs}\,(\rep\,\vs))\big);\\
-  &\hspace{-13em}\mathrlap{\ind \spl\big(\runGen \dlr \mdo \{s \fro \seed; \return \dlr \mindex\,\qt{\vfs}\,(\rep\,\vs)\}\big)\qr}
+  &\hspace{-13em}\ind \ind \ind \Stop            &&\to \vb \\
+  &\hspace{-13em}\ind \ind \ind \Skip\,\vs       &&\to \mindex\,\qt{\vfs}\,(\rep\,\vs) \\
+  &\hspace{-13em}\ind \ind \ind \Yield\,\va\,\vs &&\to \vf\,\va\,(\mindex\,\qt{\vfs}\,(\rep\,\vs))\big);\\
+  &\hspace{-13em}\mathrlap{\ind \spl\big(\unGen\,\seed \dlr \lam s.\,\mindex\,\qt{\vfs}\,(\rep\,\vs)\big)\qr}
 \end{alignat*}
-This $\foldr$ is quite flexible, becuse we can eliminate into any object type,
-including function types. For instance, we can define $\foldl$ from $\foldr$:
+This $\foldr$ is quite flexible becuse we can compute any object value from it,
+including functions. For instance, we can define $\foldl$ from $\foldr$:
 \begin{alignat*}{3}
   &\foldl : \{\vA : \MTy\}\{\vB : \VTy\} \to (\Lift \vB \to \vA \to \Lift \vB) \to \Lift \vB \to \Pull\,\vA \to \Lift\,\vB\\
   &\foldl\,\vf\,\vb\,\vas = \spl(\foldr\,(\lam \va\,\vg.\,\qt{\lam \vb.\,\spl \vg\,\spl(\vf\,\qt{\vb}\,\spl \va)})\,\qt{\lam \vb.\,\vb}\,\vas)\,\spl \vb
@@ -1436,20 +1519,15 @@ the compiler to eliminate the intermediate closures \cite{TODO}.
 
 \subsection{$\mbf{concatMap}$ for Streams}
 
-We saw that $\Pull$ is $\Applicative$, but what about having a list-like
-$\Monad$ instance as well, with singleton streams for $\return$ and $\concatMap$
-for binding? This is not possible. Aiming at
+Can we have a list-like $\Monad$ instance for streams, with singleton streams
+for $\return$ and $\concatMap$ for binding? This is not possible. Aiming at
 \[ \concatMap : (\vA \to \Pull\,\vB) \to \Pull\,\vA \to \Pull\,\vB, \]
 the $\vA \to \Pull\,\vB$ function can contain an infinite number of different
 machine state types, which cannot be represented in a finite amount of object
-code.\footnote{Although in two-level type theories that are not used for
-staging, the representability of countably infinite products of object types is
-sometimes assumed as an axiom; this axiom is called ``cofibrancy of
-$\mathbb{N}$'' \cite{TODO}.} Here by ``infinite'' we mean the notion that is
-internally available in the meta type theory. For instance, we can define a
-$\Nat_\M \to \Pull\,\vB$ function which for each $\vn : \Nat_\M$ produces a
-concatenation of $\vn$ streams. Hence, we shall have the following function
-instead:
+code. Here by ``infinite'' we mean the notion that is internally available in
+the meta type theory. For instance, we can define a $\Nat_\M \to \Pull\,\vB$
+function which for each $\vn : \Nat_\M$ produces a concatenation of $\vn$
+streams. Hence, we shall have the following function instead:
 \[ \concatMap : \IsSOP\,\vA \RA (\vA \to \Pull\,\vB) \to \Pull\,\vA \to \Pull\,\vB, \]
 The idea is the following: if $\USOP$ is closed under dependent sum types, we
 can directly define this $\concatMap$, by taking the appropriate dependent sum
@@ -1500,7 +1578,8 @@ Generally speaking, every function whose domain is a product of object types and
 whose codomain is a constant presheaf in the semantics, is a constant function
 in the the semantics. We may call these constancy statements \emph{generativity
 axioms}, since they reflect the inability of metaprograms to inspect terms, and
-``generativity'' refers to this property in the staging literature \cite{TODO}.
+``generativity'' often refers to this property in the staging literature
+\cite{TODO}.
 
 Let us write $\Uprod = \List\,\VTy$ and $\Elprod : \Uprod \to \MTy$ for a
 universe of finite products of value types. Concretely in CFTT and the Agda
@@ -1524,8 +1603,8 @@ functions. Conveniently, every object type is inhabited by infinite loops.
 
 Then, $\Sigma_\SOP\,\vA\,\vB$ is defined as the concatenation of $\vA_i \times
 \vB\,(\msf{inject_i}\,\msf{loop_{\vA_i}})$ for each $\vA_i \in \vA$, where
-$({\times})$ is the product type former in $\USOP$ and $\msf{inject_i} :
-\Elprod\,\vA_i \to \El_\SOP\,\vA$. This is similar to the definition of
+$({\times})$ is the product type former in $\USOP$ and $\msf{inject_i}$
+has type $\Elprod\,\vA_i \to \El_\SOP\,\vA$. This is similar to the definition of
 non-dependent products in $\USOP$, except that we have to get rid of the type
 dependency by instantiating $\vB$ with looping programs.
 
@@ -1562,98 +1641,46 @@ singleton streams for ``returning'':
   & \mit{single}\,\va = \Pull\,\Bool_\M\,\True \dlr \lam \vb.\,\return \dlr\mbf{if}\,\vb\,\mbf{then}\,\Yield\,\va\,\False\,\mbf{else}\,\Stop
 \end{alignat*}
 Now, this operation should be avoided when possible, since it has two states and
-can contribute to a blow-up of state size in combination with state-multiplying
-operations such as $\mit{zip}$ or $\concatMap$. Both let-insertion and case
-splitting could be defined generically from $\single$, $\concatMap$ and the
-following operation (definition omitted):
-\[ \mit{mapGen} : (\vA \to \Gen\,\vB) \to \Pull\,\vA \to \Pull\,\vB \]
-However, $\single$ would introduce superfluous states that way. Instead, we give
-more efficient specialized definitions. Let-insertion is as follows:
+can contribute to a blow-up of state size. For example, $\concatMap$ over
+$\single$ introduces at least a doubling of the number of state shapes. Although
+let-insertion and case splitting could be derived as $\concatMap$ over
+$\single$, to avoid the size explosion we give more specialized definitions
+instead. First, we define a helper function for binding for a single $\IsSOP$ value.
 \begin{alignat*}{3}
-  & \hspace{-8em}\mathrlap{\genPull : \{\vA : \VTy\}\{\vB : \MTy\} \to \Lift \vA \to (\Lift \vA \to \Pull\,\vB) \to \Pull\,\vB}\\
-  & \hspace{-8em}\mathrlap{\genPull\,\va\,\vf = \Pull\,(\Sigma\,(\Lift\,\vA)\,(\mit{projS} \circ \vf))\,(({\va,}) \fmap \mit{projSeed}\,(\vf\,\va)) \dlr \lam \case}\\
-  & \hspace{-8em}\ind \Stop            &&\to \return\,\Stop \\
-  & \hspace{-8em}\ind \Skip\,\vs       &&\to \return \dlr \Skip\,(\va,\,\vs)\\
-  & \hspace{-8em}\ind \Yield\,\vb\,\vs &&\to \return \dlr \Yield\,\vb\,(\va,\,\vs)
+  & \hspace{-11em}\mathrlap{\mit{bind_{single}} : \IsSOP\,\vA' \RA \Lift \vA \to (\Lift \vA \to \Gen\,\vA') \to (\vA' \to \Pull\,\vB) \to \Pull\,\vB}\\
+  & \hspace{-11em}\mathrlap{\mit{bind_{single}}\,\va\,\vf\,\vg =}\\
+  & \hspace{-11em}\mathrlap{\ind \Pull\,(\Sigma\,\vA'\,(\mit{projS} \circ \vg))\,(\mdo \{\va' \fro \vf\,\va; \vs \fro \mit{projSeed}\,(\vg\,\va'); \return (\va',\,\vs)) \dlr \lam \case}\\
+  & \hspace{-11em}\mathrlap{\ind \ind (\va',\,\vs) \to \mit{projStep}\,(\vg\,\va')\,\vs \bind \lam \case }\\
+  & \hspace{-11em}\ind \ind \ind \Stop            &&\to \return \Stop\\
+  & \hspace{-11em}\ind \ind \ind \Skip\,\vs       &&\to \return \dlr \Skip\,(\va',\,\vs) \\
+  & \hspace{-11em}\ind \ind \ind \Yield\,\vb\,\vs &&\to \return \dlr \Yield\,\vb\,(\va',\,\vs)
 \end{alignat*}
-For case splitting, we have:
+We recover let-insertion and case splitting as follows:
 \begin{alignat*}{3}
-  &\hspace{-12em}\mathrlap{\casePull : (\mit{Split}\,\vA,\,\IsSOP\,(\mit{SplitTo}\,\{\vA\})) \RA \Lift \vA \to (\mit{SplitTo}\,\{\vA\} \to \Pull\,\vB) \to \Pull\,\vB }\\
-  &\hspace{-12em}\mathrlap{\casePull\,\va\,\vf = \Pull\,(\Sigma\,(\mit{SplitTo}\,\{\vA\})\,(\mit{projS} \circ \vf))}\\
-  &\hspace{-12em}\mathrlap{    \hspace{7.1em}         (\mdo \{\va' \fro \mit{split}\,\va; \vs \fro \mit{projSeed}\,(\vf\,\va');\return (\va',\,\vs)\}) \dlr \lam \case}\\
-  &\hspace{-4em}\mathrlap{  \ind   (\va',\,\vs) \to \mit{projStep}\,(\vf\,\va')\,\vs \bind \lam \case} \\
-  &\hspace{-4em} \ind \ind \ind \Stop            &&\to \return \Stop \\
-  &\hspace{-4em} \ind \ind \ind \Skip\,\vs       &&\to \return \dlr \Skip\,(\va',\,\vs) \\
-  &\hspace{-4em} \ind \ind \ind \Yield\,\vb\,\vs &&\to \return \dlr \Yield\,\vb\,(\va',\,\vs)
+  &\mit{gen_\Pull} : \Lift \vA \to (\Lift \vA \to \Pull\,\vB) \to \Pull\,\vB\\
+  &\mit{gen_\Pull}\,\va = \mit{bind_{single}}\,\va\,\gen
 \end{alignat*}
-
-
-%% casePull' : ∀ {A B}⦃ _ : Split A ⦄ ⦃ _ : IsSOP (SplitTo {A}) ⦄ → ↑V A → (SplitTo {A} → Pull B) → Pull B
-%% casePull' {A} {B} {{_}}{{sopA}} a f =
-%%   pull (Σ (SplitTo {A}) (St ∘ f)) {{SOPΣ{{sopA}}{{λ {x} → StSOP (f x)}}}}
-%%     (do sp ← splitGen a; s ← seed (f sp); pure (_,_ {A = SplitTo {A}}{B = _} sp s)) λ where
-%%       (sp , s) → step (f sp) s >>= λ where
-%%          stop        → pure stop
-%%          (skip s)    → pure $ skip (sp , s)
-%%          (yield b s) → pure $ yield b (sp , s)
-
-
-%% To get good ergonomics in a ``monadic'' style of stream definitions, we need to
-%% reproduce let-insertion and case splitting on object values. First, we need
-%% singleton streams:
-
-
-%% genLetPull' : ∀ {A B} → ↑V A → (↑V A → Pull B) → Pull B
-%% genLetPull' {A} {B} a f =
-%%   pull (Σ (↑V A) (St ∘ f)) {{SOPΣ {{↑SOP}} {{λ {x} → StSOP (f x)}}}} ((a ,_) <$> (seed (f a))) λ where
-%%     (a , s) → step (f a) s <&> λ where
-%%       stop        → stop
-%%       (skip s)    → skip (a , s)
-%%       (yield b s) → yield b (a , s)
-
-
-
-%% Since $\Pull$ is not a monad, it cannot be $\MonadGen$ in our framework,
-%% but we still support some forms of let-insertion. First, we note that $\Pull$ can be
-%% mapped over by functions returning in $\Gen$:
-%% \begin{alignat*}{3}
-%%   &\hspace{-3em}\mathrlap{\mit{mapGen} : (\vA \to \Gen\,\vB) \to \Pull\,\vA \to \Pull\,\vB }\\
-%%   &\hspace{-3em}\mathrlap{\mit{mapGen}\,\vf\,(\Pull\,\vS\,\seed\,\step) = \Pull\,\vS\,\seed \dlr \lam \case}\\
-%%   &\hspace{-3em} \ind \Stop            &&\to \return\,\Stop \\
-%%   &\hspace{-3em} \ind \Skip\,\vs       &&\to \return \dlr \Skip\,\vs\\
-%%   &\hspace{-3em} \ind \Yield\,\va\,\vs &&\to \mdo \{\vb \fro \vf\,\va; \return \dlr \Yield\,\vb\,\vs\}
-%% \end{alignat*}
-%% Now, we may use $\mit{mapGen}\,\gen : \Pull\,(\Lift \vA) \to \Pull\,(\Lift \vA)$
-%% to let-bind all yielded expressions in a stream. This can be useful in stream
-%% operations that would otherwise duplicate yielded expressions. For example, the
-%% function with type $\Pull\,(\Lift \vA) \to \Pull\,(\Lift \vA,\,\Lift \vA)$
-%% should be defined with let-insertion.
-
-%% Let us now consider a more ``monadic'' style of stream programming. For this we
-%% need singleton streams:
-%% \begin{alignat*}{3}
-%%   & \mit{single} : \vA \to \Pull\,\vA \\
-%%   & \mit{single}\,\va = \Pull\,\Bool_\M\,\True \dlr \lam \vb.\,\return \dlr\mbf{if}\,\vb\,\mbf{then}\,\Yield\,\va\,\False\,\mbf{else}\,\Stop
-%% \end{alignat*}
-%% We also write $\mit{forEach}$ for $\concatMap$ with flipped arguments. Now, a
-%% more monadic flavor of let-insertion is given as
-%% \begin{alignat*}{3}
-%%   &\gen_{\Pull} : \Lift \vA \to \Pull\,(\Lift \vA) \\
-%%   &\gen_{\Pull}\,\va = \mit{mapGen}\,\gen\,(\mit{single}\,\va).
-%% \end{alignat*}
-%% We can also implement case splitting on object values. Recall from Section
-%% \ref{TODO} that for each value type we have a splitting function that returns a
-%% meta-level view on the constructors. Importantly, all such views are $\SOP$-s, and
-%% therefore can be bound by $\forEach$. A small example:
-%% \begin{alignat*}{3}
-%%   & \hspace{-5em}\mathrlap{\forEach\,(\mit{countFrom}\,\qt{0}) \dlr \lam \vn. }\\
-%%   & \hspace{-5em}\mathrlap{\forEach\,(\gen_{\Pull}\,\qt{\spl \vn * 2}) \dlr \lam \vm. }\\
-%%   & \hspace{-5em}\mathrlap{\forEach\,(\single\,(\msplit\,\qt{\spl \vm < 20})) \dlr \lam \case }\\
-%%   & \hspace{-5em}\ind \True_\M  &&\to \single\,\qt{\spl \vm + 10}   \\
-%%   & \hspace{-5em}\ind \False_\M &&\to \single\,\qt{\spl \vm + 20}
-%% \end{alignat*}
-%% Here $(\gen_{\Pull}\,\qt{\spl \vn * 2})$ behaves like a let-insertion, and
-%% $(\single\,(\msplit\,\qt{\spl \vm < 20}))$ implements the case splitting.
+\begin{alignat*}{3}
+  &\mit{case_\Pull} : (\mit{Split}\,\vA,\,\IsSOP\,(\mit{SplitTo}\,\{\vA\})) \RA \Lift \vA \to (\mit{SplitTo}\,\{\vA\} \to \Pull\,\vB) \to \Pull\,\vB\\
+  &\mit{case_\Pull}\,\va = \mit{bind_{single}}\,\va\,\mit{split}
+\end{alignat*}
+Let us look at small example. We write $\mit{forEach}$ for $\concatMap$ with
+flipped arguments.
+\begin{alignat*}{3}
+  &\hspace{-4em}\mathrlap{\mit{forEach}\,(\mit{take}\,\qt{100}\,(\mit{countFrom}\,\qt{0})) \dlr \lam \vx.}\\
+  &\hspace{-4em}\mathrlap{\gen_\Pull\, \qt{\spl \vx * 2} \dlr \lam \vy.}\\
+  &\hspace{-4em}\mathrlap{\mit{case_\Pull}\,\qt{\spl \vx < 50} \dlr \lam \case}\\
+  &\hspace{-4em} \ind \True  &&\to \mit{take}\,\vy\,(\mit{countFrom}\,x)\\
+  &\hspace{-4em} \ind \False &&\to \single\,\vy
+\end{alignat*}
+Here, in every $\forEach$ iteration, $\gen_\Pull\,\qt{\spl \vx * 2}$ evaluates
+the given expression and saves the result to the machine state. Then,
+$\mit{case_\Pull}$ branches on an object-level Boolean expression. If we use
+$\foldr$ to generate object code from this definition, we get \emph{four}
+mutually defined functions. We get two state shapes from $\single\,\vy$ and one
+from $\mit{take}\,\vy\,(\mit{countFrom}\,x)$; we sum these to get three for the
+$\mit{case_\Pull}$, then we get an extra shape from $\mit{forEach}$ which
+introduces an additional $\Maybe$.
 
 \subsection{Discussion}
 
@@ -1682,7 +1709,10 @@ in the machine state.
 
 \subsection{Agda \& Haskell Implementations}
 
-The Agda implementation follows this section very closely, so we do not detail it.
+In Agda, to avoid computation getting stuck on the generativity axiom, we use
+the \texttt{primTrustMe} built-in \cite{TODO} to automatically erase the axiom
+when the sides of the equation are definitionally equal. Otherwise the
+implementation closely follows this section.
 
 In Haskell there are some limitations. First, in $\concatMap$, the
 projection function $\mit{projS}$ cannot be defined, because Haskell is not
@@ -1694,14 +1724,19 @@ technical complication.
 
 So instead of giving a single generic definition for $\concatMap$ for $\IsSOP$
 types, we define $\concatMap$ just for object types,\footnote{Recall that we do
-not distinguish value and computation types in Haskell.} and then define a case
-splitting function separately for each type. In each of these functions, we only
-need to deal with a concrete finite number of different machine state types,
-which is feasible with weak existentials. For example, we define
-\[ \mit{split_{\Pull}} : \Lift (\List\,\vA) \to (\Maybe_\M\,(\Lift \vA,\,\Lift (\List\,\vA)) \to \Pull\,\vB) \to \Pull\,\vB. \]
+not distinguish value and computation types in Haskell.} and define
+$\mit{case_\Pull}$ separately for each object type, as an overloaded class
+method. In each of these definitions, we only need to deal with a concrete
+finite number of machine state types, which is feasible to handle with weak
+existentials.
+
 Also, the generativity axiom is \emph{false} in Template Haskell, since it is
 possible to look inside quoted expressions. Instead, we use type coercions that
-can fail at staging time, when users of the library violate generativity.
+can fail at staging time. If library users do not violate generativity, these
+coercions disappear and the staging output will not contain unsafe coercions.
+
+\section{Related Work}\label{sec:related-work}
+
 
 
 

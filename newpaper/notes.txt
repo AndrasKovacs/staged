@@ -82,4 +82,88 @@ NOTE :
   generativity axiom is compatible with case on Ty!!!
   everything is compatible with case on Ty!!!
 
+
+-- W-types
 --------------------------------------------------------------------------------
+
+- internally to PSh(Obj), we have ordinary W-types, nothing special
+
+- Restricted sup constructor for W:
+
+  Rsup : (α : R A γ) → R (B ⇒ W A[p] B[p↑]) (γ, α) → R (W A B) γ
+  Rsup (R t γ) (R u γ) = R (sup t u) γ
+
+  define inductively:
+
+      W≈ : Γ≈ γ γ' → W (E A γ) (λ α. E B (γ, α)) → R (W A B) γ' → Set
+      sup≈ :   (α : E A γ)
+             → (α' : R A γ')
+	     → (α≈ : A≈ γ≈ α α')
+             → (f  : B (γ, α) → W (E A γ) (E B γ))
+	     → (f' : R (B ⇒ W A[p] B[p↑]) (γ', α'))
+	     → (f≈ : (B ⇒ W A[p] B[p↑])≈ (γ≈, α≈) f f')           -- this unfolds to taking related inputs to related outputs
+	     → (W A B)≈ γ≈ (sup α f) (supR α' f')
+
+
+  sup : (a : Tm Γ A) → Tm Γ (B[id,a] ⇒ W A B) → Tm Γ B
+
+  (sup t u)≈ : (γ≈ : Γ≈ γ γ') → W≈ γ≈ (E (sup t u) γ) (R (sup t u) γ')
+             : (γ≈ : Γ≈ γ γ') → W≈ γ≈ (sup (E t γ) (E u γ)) (Rsup (R t γ) (R u γ'))
+
+  t≈ γ≈ : A≈ γ≈ (E t γ) (R t γ')
+  u≈ γ≈ : (B[id,t] ⇒ W A B)≈ γ≈ (E u γ) (R u γ')
+
+    α≈ OKAY
+    need: (B ⇒ (W A B)[p])≈ (γ≈, t≈ γ≈) (E u γ) (R u γ')
+        : (b : E B (γ, E t γ))(b' : R B (γ', R t γ'))(b≈ : B≈ (γ≈, t≈ γ≈) b b') → (W A B)≈ γ≈ (E u γ b) (Rapp (R u γ') b')
+
+    have : (B[id,t] ⇒ W A B)≈ γ≈ (E u γ) (R u γ')
+         : (b : E (B[id,t]) γ≈)(b' : R (B[id,t]) γ')(b≈ : (B[id,t])≈ γ≈ b b') → (W A B)≈ γ≈ (E u γ b) (RApp (R u γ') b')
+	 : (b : E B (γ, E t γ))(b' : R B (γ', R t γ'))(b≈ : B≈ (γ≈ t≈ γ≈) b b') → ...
+
+    OKAY
+
+Identity type:
+
+    Id t u = (t = u)        equality of sections of presheaves
+
+    refl OK
+    UIP OK
+    J OK
+
+t : Tm Γ A
+E A : E Γ → Set
+E t : (γ : E Γ) → E A γ
+
+Soundness:
+
+    (Id t u)≈ : Γ≈ γ γ' → E (Id t u) γ → R (Id t u) γ' → Set
+              :         → E t γ = E u γ → R (Id t u) γ' → Set
+
+    (Id t u)≈ γ≈ p p' = (R t γ' = R u γ') × (p' = refl)
+
+    UIP : (p q : Tm Γ (Id t u)) → Tm Γ (Id p q)
+
+    (UIP p q)≈ : (γ≈ : Γ≈ γ γ') → (Id p q)≈ γ≈ (E (UIP p q) γ) (R (UIP p q) γ')
+               :                → R p γ' = R q γ'
+
+           have p≈ γ≈ : R t γ' = R u γ' × (R p γ' = refl)
+	        q≈ γ≈ : R t γ' = R u γ' × (P q γ' = refl)   OK, but
+
+
+    transp: Tm Γ (Id t u) → Tm Γ P[id,t] → Tm Γ P[id,u]
+
+    (transp e t)≈ : ∀ γ≈ → P[id,u]≈ γ≈ (E (transp e t) γ) (R (transp e t) γ')
+                  :        P≈ (γ≈, u≈ γ≈) (E t γ) (R (transp e t) γ')
+
+        e≈ γ≈ : R t γ' = R u γ' × R e γ' = refl                   -- the refl canonicity thing is required!!
+
+                  :        P≈ (γ≈, u≈ γ≈) (E t γ) (R t γ')
+		  OK by t≈ γ≈
+
+
+    (Id t u)≈ γ≈ p p' = ⊤
+
+    reflect : (t u : Tm Γ A) → Tm Γ (Id t u) → t = u
+
+    (reflect t u p)≈ :     t≈ γ≈ = u≈ γ≈      p : t = u

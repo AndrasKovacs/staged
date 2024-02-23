@@ -4,7 +4,7 @@ module Tests where
 open import Lib
 open import Gen
 open import Object
-open import PullGenSeed
+open import Pull5
 open import Join
 open import Split
 open import SOP
@@ -14,6 +14,9 @@ open import MonadTailRec
 --------------------------------------------------------------------------------
 
 -- Comment this in for streamlined printing:
+
+postulate
+  CALL : {A : Set} → A
 
 {-# DISPLAY stateT∘ x = x #-}
 {-# DISPLAY maybeT∘ x = x #-}
@@ -25,6 +28,8 @@ open import MonadTailRec
 {-# DISPLAY lit∘ x = x #-}
 {-# DISPLAY C x = x #-}
 {-# DISPLAY V x = x #-}
+{-# DISPLAY Λ f = f #-}
+{-# DISPLAY fst∘ x = CALL #-}
 
 --------------------------------------------------------------------------------
 
@@ -37,8 +42,15 @@ test2 = mempty
 
 test3 : Pull (↑V ℕ∘)
 test3 = forEach (take 10 count) λ x →
-        forEach (take 5  count) λ y →
-        single (x +∘ y)
+        (take 20 count) <&>ₚ λ y → x +∘ y
+
+test3'' : Pull (↑V ℕ∘)
+test3'' = forEach (take 10 count) λ x →
+          forEach (take 20 count) λ y →
+          forEach (take 30 count) λ z →
+          single (x +∘ y +∘ z)
+
+foo = toList (zip count count)
 
 -- the normal form of (sumPull test3)
 sumPullTest3Code =
@@ -64,15 +76,15 @@ sumPullTest3Code =
   ∙ 0
 
 test4 : Pull (↑ (V ℕ∘))
-test4 = _*∘_ <$> take 10 count <*> take 10 (countFrom 20)
+test4 = _*∘_ <$>ₚ take 10 count <*>ₚ take 10 (countFrom 20)
 
 test5 : Pull (↑ (V ℕ∘))
-test5 = _+∘_ <$> test3 <*> test3
+test5 = _+∘_ <$>ₚ test3 <*>ₚ test3
 
 test6 : Pull (↑ (V ℕ∘))
 test6 = forEach (take 100 count) λ x →
-        casePull' (x <∘ 50) λ where
-          true  → take 10 count <&> λ y → (x *∘ y)
+        caseₚ (x <∘ 50) λ where
+          true  → take 10 count <&>ₚ λ y → (x *∘ y)
           false → single (x *∘ 5)
 
 --------------------------------------------------------------------------------
@@ -176,11 +188,10 @@ myfilter = filterM λ n → caseM (n ==∘ 10) λ where
     false → pure true
 
 test12 : Pull (↑V ℕ∘)
-test12 = forEach (take 30 (countFrom 0)) λ n →
-         genLetPull' (n *∘ 2) λ n →
-         casePull' (n <∘ 20) λ where
-           true  → single (n +∘ 10)
-           false → single (n +∘ 20)
+test12 =
+         forEach (take 30 (countFrom 0)) λ n →
+         forEach (take 10 (countFrom (n *∘ 2))) λ m →
+         drop 10 (countFrom m)
 
 test12' : Pull (↑V ℕ∘)
 test12' = mapGen (take 30 (countFrom 0)) λ n → do
@@ -188,6 +199,10 @@ test12' = mapGen (take 30 (countFrom 0)) λ n → do
   caseM (m <∘ 20) λ where
     true  → pure (n +∘ 10)
     false → pure (n +∘ 20)
+
+test13 : Pull (↑V ℕ∘)
+test13 = genLetₚ (lit∘ 0) single
+-- forEach (single (lit∘ 0)) single
 
 
 --------------------------------------------------------------------------------

@@ -90,6 +90,7 @@
 \newcommand{\vcs}{\mathsf{cs}}
 \newcommand{\vxs}{\mathsf{xs}}
 \newcommand{\vys}{\mathsf{ys}}
+\newcommand{\vsp}{\mathsf{sp}}
 \newcommand{\vma}{\mathsf{ma}}
 \newcommand{\vm}{\mathsf{m}}
 \newcommand{\vn}{\mathsf{n}}
@@ -129,6 +130,8 @@
 \newcommand{\single}{\msf{single}}
 \newcommand{\msplit}{\msf{split}}
 \newcommand{\mapGen}{\msf{mapGen}}
+\newcommand{\genPull}{\msf{gen_{Pull}}}
+\newcommand{\casePull}{\msf{case_{Pull}}}
 
 \newcommand{\ext}{\triangleright}
 
@@ -1012,19 +1015,19 @@ Now, in any $\MonadGen$, we may write
 \begin{alignat*}{3}
   &\mdo \{\mit{sp} \fro \liftGen\;(\!\mit{split}\,\vas);(\case \mit{sp}\,\of \Nil' \to ...;\Cons'\,\va\,\vas \to ...)\}
 \end{alignat*}
-%% \begin{alignat*}{3}
-%%   &\mdo && \mit{sp} \fro \liftGen \dlr \mit{split}\,\vas\\
-%%   &     && \case \mit{sp}\,\of \\
-%%   &     && \ind \Nil' \to ... \\
-%%   &     && \ind \Cons'\,a\,\vas \to ...
-%% \end{alignat*}
-This can be generalized to splitting on any object value. In the supplemental
-Haskell and Agda implementations, we overload $\mit{split}$ with a type
-class. However, in a native implementation of CFTT it might make sense to extend
-$\mdo$-notation, so that we elaborate $\mbf{case}$ on object values to an
-application of the appropriate $\mit{split}$ function. We adopt this in the rest
-of the paper, so we will be able to write $\case \vx\,\of ...$ in a $\mdo$-block,
-whenever we work in a $\MonadGen$ and $\vx$ has a value type.
+This can be generalized to splitting on any object value. In the Agda and
+Haskell implementations, we overload $\mit{split}$ with a class similar to the
+following:
+\begin{alignat*}{3}
+  & \hspace{-2em}\mathrlap{\tyclass\,\mit{Split}\,(\vA : \VTy)\,\where}\\
+  & \hspace{-2em}\ind \mit{SplitTo} &&: \MTy \\
+  & \hspace{-2em}\ind \mit{split}   &&: \Lift \vA \to \Gen\,\mit{SplitTo}
+\end{alignat*}
+In a native implementation of CFTT it may make sense to extend $\mdo$-notation,
+so that we elaborate $\mbf{case}$ on object values to an application of the
+appropriate $\mit{split}$ function. We adopt this in the rest of the paper, so
+we will be able to write $\case \vx\,\of ...$ in a $\mdo$-block, whenever we
+work in a $\MonadGen$ and $\vx$ has a value type.
 
 \subsection{Monad Transformers}\label{monad-transformers}
 
@@ -1292,35 +1295,6 @@ Haskell. We summarize features and differences:
   for dependent types.
 \end{itemize}
 
-
-%% We implemented all features in this section in typed Template Haskell
-%% \cite{TODO}, using only the strongly typed interface. The organization of the
-%% code is essentially the same as here, but some changes are necessary:
-%% \begin{itemize}
-%%   \item TH cannot properly handle scoping of type variables across quotations,
-%%         generating ill-typed code in some cases. It is fairly easy to work around
-%%         this using term-level proxy values.
-%%   \item We do not bother tracking value and computation types. This could be done,
-%%         using dummy type classes, but we would not get any extra guarantees from it
-%%         in downstream compilation.
-%%   \item When we take the product of generic sums in CFTT, we simply take the
-%%         object-level product of component types, pairwise. We do this because we
-%%         assume that the downstream compiler can represent products without
-%%         overheads, in an unboxed manner, and also erase unit types. In Haskell we do
-%%         not rely on this, and instead use a slightly more complicated
-%%         sum-of-products-of-values representation, and also fuse away product types
-%%         during staging.
-%%   \item We make heavy use of \emph{singleton types} \cite{TODO} in generic sums-of-products, to emulate
-%%         dependent types. This adds significant noise compared to a native dependently typed
-%%         version.
-%%   \item We have two separate type classes for binding-time improvement, one for
-%%         base types and one for monads specifically. This is because the quantified
-%%         constraints in \ref{TODO} yield poor type inference for $\mup$ and $\mdown$,
-%%         by preventing \emph{functional dependencies} \cite{TODO} between the class
-%%         parameters. We expect that in a native CFTT implementation, the extra staging
-%%         information in type universes would help inference in this case.
-%% \end{itemize}
-
 \section{Stream Fusion}
 
 Stream fusion refers to a collection of techniques for generating efficient code
@@ -1336,31 +1310,17 @@ efficiently compile, and we can demonstrate significant improvements in CFTT.
 We also use dependent types in a more essential way than in the previous
 section.
 
-%% Fusion techniques can be broadly grouped into \emph{push} fusion, which is based
-%% on Church-encodings of inductive lists, and $\emph{pull}$ fusion, which is based
-%% on Church-encodings of coinductive lists, which manifests as \emph{state
-%% machines} \cite{TODO}. The two styles have different trade-offs, and in
-%% practical programming it is a good idea to support both, but in this section we
-%% focus on pull fusion.
-
-%% The reason is partly lack of space, but also that pull fusion has been
-%% historically the more difficult to reliably compile, and we can demonstrate
-%% significant improvements in CFTT, in robustness and expressive power. Our fusion
-%% always succeeds, and we also support a $\mit{concatMap}$ operation, which
-%% has been elusive in guaranteed fusion. We believe that our implementation also
-%% provides valuable conceptual clarity.
-
 \subsection{Streams}
 
 A pull stream is a meta-level specification of a state machine:
 \begin{alignat*}{3}
   & \data \Step\,\vS\,\vA = \Stop\,|\,\Skip\,\vS\,|\,\Yield\,\vA\,\vS\\
   & \data \Pull\,(\vA : \MTy) : \MTy\,\where\\
-  & \ind \Pull : (\vS : \MTy) \to \IsSOP\,\vS \RA \vS \to (\vS \to \Gen\,(\Step\,\vS\,\vA)) \to \Pull\,\vA
+  & \ind \Pull : (\vS : \MTy) \to \IsSOP\,\vS \RA \Gen\,\vS \to (\vS \to \Gen\,(\Step\,\vS\,\vA)) \to \Pull\,\vA
 \end{alignat*}
 In the $\Pull$ constructor, $\vS$ is the type of the internal state which is
 required to be a sum-of-products of value types by the $\IsSumVS\,\vS$
-constraint. The next field with type $S$ is the initial state, while transitions
+constraint. The next field with type $\Gen\,S$ is the initial state, while transitions
 are represented by the $\vS \to \Gen\,(\Step\,\vS\,\vA)$ field. Possible transitions
 are stopping ($\Stop$), transitioning to a new state while outputting a value
 ($\Yield$) and making a silent transition to a new state ($\Skip$).
@@ -1370,12 +1330,12 @@ applicative functor, where $\mit{pure}$ infinitely repeats a value and $({\ap})$
 applies a stream of functions to a stream of values, pointwise.
 \begin{alignat*}{3}
   &\mit{pure} : \vA \to \Pull\,\vA\\
-  &\mit{pure} = \Pull\,()\,()\,(\lam \_.\,\return \dlr \Stop)
+  &\mit{pure}\,\va = \Pull\,()\,(\return\,())\,(\lam \_.\,\return \dlr \Yield\,\va\,())
 \end{alignat*}
 \begin{alignat*}{3}
   &(\!\ap\!) : \Pull\,(\vA \to \vB) \to \Pull\,\vA \to \Pull\,\vB \\
   &(\!\ap\!)\,(\Pull\,\vS\,\seed\,\step)\,(\Pull\,\vS'\,\seed'\,\step') =\\
-  & \ind \Pull\,(\vS,\,\vS')\,(\seed,\,\seed') \dlr \lam (\vs,\,\vs').\,\step\,\vs \bind \lam \case \\
+  & \ind \Pull\,(\vS,\,\vS')\,(({,}) \fmap \seed\,\ap\,\seed') \dlr \lam (\vs,\,\vs').\,\step\,\vs \bind \lam \case \\
   & \ind \ind \Stop \hspace{1.20em}        \to \return \Stop \\
   & \ind \ind \Skip\,\vs \hspace{0.75em}     \to \return \dlr \Skip\,(\vs,\,\vs') \\
   & \ind \ind \Yield\,\vf\,\vs \to \step'\,\vs' \bind \lam \case \\
@@ -1391,23 +1351,23 @@ usual $\mit{zip}$ and $\mit{zipWith}$ operations from $(\!\ap\!)$. $\Pull$
 is also a monoid with stream appending as the binary operation.
 \begin{alignat*}{3}
   & \mit{empty} : \Pull\,\vA\\
-  & \mit{empty} = \Pull\,()\,()\,(\lam \_.\,\return \Stop)
+  & \mit{empty} = \Pull\,()\,(\return\,())\,(\lam \_.\,\return \Stop)
 \end{alignat*}
 \begin{alignat*}{5}
-  & \hspace{-4em}\mathrlap{(\!<>\!) : \Pull\,\vA \to \Pull\,\vA \to \Pull\,\vA} \\
-  & \hspace{-4em}\mathrlap{(\!<>\!)\,(\Pull\,\vS\,\seed\,\step)\,(\Pull\,\vS'\,\seed'\,\step') = \Pull\,(\Either\,\vS\,\vS')\,(\Left\,\seed)\,\lam \case} \\
-  & \hspace{-4em}\ind \Left\,\vs &&\to \step\,s \bind \lam \case &&\Stop             &&\to \return \dlr \Skip\,(\Right\,\seed')\\
-  & \hspace{-4em}                    &&                          &&\Skip\,\vs        &&\to \return \dlr \Skip\,(\Left\,\vs) \\
-  & \hspace{-4em}                    &&                        &&\Yield\,\va\,\vs    &&\to \return \dlr \Yield\,\va\,(\Left\,\vs)\\
-  & \hspace{-4em}\ind \Right\,\vs' &&\to \step\,s' \bind \lam \case &&\Stop          &&\to \return \Stop\\
-  & \hspace{-4em}                    &&                        &&\Skip\,\vs'         &&\to \return \dlr \Skip\,(\Right\,\vs') \\
-  & \hspace{-4em}                    &&                        &&\Yield\,\va\,\vs'   &&\to \return \dlr \Yield\,\va\,(\Right\,\vs')
+  & \hspace{-5em}\mathrlap{(\!<>\!) : \Pull\,\vA \to \Pull\,\vA \to \Pull\,\vA} \\
+  & \hspace{-5em}\mathrlap{(\!<>\!)\,(\Pull\,\vS\,\seed\,\step)\,(\Pull\,\vS'\,\seed'\,\step') = \Pull\,(\Either\,\vS\,\vS')\,(\Left \fmap \seed)\,\lam \case} \\
+  & \hspace{-5em}\ind \Left\,\vs &&\to \step\,s \bind \lam \case &&\Stop             &&\to (\Skip \circ \Right) \fmap \seed'\\
+  & \hspace{-5em}                    &&                          &&\Skip\,\vs        &&\to \return \dlr \Skip\,(\Left\,\vs) \\
+  & \hspace{-5em}                    &&                        &&\Yield\,\va\,\vs    &&\to \return \dlr \Yield\,\va\,(\Left\,\vs)\\
+  & \hspace{-5em}\ind \Right\,\vs' &&\to \step\,s' \bind \lam \case &&\Stop          &&\to \return \Stop\\
+  & \hspace{-5em}                    &&                        &&\Skip\,\vs'         &&\to \return \dlr \Skip\,(\Right\,\vs') \\
+  & \hspace{-5em}                    &&                        &&\Yield\,\va\,\vs'   &&\to \return \dlr \Yield\,\va\,(\Right\,\vs')
 \end{alignat*}
 These definitions are standard for streams; note though that compared to the
 unstaged definitions in previous literature, the only additional noise is just
-the $\Gen$ monad in the transitions. Likewise, we can give standard definitions
-for usual stream functions such as $\msf{filter}$, $\msf{take}$ or
-$\msf{drop}$.
+the $\Gen$ monad in the initial states and the transitions. Likewise, we can
+give standard definitions for usual stream functions such as $\msf{filter}$,
+$\msf{take}$ or $\msf{drop}$.
 
 \subsection{Running Streams with Mutual Recursion}
 
@@ -1445,11 +1405,11 @@ instead:
   &\mtabulate &&: (\El_\SOP\,\vA \to \Lift \vR) \to \Lift(\mit{Fun}_{\SOP\Lift}\,\vA\,\vR)\\
   &\mindex    &&: \Lift(\mit{Fun}_{\SOP\Lift}\,\vA\,\vR) \to (\El_\SOP\,\vA \to \Lift \vR)
 \end{alignat*}
-For join points, this is just as efficient as the previous
-$\mit{Fun}_{\SOP\Lift}$, since a definition of a product of functions gets
-compiled to a sequence of function definitions. Now, we can generate object code
-from streams. There are several choices for this, but in CFTT the $\msf{foldr}$
-function is as good as we can get.
+Even for join points, this is just as efficient as the previous
+$\mit{Fun}_{\SOP\Lift}$ version, since a definition of a product of functions
+gets compiled to a sequence of function definitions. Now, we can generate object
+code from streams. There are several choices for this, but in CFTT the
+$\msf{foldr}$ function is as good as we can get.
 \begin{alignat*}{3}
   &\hspace{-13em}\mathrlap{\foldr : \{\vA : \MTy\}\{\vB : \Ty\} \to (\vA \to \Lift \vB \to \Lift \vB) \to \Lift \vB \to \Pull\,\vA \to \Lift\,\vB}\\
   &\hspace{-13em}\mathrlap{\foldr\,\{\vA\}\,\{\vB\}\,(\Pull\,\vS\,\seed\,\step)\,\vf\,\vb = \ql}\\
@@ -1457,7 +1417,7 @@ function is as good as we can get.
   &\hspace{-13em}\ind \ind \Stop            &&\to \vb \\
   &\hspace{-13em}\ind \ind \Skip\,\vs       &&\to \mindex\,\qt{\vfs}\,(\rep\,\vs) \\
   &\hspace{-13em}\ind \ind \Yield\,\va\,\vs &&\to \vf\,\va\,(\mindex\,\qt{\vfs}\,(\rep\,\vs))\big);\\
-  &\hspace{-13em}\mathrlap{\ind \spl(\mindex\,\qt{\vfs}\,(\rep\,\seed))\qr}
+  &\hspace{-13em}\mathrlap{\ind \spl\big(\runGen \dlr \mdo \{s \fro \seed; \return \dlr \mindex\,\qt{\vfs}\,(\rep\,\vs)\}\big)\qr}
 \end{alignat*}
 This $\foldr$ is quite flexible, becuse we can eliminate into any object type,
 including function types. For instance, we can define $\foldl$ from $\foldr$:
@@ -1506,23 +1466,23 @@ Above, $\{\va : \vA\} \to \IsSOP\,(\vB\,\va)$ is a universally quantified
 instance constraint; this is available in Agda and, less generally, in Haskell
 \cite{TODO}. The definition of $\concatMap$ is as follows.
 \begin{alignat*}{3}
-  & \concatMap : \IsSOP\,\vA \RA (\vA \to \Pull\,\vB) \to \Pull\,\vA \to \Pull\,\vB \\
-  & \concatMap\,\{\vA\}\,\{\vB\}\,\vf\,(\Pull\,\vS\,\seed\,\step) = \\
-  & \ind \Pull\,(\vS,\,\Maybe\,(\Sigma\,\vA\,(\mit{projS} \circ \vf)))\,(\seed,\,\Nothing) \dlr \lam \case \\
-  & \ind \ind (\vs,\,\Nothing) \to \step\,s \bind \lam \case \\
-  & \ind \ind \ind \Stop      \hspace{1.4em}   \to \return \Stop\\
-  & \ind \ind \ind \Skip\,\vs \hspace{0.9em} \to \return \dlr \Skip\,(\vs,\, \Nothing)\\
-  & \ind \ind \ind \Yield\,\va\,\vs          \to \return \dlr \Skip\,(\vs,\, \Just\,(\va,\,\mit{projSeed}\,(\vf\,\va)))\\
-  & \ind \ind (\vs,\,\Just\,(\va,\,\vs')) \to \mit{projStep}\,(\vf\,\va)\,\vs' \bind \lam \case \\
-  & \ind \ind \ind \Stop       \hspace{1.75em}\to \return \dlr \Skip\,(\vs,\,\Nothing) \\
-  & \ind \ind \ind \Skip\,\vs' \hspace{0.94em}\to \return \dlr \Skip\,(\vs,\,\Just\,(\va,\,\vs'))\\
-  & \ind \ind \ind \Yield\,\vb\,\vs' \to \return \dlr \Yield\,\vb\,(\vs,\, \Just\,(\va,\,\vs'))\\
+  & \mathrlap{\concatMap : \IsSOP\,\vA \RA (\vA \to \Pull\,\vB) \to \Pull\,\vA \to \Pull\,\vB }\\
+  & \mathrlap{\concatMap\,\{\vA\}\,\{\vB\}\,\vf\,(\Pull\,\vS\,\seed\,\step) = }\\
+  & \mathrlap{\ind \Pull\,(\vS,\,\Maybe\,(\Sigma\,\vA\,(\mit{projS} \circ \vf)))\,(({,}) \fmap \seed\,\ap\,\return\,\Nothing) \dlr \lam \case }\\
+  & \mathrlap{\ind \ind (\vs,\,\Nothing) \to \step\,\vs \bind \lam \case }\\
+  & \ind \ind \ind \ind \Stop                 &&\to \return \Stop\\
+  & \ind \ind \ind \ind \Skip\,\vs            &&\to \return \dlr \Skip\,(\vs,\, \Nothing)\\
+  & \ind \ind \ind \ind \Yield\,\va\,\vs      &&\to \mdo \{\vs' \fro \mit{projSeed}\,(\vf\,\va); \return \dlr \Skip\,(\vs,\,\Just\,(\va,\,\vs'))\}\\
+  & \mathrlap{\ind \ind (\vs,\,\Just\,(\va,\,\vs')) \to \mit{projStep}\,(\vf\,\va)\,\vs' \bind \lam \case }\\
+  & \ind \ind \ind \ind \Stop                &&\to \return \dlr \Skip\,(\vs,\,\Nothing) \\
+  & \ind \ind \ind \ind \Skip\,\vs'          &&\to \return \dlr \Skip\,(\vs,\,\Just\,(\va,\,\vs'))\\
+  & \ind \ind \ind \ind \Yield\,\vb\,\vs'    &&\to \return \dlr \Yield\,\vb\,(\vs,\, \Just\,(\va,\,\vs'))
 \end{alignat*}
-Here, $\Nothing$ marks the states where we are in the ``outer'' loop, trying to
-run the $\Pull\,\vA$ stream until we get the next value. $\Just$ marks the
-states of the ``inner'' loop, where we have a concrete $\va : \vA$ value and
-we run the $(\vf\,\va)$ stream until it stops. In the inner loop, the machine state
-type depends on the $\va : \vA$ value, hence the need for $\Sigma$.
+Here, $\Nothing$ marks the states where we are in the ``outer'' loop, running
+the $\Pull\,\vA$ stream until we get its next value. $\Just$ marks the states of
+the ``inner'' loop, where we have a concrete $\va : \vA$ value and we run the
+$(\vf\,\va)$ stream until it stops. In the inner loop, the machine state type
+depends on the $\va : \vA$ value, hence the need for $\Sigma$.
 
 How do we get $\IsSOP$ for $\Sigma$? The key observations are:
 \begin{itemize}
@@ -1592,49 +1552,108 @@ We do not detail the full definition of $\Sigma_\SOP$ here. The reader may refer
 to the SOP module in the Agda implementation, which is altogether 260 lines with
 all $\IsSOP$ instances.
 
-\subsection{Let-Insertion and Case Splitting}
+\subsection{Let-Insertion \& Case Splitting in Monadic Style}
 
-Since $\Pull$ is not a monad, it cannot be $\MonadGen$ in our framework,
-but we still support some forms of let-insertion. First, we note that $\Pull$ can be
-mapped over by functions returning in $\Gen$:
-\begin{alignat*}{3}
-  &\hspace{-3em}\mathrlap{\mit{mapGen} : (\vA \to \Gen\,\vB) \to \Pull\,\vA \to \Pull\,\vB }\\
-  &\hspace{-3em}\mathrlap{\mit{mapGen}\,\vf\,(\Pull\,\vS\,\seed\,\step) = \Pull\,\vS\,\seed \dlr \lam \case}\\
-  &\hspace{-3em} \ind \Stop            &&\to \return\,\Stop \\
-  &\hspace{-3em} \ind \Skip\,\vs       &&\to \return \dlr \Skip\,\vs\\
-  &\hspace{-3em} \ind \Yield\,\va\,\vs &&\to \mdo \{\vb \fro \vf\,\va; \return \dlr \Yield\,\vb\,\vs\}
-\end{alignat*}
-Now, we may use $\mit{mapGen}\,\gen : \Pull\,(\Lift \vA) \to \Pull\,(\Lift \vA)$
-to let-bind all yielded expressions in a stream. This can be useful in stream
-operations that would otherwise duplicate yielded expressions. For example, the
-function with type $\Pull\,(\Lift \vA) \to \Pull\,(\Lift \vA,\,\Lift \vA)$
-should be defined with let-insertion.
-
-Let us now consider a more ``monadic'' style of stream programming. For this we
-need singleton streams:
+While $\Pull$ is not a monad, and hence also not a $\MonadGen$, we can still use
+a monadic style of stream programming with good ergonomics. First, we need
+singleton streams for ``returning'':
 \begin{alignat*}{3}
   & \mit{single} : \vA \to \Pull\,\vA \\
   & \mit{single}\,\va = \Pull\,\Bool_\M\,\True \dlr \lam \vb.\,\return \dlr\mbf{if}\,\vb\,\mbf{then}\,\Yield\,\va\,\False\,\mbf{else}\,\Stop
 \end{alignat*}
-We also write $\mit{forEach}$ for $\concatMap$ with flipped arguments. Now, a
-more monadic flavor of let-insertion is given as
+Now, this operation should be avoided when possible, since it has two states and
+can contribute to a blow-up of state size in combination with state-multiplying
+operations such as $\mit{zip}$ or $\concatMap$. Both let-insertion and case
+splitting could be defined generically from $\single$, $\concatMap$ and the
+following operation (definition omitted):
+\[ \mit{mapGen} : (\vA \to \Gen\,\vB) \to \Pull\,\vA \to \Pull\,\vB \]
+However, $\single$ would introduce superfluous states that way. Instead, we give
+more efficient specialized definitions. Let-insertion is as follows:
 \begin{alignat*}{3}
-  &\gen_{\Pull} : \Lift \vA \to \Pull\,(\Lift \vA) \\
-  &\gen_{\Pull}\,\va = \mit{mapGen}\,\gen\,(\mit{single}\,\va).
+  & \hspace{-8em}\mathrlap{\genPull : \{\vA : \VTy\}\{\vB : \MTy\} \to \Lift \vA \to (\Lift \vA \to \Pull\,\vB) \to \Pull\,\vB}\\
+  & \hspace{-8em}\mathrlap{\genPull\,\va\,\vf = \Pull\,(\Sigma\,(\Lift\,\vA)\,(\mit{projS} \circ \vf))\,(({\va,}) \fmap \mit{projSeed}\,(\vf\,\va)) \dlr \lam \case}\\
+  & \hspace{-8em}\ind \Stop            &&\to \return\,\Stop \\
+  & \hspace{-8em}\ind \Skip\,\vs       &&\to \return \dlr \Skip\,(\va,\,\vs)\\
+  & \hspace{-8em}\ind \Yield\,\vb\,\vs &&\to \return \dlr \Yield\,\vb\,(\va,\,\vs)
 \end{alignat*}
-We can also implement case splitting on object values. Recall from Section
-\ref{TODO} that for each value type we have a splitting function that returns a
-meta-level view on the constructors. Importantly, all such views are $\SOP$-s, and
-therefore can be bound by $\forEach$. A small example:
+For case splitting, we have:
 \begin{alignat*}{3}
-  & \hspace{-5em}\mathrlap{\forEach\,(\mit{countFrom}\,\qt{0}) \dlr \lam \vn. }\\
-  & \hspace{-5em}\mathrlap{\forEach\,(\gen_{\Pull}\,\qt{\spl \vn * 2}) \dlr \lam \vm. }\\
-  & \hspace{-5em}\mathrlap{\forEach\,(\single\,(\msplit\,\qt{\spl \vm < 20})) \dlr \lam \case }\\
-  & \hspace{-5em}\ind \True_\M  &&\to \single\,\qt{\spl \vm + 10}   \\
-  & \hspace{-5em}\ind \False_\M &&\to \single\,\qt{\spl \vm + 20}
+  &\hspace{-12em}\mathrlap{\casePull : (\mit{Split}\,\vA,\,\IsSOP\,(\mit{SplitTo}\,\{\vA\})) \RA \Lift \vA \to (\mit{SplitTo}\,\{\vA\} \to \Pull\,\vB) \to \Pull\,\vB }\\
+  &\hspace{-12em}\mathrlap{\casePull\,\va\,\vf = \Pull\,(\Sigma\,(\mit{SplitTo}\,\{\vA\})\,(\mit{projS} \circ \vf))}\\
+  &\hspace{-12em}\mathrlap{    \hspace{7.1em}         (\mdo \{\va' \fro \mit{split}\,\va; \vs \fro \mit{projSeed}\,(\vf\,\va');\return (\va',\,\vs)\}) \dlr \lam \case}\\
+  &\hspace{-4em}\mathrlap{  \ind   (\va',\,\vs) \to \mit{projStep}\,(\vf\,\va')\,\vs \bind \lam \case} \\
+  &\hspace{-4em} \ind \ind \ind \Stop            &&\to \return \Stop \\
+  &\hspace{-4em} \ind \ind \ind \Skip\,\vs       &&\to \return \dlr \Skip\,(\va',\,\vs) \\
+  &\hspace{-4em} \ind \ind \ind \Yield\,\vb\,\vs &&\to \return \dlr \Yield\,\vb\,(\va',\,\vs)
 \end{alignat*}
-Here $(\gen_{\Pull}\,\qt{\spl \vn * 2})$ behaves like a let-insertion, and
-$(\single\,(\msplit\,\qt{\spl \vm < 20}))$ implements the case splitting.
+
+
+%% casePull' : ∀ {A B}⦃ _ : Split A ⦄ ⦃ _ : IsSOP (SplitTo {A}) ⦄ → ↑V A → (SplitTo {A} → Pull B) → Pull B
+%% casePull' {A} {B} {{_}}{{sopA}} a f =
+%%   pull (Σ (SplitTo {A}) (St ∘ f)) {{SOPΣ{{sopA}}{{λ {x} → StSOP (f x)}}}}
+%%     (do sp ← splitGen a; s ← seed (f sp); pure (_,_ {A = SplitTo {A}}{B = _} sp s)) λ where
+%%       (sp , s) → step (f sp) s >>= λ where
+%%          stop        → pure stop
+%%          (skip s)    → pure $ skip (sp , s)
+%%          (yield b s) → pure $ yield b (sp , s)
+
+
+%% To get good ergonomics in a ``monadic'' style of stream definitions, we need to
+%% reproduce let-insertion and case splitting on object values. First, we need
+%% singleton streams:
+
+
+%% genLetPull' : ∀ {A B} → ↑V A → (↑V A → Pull B) → Pull B
+%% genLetPull' {A} {B} a f =
+%%   pull (Σ (↑V A) (St ∘ f)) {{SOPΣ {{↑SOP}} {{λ {x} → StSOP (f x)}}}} ((a ,_) <$> (seed (f a))) λ where
+%%     (a , s) → step (f a) s <&> λ where
+%%       stop        → stop
+%%       (skip s)    → skip (a , s)
+%%       (yield b s) → yield b (a , s)
+
+
+
+%% Since $\Pull$ is not a monad, it cannot be $\MonadGen$ in our framework,
+%% but we still support some forms of let-insertion. First, we note that $\Pull$ can be
+%% mapped over by functions returning in $\Gen$:
+%% \begin{alignat*}{3}
+%%   &\hspace{-3em}\mathrlap{\mit{mapGen} : (\vA \to \Gen\,\vB) \to \Pull\,\vA \to \Pull\,\vB }\\
+%%   &\hspace{-3em}\mathrlap{\mit{mapGen}\,\vf\,(\Pull\,\vS\,\seed\,\step) = \Pull\,\vS\,\seed \dlr \lam \case}\\
+%%   &\hspace{-3em} \ind \Stop            &&\to \return\,\Stop \\
+%%   &\hspace{-3em} \ind \Skip\,\vs       &&\to \return \dlr \Skip\,\vs\\
+%%   &\hspace{-3em} \ind \Yield\,\va\,\vs &&\to \mdo \{\vb \fro \vf\,\va; \return \dlr \Yield\,\vb\,\vs\}
+%% \end{alignat*}
+%% Now, we may use $\mit{mapGen}\,\gen : \Pull\,(\Lift \vA) \to \Pull\,(\Lift \vA)$
+%% to let-bind all yielded expressions in a stream. This can be useful in stream
+%% operations that would otherwise duplicate yielded expressions. For example, the
+%% function with type $\Pull\,(\Lift \vA) \to \Pull\,(\Lift \vA,\,\Lift \vA)$
+%% should be defined with let-insertion.
+
+%% Let us now consider a more ``monadic'' style of stream programming. For this we
+%% need singleton streams:
+%% \begin{alignat*}{3}
+%%   & \mit{single} : \vA \to \Pull\,\vA \\
+%%   & \mit{single}\,\va = \Pull\,\Bool_\M\,\True \dlr \lam \vb.\,\return \dlr\mbf{if}\,\vb\,\mbf{then}\,\Yield\,\va\,\False\,\mbf{else}\,\Stop
+%% \end{alignat*}
+%% We also write $\mit{forEach}$ for $\concatMap$ with flipped arguments. Now, a
+%% more monadic flavor of let-insertion is given as
+%% \begin{alignat*}{3}
+%%   &\gen_{\Pull} : \Lift \vA \to \Pull\,(\Lift \vA) \\
+%%   &\gen_{\Pull}\,\va = \mit{mapGen}\,\gen\,(\mit{single}\,\va).
+%% \end{alignat*}
+%% We can also implement case splitting on object values. Recall from Section
+%% \ref{TODO} that for each value type we have a splitting function that returns a
+%% meta-level view on the constructors. Importantly, all such views are $\SOP$-s, and
+%% therefore can be bound by $\forEach$. A small example:
+%% \begin{alignat*}{3}
+%%   & \hspace{-5em}\mathrlap{\forEach\,(\mit{countFrom}\,\qt{0}) \dlr \lam \vn. }\\
+%%   & \hspace{-5em}\mathrlap{\forEach\,(\gen_{\Pull}\,\qt{\spl \vn * 2}) \dlr \lam \vm. }\\
+%%   & \hspace{-5em}\mathrlap{\forEach\,(\single\,(\msplit\,\qt{\spl \vm < 20})) \dlr \lam \case }\\
+%%   & \hspace{-5em}\ind \True_\M  &&\to \single\,\qt{\spl \vm + 10}   \\
+%%   & \hspace{-5em}\ind \False_\M &&\to \single\,\qt{\spl \vm + 20}
+%% \end{alignat*}
+%% Here $(\gen_{\Pull}\,\qt{\spl \vn * 2})$ behaves like a let-insertion, and
+%% $(\single\,(\msplit\,\qt{\spl \vm < 20}))$ implements the case splitting.
 
 \subsection{Discussion}
 

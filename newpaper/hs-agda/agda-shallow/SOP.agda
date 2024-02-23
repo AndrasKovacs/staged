@@ -293,12 +293,19 @@ instance
   IsSOP.q (SOP× {A} {B}) (x , y) rewrite
     *ₛβ (encode x) (encode y) | q {A} x | q {B} y = refl
 
-  ↑SOP : ∀ {A} → IsSOP (↑V A)
-  IsSOP.Rep (↑SOP {A}) = (A ∷ []) ∷ []
-  IsSOP.encode (↑SOP {A}) x = here (x ∷ [])
-  IsSOP.decode (↑SOP {A}) (here (x ∷ [])) = x
-  IsSOP.p (↑SOP {A}) (here (x ∷ [])) = refl
-  IsSOP.q (↑SOP {A}) x = refl
+  SOP↑ : ∀ {A} → IsSOP (↑V A)
+  IsSOP.Rep (SOP↑ {A}) = (A ∷ []) ∷ []
+  IsSOP.encode (SOP↑ {A}) x = here (x ∷ [])
+  IsSOP.decode (SOP↑ {A}) (here (x ∷ [])) = x
+  IsSOP.p (SOP↑ {A}) (here (x ∷ [])) = refl
+  IsSOP.q (SOP↑ {A}) x = refl
+
+  SOP⊥ : IsSOP ⊥
+  IsSOP.Rep SOP⊥ = []
+  IsSOP.encode SOP⊥ ()
+  IsSOP.decode SOP⊥ ()
+  IsSOP.p SOP⊥ ()
+  IsSOP.q SOP⊥ ()
 
 -- This is not an instance because usually we only want the vanilla _×_ instance instead,
 -- and this one would overlap with it.

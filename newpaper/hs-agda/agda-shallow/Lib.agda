@@ -8,7 +8,7 @@ open import Relation.Binary.PropositionalEquality
   public
 open import Data.Product hiding (_<*>_; map; zip) renaming (proj₁ to ₁; proj₂ to ₂) public
 open import Function public
-open import Data.List hiding (tabulate; take; drop; foldr; foldl; zip; concatMap; filter) public
+open import Data.List hiding (tabulate; take; drop; foldr; foldl; zip; concatMap; filter; and; or) public
 open import Data.Empty public
 open import Data.Nat using (ℕ; zero; suc) public
 
@@ -25,6 +25,14 @@ record ⊤ : Set where
   constructor tt
 
 data Bool : Set where true false : Bool
+
+and : Bool → Bool → Bool
+and true y = y
+and false y = false
+
+or : Bool → Bool → Bool
+or true y = true
+or false y = y
 
 data Maybe (A : Set) : Set where
   just : A → Maybe A

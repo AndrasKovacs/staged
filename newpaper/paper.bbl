@@ -2,7 +2,7 @@
 %%% Do NOT edit. File created by BibTeX with style
 %%% ACM-Reference-Format-Journals [18-Jan-2012].
 
-\begin{thebibliography}{33}
+\begin{thebibliography}{34}
 
 %%% ====================================================================
 %%% NOTE TO THE USER: you can override these defaults by providing
@@ -321,6 +321,23 @@
 \urldef\tempurl%
 \url{https://doi.org/10.5281/zenodo.6757373}
 \showDOI{\tempurl}
+
+
+\bibitem[Leroy et~al\mbox{.}(2023)]%
+        {leroy2023ocaml}
+\bibfield{author}{\bibinfo{person}{Xavier Leroy}, \bibinfo{person}{Damien
+  Doligez}, \bibinfo{person}{Alain Frisch}, \bibinfo{person}{Jacques Garrigue},
+  \bibinfo{person}{Didier R{\'e}my}, \bibinfo{person}{Kc Sivaramakrishnan},
+  {and} \bibinfo{person}{J{\'e}r{\^o}me Vouillon}.}
+  \bibinfo{year}{2023}\natexlab{}.
+\newblock \bibinfo{title}{The OCaml system release 5.1: Documentation and
+  user's manual}.
+\newblock
+\newblock
+\urldef\tempurl%
+\url{https://v2.ocaml.org/manual/}
+\showURL{%
+\tempurl}
 
 
 \bibitem[Levy(1999)]%

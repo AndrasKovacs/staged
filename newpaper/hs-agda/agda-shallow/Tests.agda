@@ -29,6 +29,7 @@ postulate
 {-# DISPLAY C x = x #-}
 {-# DISPLAY V x = x #-}
 {-# DISPLAY Λ f = f #-}
+{-# DISPLAY _,C_ x y  = x , y #-}
 {-# DISPLAY fst∘ x = CALL #-}
 
 --------------------------------------------------------------------------------
@@ -123,6 +124,13 @@ test8 = Λ λ x → down do
     true  → modify' (_+∘_ 10)
     false → modify' (_+∘_ 20)
 
+test8' : ↑C (ℕ∘ ⇒ StateT∘ ℕ∘ (MaybeT∘ Identity∘) ⊤∘)
+test8' = Λ λ x → down do
+  up =<< (genLet $ down {F = StateT∘ ℕ∘ (MaybeT∘ Identity∘)} $ caseM (x ==∘ 10) λ where
+    true  → modify' (_+∘_ 10)
+    false → modify' (_+∘_ 20))
+  modify' (_+∘_ 10)
+
 -- The "fail" branches jump immediately to the "catch" code
 test9 : ↑C (ℕ∘ ⇒ StateT∘ ℕ∘ (MaybeT∘ Identity∘) ⊤∘)
 test9 = Λ λ x → down $
@@ -187,6 +195,25 @@ myfilter = filterM λ n → caseM (n ==∘ 10) λ where
   false → caseM (n ==∘ 0) λ where
     true  → fail
     false → pure true
+
+-- fill the leaves of a tree from a list
+-- throw error if we have 0 in list.
+papertest : ↑C (Tree∘ ℕ∘ ⇒ StateT∘ (List∘ ℕ∘) (MaybeT∘ Identity∘) (Tree∘ ℕ∘))
+papertest = DefRec λ f → Λ λ t → down $
+  caseM t λ where
+    leaf → pure leaf∘
+    (node n l r) → do
+      caseM (n ==∘ 0) λ where
+        true → lift (maybeT (pure nothing))
+        false → pure tt∘
+      ns ← get
+      n ← join $ caseM ns λ where
+        nil         → pure n
+        (cons n ns) → do put' ns; pure n
+      node∘ n <$> up (f ∙ l) <*> up (f ∙ r)
+
+
+--------------------------------------------------------------------------------
 
 test12 : Pull (↑V ℕ∘)
 test12 =

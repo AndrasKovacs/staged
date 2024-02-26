@@ -21,6 +21,10 @@ data SplitListTy (A : VTy) : Set where
   nil  : SplitListTy A
   cons : ↑V A → ↑V (List∘ A) → SplitListTy A
 
+data SplitTreeTy (A : VTy) : Set where
+  leaf : SplitTreeTy A
+  node : ↑V A → ↑V (Tree∘ A) → ↑V (Tree∘ A) → SplitTreeTy A
+
 instance
   SplitBool : Split Bool∘
   Split.SplitTo SplitBool = Bool
@@ -37,3 +41,7 @@ instance
   Split× : ∀ {A B} → Split (A ×∘ B)
   Split.SplitTo (Split× {A} {B}) = ↑V A × ↑V B
   Split.splitGen Split× x = gen λ k → case×∘ x λ a b → k (a , b)
+
+  SplitTree : ∀ {A} → Split (Tree∘ A)
+  Split.SplitTo (SplitTree {A}) = SplitTreeTy A
+  Split.splitGen SplitTree x = gen λ k → caseTree∘ x (k leaf) (λ x l r → k (node x l r))

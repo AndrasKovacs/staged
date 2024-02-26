@@ -15,7 +15,7 @@ open Improve ⦃...⦄ public
 
 instance
   ImpIdentity : Improve Identity∘ Gen
-  Improve.up   ImpIdentity x = gen λ k → k (runIdentity∘ x)
+  Improve.up   ImpIdentity x = pure (runIdentity∘ x)
   Improve.down ImpIdentity x = runGen (identity∘ <$> x)
 
   ImpMaybeT : ∀ {F M} → ⦃ _ : Improve F M ⦄ → Improve (MaybeT∘ F) (MaybeT M)

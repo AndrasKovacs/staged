@@ -75,6 +75,11 @@ postulate
   cons∘     : ∀ {A} → ↑V A → ↑V (List∘ A) → ↑V (List∘ A)
   caseList∘ : ∀ {A B} → ↑V (List∘ A) → ↑ B → (↑V A → ↑V (List∘ A) → ↑ B) → ↑ B
 
+  Tree∘     : VTy → VTy
+  leaf∘     : ∀ {A} → ↑V (Tree∘ A)
+  node∘     : ∀ {A} → ↑V A → ↑V (Tree∘ A) → ↑V (Tree∘ A) → ↑V (Tree∘ A)
+  caseTree∘ : ∀ {A B} → ↑V (Tree∘ A) → ↑ B → (↑V A → ↑V (Tree∘ A) → ↑V (Tree∘ A) → ↑ B) → ↑ B
+
   StateT∘    : VTy → (VTy → Ty) → (VTy → Ty)
   stateT∘    : ∀ {S M A} → (↑V S → ↑ (M(A ×∘ S))) → ↑ (StateT∘ S M A)
   runStateT∘ : ∀ {S M A} → ↑ (StateT∘ S M A) → (↑V S → ↑ (M(A ×∘ S)))

@@ -92,6 +92,10 @@ record Monad (M : Set → Set) : Set₁ where
   _>>_ : ∀ {A B} → M A → M B → M B
   _>>_ ma mb = ma >>= λ _ → mb
 
+  infixr 1 _=<<_
+  _=<<_ : ∀ {A B} → (A → M B) → M A → M B
+  _=<<_ = flip _>>=_
+
 open Monad ⦃...⦄ public
 
 instance

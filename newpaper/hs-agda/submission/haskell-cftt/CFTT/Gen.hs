@@ -3,7 +3,7 @@ module CFTT.Gen where
 
 import Control.Monad.Except
 import Control.Monad.Reader
-import Control.Monad.State.Strict
+import Control.Monad.State.Strict hiding (modify')
 import Control.Monad.Trans.Maybe
 import CFTT.Up
 
@@ -49,3 +49,20 @@ gen a = liftGen $ Gen \k -> [|| let x = $$a in seq x $$(k [||x||]) ||]
 
 genRec :: MonadGen m => (Up a -> Up a) -> m (Up a)
 genRec a = liftGen $ Gen \k -> [|| let x = $$(a [||x||]) in $$(k [||x||]) ||]
+
+put' :: (MonadState (Up s) m, MonadGen m) => Up s -> m (Up ())
+put' s = do
+  s <- gen s
+  put s
+  pure [||()||]
+
+modify' :: (MonadState (Up s) m, MonadGen m) => (Up s -> Up s) -> m (Up ())
+modify' f = do
+  s <- get
+  put' (f s)
+
+local' :: (MonadReader (Up r) m, MonadGen m) => (Up r -> Up r) -> m a -> m a
+local' f ma = do
+  r <- ask
+  r <- gen (f r)
+  local (const r) ma

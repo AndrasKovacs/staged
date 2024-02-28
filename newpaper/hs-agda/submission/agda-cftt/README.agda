@@ -1,7 +1,8 @@
 
-
 -- Agda implementation of CFTT. Modules are best viewed in the order here.
 --------------------------------------------------------------------------------
+
+-- Building: I used Agda 2.6.2.2 and standard library version 1.7
 
 {-
 We reproduce a small Haskell-style monad transformer library here, using

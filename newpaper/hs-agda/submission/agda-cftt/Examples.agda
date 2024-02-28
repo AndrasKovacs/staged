@@ -99,29 +99,29 @@ exM1 = Λ λ x → down do
 exM2 : ↑C (ℕ∘ ⇒ StateT∘ ℕ∘ (MaybeT∘ Identity∘) ⊤∘)
 exM2 = Λ λ x → down do
   join $ caseM (x ==∘ 10) λ where
-    true  → modify' (_+∘_ 10)
-    false → modify' (_+∘_ 20)
+    true  → modify (_+∘_ 10)
+    false → modify (_+∘_ 20)
   join $ caseM (x ==∘ 10) λ where
-    true  → modify' (_+∘_ 10)
-    false → modify' (_+∘_ 20)
+    true  → modify (_+∘_ 10)
+    false → modify (_+∘_ 20)
   join $ caseM (x ==∘ 10) λ where
-    true  → modify' (_+∘_ 10)
-    false → modify' (_+∘_ 20)
+    true  → modify (_+∘_ 10)
+    false → modify (_+∘_ 20)
   caseM (x ==∘ 10) λ where
     true  → modify' (_+∘_ 10)
     false → modify' (_+∘_ 20)
 
--- The "fail" branches jump immediately to the "catch" code
+-- The "fail" branches jump immediately to the "catch" clause
 exM3 : ↑C (ℕ∘ ⇒ StateT∘ ℕ∘ (MaybeT∘ Identity∘) ⊤∘)
 exM3 = Λ λ x → down $
-  catch (do
-    join $ caseM (x ==∘ 10) λ where
+  catch (join $ do
+    caseM (x ==∘ 10) λ where
       true  → modify' (_+∘_ 10)
       false → fail
     caseM (x ==∘ 15) λ where
       true  → modify' (_+∘_ 10)
       false → fail)
-    (modify' (_+∘_ 11))
+    (do modify' (_+∘_ 11))
 
 -- Monadic tail recursion on lists, the "tailcall1" result does not get matched.
 exM4 : ↑C (List∘ ℕ∘ ⇒ StateT∘ ℕ∘ (MaybeT∘ Identity∘) ⊤∘)
@@ -144,7 +144,7 @@ exM5 = DefRec λ f → Λ λ t → down $
       ns ← get
       n  ← join $ caseM ns λ where
              nil         → pure n
-             (cons n ns) → do put' ns; pure n
+             (cons n ns) → do put ns; pure n
       l ← up (f ∙ l)
       r ← up (f ∙ r)
       pure (node∘ n l r)
@@ -186,31 +186,31 @@ exM7 = filterM λ n → caseM (n ==∘ 0) λ where
 exS1 : Pull (↑V ℕ∘)
 exS1 = consₚ 10 $ consₚ 20 empty
 
-exS3 : Pull (↑V ℕ∘)
-exS3 = forEach (take 20 count) λ x → (take 20 count) <&>ₚ (λ y → x +∘ y)
+exS2 : Pull (↑V ℕ∘)
+exS2 = forEach (take 20 count) λ x → (take 20 count) <&>ₚ (λ y → x +∘ y)
 
-exS4 : Pull (↑V ℕ∘)
-exS4 = forEach (take 10 count) λ x →
+exS3 : Pull (↑V ℕ∘)
+exS3 = forEach (take 10 count) λ x →
        forEach (take 20 count) λ y →
        forEach (take 30 count) λ z →
        single (x +∘ y +∘ z)
 
-exS5 : ↑V (List∘ (ℕ∘ ×∘ ℕ∘))
-exS5 = toList (zip count exS4)
+exS4 : ↑V (List∘ (ℕ∘ ×∘ ℕ∘))
+exS4 = toList (zip count exS2)
+
+exS5 : Pull (↑ (V ℕ∘))
+exS5 = _*∘_ <$>ₚ take 10 count <*>ₚ take 10 (countFrom 20)
 
 exS6 : Pull (↑ (V ℕ∘))
-exS6 = _*∘_ <$>ₚ take 10 count <*>ₚ take 10 (countFrom 20)
-
-exS7 : Pull (↑ (V ℕ∘))
-exS7 = _+∘_ <$>ₚ exS3 <*>ₚ count
+exS6 = _+∘_ <$>ₚ exS2 <*>ₚ count
 
 -- Section 4.4 example in paper:
-exS8 : Pull (↑ (V ℕ∘))
-exS8 = forEach (take 100 (countFrom 0)) λ x →
+exS7 : Pull (↑ (V ℕ∘))
+exS7 = forEach (take 100 (countFrom 0)) λ x →
        genLetₚ (x *∘ 2) λ y →
        caseₚ (x <∘ 50) λ where
          true  → take y (countFrom x)
          false → single y
 
 -- Medium-sized zip
-exS9 = zip exS8 exS3
+exS8 = zip exS7 exS2

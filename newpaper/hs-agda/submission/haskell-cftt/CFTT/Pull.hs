@@ -1,13 +1,16 @@
+{-# language MagicHash #-}
 
 module CFTT.Pull where
 
 import Data.Typeable
+import Data.Kind
 
 import CFTT.Gen
 import CFTT.SOP
 import CFTT.Split
-import CFTT.Join
 import CFTT.Up
+
+import GHC.Exts
 
 --------------------------------------------------------------------------------
 
@@ -70,6 +73,9 @@ infixl 4 <:>
       (Skip s')    → pure $ Skip (s , s' , Nothing)
       (Yield a s') → pure $ Skip (s , s' , Just a)
 
+zip :: Typeable b => Pull (Up a) -> Pull (Up b) -> Pull (Up (a, b))
+zip as bs = (\a b -> [||($$a, $$b)||]) <$> as <:> bs
+
 --------------------------------------------------------------------------------
 
 -- optimized definition for prepending an element
@@ -112,7 +118,8 @@ maybeCast :: forall a b. Typeable a => Typeable b => a -> b
 maybeCast x = maybe (error "generativity violation") id (cast @a @b x)
 
 data Pull' as b where
-  Pull' :: forall s as b. (IsSOP s, Typeable s) => Bool -> (Elₚ as -> Gen s) -> (Elₚ as -> s -> Gen (Step s b)) -> Pull' as b
+  Pull' :: forall s as b. (IsSOP s, Typeable s) =>
+           Bool -> (Elₚ as -> Gen s) -> (Elₚ as -> s -> Gen (Step s b)) -> Pull' as b
 
 unravel :: Typeable b => Sing a -> (Elₚ a -> Pull b) -> Pull' a b
 unravel a f = case f (undefinedP a) of
@@ -133,9 +140,12 @@ unravel1 f = unravel sing (f . unSingleP)
 unravel2 :: Typeable c => ((Up a, Up b) -> Pull c) -> Pull' '[a, b] c
 unravel2 f = unravel sing (\(Cons a (Cons b Nil)) -> f (a, b))
 
+unravel3 :: Typeable d => ((Up a, Up b, Up c) -> Pull d) -> Pull' '[a, b, c] d
+unravel3 f = unravel sing (\(Cons a (Cons b (Cons c Nil))) -> f (a, b, c))
+
 forEach :: forall a b. (Typeable a, Typeable b) => Pull (Up a) -> (Up a -> Pull b) -> Pull b
-forEach (Pull @s skip seed step) (unravel1 -> Pull' @s' skip' seed' step') =
-  Pull @(s, Maybe (Up a, s')) (skip || skip') ((,Nothing) <$> seed) \case
+forEach (Pull @s _ seed step) (unravel1 -> Pull' @s' _ seed' step') =
+  Pull @(s, Maybe (Up a, s')) True ((,Nothing) <$> seed) \case
     (s, Nothing) -> step s >>= \case
       Stop       -> pure Stop
       Skip s     -> pure $ Skip (s, Nothing)
@@ -220,3 +230,93 @@ instance Typeable a => CasePull [a] (Maybe (Up a, Up [a])) where
           Stop      -> pure Stop
           Skip s    -> pure $ Skip ( (Right (a, as, s)))
           Yield c s -> pure $ Yield c ( (Right (a, as, s)))
+
+
+--------------------------------------------------------------------------------
+
+dup :: Pull a -> Pull (a, a)
+dup = fmap (\x -> (x, x))
+
+countFrom :: Up Int -> Pull (Up Int)
+countFrom n = Pull @(Up Int) False (pure n) \n -> pure $ Yield n (n + 1)
+
+count :: Pull (Up Int)
+count = countFrom 0
+
+eqInt :: Up Int -> Up Int -> Up Bool
+eqInt x y = [|| case $$x of I# x -> case $$y of I# y -> isTrue# (x ==# y) ||]
+
+take :: forall a. Up Int -> Pull a -> Pull a
+take n (Pull @s skip seed step) =
+  Pull @(Up Int, s) skip ((n,) <$> seed) \(n, s) -> caseM (eqInt n 0) \case
+    True  -> pure Stop
+    False -> step s <&> \case
+      Stop      -> Stop
+      Skip s    -> Skip (n, s)
+      Yield a s -> Yield a (n - (1::Up Int), s)
+
+drop :: forall a. Up Int -> Pull a -> Pull a
+drop n (Pull @s skip seed step) =
+  Pull @(Either (Up Int,s) s) True (Left . (n,) <$> seed) \case
+    Left (n,s) -> caseM (n CFTT.Up.== 0) \case
+      True  -> pure $ Skip (Right s)
+      False -> step s <&> \case
+        Stop      -> Stop
+        Skip s    -> Skip (Left (n, s))
+        Yield _ s -> Skip (Left (n - 1, s))
+    Right s -> step s <&> \case
+        Stop      -> Stop
+        Skip s    -> Skip (Right s)
+        Yield a s -> Yield a (Right s)
+
+filter :: (a -> Gen Bool) -> Pull a -> Pull a
+filter f (Pull @s _ seed step) =
+  Pull @s True seed \s -> step s >>= \case
+    Stop -> pure Stop
+    Skip s -> pure $ Skip s
+    Yield a s -> f a >>= \case
+      True  -> pure $ Yield a s
+      False -> pure $ Skip s
+
+--------------------------------------------------------------------------------
+
+type family FunSC (a ∷ Uₛ)(b ∷ Type) ∷ Type where
+  FunSC '[]      r = ()
+  FunSC (a ': b) r = (Funₚₜ a r, FunSC b r)
+
+tabulateC ∷ ∀ a b. Sing a -> (Elₛ a → Up b) → Up (FunSC a b)
+tabulateC SNil         f = [||()||]
+tabulateC (SCons a as) f = [||($$(lamₚₜ a (f . Here)), $$(tabulateC @_ @b as (f . There)))||]
+
+indexC ∷ ∀ a b. Up (FunSC a b) → Elₛ a → Up b
+indexC f (Here x)  = appₚₜ [||fst $$f||] x
+indexC f (There x) = indexC [||snd $$f||] x
+
+foldr ∷ ∀ a b. (a → Up b → Up b) → Up b → Pull a → Up b
+foldr f b (Pull @s _ seed step) =
+  [|| let go = $$(tabulateC @(Rep s) @b (singRep @s) \s -> unGen (step (decode s)) \case
+                     Stop -> b
+                     Skip s -> indexC [||go||] (encode s)
+                     Yield a s -> f a (indexC [||go||] (encode s))
+                 )
+      in
+      $$(unGen seed \s -> indexC @(Rep s) @b [||go||] (encode s))
+      ||]
+
+toList ∷ Pull (Up a) -> Up [a]
+toList = CFTT.Pull.foldr (\a as -> [||$$a : $$as||]) [||[]||]
+
+foldl ∷ ∀ a b. (Up b → a → Up b) → Up b → Pull a → Up b
+foldl f b (Pull @s _ seed step) =
+  [|| let go = $$(tabulateC @(Rep (s, Up b)) @b (singRep @(s, Up b)) \s -> case unpairₛ (singRep @s) (singRep @(Up b)) s of
+                     (s, Here (Cons b Nil)) -> unGen (step (decode s)) \case
+                       Stop      -> b
+                       Skip s    -> indexC @(Rep (s, Up b)) @b [||go||] (encode (s, b))
+                       Yield a s -> indexC @(Rep (s, Up b)) @b [||go||] (encode (s, f b a))
+                 )
+      in
+      $$(unGen seed \s -> indexC @(Rep (s, Up b)) @b [||go||] (encode (s, b)))
+      ||]
+
+sum :: Pull (Up Int) -> Up Int
+sum = CFTT.Pull.foldl (+) 0

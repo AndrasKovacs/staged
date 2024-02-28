@@ -1,5 +1,8 @@
-a
+
 {-
+Building:
+- I used Agda 2.6.2.2 and standard library version 1.7
+
 Formalization of the object language. It is helpful to view modules in this order:
 -}
 

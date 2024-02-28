@@ -220,12 +220,15 @@ step  (take n as) (i , s) = caseM (i ==∘ lit∘ 0) λ where
     (yield a s) → yield a ((i -∘ lit∘ 1) , s)
 
 drop : ∀ {A} → ↑V ℕ∘ → Pull A → Pull A
-St   (drop n as) = Either (↑V ℕ∘) (St as)
-seed (drop n as) = pure $ left n
+St   (drop n as) = Either (↑V ℕ∘ × St as) (St as)
+seed (drop n as) = left ∘ (_,_ n) <$> seed as
 skips (drop n as) = true
-step (drop n as) (left i)  = caseM (i ==∘ lit∘ 0) λ where
-  true  → skip ∘ right <$> seed as
-  false → pure $ skip $ left (i -∘ lit∘ 1)
+step (drop n as) (left (i , s)) = caseM (i ==∘ lit∘ 0) λ where
+  true  → pure $ skip (right s)
+  false → step as s >>= λ where
+    stop        → pure stop
+    (skip s)    → pure $ skip (left (i , s))
+    (yield _ s) → pure $ skip (left (i -∘ 1 , s))
 step (drop n as) (right s) = step as s <&> λ where
   stop        → stop
   (skip s)    → skip (right s)

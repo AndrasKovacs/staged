@@ -82,10 +82,10 @@ _<*>ₚ_ {A} (pull S false seed step) (pull S' true seed' step') =
   pull (S × S') true (_,_ <$> seed <*> seed') λ where
     (s , s') → step' s' >>= λ where
       stop         → pure stop
-      (skip s')    → pure $ skip (s , s')
+      (skip s')    → pure $ stop -- impossible
       (yield a s') → step s >>= λ where
         stop        → pure stop
-        (skip s)    → pure stop -- impossible
+        (skip s)    → pure $ skip (s , s')
         (yield f s) → pure $ yield (f a) (s , s')
 
 _<*>ₚ_ {A} (pull S true seed step) (pull S' true seed' step') =
@@ -177,7 +177,7 @@ step (forEach {A} {B} as f) (s , nothing) = step as s >>= λ where
 
 bindSingle : ∀ {A A' B}⦃ _ : IsSOP A' ⦄ → ↑V A → (↑V A → Gen A') → (A' → Pull B) → Pull B
 bindSingle {A} {A'} {B}{{sopA'}} a f g =
-  pull (Σ A' (St ∘ g)) true {{SOPΣ{{sopA'}}{{λ {x} → StSOP (g x)}}}}
+  pull (Σ A' (St ∘ g)) true {{SOPΣ{{sopA'}}{{λ {x} → StSOP (g x)}}}} -- TODO: compute canSkip !
        (do a' ← f a; s ← seed (g a'); pure {F = Gen} (a' , s)) λ where
          (a' , s) → step (g a') s >>= λ where
             stop        → pure stop

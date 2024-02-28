@@ -1,0 +1,56 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.36.0.
+--
+-- see: https://github.com/sol/hpack
+
+name:           haskell-cftt
+version:        0.1.0.0
+build-type:     Simple
+
+library
+  exposed-modules:
+      CFTT.Gen
+      CFTT.Improve
+      CFTT.Join
+      CFTT.Lib
+      CFTT.LibTest
+      CFTT.Pull
+      CFTT.SOP
+      CFTT.Split
+      CFTT.Up
+  other-modules:
+      Paths_haskell_cftt
+  hs-source-dirs:
+      ./
+  default-extensions:
+      AllowAmbiguousTypes
+      BlockArguments
+      DataKinds
+      DeriveFunctor
+      EmptyCase
+      FlexibleInstances
+      FunctionalDependencies
+      GADTs
+      LambdaCase
+      MultiParamTypeClasses
+      PolyKinds
+      RankNTypes
+      ScopedTypeVariables
+      StandaloneKindSignatures
+      Strict
+      TemplateHaskell
+      TupleSections
+      TypeApplications
+      TypeFamilies
+      TypeOperators
+      UndecidableInstances
+      UnicodeSyntax
+      ViewPatterns
+  ghc-options: -Wall -Wno-missing-signatures -Wno-name-shadowing -Wno-unused-do-bind -Wno-unused-matches -Wno-partial-type-signatures
+  build-depends:
+      base >=4.7 && <5
+    , mtl
+    , template-haskell
+    , transformers
+  default-language: Haskell2010

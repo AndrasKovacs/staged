@@ -1,4 +1,4 @@
-
+a
 {-
 Formalization of the object language. It is helpful to view modules in this order:
 -}
@@ -42,5 +42,4 @@ We want to translate terms so that they only contain saturated calls. We do it a
 
 This does a bit more than call saturation, it also sequences all function
 applications in an ANF-like fashion.
-
 -}

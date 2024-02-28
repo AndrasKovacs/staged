@@ -1,7 +1,7 @@
 
-{-# language TemplateHaskell, UndecidableInstances #-}
+{-# options_ghc -Wno-orphans #-}
 
-module Up where
+module CFTT.Up where
 
 import Prelude (Num(..))
 import qualified Prelude as P

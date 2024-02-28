@@ -1,8 +1,0 @@
-
-Idea:
-
-Have one version which is close to the paper.
-Another version which uses SOP and generates the most efficient hs code.
-
-For pull stream fusion, use Typeable for safe bindUp
-Try to do the full state machine impl for pull stream, but not essential

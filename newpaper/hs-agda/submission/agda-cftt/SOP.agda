@@ -58,9 +58,9 @@ a ∷ []        →PT B = a ⇒ B
 a ∷ A@(_ ∷ _) →PT B = a ⇒ C (A →PT B)
 
 appₚₜ : ∀ {A B} → ↑C (A →PT B) → Elₚ A → ↑ B
-appₚₜ {[]}            {B} f []       = f ∙ tt∘
-appₚₜ {a ∷ []}        {B} f (x ∷ []) = f ∙ x
-appₚₜ {a ∷ A@(_ ∷ _)} {B} f (x ∷ xs) = appₚₜ {A}{B} (f ∙ x) xs
+appₚₜ f []               = f ∙ tt∘
+appₚₜ f (x ∷ [])         = f ∙ x
+appₚₜ f (x ∷ xs@(_ ∷ _)) = appₚₜ (f ∙ x) xs
 
 lamₚₜ : ∀ {A B} → (Elₚ A → ↑ B) → ↑C (A →PT B)
 lamₚₜ {[]}            {B} f = Λ λ _ → f []

@@ -23,6 +23,7 @@
 %% \acmArticle{110}
 %% \acmMonth{8}
 
+
 %% These commands are for a JOURNAL article.
 
 %% \acmJournal{JACM}
@@ -354,7 +355,7 @@ Without optimizations we roughly get:
 Here, $\msf{MonadReaderDict}$ is a runtime dictionary, containing the methods of
 the $\Monad$ instance for $\Reader$, and $(\bind)\,\msf{MonadReaderDict}$ is a
 field projection. Here, a runtime closure will be created for the $\lam \vb.\,...$
-function, and $(\bind)$, $\msf{ask}$ and $\return$ will create additional dynamic
+function, and $(\bind)$, $\msf{ask}$ and $\mbf{return}$ will create additional dynamic
 closures.
 
 The difference between optimized and unoptimized code is already large here, and
@@ -381,9 +382,9 @@ example, correctly specifying the \emph{ordering} of certain rule applications
 is often needed. We also have to care about formal function arities. Infamously,
 the function composition operator is defined as $(.)\,\vf\,\vg = \lam \vx \to
 \vf\,(\vg\,\vx)$ in the base libraries, instead of as $(.)\,\vf\,\vg\,\vx =
-\vf\,(\vg\,\vx)$, to get better inlining behavior \cite{ghcbase}. Tellingly, it
-is common practice in high-performance Haskell programming to visually review
-GHC's optimized code output.
+\vf\,(\vg\,\vx)$, to get better inlining behavior \cite{ghcbase}. It is common
+practice in high-performance Haskell programming to visually review GHC's
+optimized code output.
 
 \subsection{Closure-Free Staged Compilation}
 
@@ -770,7 +771,7 @@ object levels. We make such interaction possible with \emph{staging operations}.
 \end{itemize}
 
 A CFTT program is a mixture of object-level and meta-level top-level definitions
-and declarations. \textbf{Staging} means running all metaprograms in splices and
+and declarations. \emph{Staging} means running all metaprograms in splices and
 inserting their output into object code, keeping all object-level top entries
 and discarding all meta-level ones. Thus, staging takes a CFTT program as input,
 and produces output which is purely in the object-level fragment, with no
@@ -800,7 +801,7 @@ $\map$ function now:
   & \hspace{-5em}\ind\ind\ind\ind\ind \ind\Cons\,\va\,\vas &&\to \Cons\,\spl(\vf\,\ql \va \qr)\,(\go\,\vas);\\
   & \hspace{-5em}\ind\ind\ind\ind\ind\go\,\spl\vas \qr
 \end{alignat*}
-For example, this can be used as $\letdef f\,\vas : \List\,\Nat \to \List\,\Nat
+For example, this can be used as $\letdef \vf\,\vas : \List\,\Nat \to \List\,\Nat
 := \spl(\map\,(\lam \vx.\,\ql \spl \vx + 10 \qr)\,\qt{\vas}) $.  This is staged to a
 recursive definition where the mapping function is inlined into the $\Cons$ case
 as $\Cons\,\va\,\vas \to \Cons\,(\va + 10)\,(\go\,\vas)$.  Note that $\map$ has to
@@ -943,8 +944,7 @@ This is a monad in $\MTy$ in a standard sense:
 From now on, we reuse Haskell-style type classes and $\mbf{do}$-notation in
 CFTT. We will use type classes in an informal way, without precisely specifying
 how they work. However, type classes are used in essentially the same way in the
-Agda and Haskell implementations of the paper, with modest technical
-differences.
+Agda and Haskell implementations, with modest technical differences.
 
 From the $\Monad$ instance, the $\Functor$ and $\Applicative$ instances can be
 also derived. We reuse $({\fmap})$ and $({\ap})$ for applicative notation as well.
@@ -957,7 +957,7 @@ type:
 \end{alignat*}
 We can let-bind object expressions in $\Gen$:
 \begin{alignat*}{3}
-  & \gen : \Up \vA \to \Gen\,(\Up \vA) \\
+  & \gen : \{\vA : \Ty\} \to \Up \vA \to \Gen\,(\Up \vA) \\
   & \gen\,\va = \Gen \dlr \lam \vk.\,\ql \letdef \vx : \vA := \spl \va; \spl(\vk\,\ql \vx \qr) \qr
 \end{alignat*}
 And also recursive definitions of computations:
@@ -1053,7 +1053,7 @@ problematic, because we cannot directly compute metaprograms from object-level
 case splits. Fortunately, with a little bit more work, this is actually possible
 in any $\MonadGen$, for any value type.
 
-We demonstrate this for lists first. An object-level $\mbf{case}$ on lists introduces
+We demonstrate this for lists. An object-level $\mbf{case}$ on lists introduces
 two points where code generation can continue. We define a metatype which gives
 us a ``view'' on these points:
 \[ \data \msf{SplitList}\,\vA = \Nil'\,|\,\Cons'\,(\Up \vA)\,(\Up (\List\,\vA)) \]
@@ -1092,7 +1092,7 @@ transformer stack. The base case is the following:
   & \hspace{-2em}\ind \mup\,\vx   &&= \return \qt{\runIdentity\,\spl \vx}\\
   & \hspace{-2em}\ind \mdown\,\vx &&= \unGen\,\vx \dlr \lam \va.\,\qt{\Identity\,\spl \va}
 \end{alignat*}
-We also recover the object-level $\Maybe$ as $\MaybeT\,\Identity$, from the following $\MaybeT$:
+We recover the object-level $\Maybe$ as $\MaybeT\,\Identity$, from the following $\MaybeT$:
 \[ \newtype \MaybeT\,(\vM : \VTy \to \Ty)\,(\vA : \VTy) := \MaybeT\,\{\runMaybeT : \vM\,(\Maybe\,\vA)\} \]
 With this, improvement can be generally defined for $\MaybeT$:
 \begin{alignat*}{3}
@@ -1345,7 +1345,7 @@ our Agda implementation.
   &          &&\ind \ind \ind \letdef \msf{joinNothing} := \lam \_.\,\Nothing;\\
   &          &&\ind \ind \ind \letdef \msf{joinJust} := \lam \vn\,\vns.\,\case\,\vf\,\vl\,\vns\,\of\\
   &          &&\ind \ind \ind \ind \ind \ind \Nothing\hspace{0.9em} \to \Nothing\\
-  &          &&\ind \ind \ind \ind \ind \ind \Just\,(\vr,\,\vns) \to \case\,\vf\,\vr\,\vns\,\of\\
+  &          &&\ind \ind \ind \ind \ind \ind \Just\,(\vl,\,\vns) \to \case\,\vf\,\vr\,\vns\,\of\\
   &          &&\ind \ind \ind \ind \ind \ind \ind \Nothing\hspace{.95em} \to \Nothing\\
   &          &&\ind \ind \ind \ind \ind \ind \ind \Just\,(\vr,\,\vns) \to \Just\,(\Node\,\vn\,\vl\,\vr,\,\vns);\\
   &          &&\ind \ind \ind \case \vns\,\of\\
@@ -1613,7 +1613,7 @@ Hence, we expect that during staging, every $\vf : \Lift\,\vA \to \VTy$ function
 has to be constant. This is actually true in the staging semantics of
 CFTT. There, all metafunctions are stable under object-level parallel
 substitutions. Also, object types are untouched by substitution. Hence, a
-straightforward unfolding of semantics definitions validates the constancy of
+straightforward unfolding of semantic definitions validates the constancy of
 $\vf$.
 
 Generally speaking, in the semantics, every function whose domain is a product
@@ -1627,7 +1627,8 @@ Let us write $\Uprod = \List\,\VTy$ and $\Elprod : \Uprod \to \MTy$ for a
 universe of finite products of value types. Concretely, in CFTT and the Agda
 implementation, we assume the following:
 \\\\
-\noindent \textbf{Axiom (generativity).}\textit{ Every $\vf : \Elprod\,\vA \to \USOP$ is constant. }
+\noindent \textbf{Axiom (generativity).}\textit{ For every $\vf : \Elprod\,\vA \to \USOP$ and $\va,\,\va' : \Elprod\,\vA$,
+we have that $\vf\,\va = \vf\,\va'$.}
 \\\\
 We remark that there is no risk of staging getting stuck on this axiom, because
 propositional equality proofs get erased, as we described in Section
@@ -1750,6 +1751,7 @@ stack allocations, while pull streams need heap allocations for unbounded space
 in the machine state.
 
 \subsection{Agda \& Haskell Implementations}
+
 
 In Agda, to avoid computation getting stuck on the generativity axiom, we use
 the \texttt{primTrustMe} built-in \cite{agdadocs} to automatically erase the axiom

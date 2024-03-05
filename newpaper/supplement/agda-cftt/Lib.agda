@@ -10,7 +10,7 @@ open import Relation.Binary.PropositionalEquality
 
 open import Data.Product hiding (_<*>_; map; zip) renaming (proj₁ to ₁; proj₂ to ₂) public
 open import Function public
-open import Data.List hiding (tabulate; take; drop; foldr; foldl; zip; concatMap; filter; and; or; sum) public
+open import Data.List hiding (tabulate; take; drop; foldr; foldl; zip; concatMap; filter; and; or; sum; ap) public
 open import Data.Empty public
 open import Data.Nat using (ℕ; zero; suc) public
 

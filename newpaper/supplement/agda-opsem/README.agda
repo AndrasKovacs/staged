@@ -32,12 +32,13 @@ We want to translate terms so that they only contain saturated calls. We do it a
 
 1. Eta-expand all let-definitions of computations.
 2. In all "t e₁ e₂ ... eₙ" where "t" is not a variable, eta-expand "t".
-3. Perform the following rewrites until fixpoint. We write .Proj for .Fst or .Snd .
+3. Perform the following rewrites until fixpoint. We write .Proj for .Fst or .Snd .g
 
    - t u                                  ~> let x := u; t x                          where u is not a variable
    - (λ x. t) y                           ~> t[x↦y]                                   where y is a variable
    - (let x := t; u) y                    ~> let x := t; u y                          where y is a variable
    - (case t of inl x. l; inr y. r) z     ~> case t of inl x. l z; inr y. r z         where z is a variable
+
    - (t, u) .Fst                          ~> t
    - (t, u) .Snd                          ~> u
    - (let x := t; u) .Proj                ~> let x := t; u .Proj
@@ -45,4 +46,20 @@ We want to translate terms so that they only contain saturated calls. We do it a
 
 This does a bit more than call saturation, it also sequences all function
 applications in an ANF-like fashion.
+-}
+
+-- (case foo of ...) t1 t2 t3
+-- (let ...) t1 t2 t3
+
+{-
+eval env t = case t of
+  App t u -> evalApps env t [eval env u]
+  ...     -> ....
+
+evalApps :: Env -> Tm -> [Val] ->Val
+evalApps env t args = case t of
+   Var     -> vApps ....
+   App t u -> evalLeft t (eval u : args)
+   Case{}  -> -- eta-expand t then apply to all args
+   Let{}   -> -- eta-expand t then apply to all args
 -}

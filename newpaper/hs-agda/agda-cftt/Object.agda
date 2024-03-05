@@ -16,12 +16,6 @@ postulate
   CTy : Set
   C   : CTy → Ty
 
--- These pragmas are convenient for modeling tail recursion in
--- MonadTailRec.agda. They are validated in the staging semantics.
-{-# INJECTIVE ↑ #-}
-{-# INJECTIVE V #-}
-{-# INJECTIVE C #-}
-
 ↑C = λ A → ↑ (C A)
 ↑V = λ A → ↑ (V A)
 

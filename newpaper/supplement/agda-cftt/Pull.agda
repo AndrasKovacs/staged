@@ -175,10 +175,10 @@ step (forEach {A} {B} as f) (s , nothing) = step as s >>= λ where
 -- Let-insertion and case splitting
 --------------------------------------------------------------------------------
 
-bindSingle : ∀ {A A' B}⦃ _ : IsSOP A' ⦄ → ↑V A → (↑V A → Gen A') → (A' → Pull B) → Pull B
-bindSingle {A} {A'} {B}{{sopA'}} a f g =
-  pull (Σ A' (St ∘ g)) true {{SOPΣ{{sopA'}}{{λ {x} → StSOP (g x)}}}} -- TODO: compute canSkip !
-       (do a' ← f a; s ← seed (g a'); pure {F = Gen} (a' , s)) λ where
+bindGen : ∀ {A' B}⦃ _ : IsSOP A' ⦄ → Gen A' → (A' → Pull B) → Pull B
+bindGen {A'} {B}{{sopA'}} ma g =
+  pull (Σ A' (St ∘ g)) true {{SOPΣ{{sopA'}}{{λ {x} → StSOP (g x)}}}}
+       (do a' ← ma; s ← seed (g a'); pure {F = Gen} (a' , s)) λ where
          (a' , s) → step (g a') s >>= λ where
             stop        → pure stop
             (skip s)    → pure $ skip (a' , s)
@@ -186,11 +186,11 @@ bindSingle {A} {A'} {B}{{sopA'}} a f g =
 
 -- gen_pull in the paper
 genLetₚ : ∀ {A B} → ↑V A → (↑V A → Pull B) → Pull B
-genLetₚ a = bindSingle a genLet
+genLetₚ a = bindGen (genLet a)
 
 -- case_pull
 caseₚ : ∀ {A B}⦃ _ : Split A ⦄ ⦃ _ : IsSOP (SplitTo {A}) ⦄ → ↑V A → (SplitTo {A} → Pull B) → Pull B
-caseₚ a = bindSingle a splitGen
+caseₚ a = bindGen (splitGen a)
 
 
 -- Random library functions

@@ -1,3 +1,4 @@
+{-# OPTIONS --large-indices #-}
 
 module MonadTailCall where
 

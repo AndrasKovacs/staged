@@ -264,7 +264,7 @@ instance
   IsSOP.decode (SOPMaybe {A}) (here []) = nothing
   IsSOP.decode (SOPMaybe {A}) (there x) = just (decode x)
   IsSOP.p (SOPMaybe {A}) (here []) = refl
-  IsSOP.p (SOPMaybe {A}) (there x) rewrite p x = refl
+  IsSOP.p (SOPMaybe {A}{{sopA}}) (there x) rewrite p {{sopA}} x = refl
   IsSOP.q (SOPMaybe {A}) (just x) rewrite q x = refl
   IsSOP.q (SOPMaybe {A}) nothing = refl
 

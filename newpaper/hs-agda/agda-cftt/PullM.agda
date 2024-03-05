@@ -11,8 +11,6 @@ open import Split
 open import Join
 open import Improve
 
-
-
 data Step (S A : Set) : Set where
   stop  : Step S A
   skip  : S → Step S A
@@ -187,24 +185,21 @@ famSkips' {A ∷ B} f = or ((f ∘ here) (loopₚ {A}) .skips) (famSkips' {B} (f
 famSkips : ∀ {A B M}⦃ _ : IsSOP A ⦄ → (A → Pull M B) → Bool
 famSkips {A} f = famSkips' {Rep{A}} (f ∘ decode)
 
-bindSingle : ∀ {A A' B M}⦃ _ : IsSOP A' ⦄ ⦃ _ : Monad M ⦄ → ↑V A → (↑V A → M A') → (A' → Pull M B) → Pull M B
-bindSingle {A} {A'} {B}{M}{{sopA'}} a f g =
-  pull (Σ A' (St ∘ g)) (famSkips g) {{SOPΣ{{sopA'}}{{λ {x} → StSOP (g x)}}}}
-       (do a' ← f a; s ← seed (g a'); pure {F = M} (a' , s)) λ where
-         (a' , s) → step (g a') s <&> λ where
+bindM : ∀ {A B M}⦃ _ : IsSOP A ⦄ ⦃ _ : Monad M ⦄ → M A → (A → Pull M B) → Pull M B
+bindM {A} {B}{M}{{sopA}} ma f =
+  pull (Σ A (St ∘ f)) (famSkips f) {{SOPΣ{{sopA}}{{λ {x} → StSOP (f x)}}}}
+       (do a ← ma; s ← seed (f a); pure {F = M} (a , s)) λ where
+         (a , s) → step (f a) s <&> λ where
             stop        → stop
-            (skip s)    → skip (a' , s)
-            (yield b s) → yield b (a' , s)
+            (skip s)    → skip (a , s)
+            (yield b s) → yield b (a , s)
 
--- -- gen_pull in the paper
 genLetₚ : ∀ {A B M}⦃ _ : MonadGen M ⦄ → ↑V A → (↑V A → Pull M B) → Pull M B
-genLetₚ a = bindSingle a genLet
+genLetₚ a = bindM (genLet a)
 
--- case_pull
 caseₚ : ∀ {A B M}⦃ _ : Split A ⦄ ⦃ _ : IsSOP (SplitTo {A})⦄ ⦃ _ : MonadGen M ⦄
         → ↑V A → (SplitTo {A} → Pull M B) → Pull M B
-caseₚ a = bindSingle a split
-
+caseₚ a = bindM (split a)
 
 -- Random library functions
 --------------------------------------------------------------------------------
@@ -265,40 +260,38 @@ FunSOP↑C : Uₛ → Ty → CTy
 FunSOP↑C []      R = ⊤C
 FunSOP↑C (A ∷ B) R = (A →PT R) ×C FunSOP↑C B R
 
-tailcallC : ∀ {A B}{F} → ↑C (FunSOP↑C A (F B)) → Elₛ A → TailCall F (↑V B)
-tailcallC fs (here  x) = call' (appₚₜ (fst∘ fs)) x
-tailcallC fs (there x) = tailcallC (snd∘ fs) x
+tailcallC : ∀ {A B}(F : VTy → Ty) → ↑C (FunSOP↑C A (F B)) → Elₛ A → ↑ (F B)
+tailcallC F fs (here  x) = appₚₜ (fst∘ fs) x
+tailcallC F fs (there x) = tailcallC F (snd∘ fs) x
 
 tabulateC : ∀ {A B} → (Elₛ A → ↑ B) → ↑C (FunSOP↑C A B)
 tabulateC {[]}    f = ttC
 tabulateC {A ∷ B} f = lamₚₜ (f ∘ here) ,C tabulateC (f ∘ there)
 
-foldr : ∀ {A B F M}⦃ _ : Improve F M ⦄ → (A → TailCall F (↑V B) → M (TailCall F (↑V B)))
+foldr : ∀ {A B F M}⦃ _ : Improve F M ⦄ → (A → ↑(F B) → M (TailCall F B))
                                        → M (↑V B) → Pull M A → ↑ (F B)
 foldr {A} {B}{F}{M} f b (pull S _ seed step) =
   LetRec (FunSOP↑C (Rep {S}) (F B))
          (λ go → tabulateC λ s → downTC $ step (decode s) >>= λ where
            stop        → ret' <$> b
-           (skip s)    → pure (tailcallC go (encode s))
-           (yield a s) → f a (tailcallC go (encode s))
+           (skip s)    → call $ tailcallC F go (encode s)
+           (yield a s) → f a (tailcallC F go (encode s))
          )
-  λ go → downTC (tailcallC go ∘ encode <$> seed)
+  λ go → downTC (do s ← seed; call $ tailcallC F go (encode s))
 
 toList : ∀ {A F M}⦃ _ : Improve F M ⦄ → Pull M (↑V A) → ↑ (F (List∘ A))
-toList as = foldr (λ a as → do as ← upTC as; ret (cons∘ a as)) (pure nil∘) as
+toList as = foldr (λ a as → do as ← up as; ret (cons∘ a as)) (pure nil∘) as
 
 mapPull : ∀ {M N A} → (∀{A} → M A → N A) → Pull M A → Pull N A
 mapPull f (pull S skips seed step) = pull S skips (f seed) (f ∘ step)
 
 foldl : ∀ {A B F M}⦃ _ : Improve F M ⦄ → (↑V B → A → ↑V B) → ↑V B → Pull M A → ↑(F B)
 foldl {A} {B} {F} {M} f b as =
-  runReaderT∘ (foldr (λ a hyp → readerT λ b → {!hyp!})
+  runReaderT∘ (foldr (λ a hyp → call (readerT∘ λ r → runReaderT∘ hyp (f r a)))
                      (pure b)
-                     (mapPull lift as))
-              b
+                     (mapPull lift as))              b
 
--- foldl f b as = foldr (λ a hyp → Λ λ b → hyp ∙ f b a) (Λ λ b → b) as ∙ b
--- sum : Pull (↑V ℕ∘) → ↑V ℕ∘
--- sum = foldl _+∘_ 0
+sum : ∀ {F M}⦃ _ : Improve F M ⦄ → Pull M (↑V ℕ∘) → ↑ (F ℕ∘)
+sum = foldl _+∘_ 0
 
 -- --------------------------------------------------------------------------------

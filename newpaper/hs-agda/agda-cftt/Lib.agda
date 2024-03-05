@@ -186,6 +186,9 @@ record StateT (S : Set)(M : Set → Set)(A : Set) : Set where
     runStateT : S → M (A × S)
 open StateT public
 
+evalStateT : ∀ {S M A}⦃ _ : Applicative M ⦄ → StateT S M A → S → M A
+evalStateT ma s = ₁ <$> runStateT ma s
+
 instance
   AStateT : ∀ {S M}⦃ _ : Monad M ⦄ → Applicative (StateT S M)
   Applicative.pure AStateT a = stateT λ s → pure (a , s)

@@ -129,7 +129,7 @@ exM4 = DefRec λ rec → Λ λ ns → downTC do
     nil         → ret tt∘
     (cons n ns) → caseM (n ==∘ 10) λ where
       true  → fail
-      false → do modify' (_+∘_ 20); tailcall1 rec ns
+      false → do modify' (_+∘_ 20); call (rec ∙ ns)
 
 -- Section 3.6. example from the paper
 exM5 : ↑C (Tree∘ ℕ∘ ⇒ StateT∘ (List∘ ℕ∘) (MaybeT∘ Identity∘) (Tree∘ ℕ∘))
@@ -164,7 +164,7 @@ filterM' f = DefRec λ rec → Λ λ as → downTC $ caseM as λ where
   nil         → ret nil∘
   (cons a as) → f a >>= λ where
       true  → do as ← up (rec ∙ as); ret (cons∘ a as)
-      false → tailcall1 rec as
+      false → call (rec ∙ as)
 
 exM6 : ↑C (List∘ ℕ∘ ⇒ StateT∘ ℕ∘ (MaybeT∘ Identity∘) (List∘ ℕ∘))
 exM6 = filterM' λ n → caseM (n ==∘ 0) λ where

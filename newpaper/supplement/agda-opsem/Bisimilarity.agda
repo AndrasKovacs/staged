@@ -150,14 +150,11 @@ simₑ-sym-lem (suc n) hyp (defC γ t) (defC γ' t') (γ~ , t~) =
   (simₑ-sym-lem (suc n) hyp γ γ' γ~) , hyp n ≤′-refl {t = t}{t'} t~
 
 -- Here I do use well-founded recursion though
-postulate
-  sim-sym : ∀ {t t' : Tm Γ A} → ∀sim t t' → ∀sim t' t
-  -- sim-sym {Γ} {A} {t} {t'} t~ n = <′-rec (λ n → ∀ {Γ A}{t t' : Tm Γ A} → sim t t' n → sim t' t n)
-  --   (λ n hyp {Γ}{A} {t}{t'} t~ k lt γ γ' γ~ as →
-  --     t~ k lt γ' γ (simₑ-sym-lem k (λ k' lt' {Γ}{A}{l}{r} lr → hyp k' (≤′-trans lt' lt) {t = l}{r} lr) γ γ' γ~) as ⁻¹
-  --     )
-  -- n {Γ}{A}{t}{t'} (t~ n)
-
+sim-sym : ∀ {t t' : Tm Γ A} → ∀sim t t' → ∀sim t' t
+sim-sym {Γ} {A} {t} {t'} t~ n = <′-rec (λ n → ∀ {Γ A}{t t' : Tm Γ A} → sim t t' n → sim t' t n)
+    (λ n hyp {Γ}{A}{t}{t'} t~ k lt γ γ' γ~ as →
+      t~ k lt γ' γ (simₑ-sym-lem k (λ k' lt' {Γ}{A}{l}{r} lr → hyp (≤′-trans lt' lt){t = l}{r} lr) γ γ' γ~) as ⁻¹)
+    n {Γ}{A}{t}{t'} (t~ n)
 
 -- transitive
 --------------------------------------------------------------------------------

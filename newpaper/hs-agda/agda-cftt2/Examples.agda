@@ -8,12 +8,11 @@ Examples. You can use Agda's normalization command (C-c-n in Emacs) to print obj
 open import Lib
 open import Object
 open import Gen
-open import Improve
+open import Improve4
 open import Join
 open import Split
-open import MonadTailCall
 open import SOP
-open import Pull
+-- open import Pull
 
 -- Customizing printing
 --------------------------------------------------------------------------------
@@ -125,12 +124,15 @@ exM3 = Λ λ x → down $
 
 -- Monadic tail recursion on lists, the "tailcall1" result does not get matched.
 exM4 : ↑C (List∘ ℕ∘ ⇒ StateT∘ ℕ∘ (MaybeT∘ Identity∘) ⊤∘)
-exM4 = DefRec λ rec → Λ λ ns → downTC do
+exM4 = DefRec λ rec → Λ λ ns → down do
   caseM ns λ where
-    nil         → ret tt∘
+    nil         → pure tt∘
     (cons n ns) → caseM (n ==∘ 10) λ where
       true  → fail
-      false → do modify' (_+∘_ 20); tailcall1 rec ns
+      false → do modify' (_+∘_ 20)
+                 {!!}
+                 -- s ← get
+                 -- tailcall (runIdentity∘ (runMaybeT∘ (runStateT∘ (rec ∙ ns) s)))
 
 -- Section 3.6. example from the paper
 exM5 : ↑C (Tree∘ ℕ∘ ⇒ StateT∘ (List∘ ℕ∘) (MaybeT∘ Identity∘) (Tree∘ ℕ∘))
@@ -149,70 +151,68 @@ exM5 = DefRec λ f → Λ λ t → down $
       r ← up (f ∙ r)
       pure (node∘ n l r)
 
--- filterM where the recursive call is performed first
-filterM : ∀ {F M A}⦃ _ : Improve F M ⦄ → (↑V A → M Bool) → ↑C (List∘ A ⇒ F (List∘ A))
-filterM f = DefRec λ rec → Λ λ as → down $ caseM as λ where
-  nil         → pure nil∘
-  (cons a as) → do
-    as ← up $ rec ∙ as
-    f a >>= λ where
-      true  → pure (cons∘ a as)
-      false → pure as
+-- -- filterM where the recursive call is performed first
+-- filterM : ∀ {F M A}⦃ _ : Improve F M ⦄ → (↑V A → M Bool) → ↑C (List∘ A ⇒ F (List∘ A))
+-- filterM f = DefRec λ rec → Λ λ as → down $ caseM as λ where
+--   nil         → pure nil∘
+--   (cons a as) → do
+--     as ← up $ rec ∙ as
+--     f a >>= λ where
+--       true  → pure (cons∘ a as)
+--       false → pure as
 
--- filterM where we make a tail call in the false case
-filterM' : ∀ {F M A}⦃ _ : Improve F M ⦄ ⦃ _ : MonadTC F M ⦄ → (↑V A → M Bool) → ↑C (List∘ A ⇒ F (List∘ A))
-filterM' f = DefRec λ rec → Λ λ as → downTC $ caseM as λ where
-  nil         → ret nil∘
-  (cons a as) → f a >>= λ where
-      true  → do as ← up (rec ∙ as); ret (cons∘ a as)
-      false → tailcall1 rec as
+-- -- filterM where we make a tail call in the false case
+-- filterM' : ∀ {F M A}⦃ _ : Improve F M ⦄ → (↑V A → M Bool) → ↑C (List∘ A ⇒ F (List∘ A))
+-- filterM' f = DefRec λ rec → Λ λ as → down $ caseM as λ where
+--   nil         → pure nil∘
+--   (cons a as) → f a >>= λ where
+--       true  → do as ← up (rec ∙ as); pure (cons∘ a as)
+--       false → tailcall (rec ∙ as)
 
-exM6 : ↑C (List∘ ℕ∘ ⇒ StateT∘ ℕ∘ (MaybeT∘ Identity∘) (List∘ ℕ∘))
-exM6 = filterM' λ n → caseM (n ==∘ 0) λ where
-  true  → fail
-  false → split (n <∘ 20)
+-- exM6 : ↑C (List∘ ℕ∘ ⇒ StateT∘ ℕ∘ (MaybeT∘ Identity∘) (List∘ ℕ∘))
+-- exM6 = filterM' λ n → caseM (n ==∘ 0) λ where
+--   true  → fail
+--   false → split (n <∘ 20)
 
-exM7 : ↑C (List∘ ℕ∘ ⇒ StateT∘ ℕ∘ (MaybeT∘ Identity∘) (List∘ ℕ∘))
-exM7 = filterM λ n → caseM (n ==∘ 0) λ where
-  true  → fail
-  false → split (n <∘ 20)
+-- exM7 : ↑C (List∘ ℕ∘ ⇒ StateT∘ ℕ∘ (MaybeT∘ Identity∘) (List∘ ℕ∘))
+-- exM7 = filterM λ n → caseM (n ==∘ 0) λ where
+--   true  → fail
+--   false → split (n <∘ 20)
 
--- Streams
---------------------------------------------------------------------------------
+-- -- -- Streams
+-- -- --------------------------------------------------------------------------------
 
--- To print stream code, it is usally the clearest to use "toList", e.g.
--- "toList exS1".
+-- -- -- To print stream code, it is usally the clearest to use "toList", e.g.
+-- -- -- "toList exS1".
 
-exS1 : Pull (↑V ℕ∘)
-exS1 = consₚ 10 $ consₚ 20 empty
+-- -- exS1 : Pull (↑V ℕ∘)
+-- -- exS1 = consₚ 10 $ consₚ 20 empty
 
-exS2 : Pull (↑V ℕ∘)
-exS2 = forEach (take 20 count) λ x →
-       take 20 count <&>ₚ λ y →
-       x +∘ y
+-- -- exS2 : Pull (↑V ℕ∘)
+-- -- exS2 = forEach (take 20 count) λ x → (take 20 count) <&>ₚ (λ y → x +∘ y)
 
-exS3 : Pull (↑V ℕ∘)
-exS3 = forEach (take 10 count) λ x →
-       forEach (take 20 count) λ y →
-       forEach (take 30 count) λ z →
-       single (x +∘ y +∘ z)
+-- -- exS3 : Pull (↑V ℕ∘)
+-- -- exS3 = forEach (take 10 count) λ x →
+-- --        forEach (take 20 count) λ y →
+-- --        forEach (take 30 count) λ z →
+-- --        single (x +∘ y +∘ z)
 
-exS4 : ↑V (List∘ (ℕ∘ ×∘ ℕ∘))
-exS4 = toList (zip count exS2)
+-- -- exS4 : ↑V (List∘ (ℕ∘ ×∘ ℕ∘))
+-- -- exS4 = toList (zip count exS2)
 
-exS5 : Pull (↑ (V ℕ∘))
-exS5 = _*∘_ <$>ₚ take 10 count <*>ₚ take 10 (countFrom 20)
+-- -- exS5 : Pull (↑ (V ℕ∘))
+-- -- exS5 = _*∘_ <$>ₚ take 10 count <*>ₚ take 10 (countFrom 20)
 
-exS6 : Pull (↑ (V ℕ∘))
-exS6 = _+∘_ <$>ₚ exS2 <*>ₚ count
+-- -- exS6 : Pull (↑ (V ℕ∘))
+-- -- exS6 = _+∘_ <$>ₚ exS2 <*>ₚ count
 
--- Section 4.4 example in paper:
-exS7 : Pull (↑ (V ℕ∘))
-exS7 = forEach (take 100 (countFrom 0)) λ x →
-       genLetₚ (x *∘ 2) λ y →
-       caseₚ (x <∘ 50) λ where
-         true  → take y (countFrom x)
-         false → single y
+-- -- -- Section 4.4 example in paper:
+-- -- exS7 : Pull (↑ (V ℕ∘))
+-- -- exS7 = forEach (take 100 (countFrom 0)) λ x →
+-- --        genLetₚ (x *∘ 2) λ y →
+-- --        caseₚ (x <∘ 50) λ where
+-- --          true  → take y (countFrom x)
+-- --          false → single y
 
--- Medium-sized zip
-exS8 = zip exS7 exS2
+-- -- -- Medium-sized zip
+-- -- exS8 = zip exS7 exS2

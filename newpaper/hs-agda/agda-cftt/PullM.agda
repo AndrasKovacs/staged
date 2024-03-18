@@ -287,7 +287,7 @@ mapPull f (pull S skips seed step) = pull S skips (f seed) (f ∘ step)
 
 foldl : ∀ {A B F M}⦃ _ : Improve F M ⦄ → (↑V B → A → ↑V B) → ↑V B → Pull M A → ↑(F B)
 foldl {A} {B} {F} {M} f b as =
-  runReaderT∘ (foldr (λ a hyp → call (readerT∘ λ r → runReaderT∘ hyp (f r a)))
+  runReaderT∘ (foldr (λ a hyp → ?) -- call (readerT∘ λ r → runReaderT∘ hyp (f r a)))
                      (pure b)
                      (mapPull lift as))              b
 

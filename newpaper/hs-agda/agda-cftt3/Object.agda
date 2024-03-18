@@ -92,8 +92,6 @@ postulate
   identity∘    : ∀ {A} → ↑V A → ↑ (Identity∘ A)
   runIdentity∘ : ∀ {A} → ↑ (Identity∘ A) → ↑V A
 
---------------------------------------------------------------------------------
-
 DefRec : ∀ {A} → (↑C A → ↑C A) → ↑C A
 DefRec f = LetRec _ f id
 

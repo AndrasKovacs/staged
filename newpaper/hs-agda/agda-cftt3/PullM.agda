@@ -9,7 +9,7 @@ open import Gen
 open import SOP
 open import Split
 open import Join
-open import Improve5
+open import Improve
 
 data Step (S A : Set) : Set where
   stop  : Step S A
@@ -204,8 +204,8 @@ caseₚ : ∀ {A B M}⦃ _ : Split A ⦄ ⦃ _ : IsSOP (SplitTo {A})⦄ ⦃ _ : 
         → ↑V A → (SplitTo {A} → Pull M B) → Pull M B
 caseₚ a = bindM (split a)
 
-tailcallₚ : ∀ {F A M B}⦃ _ : Improve F A M ⦄ → ↑ (F A) → (↑V A → Pull M B) → Pull M B
-tailcallₚ a = bindM (tailcall a)
+tailcallₚ : ∀ {M A} → {!!} → Pull M A
+tailcallₚ = {!!}
 
 -- Random library functions
 --------------------------------------------------------------------------------
@@ -274,28 +274,28 @@ tabulateC : ∀ {A B} → (Elₛ A → ↑ B) → ↑C (FunSOP↑C A B)
 tabulateC {[]}    f = ttC
 tabulateC {A ∷ B} f = lamₚₜ (f ∘ here) ,C tabulateC (f ∘ there)
 
-foldr : ∀ {A B F M}⦃ _ : Improve F B M ⦄ → (A → ↑(F B) → M (↑V B)) → M (↑V B) → Pull M A → ↑ (F B)
+foldr : ∀ {A B F M}⦃ _ : Improve F M ⦄
+     → (A → ↑(F B) → TCT (↑ (F B)) (↑V B) M (↑V B)) → TCT (↑ (F B)) (↑ (V B)) M (↑V B) → Pull M A → ↑ (F B)
 foldr {A} {B} {F} {M} f b (pull S _ seed step) =
   LetRec (FunSOP↑C (Rep {S}) (F B))
-         (λ go → tabulateC λ s → down $ step (decode s) >>= λ where
+         (λ go → tabulateC λ s → down $ lift (step (decode s)) >>= λ where
             stop        → b
             (skip s)    → tailcall (indexC F go (encode s))
             (yield a s) → f a (indexC F go (encode s)))
-  λ go → down (do s ← seed; tailcall $ indexC F go (encode s))
+  λ go → down (do s ← lift seed; tailcall (indexC F go (encode s)))
 
-toList : ∀ {A F M}⦃ _ : Improve F (List∘ A) M ⦄ → Pull M (↑V A) → ↑ (F (List∘ A))
+toList : ∀ {A F M}⦃ _ : Improve F  M ⦄ → Pull M (↑V A) → ↑ (F (List∘ A))
 toList = foldr (λ a as → cons∘ a <$> up as) (pure nil∘)
 
 mapPull : ∀ {M N A} → (∀{A} → M A → N A) → Pull M A → Pull N A
 mapPull f (pull S skips seed step) = pull S skips (f seed) (f ∘ step)
 
-foldl : ∀ {A B F M}⦃ _ : Improve F B M ⦄ → (↑V B → A → ↑V B) → ↑V B → Pull M A → ↑(F B)
+foldl : ∀ {A B F M}⦃ _ : Improve F M ⦄ → (↑V B → A → ↑V B) → ↑V B → Pull M A → ↑(F B)
 foldl {A} {B} {F} {M} f b as = runReaderT∘ (
-  foldr (λ a hyp → readerT (λ r → tailcall (runReaderT∘ hyp (f r a))))
-        (pure b)
-        (mapPull lift as)) b
+  foldr (λ a hyp → do r ← ask; {!!}) (pure b) (mapPull lift as))
+        b
 
-sum : ∀ {F M}⦃ _ : Improve F _ M ⦄ → Pull M (↑V ℕ∘) → ↑ (F ℕ∘)
+sum : ∀ {F M}⦃ _ : Improve F M ⦄ → Pull M (↑V ℕ∘) → ↑ (F ℕ∘)
 sum = foldl _+∘_ 0
 
---------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------

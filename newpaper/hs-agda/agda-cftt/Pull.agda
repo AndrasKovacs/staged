@@ -155,6 +155,15 @@ skips (single a) = false
 step (single a) true  = pure $ yield a false
 step (single a) false = pure stop
 
+
+-- A : ValTy
+-- B : ↑A → ValTy
+
+-- Σ A B : ValTy
+-- fst, snd, _,_, βη
+-- A, B : ValTy
+-- A ×∘ B : ValTy
+
 -- We manually give the IsSOP instance for the state, because Agda is not able
 -- to implicitly project instances from the (A → Pull B) function.
 forEach : ∀ {A B} ⦃ _ : IsSOP A ⦄ → Pull A → (A → Pull B) → Pull B

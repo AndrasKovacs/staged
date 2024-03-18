@@ -22,8 +22,8 @@ this file is intentionally written in a close-to-machine way. Only first-order
 data is used in values and environments, so a small-step abstract machine
 specification can be easily derived:
 
-  1. We add a control stack, and specify a frame for each non-tail-call in the
-     interpreter.
+  1. We add a control stack, and specify a frame for each non-tail eval call in
+     the interpreter.
   2. We add a heap, and explicitly add allocations whenever the interpreter
      creates a value constructor.
 -}

@@ -198,6 +198,7 @@ exS6 = $$(toList $
          True  -> P.take y (countFrom x)
          False -> single y)
 
+
 -- Medium-sized zip of two loops
 exS7 :: [(Int, Int)]
 exS7 = $$(toList $ P.zip

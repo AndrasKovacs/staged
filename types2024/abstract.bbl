@@ -1,0 +1,30 @@
+\begin{thebibliography}{1}
+
+\bibitem{DBLP:phd/ethos/Coutts11}
+Duncan Coutts.
+\newblock {\em Stream fusion : practical shortcut fusion for coinductive
+  sequence types}.
+\newblock PhD thesis, University of Oxford, {UK}, 2011.
+
+\bibitem{DBLP:conf/pepm/0001K24}
+Tomoaki Kobayashi and Oleg Kiselyov.
+\newblock Complete stream fusion for software-defined radio.
+\newblock In Gabriele Keller and Meng Wang, editors, {\em Proceedings of the
+  2024 {ACM} {SIGPLAN} International Workshop on Partial Evaluation and Program
+  Manipulation, {PEPM} 2024, London, UK, 16 January 2024}, pages 57--69. {ACM},
+  2024.
+
+\bibitem{staged2ltt}
+Andr{\'{a}}s Kov{\'{a}}cs.
+\newblock Staged compilation with two-level type theory.
+\newblock {\em Proc. {ACM} Program. Lang.}, 6({ICFP}):540--569, 2022.
+
+\bibitem{DBLP:conf/pepm/YallopK19}
+Jeremy Yallop and Oleg Kiselyov.
+\newblock Generating mutually recursive definitions.
+\newblock In Manuel~V. Hermenegildo and Atsushi Igarashi, editors, {\em
+  Proceedings of the 2019 {ACM} {SIGPLAN} Workshop on Partial Evaluation and
+  Program Manipulation, PEPM@POPL 2019, Cascais, Portugal, January 14-15,
+  2019}, pages 75--81. {ACM}, 2019.
+
+\end{thebibliography}

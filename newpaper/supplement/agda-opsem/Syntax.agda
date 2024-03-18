@@ -13,7 +13,7 @@ mutual
     one   : ValTy
     _+_   : ValTy → ValTy → ValTy
     _*_   : ValTy → ValTy → ValTy
-    μ     : Functor → ValTy         -- fixpoints
+    μ     : Functor → ValTy         -- fixpoints of ValTy → ValTy functors
 
   data Functor : Set where
     K   : ValTy → Functor                -- Constant functor

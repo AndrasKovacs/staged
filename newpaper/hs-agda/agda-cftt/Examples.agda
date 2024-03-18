@@ -144,9 +144,8 @@ exM5 = DefRec λ f → Λ λ t → down $
       n  ← join $ caseM ns λ where
              nil         → pure n
              (cons n ns) → do put ns; pure n
-      l ← up (f ∙ l)
-      r ← up (f ∙ r)
-      pure (node∘ n l r)
+      node∘ n <$> up (f ∙ l) <*> up (f ∙ r)
+
 
 -- filterM where the recursive call is performed first
 filterM : ∀ {F M A}⦃ _ : Improve F M ⦄ → (↑V A → M Bool) → ↑C (List∘ A ⇒ F (List∘ A))

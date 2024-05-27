@@ -2,8 +2,6 @@
 - Intro: "ask" also takes a reader dict argument!
 - Replace bindSingle in paper with bindGen!
 - Add missing congruences to agda-opsem for computational product types!
-- Error: 4.1, "IsSumVS constraint" --> "IsSOP"
-- Error: 4.3  "if U_sop is closed under Sg-types"
 
 - Conflicting MLT superclasses in Agda can be
   solved by overlapping fields!

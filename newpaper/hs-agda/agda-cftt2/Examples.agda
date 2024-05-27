@@ -44,8 +44,7 @@ Pull E A = PullM (Gen E) A
 -- Comment out to get the projections in all their glory.
 postulate
   CALL : {A : Set} → A
--- {-# DISPLAY fst∘ x = CALL #-}
-
+{-# DISPLAY fst∘ x = CALL #-}
 -- Basics
 --------------------------------------------------------------------------------
 

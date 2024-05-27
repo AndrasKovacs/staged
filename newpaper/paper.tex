@@ -93,6 +93,7 @@
 \newcommand{\vys}{\mathsf{ys}}
 \newcommand{\vsp}{\mathsf{sp}}
 \newcommand{\vma}{\mathsf{ma}}
+\newcommand{\vga}{\mathsf{ga}}
 \newcommand{\vm}{\mathsf{m}}
 \newcommand{\vn}{\mathsf{n}}
 \newcommand{\vk}{\mathsf{k}}
@@ -1425,6 +1426,7 @@ efficiently compile, and we can demonstrate significant improvements in CFTT.
 We also use dependent types in a more essential way than in the previous
 section.
 
+
 \subsection{Streams}
 
 A pull stream is a meta-level specification of a state machine:
@@ -1434,7 +1436,7 @@ A pull stream is a meta-level specification of a state machine:
   & \ind \Pull : (\vS : \MTy) \to \IsSOP\,\vS \RA \Gen\,\vS \to (\vS \to \Gen\,(\Step\,\vS\,\vA)) \to \Pull\,\vA
 \end{alignat*}
 In the $\Pull$ constructor, $\vS$ is the type of the internal state which is
-required to be a sum-of-products of value types by the $\IsSumVS\,\vS$
+required to be a sum-of-products of value types by the $\IsSOP\,\vS$
 constraint. Borrowing terminology from Coutts \cite{DBLP:phd/ethos/Coutts11}, we
 call each product in the state a \emph{state shape}.
 
@@ -1504,9 +1506,9 @@ function to a product of functions. However, these functions need to be
 \emph{mutually recursive}, since it is possible to transition from any state to
 any other state, and each such transition is represented as a function call.
 This problem of generating well-typed mutual blocks was addressed by Yallop and
-Kiselyov in \cite{DBLP:conf/pepm/YallopK19}. Unlike ibid., which used control
-effects and mutable references in MetaOCaml, we present a solution that does not
-use side effects in the metalanguage.
+Kiselyov in \cite{DBLP:conf/pepm/YallopK19}. In contrast to this work, which
+used control effects and mutable references in MetaOCaml, we present a solution
+that does not use side effects in the metalanguage.
 
 The solution is to extend $\CTy$ with finite products of computations,
 i.e.\ assume $() : \CTy$ and $({,}) : \CTy \to \CTy \to \CTy$, together with
@@ -1537,15 +1539,15 @@ it to generate object code from streams. There are several choices for this, but
 in CFTT the $\msf{foldr}$ function is as good as we can get.
 \begin{alignat*}{3}
   &\hspace{-13em}\mathrlap{\foldr : \{\vA : \MTy\}\{\vB : \Ty\} \to (\vA \to \Lift \vB \to \Lift \vB) \to \Lift \vB \to \Pull\,\vA \to \Lift\,\vB}\\
-  &\hspace{-13em}\mathrlap{\foldr\,\{\vA\}\,\{\vB\}\,(\Pull\,\vS\,\seed\,\step)\,\vf\,\vb = \ql}\\
+  &\hspace{-13em}\mathrlap{\foldr\,\{\vA\}\,\{\vB\}\,\vf\,\vb\,(\Pull\,\vS\,\seed\,\step) = \ql}\\
   &\hspace{-13em}\mathrlap{\ind \letrec \vfs : \mit{Fun}_{\SOP\Lift}\,(\Rep\,\{\vS\})\,\vB := \spl\big(\mtabulate \dlr \lam \vs.\,\unGen\,(\step\,(\rep^{-1}\,\vs)) \dlr \lam \case} \\
   &\hspace{-13em}\ind \ind \ind \Stop            &&\to \vb \\
   &\hspace{-13em}\ind \ind \ind \Skip\,\vs       &&\to \mindex\,\qt{\vfs}\,(\rep\,\vs) \\
   &\hspace{-13em}\ind \ind \ind \Yield\,\va\,\vs &&\to \vf\,\va\,(\mindex\,\qt{\vfs}\,(\rep\,\vs))\big);\\
   &\hspace{-13em}\mathrlap{\ind \spl\big(\unGen\,\seed \dlr \lam s.\,\mindex\,\qt{\vfs}\,(\rep\,\vs)\big)\qr}
 \end{alignat*}
-This $\foldr$ is quite flexible becuse we can compute any object value from it,
-including functions. For instance, we can define $\foldl$ from $\foldr$:
+This $\foldr$ is quite flexible because it can produce object terms with computation types.
+For instance, we can define $\foldl$ from $\foldr$:
 \begin{alignat*}{3}
   &\foldl : \{\vA : \MTy\}\{\vB : \VTy\} \to (\Lift \vB \to \vA \to \Lift \vB) \to \Lift \vB \to \Pull\,\vA \to \Lift\,\vB\\
   &\foldl\,\vf\,\vb\,\vas = \spl(\foldr\,(\lam \va\,\vg.\,\qt{\lam \vb.\,\spl \vg\,\spl(\vf\,\qt{\vb}\,\spl \va)})\,\qt{\lam \vb.\,\vb}\,\vas)\,\spl \vb
@@ -1572,7 +1574,7 @@ the meta type theory. For instance, we can define a $\Nat_\M \to \Pull\,\vB$
 function which for each $\vn : \Nat_\M$ produces a concatenation of $\vn$
 streams. Hence, we shall have the following function instead:
 \[ \concatMap : \IsSOP\,\vA \RA (\vA \to \Pull\,\vB) \to \Pull\,\vA \to \Pull\,\vB \]
-The idea is the following: if $\USOP$ is closed $\Sigma$-types, we can directly
+The idea is the following: if $\USOP$ is closed under $\Sigma$-types, we can directly
 define this $\concatMap$, by taking the appropriate dependent sum of the $\vA
 \to \USOP$ family of machine states, which we extract from the $\vA \to
 \Pull\,\vB$ function. Let us write $\Sigma\,\vA\,\vB : \MTy$ for dependent sums,
@@ -1688,24 +1690,24 @@ contribute to a code size blow-up. For example, $\concatMap$ over $\single$
 introduces at least a doubling of the number of state shapes. Although
 let-insertion and case splitting could be derived as $\concatMap$ over
 $\single$, to avoid the size explosion we give more specialized definitions
-instead. First, we define a helper function for binding a single $\IsSOP$ value.
+instead. First, we define an embedding of $\Gen$ operations in streams.
 \begin{alignat*}{3}
-  & \hspace{-11em}\mathrlap{\mit{bind_{single}} : \IsSOP\,\vA' \RA \Lift \vA \to (\Lift \vA \to \Gen\,\vA') \to (\vA' \to \Pull\,\vB) \to \Pull\,\vB}\\
-  & \hspace{-11em}\mathrlap{\mit{bind_{single}}\,\va\,\vf\,\vg =}\\
-  & \hspace{-11em}\mathrlap{\ind \Pull\,(\Sigma\,\vA'\,(\mit{projS} \circ \vg))\,(\mdo \{\va' \fro \vf\,\va; \vs \fro \mit{projSeed}\,(\vg\,\va'); \return (\va',\,\vs)) \dlr \lam \case}\\
-  & \hspace{-11em}\mathrlap{\ind \ind (\va',\,\vs) \to \mit{projStep}\,(\vg\,\va')\,\vs \bind \lam \case }\\
+  & \hspace{-11em}\mathrlap{\mit{bind_{\Gen}} : \IsSOP\,\vA \RA \Gen\,\vA \to (\vA \to \Pull\,\vB) \to \Pull\,\vB}\\
+  & \hspace{-11em}\mathrlap{\mit{bind_{\Gen}}\,\vga\,\vf\,=}\\
+  & \hspace{-11em}\mathrlap{\ind \Pull\,(\Sigma\,\vA\,(\mit{projS} \circ \vf))\,(\mdo \{\va \fro \vga; \vs \fro \mit{projSeed}\,(\vf\,\va); \return (\va,\,\vs)) \dlr \lam \case}\\
+  & \hspace{-11em}\mathrlap{\ind \ind (\va,\,\vs) \to \mit{projStep}\,(\vf\,\va)\,\vs \bind \lam \case }\\
   & \hspace{-11em}\ind \ind \ind \Stop            &&\to \return \Stop\\
-  & \hspace{-11em}\ind \ind \ind \Skip\,\vs       &&\to \return \dlr \Skip\,(\va',\,\vs) \\
-  & \hspace{-11em}\ind \ind \ind \Yield\,\vb\,\vs &&\to \return \dlr \Yield\,\vb\,(\va',\,\vs)
+  & \hspace{-11em}\ind \ind \ind \Skip\,\vs       &&\to \return \dlr \Skip\,(\va,\,\vs) \\
+  & \hspace{-11em}\ind \ind \ind \Yield\,\vb\,\vs &&\to \return \dlr \Yield\,\vb\,(\va,\,\vs)
 \end{alignat*}
 We recover let-insertion and case splitting as follows:
 \begin{alignat*}{3}
   &\mit{gen_\Pull} : \Lift \vA \to (\Lift \vA \to \Pull\,\vB) \to \Pull\,\vB\\
-  &\mit{gen_\Pull}\,\va = \mit{bind_{single}}\,\va\,\gen
+  &\mit{gen_\Pull}\,\va = \mit{bind_{\Gen}}\,(\gen\,\va)
 \end{alignat*}
 \begin{alignat*}{3}
   &\mit{case_\Pull} : (\mit{Split}\,\vA,\,\IsSOP\,(\mit{SplitTo}\,\{\vA\})) \RA \Lift \vA \to (\mit{SplitTo}\,\{\vA\} \to \Pull\,\vB) \to \Pull\,\vB\\
-  &\mit{case_\Pull}\,\va = \mit{bind_{single}}\,\va\,\mit{split}
+  &\mit{case_\Pull}\,\va = \mit{bind_{\Gen}}\,(\mit{split}\,\va)
 \end{alignat*}
 Let us look at small example. We write $\mit{forEach}$ for $\concatMap$ with
 flipped arguments.

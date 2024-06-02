@@ -23,7 +23,7 @@ runGen ga = unGen ga id
 
 record MonadGen (M : Set → Set) : Set₁  where
   field
-    ⦃ monadM ⦄ : Monad M
+    overlap ⦃ monadM ⦄ : Monad M
     liftGen : ∀ {A} → Gen A → M A
 
   -- corresponds to "gen" in the paper

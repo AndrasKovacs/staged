@@ -13,7 +13,6 @@ import CFTT.Split
 import CFTT.Join
 import CFTT.Up
 import CFTT.Pull
-import CFTT.MonadTailCall
 import CFTT.Improve
 import CFTT.Tree
 import qualified CFTT.Up as Up
@@ -79,34 +78,24 @@ exM3 x = $$(down do
       False → throwError [||()||])
     \_ -> modify' (+ 11))
 
--- staged tail recursion
-exM4 :: [Int] -> M ()
-exM4 ns = $$(downTC $ do
-  caseM [||ns||] \case
-    Nothing      -> ret Up.tt
-    Just (n, ns) -> caseM (n Up.== 10) \case
-      True  -> throwError [||()||]
-      False -> do {modify' (+20); tailcall1 [||exM4||] ns}
-  )
-
 -- staged non-tail recursion
-exM4' :: [Int] -> M ()
-exM4' ns = $$(down $ do
+exM4 :: [Int] -> M ()
+exM4 ns = $$(down $ do
   caseM [||ns||] \case
     Nothing      -> pure Up.tt
     Just (n, ns) -> caseM (n Up.== 10) \case
       True  -> throwError [||()||]
-      False -> do {modify' (+20); up [|| exM4' $$ns ||]}
+      False -> do {modify' (+20); up [|| exM4 $$ns ||]}
   )
 
 -- vanilla mtl
-exM4'' :: [Int] -> M ()
-exM4'' !ns = do
+exM4' :: [Int] -> M ()
+exM4' !ns = do
   case ns of
     [] -> pure ()
     n:ns -> case (n Prelude.== 10) of
       True -> throwError ()
-      _    -> do {State.modify' (+20); exM4'' ns}
+      _    -> do {State.modify' (+20); exM4' ns}
 
 -- Section 3.6. example from the paper
 exM5 :: Tree Int -> StateT [Int] (ExceptT () Identity) (Tree Int)
@@ -143,26 +132,30 @@ exM5' t = do
       r <- exM5' r
       pure $ Node n l r
 
-filterM :: forall f m a. (Improve f m, MonadTC f m) => (Up a -> m Bool) -> Up ([a] -> f [a])
+filterM :: forall f m a. Improve f m => (Up a -> m Bool) -> Up ([a] -> f [a])
 filterM f = [||
-   let go as = $$(downTC @f @m $ caseM [||as||] \case
-                   Nothing      -> ret [||[]||]
-                   Just (a, as) -> f a >>= \case
-                     True  -> do {as <- up [||go $$as||]; ret [||$$a : $$as||]}
-                     False -> tailcall1 [||go||] as
+   let go as = $$(down @f @m $ caseM [||as||] \case
+                   Nothing      -> pure [||[]||]
+                   Just (a, as) -> do
+                     as <- up [|| go $$as ||]
+                     f a >>= \case
+                       True  -> pure [||$$a : $$as||]
+                       False -> pure as
                  )
    in go
    ||]
 
 -- I inline the filterM definition here because of TH module restrictions.
 exM6 :: [Int] -> StateT Int (ExceptT () Identity) [Int]
-exM6 as = $$(downTC $ caseM [||as||] \case
-                   Nothing      -> ret [||[]||]
+exM6 as = $$(down $ caseM [||as||] \case
+                   Nothing      -> pure [||[]||]
                    Just (a, as) -> caseM (a Up.== 0) \case
-                     True  -> throwError Up.tt
-                     False -> caseM (a Up.< 20) \case
-                       True  -> do {as <- up [||exM6 $$as||]; ret [||$$a : $$as||]}
-                       False -> tailcall1 [||exM6||] as
+                     True -> throwError Up.tt
+                     _ -> do
+                       as <- up [||exM6 $$as||]
+                       caseM (a Up.< 20) \case
+                         True -> pure [||$$a : $$as||]
+                         _    -> pure as
                  )
 
 -- Streams

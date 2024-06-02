@@ -88,6 +88,13 @@ NOTE :
 
 - internally to PSh(Obj), we have ordinary W-types, nothing special
 
+--------------------------------------------------------------------------------
+
+
+
+--------------------------------------------------------------------------------
+
+
 - Restricted sup constructor for W:
 
   Rsup : (α : R A γ) → R (B ⇒ W A[p] B[p↑]) (γ, α) → R (W A B) γ
@@ -167,3 +174,17 @@ Soundness:
     reflect : (t u : Tm Γ A) → Tm Γ (Id t u) → t = u
 
     (reflect t u p)≈ :     t≈ γ≈ = u≈ γ≈      p : t = u
+
+
+
+--------------------------------------------------------------------------------
+
+"unstaging":
+  Atsushi Igarashi - he used "unstaging"
+  make sure that Atsushi uses it that way
+
+"eval" - a bit confusing
+Sheard-Taha shifted away from eval
+
+
+--------------------------------------------------------------------------------

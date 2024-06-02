@@ -13,7 +13,7 @@ data Step (S A : Set) : Set where
   skip  : S → Step S A
   yield : A → S → Step S A
 
--- Pull can be equivalently written using St : Uₛ instead, which yields Pull A : Set₀,
+-- Pull can be equivalently written using St : Uₛ instead, which yields Pull A : Set,
 -- but St : Set is just more convenient to use in Agda.
 {-# NO_UNIVERSE_CHECK #-}
 record Pull (A : Set) : Set where
@@ -193,7 +193,7 @@ caseₚ : ∀ {A B}⦃ _ : Split A ⦄ ⦃ _ : IsSOP (SplitTo {A}) ⦄ → ↑V 
 caseₚ a = bindGen (splitGen a)
 
 
--- Random library functions
+-- Assorted library functions
 --------------------------------------------------------------------------------
 
 dup : ∀ {A} → Pull A → Pull (A × A)

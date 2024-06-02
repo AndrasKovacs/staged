@@ -11,7 +11,6 @@ open import Gen
 open import Improve
 open import Join
 open import Split
-open import MonadTailCall
 open import SOP
 open import Pull
 
@@ -123,18 +122,9 @@ exM3 = Λ λ x → down $
       false → fail)
     (do modify' (_+∘_ 11))
 
--- Monadic tail recursion on lists, the "tailcall1" result does not get matched.
-exM4 : ↑C (List∘ ℕ∘ ⇒ StateT∘ ℕ∘ (MaybeT∘ Identity∘) ⊤∘)
-exM4 = DefRec λ rec → Λ λ ns → downTC do
-  caseM ns λ where
-    nil         → ret tt∘
-    (cons n ns) → caseM (n ==∘ 10) λ where
-      true  → fail
-      false → do modify' (_+∘_ 20); tailcall1 rec ns
-
 -- Section 3.6. example from the paper
-exM5 : ↑C (Tree∘ ℕ∘ ⇒ StateT∘ (List∘ ℕ∘) (MaybeT∘ Identity∘) (Tree∘ ℕ∘))
-exM5 = DefRec λ f → Λ λ t → down $
+exM4 : ↑C (Tree∘ ℕ∘ ⇒ StateT∘ (List∘ ℕ∘) (MaybeT∘ Identity∘) (Tree∘ ℕ∘))
+exM4 = DefRec λ f → Λ λ t → down $
   caseM t λ where
     leaf         → pure leaf∘
     (node n l r) → do
@@ -159,21 +149,8 @@ filterM f = DefRec λ rec → Λ λ as → down $ caseM as λ where
       true  → pure (cons∘ a as)
       false → pure as
 
--- filterM where we make a tail call in the false case
-filterM' : ∀ {F M A}⦃ _ : Improve F M ⦄ ⦃ _ : MonadTC F M ⦄ → (↑V A → M Bool) → ↑C (List∘ A ⇒ F (List∘ A))
-filterM' f = DefRec λ rec → Λ λ as → downTC $ caseM as λ where
-  nil         → ret nil∘
-  (cons a as) → f a >>= λ where
-      true  → do as ← up (rec ∙ as); ret (cons∘ a as)
-      false → tailcall1 rec as
-
-exM6 : ↑C (List∘ ℕ∘ ⇒ StateT∘ ℕ∘ (MaybeT∘ Identity∘) (List∘ ℕ∘))
-exM6 = filterM' λ n → caseM (n ==∘ 0) λ where
-  true  → fail
-  false → split (n <∘ 20)
-
-exM7 : ↑C (List∘ ℕ∘ ⇒ StateT∘ ℕ∘ (MaybeT∘ Identity∘) (List∘ ℕ∘))
-exM7 = filterM λ n → caseM (n ==∘ 0) λ where
+exM5 : ↑C (List∘ ℕ∘ ⇒ StateT∘ ℕ∘ (MaybeT∘ Identity∘) (List∘ ℕ∘))
+exM5 = filterM λ n → caseM (n ==∘ 0) λ where
   true  → fail
   false → split (n <∘ 20)
 

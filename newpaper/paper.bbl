@@ -2,7 +2,7 @@
 %%% Do NOT edit. File created by BibTeX with style
 %%% ACM-Reference-Format-Journals [18-Jan-2012].
 
-\begin{thebibliography}{34}
+\begin{thebibliography}{36}
 
 %%% ====================================================================
 %%% NOTE TO THE USER: you can override these defaults by providing
@@ -63,6 +63,23 @@
 \url{http://arxiv.org/abs/1705.03307}
 \showURL{%
 \tempurl}
+
+
+\bibitem[Boulier et~al\mbox{.}(2017)]%
+        {next700}
+\bibfield{author}{\bibinfo{person}{Simon Boulier},
+  \bibinfo{person}{Pierre-Marie P{\'e}drot}, {and} \bibinfo{person}{Nicolas
+  Tabareau}.} \bibinfo{year}{2017}\natexlab{}.
+\newblock \showarticletitle{The Next 700 Syntactical Models of Type Theory}. In
+  \bibinfo{booktitle}{\emph{Proceedings of the 6th ACM SIGPLAN Conference on
+  Certified Programs and Proofs}} (Paris, France) \emph{(\bibinfo{series}{CPP
+  2017})}. \bibinfo{publisher}{ACM}, \bibinfo{address}{New York, NY, USA},
+  \bibinfo{pages}{182--194}.
+\newblock
+\showISBNx{978-1-4503-4705-1}
+\urldef\tempurl%
+\url{https://doi.org/10.1145/3018610.3018620}
+\showDOI{\tempurl}
 
 
 \bibitem[Breitner(2014)]%
@@ -232,6 +249,26 @@
 \showDOI{\tempurl}
 
 
+\bibitem[Hofmann(1997)]%
+        {Hofmann97syntaxand}
+\bibfield{author}{\bibinfo{person}{Martin Hofmann}.}
+  \bibinfo{year}{1997}\natexlab{}.
+\newblock \showarticletitle{Syntax and Semantics of Dependent Types}. In
+  \bibinfo{booktitle}{\emph{Semantics and Logics of Computation}}.
+  \bibinfo{publisher}{Cambridge University Press}, \bibinfo{pages}{79--130}.
+\newblock
+
+
+\bibitem[Huber(2016)]%
+        {huber-thesis}
+\bibfield{author}{\bibinfo{person}{Simon Huber}.}
+  \bibinfo{year}{2016}\natexlab{}.
+\newblock \emph{\bibinfo{title}{Cubical Interpretations of Type Theory}}.
+\newblock \bibinfo{thesistype}{Ph.\,D. Dissertation}.
+  \bibinfo{school}{University of Gothenburg}.
+\newblock
+
+
 \bibitem[Hugunin(2020)]%
         {whynotw}
 \bibfield{author}{\bibinfo{person}{Jasper Hugunin}.}
@@ -300,7 +337,7 @@
         {staged2ltt}
 \bibfield{author}{\bibinfo{person}{Andr{\'{a}}s Kov{\'{a}}cs}.}
   \bibinfo{year}{2022}\natexlab{}.
-\newblock \showarticletitle{Staged compilation with two-level type theory}.
+\newblock \showarticletitle{Staged Compilation with Two-Level Type Theory}.
 \newblock \bibinfo{journal}{\emph{Proc. {ACM} Program. Lang.}}
   \bibinfo{volume}{6}, \bibinfo{number}{{ICFP}} (\bibinfo{year}{2022}),
   \bibinfo{pages}{540--569}.
@@ -370,19 +407,6 @@
 \newblock
 \urldef\tempurl%
 \url{https://doi.org/10.1145/3062341.3062380}
-\showDOI{\tempurl}
-
-
-\bibitem[Moerdijk and Palmgren(2000)]%
-        {DBLP:journals/apal/MoerdijkP00}
-\bibfield{author}{\bibinfo{person}{Ieke Moerdijk} {and} \bibinfo{person}{Erik
-  Palmgren}.} \bibinfo{year}{2000}\natexlab{}.
-\newblock \showarticletitle{Wellfounded trees in categories}.
-\newblock \bibinfo{journal}{\emph{Ann. Pure Appl. Log.}} \bibinfo{volume}{104},
-  \bibinfo{number}{1-3} (\bibinfo{year}{2000}), \bibinfo{pages}{189--218}.
-\newblock
-\urldef\tempurl%
-\url{https://doi.org/10.1016/S0168-0072(00)00012-9}
 \showDOI{\tempurl}
 
 

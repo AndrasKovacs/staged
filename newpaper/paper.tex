@@ -61,11 +61,15 @@
 \usepackage{scalerel}
 \usepackage{bm}
 \usepackage{mathtools}
+\usepackage{stmaryrd}
+\usepackage[title]{appendix}
 
 \newcommand{\mit}[1]{{\mathsf{#1}}}
 \newcommand{\msf}[1]{{\mathsf{#1}}}
 \newcommand{\mbf}[1]{{\mathbf{#1}}}
 \newcommand{\mbb}[1]{\mathbb{#1}}
+\newcommand{\U}{\mathsf{U}}
+\newcommand{\code}{\mathsf{code}}
 \newcommand{\bs}[1]{\boldsymbol{#1}}
 \newcommand{\wh}[1]{\widehat{#1}}
 \newcommand{\mdo}{\mbf{do}\,}
@@ -85,6 +89,16 @@
 \newcommand{\add}{\mit{add}}
 \newcommand{\letdef}{\mbf{let\,}}
 \newcommand{\map}{\mit{map}}
+\newcommand{\emptycon}{\scaleobj{.75}\bullet}
+\newcommand{\Tyo}{\msf{Ty}_{\mbbo}}
+\newcommand{\Tmo}{\msf{Tm}_{\mbbo}}
+\newcommand{\whset}{\wh{\Set}}
+\newcommand{\ev}{\mbb{E}}
+\newcommand{\re}{\mbb{R}}
+
+
+\newcommand{\mbbc}{\mbb{C}}
+\newcommand{\mbbo}{\mbb{O}}
 
 \newcommand{\vas}{\mathsf{as}}
 \newcommand{\vbs}{\mathsf{bs}}
@@ -123,6 +137,11 @@
 \newcommand{\vu}{\mathsf{u}}
 \newcommand{\vl}{\mathsf{l}}
 \newcommand{\vns}{\mathsf{ns}}
+\newcommand{\vW}{\mathsf{W}}
+\newcommand{\vsup}{\mathsf{sup}}
+\newcommand{\vid}{\mathsf{id}}
+\newcommand{\whW}{\wh{\vW}}
+
 
 \newcommand{\SOP}{\msf{SOP}}
 \newcommand{\El}{\msf{El}}
@@ -138,6 +157,11 @@
 \newcommand{\Set}{\msf{Set}}
 \newcommand{\casePull}{\msf{case_{Pull}}}
 \newcommand{\appull}{\ap_{\Pull}}
+
+\newcommand{\Con}{\msf{Con}}
+\newcommand{\Sub}{\msf{Sub}}
+\newcommand{\Tm}{\msf{Tm}}
+\newcommand{\Mor}{\msf{Tm}}
 
 \newcommand{\ext}{\triangleright}
 
@@ -171,6 +195,7 @@
 \newcommand{\bind}{\mathbin{>\!\!>\mkern-6.7mu=}}
 
 \newcommand{\MTy}{\msf{MetaTy}}
+\newcommand{\MTm}{\msf{MetaTm}}
 \newcommand{\VTy}{\msf{ValTy}}
 \newcommand{\Ty}{\msf{Ty}}
 \newcommand{\CTy}{\msf{CompTy}}
@@ -349,15 +374,15 @@ With optimizations enabled, GHC compiles this roughly to the code below:
 \end{alignat*}
 Without optimizations we roughly get:
 \begin{alignat*}{3}
-  &\vf = \lam \vx.\,(\bind)\,\msf{MonadReaderDict}\,\msf{ask}\,(\lam \vb.\,\bif \vb\\
+  &\vf = \lam \vx.\,(\bind)\,\msf{MonadReaderDict}\,(\msf{ask}\,\msf{MonadReaderDict})\,(\lam \vb.\,\bif \vb\\
   &\ind \bthen\return\,\msf{MonadReaderDict}\,(\vx + 10)\\
   &\ind \belse\hspace{0.25em}\return\,\msf{MonadReaderDict}\,(\vx + 20))
 \end{alignat*}
 Here, $\msf{MonadReaderDict}$ is a runtime dictionary, containing the methods of
-the $\Monad$ instance for $\Reader$, and $(\bind)\,\msf{MonadReaderDict}$ is a
-field projection. Here, a runtime closure will be created for the $\lam \vb.\,...$
-function, and $(\bind)$, $\msf{ask}$ and $\mbf{return}$ will create additional dynamic
-closures.
+the $\Monad$ instance for $\Reader$, and $(\bind)\,\msf{MonadReaderDict}$ is the
+projection of the binding function. Here, a runtime closure will be created for
+the $\lam \vb.\,...$ function, and $(\bind)$, $\msf{ask}$ and $\mbf{return}$
+will create additional dynamic closures.
 
 The difference between optimized and unoptimized code is already large here, and
 it gets even larger when we consider monad transformers or code that is
@@ -371,7 +396,7 @@ This is a third-order and second-rank polymorphic function in disguise, because
 its monad dictionary argument contains the polymorphic second-order method
 $(\bind)$.  Compiling $\msf{mapM}$ efficiently relies on inlining the instance
 dictionary, then inlining the methods contained there, and also inlining the
-functions that the higher-order binding method is applied to.
+functions that the higher-order binding is applied to.
 
 GHC's optimization efforts are respectable, and it has gotten quite adept over
 its long history of development. However, there is no strong guarantee that
@@ -814,75 +839,146 @@ is merely a black box that computes object code. If we have $\vf : \Up(\vA \to \
 and $\vf$ is staged to $\ql \lam \vx.\,\vt\qr$, then $\spl \vf\,\vu$ is staged to an
 undesirable ``administrative'' $\beta$-redex $(\lam \vx.\,\vt)\,\vu$.
 
-\subsection{Semantics of Staging}\label{sec:semantics-of-staging}
+\subsection{Staged Semantics of CFTT}\label{sec:semantics-of-staging}
 
-We give a short summary of the semantics of staging here. We reuse most of the
-semantics from \cite{staged2ltt} and only mention additions and differences. The
-reader may refer to ibid.\ for technical details.
+We give an overview of the unstaging algorithm together with its correctness.
+We reuse the concepts and most of the results from \cite{staged2ltt}. Our main
+task is to extend ibid.\, with identity types and inductive types in the
+metalanguage, since we use them in this paper. For inductive types, it
+is the most sensible to develop W-types, since all inductive families can be
+faithfully derived from them in our setting \cite{whynotw}.
 
-Staging is given by evaluation of CFTT into a presheaf model, where the base
-category is given as follows: objects are typing contexts of the object language
-and morphisms are parallel substitutions. The equality of morphisms is given by
-strict syntactic equality of object terms. $\Ty$ is interpreted as the presheaf
-which is constantly the set of object-theoretic types. Soundness of staging is
-proven by a logical relation model, internally to the mentioned presheaf
-model. Soundness means that the output of staging, viewed as a CFTT term, is
-definitionally equal to the input.
-
-The main addition in CFTT is the assumption of all inductive families in the
-meta-level. However, based on the results in \cite{whynotw}, it is enough to
-extend the meta-level syntax in \cite{staged2ltt} with W-types and identity types to
-derive all inductive families. We consider the semantics of these in the following.
-
-\subsubsection{W-types} W-types have a standard object-wise inductive definition in
-the presheaf model \cite{DBLP:journals/apal/MoerdijkP00}. Additionally, we need to give a logical relation
-interpretation to W-types, as required for the soundness proof for staging. In
-Section 5.2.\ of \cite{staged2ltt} a serialization map is used to define the relation
-for natural numbers, however, there is no analogous map for W-types because we
-cannot build finite terms from infinitely branching trees.
-
-Instead, we give an inductive definition for the logical relation at
-W-types. First, assuming $A : \wh{\Set}$ and $B : A \to \wh{\Set}$, we have the
-usual constructor for the semantic W-type in the internal language of the
-presheaf model, as $\msf{sup} : (a : A) \to (B\,a \to \msf{W}\,A\,B) \to
-\msf{W}\,A\,B$.  Second, assuming $A : \Ty\,\Gamma$ and $B : \Ty\,(\Gamma \ext
-A)$ in CFTT, we internalize the $\msf{sup}$ constructor which constructs a term
-of a syntactic W-type from restricted terms:
-\[ \mathbb{R}_{\msf{sup}} : (\alpha : \mathbb{R}\,A\,\gamma) \to \mathbb{R}\,(B \RA (\msf{W_{CFTT}}\,A\,B)[\msf{wk}])\,(\gamma,\,\alpha) \to \mathbb{R}\,(\msf{W_{CFTT}}\,A\,B)\,\gamma \]
-Here, $\msf{W_{CFTT}}$ denotes the W-type former in CFTT, $B \RA
-(\msf{W_{CFTT}}\,A\,B)[\msf{wk}]$ is a non-dependent function type in CFTT, and
-$\msf{wk}$ is a weakening substitution.
-
-Then, assuming $\gamma^{\approx} : \Gamma^{\approx}\,\gamma\,\gamma'$, we
-inductively define a relation $\msf{W}^{\approx}$ between
-$\msf{W}\,(\mbb{E}\,A\,\gamma)\,(\lam \alpha.\,\mbb{E}\,B\,(\gamma,\,\alpha))$
-and $\mbb{R}\,(\msf{W_{CFTT}}\,A\,B)\,\gamma'$, which relates
-$\msf{sup}\,\alpha\,f$ to $\mathbb{R}_{\msf{sup}}\,\alpha'\,f'$ if $\alpha$ is
-related to $\alpha'$ at type $A$ and $f$ is related to $f'$ at type $B[\alpha']
-\RA \msf{W_{CFTT}}\,A\,B$. The relation at the non-dependent function type $\blank{\RA}\blank$
-is given as pointwise preservation of relations. With this, we can also give
-relational interpretation to the syntactic $\msf{sup}$ rule in CFTT,
-and we can use induction on $\msf{W}^{\approx}$ to interpret the syntactic
-induction rule for W. Thus, we get soundness of staging with W-types.
-
-\subsubsection{Identity type} Our treatment of the identity type is
-influenced by the following: we would like to assume equations as axioms in
-CFTT, which are true in the presheaf model (i.e.\ they are true at
-staging-time), without blocking staging as a computation. In Section \ref{sec:concatmap-for-streams}
-we use such an axiom to good effect. However, axioms do block computation in
-CFTT up to definitional equality, which implies that the soundness of staging
-fails. Our solution:
+This however requires a substantial amount of technical background from
+\cite{staged2ltt}, so we relegate it to Appendix \ref{appendix:A}. Here we only
+review the basic notions.
 \begin{itemize}
-\item Have a standard intensional identity type in CFTT.
-\item Before staging, translate the intensional identity to extensional
-      identity. This amounts to erasing all identity proofs and transports.
-\item Perform staging after erasure of identity proofs, i.e.\ model extensional identity in the semantics.
+\item The input of unstaging is a CFTT term with an object-level type, which
+      only depends on object-level free variables. The output is a term in the
+      object theory. In the other direction, there is an evident embedding of
+      object-theoretic terms as CFTT terms.
+\item \emph{Soundness} means that unstaging followed by embedding is the
+      identity map, up to conversion. In other words, unstaging respects conversion
+      of CFTT terms.
+\item \emph{Stability} means that embedding followed by unstaging is the
+      identity map. In other words, unstaging has no action on terms which are
+      already purely object-level (i.e.\ contain no splices).
 \end{itemize}
-In the presheaf model, we interpret the extensional identity in a standard way,
-as strict equality of sections of presheaves, and soundness for extensional
-identity becomes trivial to show. Hence, the soundness property for our overall
-staging pipeline becomes the following: the staging output is definitionally
-equal to the identity-erased version of the staging input.
+In \cite{staged2ltt}, there is an extra property, called \emph{strictness},
+which means that unstaging does not perform $\beta\eta$-conversion in the
+object theory, but this holds trivially in our case since we do not have such
+conversion rules.
+
+However, for CFTT we slightly depart from the above notion of soundness, for the
+following reason. We would like to assume certain propositional identities as
+\emph{axioms} in the metalanguage, without blocking unstaging as a
+computation. We use such an axiom to good effect in Section
+\ref{sec:concatmap-for-streams}.
+
+Now, axioms clearly block computation, so they are incompatible with the
+mentioned notion of soundness. But we are only interested in equations which
+hold definitionally during unstaging. Hence, we can do the following: first, we
+erase all identity proofs and their transports from CFTT programs, then we
+proceed with unstaging. The erasure of identity proofs can be defined as a
+syntactic translation \cite{next700} from CFTT into CFTT with an extensional
+identity type. Thus, what we get is that unstaging is sound only after the
+erasure of identity proofs.
+
+
+%% \subsubsection{Identity type} Our treatment of the identity type is
+%% influenced by the following: we would like to assume equations as axioms in
+%% CFTT, which are true in the presheaf model (i.e.\ they are true at
+%% staging-time), without blocking staging as a computation. In Section \ref{sec:concatmap-for-streams}
+%% we use such an axiom to good effect. However, axioms do block computation in
+%% CFTT up to definitional equality, which implies that the soundness of staging
+%% fails. Our solution:
+%% \begin{itemize}
+%% \item Have a standard intensional identity type in CFTT.
+%% \item Before staging, translate the intensional identity to extensional
+%%       identity. This amounts to erasing all identity proofs and transports.
+%% \item Perform staging after erasure of identity proofs, i.e.\ model extensional identity in the semantics.
+%% \end{itemize}
+%% In the presheaf model, we interpret the extensional identity in a standard way,
+%% as strict equality of sections of presheaves, and soundness for extensional
+%% identity becomes trivial to show. Hence, the soundness property for our overall
+%% staging pipeline becomes the following: the staging output is definitionally
+%% equal to the identity-erased version of the staging input.
+
+
+%% In the
+%% current work we use identity types and some inductive types and the
+%% metalanguage, which are not covered in \cite{staged2ltt}. Hence, our main task
+
+%% We give an overview of the semantics of CFTT. This yields a algorithm for
+%% evaluating
+%% extracting object programs from CFTT
+
+%% We give a short summary of the semantics of staging here. We reuse most of the
+%% semantics from \cite{staged2ltt} and only mention additions and differences. The
+%% reader may refer to ibid.\ for technical details.
+
+%% Staging is given by evaluation of CFTT into a presheaf model, where the base
+%% category is given as follows: objects are typing contexts of the object language
+%% and morphisms are parallel substitutions. The equality of morphisms is given by
+%% strict syntactic equality of object terms. $\Ty$ is interpreted as the presheaf
+%% which is constantly the set of object-theoretic types. Soundness of staging is
+%% proven by a logical relation model, internally to the mentioned presheaf
+%% model. Soundness means that the output of staging, viewed as a CFTT term, is
+%% definitionally equal to the input.
+
+%% The main addition in CFTT is the assumption of all inductive families in the
+%% meta-level. However, based on the results in \cite{whynotw}, it is enough to
+%% extend the meta-level syntax in \cite{staged2ltt} with W-types and identity types to
+%% derive all inductive families. We consider the semantics of these in the following.
+
+%% \subsubsection{W-types} W-types have a standard object-wise inductive definition in
+%% the presheaf model \cite{DBLP:journals/apal/MoerdijkP00}. Additionally, we need to give a logical relation
+%% interpretation to W-types, as required for the soundness proof for staging. In
+%% Section 5.2.\ of \cite{staged2ltt} a serialization map is used to define the relation
+%% for natural numbers, however, there is no analogous map for W-types because we
+%% cannot build finite terms from infinitely branching trees.
+
+%% Instead, we give an inductive definition for the logical relation at
+%% W-types. First, assuming $A : \wh{\Set}$ and $B : A \to \wh{\Set}$, we have the
+%% usual constructor for the semantic W-type in the internal language of the
+%% presheaf model, as $\msf{sup} : (a : A) \to (B\,a \to \msf{W}\,A\,B) \to
+%% \msf{W}\,A\,B$.  Second, assuming $A : \Ty\,\Gamma$ and $B : \Ty\,(\Gamma \ext
+%% A)$ in CFTT, we internalize the $\msf{sup}$ constructor which constructs a term
+%% of a syntactic W-type from restricted terms:
+%% \[ \mathbb{R}_{\msf{sup}} : (\alpha : \mathbb{R}\,A\,\gamma) \to \mathbb{R}\,(B \RA (\msf{W_{CFTT}}\,A\,B)[\msf{wk}])\,(\gamma,\,\alpha) \to \mathbb{R}\,(\msf{W_{CFTT}}\,A\,B)\,\gamma \]
+%% Here, $\msf{W_{CFTT}}$ denotes the W-type former in CFTT, $B \RA
+%% (\msf{W_{CFTT}}\,A\,B)[\msf{wk}]$ is a non-dependent function type in CFTT, and
+%% $\msf{wk}$ is a weakening substitution.
+
+%% Then, assuming $\gamma^{\approx} : \Gamma^{\approx}\,\gamma\,\gamma'$, we
+%% inductively define a relation $\msf{W}^{\approx}$ between
+%% $\msf{W}\,(\mbb{E}\,A\,\gamma)\,(\lam \alpha.\,\mbb{E}\,B\,(\gamma,\,\alpha))$
+%% and $\mbb{R}\,(\msf{W_{CFTT}}\,A\,B)\,\gamma'$, which relates
+%% $\msf{sup}\,\alpha\,f$ to $\mathbb{R}_{\msf{sup}}\,\alpha'\,f'$ if $\alpha$ is
+%% related to $\alpha'$ at type $A$ and $f$ is related to $f'$ at type $B[\alpha']
+%% \RA \msf{W_{CFTT}}\,A\,B$. The relation at the non-dependent function type $\blank{\RA}\blank$
+%% is given as pointwise preservation of relations. With this, we can also give
+%% relational interpretation to the syntactic $\msf{sup}$ rule in CFTT,
+%% and we can use induction on $\msf{W}^{\approx}$ to interpret the syntactic
+%% induction rule for W. Thus, we get soundness of staging with W-types.
+
+%% \subsubsection{Identity type} Our treatment of the identity type is
+%% influenced by the following: we would like to assume equations as axioms in
+%% CFTT, which are true in the presheaf model (i.e.\ they are true at
+%% staging-time), without blocking staging as a computation. In Section \ref{sec:concatmap-for-streams}
+%% we use such an axiom to good effect. However, axioms do block computation in
+%% CFTT up to definitional equality, which implies that the soundness of staging
+%% fails. Our solution:
+%% \begin{itemize}
+%% \item Have a standard intensional identity type in CFTT.
+%% \item Before staging, translate the intensional identity to extensional
+%%       identity. This amounts to erasing all identity proofs and transports.
+%% \item Perform staging after erasure of identity proofs, i.e.\ model extensional identity in the semantics.
+%% \end{itemize}
+%% In the presheaf model, we interpret the extensional identity in a standard way,
+%% as strict equality of sections of presheaves, and soundness for extensional
+%% identity becomes trivial to show. Hence, the soundness property for our overall
+%% staging pipeline becomes the following: the staging output is definitionally
+%% equal to the identity-erased version of the staging input.
 
 \section{Monads \& Monad Transformers}\label{sec:monad-transformers}
 
@@ -1936,6 +2032,134 @@ abstractions could be revisited in the staged setting.
      streams could be generalized to inductive and coinductive Church-codings of
      arbitrary value types.
 \end{itemize}
+\newpage
+
+\appendices
+\section{Semantics of CFTT}\label{appendix:A}
+
+In this appendix we describe the semantics of CFTT, from which the unstaging
+algorithm is obtained, and also describe the soundness and completeness of the
+algorithm. We borrow the setup from \cite{staged2ltt}; we use terminology and
+definitions from there by default, and focus on differences and extensions.
+
+\subsection{Models and Syntax of CFTT}
+
+We give an algebraic \cite{TODO} specification for the models of CFTT and define
+the syntax of CFTT to be the initial model.
+
+\begin{definition}[] A model of CFTT consists of the following.
+
+\begin{itemize}
+\item A category with a terminal object; in the syntax this is the category
+  of contexts and parallel substitutions. We use $\Con : \Set$ for contexts,
+  $\Mor : \Con \to \Con \to \Set$ for morphisms and $\emptycon : \Con$ for the
+  terminal object (which is the empty context in the syntax).
+\item A family structure in the sense of category-with-families \cite{TODO},
+  specifying metatypes and terms. This structure is additionally indexed by
+  universe levels, so we have $\MTy_i : \Con \to \Set$ and $\msf{MetaTm}_i :
+  (\Gamma : \Con) \to \MTy_i\,\Gamma \to \Set$ for $i \in \mbb{N}$. We support
+  basic type formers, identity types and W-types. Additionally, we have
+  Coquand-style universes, i.e.\ $\U_i : \MTy_{i+1}\,\Gamma$ such that there is
+  a definitional isomorphism $\msf{MetaTm}_{i+1}\,\Gamma\,\U_i \simeq \MTy_i\,\Gamma$.
+  We use $\El$ and $\code$ to denote the components of this isomorphism.
+\item
+  For object-level types, we have $\Ty : \MTy_0\,\Gamma$, $\VTy :
+  \MTy_0\,\Gamma$ and $\CTy : \MTy_0\,\Gamma$, together with all object-level
+  type formers and inclusion operations $\msf{V} : \MTm\,\Gamma\,\VTy \to \MTm\,\Gamma\,\Ty$
+  and $\msf{C} : \MTm\,\Gamma\,\CTy \to \MTm\,\Gamma\,\Ty$.
+\item For object-level terms, we have $\Tm : \MTm\,\Gamma\,\Ty \to \Set$, closed under
+  all object-level term formers. Here, $\MTm\,\blank\,\Ty$ and $\Tm$ also form a
+  family structure, so that we can substitute object terms and extend the context
+  with object term variables.
+\item Staging operations: we have $\Lift : \MTm\,\Gamma\,\Ty \to \MTy\,\Gamma$ together
+  with definitional isomorphisms $\Tm\,\Gamma\,A \simeq \MTm\,\Gamma\,(\Lift A)$.
+  We write $\ql\!\blank\!\qr$ and $\spl\!\blank$ for the components of the isomorphism.
+\end{itemize}
+\end{definition}
+This presentation is a bit more verbose than the ``surface'' syntax used in the
+paper. First, the meta level uses explicit coding and decoding operations for
+universes, while the surface syntax assumes Russell-style universes. Second, the
+object level has $\VTy$ and $\CTy$ as Tarski-style universes with explicit
+inclusion into $\Ty$, while the surface syntax used implicit coercions.
+
+Also, this is not the only possible presentation. Here, we follow the style of
+the informal syntax by having a separate \emph{sort} for object-level terms,
+together with explicit quoting and splicing, but we specify object-level types
+as certain meta-level terms. This a hybrid solution of two styles:
+\begin{itemize}
+\item One would have separate sorts for $\Ty$, $\CTy$ and $\VTy$, and would have
+  separate staging operations for all of these sorts. This follows the ``classic''
+  2LTT presentation \cite{TODO}, where the two levels are specified independently
+  and level-mixing is only possible through the staging operations.
+\item The other one would only have metatypes and terms, no lifting, quoting or
+  splicing, and would use metafunctions to represent object-level binders. This
+  is the HOAS (``higher-order abstract syntax'') or ``logical framework''
+  flavor. Our Agda implementation actually follows this style.
+\end{itemize}
+In the context of CFTT, the choice between HOAS and 2LTT styles is a matter of
+taste, and the two are inter-derivable.
+
+\subsection{Presheaf Model}
+
+Unstaging is defined as evaluation of the syntax of CFTT in a particular
+presheaf model.
+\begin{itemize}
+  \item The \emph{object theory} is the simple type theory supporting only value
+    types and computation types as described in Section
+    \ref{sec:the-object-level} and also in the Agda
+    formalization. Object-theoretic terms are not quotiented by
+    $\beta\eta$-conversion. Substitution is a recursively defined operation on
+    terms.
+  \item $\mbbo$ is the category whose objects are contexts of the object theory,
+    and morphisms are parallel substitutions, as lists of terms. With this,
+    object-theoretic types form a constant presheaf which we denote
+    as $\Tyo : \mbbo^{\msf{op}} \to \Set$, and terms form a dependent presheaf over $\Tyo$ which we write as
+    $\Tmo$.
+  \item
+  In the presheaf model of CFTT, every typing context (and also every closed
+  type) is modeled as a presheaf over $\mbbo$. The interpretation of meta-level
+  type formers is standard, following Hofmann \cite{Hofmann97syntaxand} and
+  Huber \cite{huber-thesis}.
+\item $\Ty : \MTy_0\,\Gamma$ is the displayed presheaf which is constantly
+  $\Tyo$. $\VTy$ and $\CTy$ are modeled analogously.
+\item $\Lift A : \MTy_0\,\Gamma$ is modeled as follows. We have that $A :
+  \MTy\,\Gamma\,\Ty$, but since $\Ty$ is defined as constantly $\Tyo$, it
+  follows that $A$ is a natural transformation from $\Gamma$ to $\Tyo$. Hence,
+  we define $\Lift A : \MTy_0\,\Gamma$ to be $\Tmo[A]$, where $[\blank]$ is
+  substitution in presheaves, i.e.\ the reindexing of a displayed presheaf by a
+  natural transformation.
+\item
+  $\Tm\,\Gamma\,A$ is simply defined to be $\MTy\,\Gamma\,(\Lift A)$ in the model, which
+  means that quotation and splicing are both identity maps.
+\end{itemize}
+Now, we can take a closed term $t : \Tm\,\emptycon\,A$ in CFTT and evaluate it
+in the presheaf model to obtain an object-theoretic term whose type is the
+result of evaluating $A$.
+
+\subsection{Soundness for W-types}
+So far we have stayed close to \cite{staged2ltt}, with only cosmetic
+changes. Supporting W-types, as a way to get inductive families \cite{TODO}, is
+the biggest extension here. We extend Section 5 of \cite{staged2ltt} here.  In
+the syntax of CFTT, we have
+\begin{alignat*}{3}
+  &\vW   &&: (A : \MTy_i\,\Gamma) \to \MTy_j\,(\Gamma,\,A) \to \MTy_{\msf{max}(i,j)}\,\Gamma\\
+  &\vsup &&: (a : \MTm\,\Gamma\,A) \to \MTm\,(\Gamma,B[\vid,a])\,(\vW\,A\,B) \to \MTm\,\Gamma\,(\vW\,A\,B),
+\end{alignat*}
+where $\vid$ is the identity substitution from $\Gamma$ to $\Gamma$. We also have the eliminator for $\vW$
+whose specification we omit here.
+
+Internally to $\whset$, i.e.\ internally to presheaves over $\mbbo$, we also
+have the standard W-type, defined pointwise as the W-type in sets:
+\begin{alignat*}{3}
+  & \wh{\vW}   &&: (A : \whset) \to (A \to \whset) \to \whset\\
+  & \wh{\vsup} &&: (a : A) \to (B\,a \to \wh{\vW}\,A\,B) \to \wh{\vW}\,A\,B
+\end{alignat*}
+In the presheaf model we can evidently interpret $\vW$ using $\whW$.
+
+%% The \emph{restriction} of this
+
+%% \subsubsection{Stability} Stability means that if we take any object-theoretic term,
+%% embed it as a CFTT term, then unstage it
 
 \interlinepenalty=10000
 \bibliography{references}

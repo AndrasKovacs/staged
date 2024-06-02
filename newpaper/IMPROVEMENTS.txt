@@ -1,6 +1,5 @@
 
 - Intro: "ask" also takes a reader dict argument!
-- Replace bindSingle in paper with bindGen!
 - Add missing congruences to agda-opsem for computational product types!
 
 - Conflicting MLT superclasses in Agda can be

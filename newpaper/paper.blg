@@ -10,6 +10,7 @@ Repeated entry---line 5196 of file references.bib
  : @phdthesis{DBLP:phd/ethos/Coutts11
  :                                   ,
 I'm skipping whatever remains of this entry
+Warning--I didn't find a database entry for "TODO"
 Reallocated singl_function (elt_size=4) to 100 items from 50.
 Reallocated glb_str_ptr (elt_size=4) to 20 items from 10.
 Reallocated global_strs (elt_size=200001) to 20 items from 10.
@@ -22,6 +23,7 @@ Warning--empty address in DBLP:conf/icfp/VriesL14
 Warning--empty address in DBLP:conf/haskell/EisenbergW12
 Warning--empty address in DBLP:conf/pldi/FlanaganSDF93
 Warning--empty address in DBLP:conf/ifl/HinzeHJ10
+Warning--empty address in Hofmann97syntaxand
 Warning--empty address in whynotw
 Warning--empty address in partial-evaluation
 Warning--empty address in DBLP:conf/popl/KiselyovBPS17
@@ -34,45 +36,45 @@ Warning--empty address in DBLP:conf/ppdp/RobinsonL17
 Warning--empty address in wadler89theoremsforfree
 Warning--empty address in DBLP:conf/popl/WadlerB89
 Warning--empty address in DBLP:conf/pepm/YallopK19
-You've used 34 entries,
+You've used 36 entries,
             5981 wiz_defined-function locations,
-            1749 strings with 26625 characters,
-and the built_in function-call counts, 36917 in all, are:
-= -- 4578
-> -- 1043
+            1765 strings with 26915 characters,
+and the built_in function-call counts, 38726 in all, are:
+= -- 4717
+> -- 1077
 < -- 0
-+ -- 331
-- -- 381
-* -- 2470
-:= -- 3593
-add.period$ -- 177
-call.type$ -- 34
-change.case$ -- 213
-chr.to.int$ -- 33
-cite$ -- 53
-duplicate$ -- 3401
-empty$ -- 2382
-format.name$ -- 461
-if$ -- 8799
++ -- 340
+- -- 390
+* -- 2584
+:= -- 3770
+add.period$ -- 188
+call.type$ -- 36
+change.case$ -- 224
+chr.to.int$ -- 35
+cite$ -- 56
+duplicate$ -- 3616
+empty$ -- 2530
+format.name$ -- 470
+if$ -- 9193
 int.to.chr$ -- 3
 int.to.str$ -- 1
-missing$ -- 111
-newline$ -- 398
-num.names$ -- 263
-pop$ -- 1220
+missing$ -- 117
+newline$ -- 413
+num.names$ -- 277
+pop$ -- 1304
 preamble$ -- 1
-purify$ -- 483
+purify$ -- 510
 quote$ -- 0
-skip$ -- 1307
+skip$ -- 1392
 stack$ -- 0
-substring$ -- 2886
-swap$ -- 335
+substring$ -- 3038
+swap$ -- 355
 text.length$ -- 0
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 872
-warning$ -- 19
-while$ -- 272
+type$ -- 946
+warning$ -- 20
+while$ -- 285
 width$ -- 0
-write$ -- 797
+write$ -- 838
 (There was 1 error message)

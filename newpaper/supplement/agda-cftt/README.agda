@@ -2,14 +2,14 @@
 -- Agda implementation of CFTT. Modules are best viewed in the order here.
 --------------------------------------------------------------------------------
 
--- Building: I used Agda 2.6.2.2 and standard library version 1.7
+-- Building: I used Agda 2.6.4.3 and standard library version 2.0
 
 {-
 We reproduce a small Haskell-style monad transformer library here, using
 instance arguments. The main difference to Haskell is the lack of "functional
 dependencies" between class parameters, which compels us to instead use
-associated types in MonadReader and MonadState.
-We use Agda's "Set" as the equivalent of "MetaTy" in the paper.
+associated types in MonadReader and MonadState.  We use Agda's "Set" as the
+equivalent of "MetaTy" in the paper.
 -}
 open import Lib
 
@@ -40,9 +40,6 @@ open import Join
 
 -- The Split class
 open import Split
-
--- An implementation of monadic tail calls.
-open import MonadTailCall
 
 -- Sums-of-products of value types. Also postulates generativity.
 open import SOP

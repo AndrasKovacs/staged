@@ -188,6 +188,19 @@ sim-app {t = t} {t'} {u} {u'} t~ u~ n k lt γ γ' γ~ as rewrite u~ _ _ lt _ _ �
 ... | nothing = refl
 ... | just v  = t~ _ _ lt _ _ γ~ (app as v)
 
+sim-Tt : ∀sim {Γ} Tt Tt
+sim-Tt n k lt γ γ' γ~ ()
+
+sim-Pair : ∀ {t t' : Tm Γ (ℂ α)}{u u' : Tm Γ (ℂ β)} → ∀sim t t' → ∀sim u u' → ∀sim (Pair t u) (Pair t' u')
+sim-Pair t~ u~ n k lt _ _ γ~ (fst as) = t~ _ _ lt _ _ γ~ as
+sim-Pair t~ u~ n k lt _ _ γ~ (snd as) = u~ _ _ lt _ _ γ~ as
+
+sim-Fst : ∀ {t t' : Tm Γ (ℂ (α * β))} → ∀sim t t' → ∀sim (Fst t) (Fst t')
+sim-Fst t~ n k lt _ _ γ~ as = t~ _ _ lt _ _ γ~ (fst as)
+
+sim-Snd : ∀ {t t' : Tm Γ (ℂ (α * β))} → ∀sim t t' → ∀sim (Snd t) (Snd t')
+sim-Snd t~ n k lt _ _ γ~ as = t~ _ _ lt _ _ γ~ (snd as)
+
 sim-pair : ∀ {t t' : Tm Γ (V a)}{u u' : Tm Γ (V b)} → ∀sim t t' → ∀sim u u' → ∀sim (pair t u) (pair t' u')
 sim-pair {t = t} {t'} {u} {u'} t~ u~ n k lt γ γ' γ~ [] =
  ap (λ x y → pair <$> x <*> y) (t~ _ _ lt _ _ γ~ []) ⊗ u~ _ _ lt _ _ γ~ []

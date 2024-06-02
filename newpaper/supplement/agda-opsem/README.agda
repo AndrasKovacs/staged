@@ -1,7 +1,7 @@
 
 {-
 Building:
-- I used Agda 2.6.2.2 and standard library version 1.7
+- I used Agda 2.6.4.3 and standard library version 2.0
 
 Formalization of the object language. It is helpful to view modules in this order:
 -}

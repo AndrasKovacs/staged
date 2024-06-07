@@ -83,6 +83,105 @@ NOTE :
   everything is compatible with case on Ty!!!
 
 
+f : yA ⇒ K B     f is constant
+
+f (σ ∘ δ) = f σ
+
+f σ = f (id ∘ σ) = f id = f (id ∘ δ) = f δ OK
+
+
+
+axiom : Tm (A : Uₚ, x y : Elₚ A, f : Elₚ A → Ty) (Id (f x) (f y))
+
+f Δ σ x = f Δ' (σ ∘ δ) (x[δ])
+
+f : ∀ Δ (σ : Sub Δ Γ). Tm Δ (Elₚ A) → Ty
+
+f :
+
+f Γ id x = f Γ (p ∘ (id, x)) (q[id, x]) = f (Γ, A) p q
+
+f Γ id x =
+f Γ (p ∘ (id, x)) (q[id, x]) =
+f (Γ,A) p q =
+f Γ (p ∘ (ix, y)
+
+------------------------------------------------------------
+
+y A → F ≃ F(A)
+
+f ↦ f A id
+(x : F(A)) ↦ λ B (g : Hom(B, A)). x[g]
+
+f = λ B g. (f A id)[g] = λ B g. f B g   OK
+x = (λ B (g : Hom(B, A)). x[g]) A id = x[id] = x OK
+
+if F = const B
+
+f ↦ f A id
+b : B ↦ λ _ _. b
+
+f = λ _ _. f A id OK
+-- f : yΓ × Tm _ (Elₚ A) → Ty
+
+
+-- f : y (Γ × Tm (Elₚ A)) → Ty
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 -- W-types
 --------------------------------------------------------------------------------
 
@@ -97,6 +196,27 @@ NOTE :
 
 - Restricted sup constructor for W:
 
+t : Tm Γ A
+u : Tm Γ (B [id, t] ⇒ W A B)
+
+R t : (γ : R Γ) → R A γ
+
+R u γ :
+        R (B [id, t] ⇒ W A B) γ
+        R ((B ⇒ (W A B)[p])[id, t]) γ
+        R (B ⇒ (W A B)[p]) (γ, R t γ)
+        R (B ⇒ (W A B)[p]) (γ, R t γ)
+
+
+R (sup t u) γ : R (W A B) γ
+
+
+
+Rapp (R u) γ : (β : R (B[id, t]) γ) → R (W A B) γ
+             : (β : R B (γ, R t γ)) → R (W A B) γ
+
+--------------------------------------------------------------------------------
+
   Rsup : (α : R A γ) → R (B ⇒ W A[p] B[p↑]) (γ, α) → R (W A B) γ
   Rsup (R t γ) (R u γ) = R (sup t u) γ
 
@@ -110,6 +230,11 @@ NOTE :
 	     → (f' : R (B ⇒ W A[p] B[p↑]) (γ', α'))
 	     → (f≈ : (B ⇒ W A[p] B[p↑])≈ (γ≈, α≈) f f')           -- this unfolds to taking related inputs to related outputs
 	     → (W A B)≈ γ≈ (sup α f) (supR α' f')
+
+
+  (W A B)≈ γ≈ t t' := W≈ γ≈ t t'
+
+  (sup t u)≈ γ≈ := sup≈ (t≈ γ≈) (u≈ γ≈)
 
 
   sup : (a : Tm Γ A) → Tm Γ (B[id,a] ⇒ W A B) → Tm Γ B
@@ -129,6 +254,57 @@ NOTE :
 	 : (b : E B (γ, E t γ))(b' : R B (γ', R t γ'))(b≈ : B≈ (γ≈ t≈ γ≈) b b') → ...
 
     OKAY
+
+
+HOAS restrictions DONT WORK!!!
+like "RSup : (a : R A γ) → (R B (γ, a) → R (W A B) γ) → R (W A B) γ "
+problem is that we can't create a meta-level fresh var!!
+
+------------------------------------------------------------
+W-elimination:
+  (P : W A B → Set)
+  (∀ a (f : B a → W A B) → (∀ b. P (f b)) → P (sup a f))
+  → ∀ w. P w
+
+
+  E (W-elim P s w) γ := W-elim̂ (λ w. E P (γ, w)) (λ a f g. E s (γ, a, f, g)) (E w γ)
+
+
+  W-elim : (P : Ty(Γ,W A B)) → Tm (Γ, A, B ⇒ (W A B)[p], Π B[p] (P[p³, app 1 0])) (P[p³, sup 2 1])
+                             → (w : Tm Γ (W A B)) → Tm Γ (P[id, w])
+
+  W-elim P s (sup a f) = s[id, a, f, lam (W-elim P[p²,q] s[p] (app (f[p]) 0))]
+
+  (W-elim P s w)≈ γ≈ : (P[id, w])≈ γ≈ (E (W-elim P s w) γ) (R (W-elim P s w) γ')
+                     : P≈ (γ≈, w≈ γ≈) (E (W-elim P s w) γ) (R (W-elim P s w) γ')
+
+                     : P≈ (γ≈, w≈ γ≈) (W-elim (λ w. E P (γ, w)) (λ a f g. E s (γ, a, f, g)) (E w γ))
+                                      (RW-elim (R (code P) γ') (R s γ') (R w γ'))
+
+                     :=
+
+      w≈ γ≈ : W≈ γ≈ (E w γ) (R w γ')
+
+  (W-elim P s w)≈ γ≈ : (P[id, w])≈ γ≈ (E (W-elim P s w) γ) (R (W-elim P s w) γ')
+                     : P≈ (γ≈, w≈ γ≈) (E (W-elim P s w) γ) (R (W-elim P s w) γ')
+
+  W≈-elim (λ w≈. P≈ (γ≈, w≈ γ≈) (E (W-elim P s w) γ) (R (W-elim P s w) γ'))
+          (λ α≈ f≈ hyp_f≈ . s≈ (γ≈, α≈, f≈, f≈*))
+          (w≈ γ≈)
+
+
+      -- P≈ (γ≈, sup≈ a≈ f≈) (E (W-elim P s (sup a f)) γ) (R (W-elim P s (sup a f)) γ')
+      -- P≈ (γ≈, sup≈ a≈ f≈) (E s (γ, E a γ, E f γ, λ b. W-elim (λ w. E P (γ, w)) (λ a f g. E s (γ, a, f, g)) (E f (γ, b))))
+      --                     (R s (γ', R a γ', R f γ', R (lam (W-elim P s (app f 0))) γ'))
+
+
+
+
+
+
+
+
+
 
 Identity type:
 

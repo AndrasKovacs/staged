@@ -12,4 +12,4 @@ This supplement consists of three separate artifacts:
    theory and develops some basic metatheory for it.
 
 In each folder, build instructions and further documentation can be found in the
-local README-s and the sources files.
+local README-s and the source files.

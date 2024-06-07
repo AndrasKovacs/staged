@@ -1,3 +1,17 @@
 
 - Intro: "ask" also takes a reader dict argument!
 - Add missing congruences to agda-opsem for computational product types!
+
+
+- Appendix
+- Sebastian review revisions
+- ICFP revisions and bugfixes
+
+- Add JC unstaging references
+  - JC references
+  - Modify "contributions" to contrast with JC references
+  - Maybe look at Oleg book as well
+
+- COCON?
+
+- Consider syntax coloring.

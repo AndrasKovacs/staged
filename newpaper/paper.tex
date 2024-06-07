@@ -70,6 +70,7 @@
 \newcommand{\mbb}[1]{\mathbb{#1}}
 \newcommand{\rel}{^{\approx}}
 \newcommand{\U}{\mathsf{U}}
+\newcommand{\Id}{\msf{Id}}
 \newcommand{\p}{\mathsf{p}}
 \newcommand{\q}{\mathsf{q}}
 \newcommand{\code}{\mathsf{code}}
@@ -95,6 +96,8 @@
 \newcommand{\emptycon}{\scaleobj{.75}\bullet}
 \newcommand{\Tyo}{\msf{Ty}_{\mbbo}}
 \newcommand{\Tmo}{\msf{Tm}_{\mbbo}}
+\newcommand{\Cono}{\msf{Con}_{\mbbo}}
+\newcommand{\Subo}{\msf{Sub}_{\mbbo}}
 \newcommand{\whset}{\wh{\Set}}
 \newcommand{\ev}{\mbb{E}}
 \newcommand{\re}{\mbb{R}}
@@ -1938,7 +1941,7 @@ abstractions could be revisited in the staged setting.
 \newpage
 
 \appendices
-\section{Staged Semantics of CFTT}\label{appendix:A}
+\section{Staging in CFTT}\label{appendix:A}
 
 In this appendix we describe the semantics of CFTT, from which the unstaging
 algorithm is obtained, and also describe the soundness and completeness of the
@@ -2147,13 +2150,71 @@ witnessing the inductive motive for every output of $f\rel$. In the body here,
 we need to witness the motive in the case where $w$ is a $\vsup$, which causes
 both $\ev\,(\welim\,P\,s\,w)\,\gamma)$ and $\re\,(\welim\,P\,s\,w)\,\gamma')$ to
 compute further to applications of $\ev\,s\,\gamma$ and $\re\,s\,\gamma'$
-respectively. Hence, we use $s\rel$ to relate the two sides. The
-$\vW{\beta}$-rule also evidently holds with this definition.
+respectively. Hence, we use $s\rel$ to relate the two sides. This definition
+also respects $\vW\beta$, by the $\beta$ rule for $\vW\rel$.
 
 \subsection{Identity type}
 
+In this section we assume an \emph{extensional} identity type in CFTT.  As we
+mentioned in Section \ref{TODO}, we can show soundness of staging with
+extensional identity and certain \emph{postulated} identities, but we cannot do
+the same with intensional identity. Hence, we formulate unstaging as consisting
+of two steps: first, a translation of intensional identity to extensional (which
+amounts to proof erasure), followed by evaluation in the presheaf model.
 
+Extensional identity in CFTT type is interpreted as the standard extensional
+identity in presheaves, i.e.\ we have $\ev\,(\msf{Id}\,A\,t\,u)\,\gamma :=
+\ev\,t\,\gamma = \ev\,u\,\gamma$. This supports $\msf{refl}$, transport,
+uniqueness of identity and equality reflection; we omit the fairly trivial
+definitions here. We choose the relational interpretation to be trivial as well,
+i.e.\ $(\msf{Id}\,t\,u)\rel\,\gamma\rel\,p\,p' := \top$.
 
+This is because both $\ev\,(\Id\,t\,u)\,\gamma$ and $\re\,(\Id\,t\,u)\,\gamma'$
+are mere propositions --- the latter because of equality reflection in the
+syntax.  In particular, if we have a witness of $\re\,(\Id\,t\,u)\,\gamma'$, we
+also have $\re\,t\,\gamma' = \re\,u\,\gamma'$ by equality reflection. Thus, the
+rest of the relational interpretation of $\Id$ is also trivial. Another way to
+think about this is that soundness expresses a form of canonicity, but if we
+have equality reflection then syntactic identities are always canonical.
+
+\subsection{Generativity}
+
+The generativity axiom from Section \ref{TODO} has the following type, in internal
+CFTT syntax:
+\[ (A : \U_\msf{P})(f : \Elprod\,A \to \USOP)(x\,y : \Elprod\,A) \to f\,x = f\,y  \]
+In the presheaf model, we have the following:
+\begin{itemize}
+\item $\wh{\Uprod}$ is the set (constant presheaf) of lists of object-theoretic types.
+\item $\wh{\USOP}$ is the set of lists of lists of object-theoretic types.
+\item $\wh{\Elprod\,A}$ is the presheaf such that $\wh{\Elprod\,A}\,\Gamma$ is
+  the set of products of object-theoretic terms in context $\Gamma$, with types
+  of components taken from $A$.
+\end{itemize}
+Unfolding the type of generativity in the presheaf model, it suffices to show
+that assuming
+\begin{itemize}
+\item $A : \wh{\Uprod}$, $\Gamma : \Cono$, $x,\,y : \wh{\Elprod\,A}\,\Gamma$
+\item and $f : (\Delta : \Cono) \to \Subo\,\Delta\,\Gamma \to \wh{\Elprod\,A}\,\Delta \to \wh{\USOP}$ such that $f$ is natural with respect to object-theoretic substitution,
+\end{itemize}
+we have that $f\,\Gamma\,\id\,x = f\,\Gamma\,\id\,y$.
+
+Now, $\wh{\Elprod\,A}$ is a representable presheaf since it is a finite product
+of object-theoretic terms. Also, since $f$ is a natural transformation from the
+representable presheaf $\Subo\blank\Gamma \times \wh{\Elprod\,A}$ to the
+constant presheaf $\wh{\USOP}$, the Yoneda lemma implies that $f$ is constant and
+hence the generativity axiom is validated.
+
+Since the logical relation interpretation of identity is trivial, it is also trivial
+for the generativity axiom.
+
+\subsection{Summary}
+
+By the presheaf and logical relations interpretation of CFTT as shown in this appendix,
+we obtain \emph{unstaging} and \emph{soundness} of unstaging, following \cite{staged2ltt}.
+
+\emph{Completeness} of unstaging is shown by straightforward induction on the
+syntax of the object theory, the same way as in \cite{staged2ltt}, and we omit
+it here.
 
 \interlinepenalty=10000
 \bibliography{references}

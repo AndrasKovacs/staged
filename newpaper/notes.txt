@@ -308,6 +308,8 @@ W-elimination:
 
 Identity type:
 
+\ev (Id t u) γ := E t γ = E u γ
+
     Id t u = (t = u)        equality of sections of presheaves
 
     refl OK
@@ -317,6 +319,13 @@ Identity type:
 t : Tm Γ A
 E A : E Γ → Set
 E t : (γ : E Γ) → E A γ
+
+R (Id t u) γ'
+
+Tm *Γ ((Id t u)[γ'])
+
+t[γ']
+
 
 Soundness:
 
@@ -336,6 +345,10 @@ Soundness:
 
     transp: Tm Γ (Id t u) → Tm Γ P[id,t] → Tm Γ P[id,u]
 
+    transp: Tm Γ (Id t u) → Tm Γ P[id, t] → Tm Γ P[id, u]
+
+
+
     (transp e t)≈ : ∀ γ≈ → P[id,u]≈ γ≈ (E (transp e t) γ) (R (transp e t) γ')
                   :        P≈ (γ≈, u≈ γ≈) (E t γ) (R (transp e t) γ')
 
@@ -345,11 +358,15 @@ Soundness:
 		  OK by t≈ γ≈
 
 
-    (Id t u)≈ γ≈ p p' = ⊤
+    (transp P e pt)≈ : ∀ γ≈. P≈ (γ≈, u≈ γ≈) (E pt γ) (R pt γ')
 
-    reflect : (t u : Tm Γ A) → Tm Γ (Id t u) → t = u
+                       e : Id t u
 
-    (reflect t u p)≈ :     t≈ γ≈ = u≈ γ≈      p : t = u
+                       E e γ : E t γ = E u γ
+		       R e γ' : R (Id t u) γ'
+
+                       pt : Tm Γ P[id, t]
+                       pt≈ γ≈ : P≈ (γ≈, t≈ γ≈) (E pt γ) (R pt γ')
 
 
 

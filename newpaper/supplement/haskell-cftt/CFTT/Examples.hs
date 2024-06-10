@@ -191,6 +191,7 @@ exS6 = $$(toList $
          True  -> P.take y (countFrom x)
          False -> single y)
 
+
 -- Medium-sized zip of two loops
 exS7 :: [(Int, Int)]
 exS7 = $$(toList $ P.zip
@@ -201,6 +202,20 @@ exS7 = $$(toList $ P.zip
          True  -> P.take y (countFrom x)
          False -> single y)
 
-
       (forEach (P.take 20 count) \x ->
         (P.take 20 count) <&> (\y -> x + y)))
+
+
+foo :: [Int] -> [Int]
+foo ns = $$(myMap (\x -> x + 20) [||ns||])
+
+
+
+
+
+
+
+
+
+
+--------------------------------------------------------------------------------

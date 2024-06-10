@@ -2,7 +2,7 @@
 %%% Do NOT edit. File created by BibTeX with style
 %%% ACM-Reference-Format-Journals [18-Jan-2012].
 
-\begin{thebibliography}{36}
+\begin{thebibliography}{47}
 
 %%% ====================================================================
 %%% NOTE TO THE USER: you can override these defaults by providing
@@ -65,6 +65,21 @@
 \tempurl}
 
 
+\bibitem[Bondorf(1992)]%
+        {DBLP:conf/lfp/Bondorf92}
+\bibfield{author}{\bibinfo{person}{Anders Bondorf}.}
+  \bibinfo{year}{1992}\natexlab{}.
+\newblock \showarticletitle{Improving Binding Times Without Explicit
+  CPS-Conversion}. In \bibinfo{booktitle}{\emph{Proceedings of the Conference
+  on Lisp and Functional Programming, {LFP} 1992, San Francisco, California,
+  USA, 22-24 June 1992}}, \bibfield{editor}{\bibinfo{person}{Jon~L. White}}
+  (Ed.). \bibinfo{publisher}{{ACM}}, \bibinfo{pages}{1--10}.
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.1145/141471.141483}
+\showDOI{\tempurl}
+
+
 \bibitem[Boulier et~al\mbox{.}(2017)]%
         {next700}
 \bibfield{author}{\bibinfo{person}{Simon Boulier},
@@ -99,6 +114,37 @@
 \showDOI{\tempurl}
 
 
+\bibitem[Carette and Kiselyov(2011)]%
+        {DBLP:journals/scp/CaretteK11}
+\bibfield{author}{\bibinfo{person}{Jacques Carette} {and} \bibinfo{person}{Oleg
+  Kiselyov}.} \bibinfo{year}{2011}\natexlab{}.
+\newblock \showarticletitle{Multi-stage programming with functors and monads:
+  Eliminating abstraction overhead from generic code}.
+\newblock \bibinfo{journal}{\emph{Sci. Comput. Program.}} \bibinfo{volume}{76},
+  \bibinfo{number}{5} (\bibinfo{year}{2011}), \bibinfo{pages}{349--375}.
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.1016/J.SCICO.2008.09.008}
+\showDOI{\tempurl}
+
+
+\bibitem[Choi et~al\mbox{.}(2011)]%
+        {DBLP:conf/popl/ChoiAYT11}
+\bibfield{author}{\bibinfo{person}{Wontae Choi}, \bibinfo{person}{Baris
+  Aktemur}, \bibinfo{person}{Kwangkeun Yi}, {and} \bibinfo{person}{Makoto
+  Tatsuta}.} \bibinfo{year}{2011}\natexlab{}.
+\newblock \showarticletitle{Static analysis of multi-staged programs via
+  unstaging translation}. In \bibinfo{booktitle}{\emph{Proceedings of the 38th
+  {ACM} {SIGPLAN-SIGACT} Symposium on Principles of Programming Languages,
+  {POPL} 2011, Austin, TX, USA, January 26-28, 2011}},
+  \bibfield{editor}{\bibinfo{person}{Thomas Ball} {and} \bibinfo{person}{Mooly
+  Sagiv}} (Eds.). \bibinfo{publisher}{{ACM}}, \bibinfo{pages}{81--92}.
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.1145/1926385.1926397}
+\showDOI{\tempurl}
+
+
 \bibitem[Coutts(2011)]%
         {DBLP:phd/ethos/Coutts11}
 \bibfield{author}{\bibinfo{person}{Duncan Coutts}.}
@@ -126,6 +172,21 @@
 \newblock
 \urldef\tempurl%
 \url{https://doi.org/10.1145/236114.236119}
+\showDOI{\tempurl}
+
+
+\bibitem[Danvy and Nielsen(2001)]%
+        {DBLP:conf/ppdp/DanvyN01}
+\bibfield{author}{\bibinfo{person}{Olivier Danvy} {and}
+  \bibinfo{person}{Lasse~R. Nielsen}.} \bibinfo{year}{2001}\natexlab{}.
+\newblock \showarticletitle{Defunctionalization at Work}. In
+  \bibinfo{booktitle}{\emph{Proceedings of the 3rd international {ACM}
+  {SIGPLAN} conference on Principles and practice of declarative programming,
+  September 5-7, 2001, Florence, Italy}}. \bibinfo{publisher}{{ACM}},
+  \bibinfo{pages}{162--174}.
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.1145/773184.773202}
 \showDOI{\tempurl}
 
 
@@ -249,6 +310,16 @@
 \showDOI{\tempurl}
 
 
+\bibitem[Hofmann(1995)]%
+        {hofmann95conservativity}
+\bibfield{author}{\bibinfo{person}{Martin Hofmann}.}
+  \bibinfo{year}{1995}\natexlab{}.
+\newblock \showarticletitle{Conservativity of Equality Reflection over
+  Intensional Type Theory.}. In \bibinfo{booktitle}{\emph{TYPES 95}}.
+  \bibinfo{pages}{153--164}.
+\newblock
+
+
 \bibitem[Hofmann(1997)]%
         {Hofmann97syntaxand}
 \bibfield{author}{\bibinfo{person}{Martin Hofmann}.}
@@ -299,6 +370,18 @@
 \showISBNx{978-0-13-020249-9}
 
 
+\bibitem[Jones(2001)]%
+        {jones2001tackling}
+\bibfield{author}{\bibinfo{person}{Simon~Peyton Jones}.}
+  \bibinfo{year}{2001}\natexlab{}.
+\newblock \showarticletitle{Tackling the awkward squad: monadic input/output,
+  concurrency, exceptions, and foreign-language calls in Haskell}.
+\newblock \bibinfo{journal}{\emph{NATO SCIENCE SERIES SUB SERIES III COMPUTER
+  AND SYSTEMS SCIENCES}}  \bibinfo{volume}{180} (\bibinfo{year}{2001}),
+  \bibinfo{pages}{47--96}.
+\newblock
+
+
 \bibitem[Kiselyov et~al\mbox{.}(2017)]%
         {DBLP:conf/popl/KiselyovBPS17}
 \bibfield{author}{\bibinfo{person}{Oleg Kiselyov}, \bibinfo{person}{Aggelos
@@ -313,6 +396,21 @@
 \newblock
 \urldef\tempurl%
 \url{https://doi.org/10.1145/3009837.3009880}
+\showDOI{\tempurl}
+
+
+\bibitem[Kiselyov et~al\mbox{.}(2004)]%
+        {DBLP:conf/emsoft/KiselyovST04}
+\bibfield{author}{\bibinfo{person}{Oleg Kiselyov}, \bibinfo{person}{Kedar~N.
+  Swadi}, {and} \bibinfo{person}{Walid Taha}.} \bibinfo{year}{2004}\natexlab{}.
+\newblock \showarticletitle{A methodology for generating verified combinatorial
+  circuits}. In \bibinfo{booktitle}{\emph{{EMSOFT} 2004, September 27-29, 2004,
+  Pisa, Italy, Fourth {ACM} International Conference On Embedded Software,
+  Proceedings}}, \bibfield{editor}{\bibinfo{person}{Giorgio~C. Buttazzo}}
+  (Ed.). \bibinfo{publisher}{{ACM}}, \bibinfo{pages}{249--258}.
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.1145/1017753.1017794}
 \showDOI{\tempurl}
 
 
@@ -364,7 +462,7 @@
         {leroy2023ocaml}
 \bibfield{author}{\bibinfo{person}{Xavier Leroy}, \bibinfo{person}{Damien
   Doligez}, \bibinfo{person}{Alain Frisch}, \bibinfo{person}{Jacques Garrigue},
-  \bibinfo{person}{Didier R{\'e}my}, \bibinfo{person}{Kc Sivaramakrishnan},
+  \bibinfo{person}{Didier R{\'e}my}, \bibinfo{person}{KC Sivaramakrishnan},
   {and} \bibinfo{person}{J{\'e}r{\^o}me Vouillon}.}
   \bibinfo{year}{2023}\natexlab{}.
 \newblock \bibinfo{title}{The OCaml system release 5.1: Documentation and
@@ -390,6 +488,23 @@
 \newblock
 \urldef\tempurl%
 \url{https://doi.org/10.1007/3-540-48959-2\_17}
+\showDOI{\tempurl}
+
+
+\bibitem[Liang et~al\mbox{.}(1995)]%
+        {DBLP:conf/popl/LiangHJ95}
+\bibfield{author}{\bibinfo{person}{Sheng Liang}, \bibinfo{person}{Paul Hudak},
+  {and} \bibinfo{person}{Mark~P. Jones}.} \bibinfo{year}{1995}\natexlab{}.
+\newblock \showarticletitle{Monad Transformers and Modular Interpreters}. In
+  \bibinfo{booktitle}{\emph{Conference Record of POPL'95: 22nd {ACM}
+  {SIGPLAN-SIGACT} Symposium on Principles of Programming Languages, San
+  Francisco, California, USA, January 23-25, 1995}},
+  \bibfield{editor}{\bibinfo{person}{Ron~K. Cytron} {and}
+  \bibinfo{person}{Peter Lee}} (Eds.). \bibinfo{publisher}{{ACM} Press},
+  \bibinfo{pages}{333--343}.
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.1145/199448.199528}
 \showDOI{\tempurl}
 
 
@@ -465,6 +580,21 @@
 \showDOI{\tempurl}
 
 
+\bibitem[Reynolds(1998)]%
+        {DBLP:journals/lisp/Reynolds98a}
+\bibfield{author}{\bibinfo{person}{John~C. Reynolds}.}
+  \bibinfo{year}{1998}\natexlab{}.
+\newblock \showarticletitle{Definitional Interpreters for Higher-Order
+  Programming Languages}.
+\newblock \bibinfo{journal}{\emph{High. Order Symb. Comput.}}
+  \bibinfo{volume}{11}, \bibinfo{number}{4} (\bibinfo{year}{1998}),
+  \bibinfo{pages}{363--397}.
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.1023/A:1010027404223}
+\showDOI{\tempurl}
+
+
 \bibitem[Robinson and Lippmeier(2017)]%
         {DBLP:conf/ppdp/RobinsonL17}
 \bibfield{author}{\bibinfo{person}{Amos Robinson} {and} \bibinfo{person}{Ben
@@ -478,6 +608,38 @@
 \newblock
 \urldef\tempurl%
 \url{https://doi.org/10.1145/3131851.3131865}
+\showDOI{\tempurl}
+
+
+\bibitem[Rompf and Odersky(2012)]%
+        {DBLP:journals/cacm/RompfO12}
+\bibfield{author}{\bibinfo{person}{Tiark Rompf} {and} \bibinfo{person}{Martin
+  Odersky}.} \bibinfo{year}{2012}\natexlab{}.
+\newblock \showarticletitle{Lightweight modular staging: a pragmatic approach
+  to runtime code generation and compiled DSLs}.
+\newblock \bibinfo{journal}{\emph{Commun. {ACM}}} \bibinfo{volume}{55},
+  \bibinfo{number}{6} (\bibinfo{year}{2012}), \bibinfo{pages}{121--130}.
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.1145/2184319.2184345}
+\showDOI{\tempurl}
+
+
+\bibitem[Swadi et~al\mbox{.}(2006)]%
+        {DBLP:conf/pepm/SwadiTKP06}
+\bibfield{author}{\bibinfo{person}{Kedar~N. Swadi}, \bibinfo{person}{Walid
+  Taha}, \bibinfo{person}{Oleg Kiselyov}, {and} \bibinfo{person}{Emir
+  Pasalic}.} \bibinfo{year}{2006}\natexlab{}.
+\newblock \showarticletitle{A monadic approach for avoiding code duplication
+  when staging memoized functions}. In \bibinfo{booktitle}{\emph{Proceedings of
+  the 2006 {ACM} {SIGPLAN} Workshop on Partial Evaluation and Semantics-based
+  Program Manipulation, 2006, Charleston, South Carolina, USA, January 9-10,
+  2006}}, \bibfield{editor}{\bibinfo{person}{John Hatcliff} {and}
+  \bibinfo{person}{Frank Tip}} (Eds.). \bibinfo{publisher}{{ACM}},
+  \bibinfo{pages}{160--169}.
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.1145/1111542.1111570}
 \showDOI{\tempurl}
 
 

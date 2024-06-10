@@ -1,9 +1,6 @@
 
 - Intro: "ask" also takes a reader dict argument!
-- Add missing congruences to agda-opsem for computational product types!
 
-
-- Appendix
 - Sebastian review revisions
 - ICFP revisions and bugfixes
 
@@ -13,5 +10,29 @@
   - Maybe look at Oleg book as well
 
 - COCON?
-
 - Consider syntax coloring.
+
+
+EXTRA REFS
+--------------------------------------------------------------------------------
+Carette:
+  -
+
+Cocon
+
+
+
+CHANGES
+--------------------------------------------------------------------------------
+
+- Added references to works with staged monads in the "Contributions" listing.
+- Changed "staging" to "unstaging" throughout the paper, added a paragraph about
+  the term to Section 2.3.
+- Shortened section 2.4 in the paper, but included an expanded version as an appendix.
+- Added Section 2.3.1 about defunctionalization.
+
+
+TODO
+
+- Expand related work
+-

@@ -379,15 +379,16 @@ With optimizations enabled, GHC compiles this roughly to the code below:
 \end{alignat*}
 Without optimizations we roughly get:
 \begin{alignat*}{3}
-  &\vf = \lam \vx.\,(\bind)\,\msf{MonadReaderDict}\,(\msf{ask}\,\msf{MonadReaderDict})\,(\lam \vb.\,\bif \vb\\
-  &\ind \bthen\return\,\msf{MonadReaderDict}\,(\vx + 10)\\
-  &\ind \belse\hspace{0.25em}\return\,\msf{MonadReaderDict}\,(\vx + 20))
+  &\vf = \lam \vx.\,(\bind)\,\msf{monadReader}\,(\msf{ask}\,\msf{monadReaderReader})\,(\lam \vb.\,\bif \vb\\
+  &\ind \bthen\return\,\msf{monadReader}\,(\vx + 10)\\
+  &\ind \belse\hspace{0.25em}\return\,\msf{monadReader}\,(\vx + 20))
 \end{alignat*}
-Here, $\msf{MonadReaderDict}$ is a runtime dictionary, containing the methods of
-the $\Monad$ instance for $\Reader$, and $(\bind)\,\msf{MonadReaderDict}$ is the
-projection of the binding function. Here, a runtime closure will be created for
-the $\lam \vb.\,...$ function, and $(\bind)$, $\msf{ask}$ and $\mbf{return}$
-will create additional dynamic closures.
+Here, $\msf{monadReader}$ and $\msf{monadReaderReader}$ are runtime
+dictionaries, respectively for the $\msf{Monad}$ and $\msf{MonadReader}$
+instances, and, for example, $(\bind)\,\msf{monadReader}$ is a field projection
+from the dictionary. We get a runtime closure from the $\lam \vb.\,...$
+function, and $(\bind)$, $\msf{ask}$ and $\mbf{return}$ also produce additional
+closures.
 
 The difference between optimized and unoptimized code is already large here, and
 it gets even larger when we consider monad transformers or code that is
@@ -397,7 +398,7 @@ function from the Haskell Prelude:
 \begin{alignat*}{3}
   & \msf{mapM} :: \Monad\,\vm \Rightarrow (\va \to \vm\,\vb) \to [\va] \to \vm\,[\vb]
 \end{alignat*}
-This is a third-order and second-rank polymorphic function in disguise, because
+This is a third-order rank-2 polymorphic function in disguise, because
 its monad dictionary argument contains the polymorphic second-order method
 $(\bind)$.  Compiling $\msf{mapM}$ efficiently relies on inlining the instance
 dictionary, then inlining the methods contained there, and also inlining the
@@ -420,7 +421,7 @@ optimized code output.
 \subsection{Closure-Free Staged Compilation}
 
 In this paper we use staged compilation to address issues of robustness. The
-idea is to shift as much as possible work from general-purpose optimization to
+idea is to shift as much work as possible from general-purpose optimization to
 metaprograms.
 
 Metaprograms can be deterministic, transparent, and can be run efficiently,
@@ -476,6 +477,7 @@ these would be desirable in a practical system. In the current work we focus on
 the closure-free case because it is much less known and developed, and it is
 interesting to see how far we can go with it.
 
+
 %% For example, difference lists
 %% \cite{TODO} are often implemented with closures, but they can be also
 %% implemented as binary trees, with the same programming interface.
@@ -487,6 +489,7 @@ interesting to see how far we can go with it.
 %% speaking, it does not eliminate closures but instead makes them more transparent
 %% to optimizations. In this paper we do not use defunctionalization.
 
+
 \subsection{Contributions}
 
 \begin{itemize}
@@ -496,16 +499,20 @@ interesting to see how far we can go with it.
   without runtime closures, and can be compiled with only statically known
   function calls. We provide a supplementary Agda formalization of the
   operational semantics of the object language.
-\item In Section \ref{sec:monad-transformers} we build a monad transformer library. We believe
-  that this is a good demonstration, because monads and monad transformers are
-  the most widely used effect system in Haskell, and at the same time their
-  compilation to efficient code can be surprisingly difficult. The main idea is
-  to have monads and monad transformers \emph{only} in the metalanguage, and try
-  to express as much as possible at the meta level, and funnel the object-meta
-  interactions through specific \emph{binding-time improvements}.  We show how
-  almost all definitions from the Haskell ecosystem of monad transformers can be
-  reused in the meta level of CFTT. We also develop let-insertion, join points
-  and case switching on object-level data.
+\item
+  In Section \ref{sec:monad-transformers} we build a staged library for monad
+  transformers \cite{DBLP:conf/popl/LiangHJ95}. We believe that this is a good
+  demonstration, because monads and monad transformers are the most widely used
+  effect system in Haskell, and at the same time their compilation to efficient
+  code can be surprisingly difficult. The continuation monad is well-known in
+  staged compilation \cite{DBLP:conf/lfp/Bondorf92}, and staged state monads
+  have also been used
+  \cite{DBLP:conf/pepm/SwadiTKP06,DBLP:conf/emsoft/KiselyovST04,DBLP:journals/scp/CaretteK11}.
+  These works used specific monads as tools for domain-specific code
+  generation. In contrast, we propose ubiquitous staging for general-purpose
+  monadic programming, where users can write code that looks similar to monadic
+  code in Haskell but with deterministic and robust compilation to efficient
+  code.
 \item In Section \ref{sec:stream-fusion} we build a pull-based stream fusion library. Here,
   we demonstrate essential usage of dependent types, in providing guaranteed
   fusion for arbitrary combinations of $\concatMap$ and $\mit{zip}$. We use a
@@ -575,7 +582,7 @@ values.
 \subsection{The Object Level}\label{sec:the-object-level}
 
 $\bs{\Ty}$ is the universe of types in the object language. It is itself a
-metatype, so so we have $\Ty : \MTy$. All construction and elimination rules of
+metatype, so we have $\Ty : \MTy$. All construction and elimination rules of
 type formers in $\Ty$ stay within $\Ty$. We further split $\Ty$ to two
 sub-universes.
 
@@ -786,7 +793,7 @@ could be future work.
 \subsection{Staging}\label{sec:staging}
 
 With what we have seen so far, there is no interaction between the meta and
-object levels. We make such interaction possible with \emph{staging primitives}.
+object levels. We make such interaction possible with the following primitives.
 
 \begin{itemize}
 \item For $\vA : \Ty$, we have $\Lift \vA : \MTy$, pronounced as ``lift $\vA$''. This is
@@ -801,10 +808,15 @@ object levels. We make such interaction possible with \emph{staging primitives}.
 \item We have $\ql \spl \vt \qr \equiv \vt$ and $\spl \ql \vt \qr \equiv \vt$ as definitional equalities.
 \end{itemize}
 
-A CFTT program is a mixture of object-level and meta-level top-level definitions
-and declarations. We use \emph{unstaging} to refer to the process of evaluating
-metaprograms in a CFTT program in order to extract purely object-level code.
-The output is guaranteed to be well-typed.
+We use \textbf{unstaging} to refer to the process of extracting object code from
+CFTT programs, by evaluating all metaprograms in splices. This term has been
+sporadically used in the literature, e.g.\ by Odersky and Rompf
+\cite{DBLP:journals/cacm/RompfO12} and also by Choi et
+al.\ \cite{DBLP:conf/popl/ChoiAYT11} with a somewhat different meaning in a
+multi-stage context. The main precursor to this paper used ``staging'' instead
+of our ``unstaging'' \cite{staged2ltt}; we use the latter because the former
+conflicts with other common usages of ``staging''.
+
 
 Let us look at some basic examples. Recall the meta-level identity function; it
 can be used at the object-level too, by applying it to quoted terms:
@@ -842,18 +854,39 @@ the latter is merely a black box that computes object code. If we have $\vf :
 \vf\,\vu$ is unstaged to an undesirable ``administrative'' $\beta$-redex $(\lam
 \vx.\,\vt)\,\vu$.
 
+\subsubsection{Comparison to defunctionalization}
+Defunctionalization is a program translation which represents higher-order
+functions using only first-order functions and inductive data
+\cite{DBLP:journals/lisp/Reynolds98a,DBLP:conf/ppdp/DanvyN01}. The idea is to
+represent each closure as a constructor of an inductive type, and implement
+closure application as a top-level first-order function which switches on all
+possible closure constructors. Hence, like our unstaging algorithm,
+defunctionalization produces first-order code from higher-order code. We summarize
+the differences.
+\begin{itemize}
+\item Defunctionalization mainly supports \emph{compiler optimizations}, by making
+  closures transparent to analysis. It is not an optimization by itself; it does
+  not change the amount of dynamic control flow or dynamic allocations in a
+  program. A dynamic closure call becomes a dynamic case-switch and a
+  heap-allocated ``functional'' closure becomes a heap-allocated inductive
+  constructor.
+\item Staging mainly supports optimization by \emph{programmers} by providing
+  control over code generation. Unstaging does not translate higher-order
+  functions to anything in particular. Instead, it is the execution of
+  higher-order metaprograms that produce first-order programs.
+\end{itemize}
+
 \subsection{Staged Semantics of CFTT}\label{sec:semantics-of-staging}
 
 We give an overview of the unstaging algorithm together with its correctness.
-We reuse the concepts and most of the results from \cite{staged2ltt}. Our main
-task is to extend ibid.\,with identity types and inductive types in the
-metalanguage, since we use them in this paper. For inductive types, it is the
-most sensible to add W-types, since all inductive families can be faithfully
-derived from them in our setting \cite{whynotw}.
+Our main task is to extend \cite{staged2ltt} with identity types and inductive
+types in the metalanguage, since we use them in this paper. For inductive types,
+it is the most sensible to add W-types, since all inductive families can be
+faithfully derived from them in our setting \cite{whynotw}.
 
 This however requires a substantial amount of technical background from
 \cite{staged2ltt}, so we relegate it to Appendix \ref{appendix:A}. Here we only
-review the basics.
+give an overview.
 \begin{itemize}
 \item The input of unstaging is a CFTT term with an object-level type, which
       only depends on object-level free variables. The output is a term in the
@@ -883,22 +916,29 @@ definitionally during unstaging. Hence, we can do the following: first, we erase
 all identity proofs and their transports from CFTT programs, then we proceed
 with unstaging as in \cite{staged2ltt}. This erasure can be formalzied as a
 syntactic translation \cite{next700} from CFTT to CFTT extended with the
-equality reflection principle \cite{TODO}. Thus, soundness of staging for CFTT
-holds up to erasure of identity proofs.
+equality reflection principle, which says that propositional equality implies
+definitional equality (see e.g.\ \cite{hofmann95conservativity}). Thus,
+soundness of staging for CFTT holds up to erasure of identity proofs.
 
 \section{Monads \& Monad Transformers}\label{sec:monad-transformers}
 
 In this section we build a library for monads and monad transformers. We believe
-that this is a good demonstration of CFTT-s abilities, since monads are
+that this is a good demonstration of CFTT's abilities, since monads are
 ubiquitous in Haskell programming and they also introduce a great amount of
 abstraction that should be optimized away.
 
 \subsection{Binding-Time Improvements}\label{sec:binding-time-improvements}
 
-We start with some preparatory work before getting to monads. We saw that $\Up
-\vA \to \Up \vB$ is usually preferable to $\Up(\vA \to \vB)$. The two types are
-equivalent during unstaging, up to the runtime equivalence of object programs,
-and we can convert back and forth in CFTT:
+We do a preliminary overview before getting to monads. In the staged compilation
+and partial evaluation literature, the term \emph{binding time improvement} is
+used to refer to such conversions, where the ``improved'' version supports more
+compile-time computation \cite[Chapter 12]{partial-evaluation}.
+
+Translation from $\Up \vA \to \Up \vB$ to $\Up(\vA \to \vB)$ is a basic
+binding-time improvement, as an $\eta$-expansion \cite{eta-expansion-trick}. The
+two types are equivalent during unstaging, up to the runtime equivalence of
+object programs, and we can convert back and forth in CFTT, the same way as in
+MetaML \cite[Section 9]{metaml}:
 \begin{alignat*}{3}
   &\mup : \Up (\vA \to \vB) \to \Up \vA \to \Up \vB && \ind\ind \mdown : (\Up \vA \to \Up \vB) \to \Up (\vA \to \vB) \\
   &\mup\,\vf\,\va = \ql \spl \vf\, \spl \va\qr   && \ind\ind \mdown\,\vf = \ql \lam \va.\,\spl(\vf\,\ql \va \qr) \qr
@@ -907,10 +947,7 @@ We cannot show internally, using propositional equality, that these functions ar
 inverses, since we do not have $\beta\eta$-rules for object functions; but we
 will not need this proof in the rest of the paper.
 
-In the staged compilation and partial evaluation literature, the term
-\emph{binding time improvement} is used to refer to such conversions, where the
-``improved'' version supports more compile-time computation
-\cite{partial-evaluation}. A general strategy for generating efficient ``fused''
+ A general strategy for generating efficient ``fused''
 programs, is to try to work as much as possible with improved representations,
 and only convert back to object code at points where runtime dependencies are
 unavoidable. Let us look at binding-time-improvement for product types now:
@@ -928,13 +965,16 @@ be safer to first let-bind an expression with type $\Up(\vA,\,\vB)$, and then
 only use projections of the newly bound variable. This is called
 \emph{let-insertion} in staged compilation. But it is impossible to use
 let-insertion in $\mup$ because the return type is in $\MTy$, and we cannot
-introduce object binders in meta-level code.  Fortunately, there is a principled
-solution.
+introduce object binders in meta-level code.
 
 \subsection{The Code Generation Monad}\label{sec:the-code-generation-monad}
 
-The solution is to use a monad which extends $\MTy$ with the ability to
-freely generate object-level code and introduce object binders.
+A principled solution to the previous issue is to write code generators in
+continuation-passing style, as first proposed by Bondorf
+\cite{DBLP:conf/lfp/Bondorf92}. This can be structured as a continuation monad,
+and later work used explicit monadic notation for it
+\cite{DBLP:conf/emsoft/KiselyovST04,DBLP:journals/scp/CaretteK11,DBLP:conf/pepm/SwadiTKP06}. Our
+definition is as follows:
 \begin{alignat*}{3}
   & \newtype \Gen\,(\vA : \MTy) = \Gen\,\{\unGen : \{\vR : \Ty\} \to (\vA \to \Up \vR) \to \Up \vR\}
 \end{alignat*}
@@ -944,20 +984,23 @@ This is a monad in $\MTy$ in a standard sense:
   &\ind \return \va        &&= \Gen \dlr \lam \vk.\,\vk\,\va\\
   &\ind \mit{ga} \bind \vf &&= \Gen \dlr \lam \vk.\,\unGen\,\mit{ga}\,(\lam \va.\,\unGen\,(\vf\,\va)\,\vk))
 \end{alignat*}
-From now on, we reuse Haskell-style type classes and $\mbf{do}$-notation in
-CFTT. We will use type classes in an informal way, without precisely specifying
-how they work. However, type classes are used in essentially the same way in the
-Agda and Haskell implementations, with modest technical differences.
-
-From the $\Monad$ instance, the $\Functor$ and $\Applicative$ instances can be
-also derived. We reuse $({\fmap})$ and $({\ap})$ for applicative notation as well.
-An inhabitant of $\Gen\,\vA$ can be viewed as an action whose effect is to produce
-some object code. $\Gen$ can be only ``run'' when the result type is an object
-type:
+In \cite{DBLP:conf/emsoft/KiselyovST04},\cite{DBLP:journals/scp/CaretteK11} and
+\cite{DBLP:conf/pepm/SwadiTKP06}, the answer type is a parameter to the
+continuation monad, while we have it as polymorphic. We have found that
+polymorphic answer types are more convenient, because we do not have to
+anticipate the type of the code output when are defining a code generator.
+Hence, we can ``run'' actions as follows:
 \begin{alignat*}{3}
   &\runGen : \Gen\,(\Up \vA) \to \Up \vA\\
   &\runGen\,\vma = \unGen\,\vma\,\id
 \end{alignat*}
+From now on, we reuse Haskell-style type classes and $\mbf{do}$-notation in
+CFTT. We will use type classes in an informal way, without precisely specifying
+how they work. However, type classes are used in essentially the same way in the
+Agda and Haskell implementations, with modest technical differences.  From the
+$\Monad$ instance, the $\Functor$ and $\Applicative$ instances can be also
+derived. We reuse $({\fmap})$ and $({\ap})$ for applicative notation as well.
+
 We can let-bind object expressions in $\Gen$:
 \begin{alignat*}{3}
   & \gen : \{\vA : \Ty\} \to \Up \vA \to \Gen\,(\Up \vA) \\
@@ -968,7 +1011,7 @@ And also recursive definitions of computations:
   & \genRec : \{\vA : \CTy\} \to (\Up \vA \to \Up \vA) \to \Gen\,(\Up \vA) \\
   & \genRec\,\vf = \Gen \dlr \lam \vk.\,\qt{\letrec \vx : \vA := \spl(\vf\,\qt{\vx}); \spl(\vk\,\qt{\vx})}
 \end{alignat*}
-Now, using do-notation, we may write $\mdo \{\vx \fro \gen\,\qt{10 + 10}; \vy \fro
+Now, using $\mbf{do}$-notation, we may write $\mdo \{\vx \fro \gen\,\qt{10 + 10}; \vy \fro
 \gen\,\qt{20 + 20}\};\return \qt{\vx + \vy}\}$, for a $\Gen\,(\Up \Nat)$
 action. Running this with $\runGen$ yields $\qt{\letdef \vx := 10 + 10; \letdef \vy
   := 20 + 20; \vx + \vy}$. We can also define a ``safer'' binding-time improvement for
@@ -982,19 +1025,21 @@ products, using let-insertion:
 Working in $\Gen$ is convenient, since we can freely generate object code and
 also have access to the full metalanguage. Also, the point of staging is that
 \emph{eventually} all metaprograms will be used for the purpose of code
-generation, so we eventually $\runGen$ all of our actions. So why not
-just always work in $\Gen$? The implicit nature of $\Gen$ may make it harder to
+generation, so we eventually $\runGen$ all of our actions. So why not just
+always work in $\Gen$? The implicit nature of $\Gen$ may make it harder to
 reason about the size and content of generated code. This is a bit similar to
-the $\msf{IO}$ monad in Haskell, where eventually everything needs to run in
-$\msf{IO}$, but we may not want to write all of our code in $\msf{IO}$.
+the $\msf{IO}$ monad in Haskell \cite{jones2001tackling}, where eventually
+everything needs to run in $\msf{IO}$, but we may not want to write all of our
+code in $\msf{IO}$.
 
 \subsection{Monads}\label{sec:monads}
 
 Let us start with the $\Maybe$ monad. We have $\data \Maybe\,\vA :=
 \Nothing\,|\,\Just\,\vA$, and $\Maybe$ itself is available as a $\VTy \to \VTy$
 metafunction. However, we cannot directly fashion a monad out of $\Maybe$, since
-we do not have enough type formers in $\VTy$. We could try to use the following
-type for binding:
+we do not have enough type formers in $\VTy$. In particular, we cannot store
+functions inside $\Maybe$ which rules out the applicative $\ap$ operation.  We
+could try to use the following type for binding:
 \[ (\bind) : \Up(\Maybe\,\vA) \to (\Up\vA \to \Up(\Maybe\,\vB)) \to \Up(\Maybe\,\vB) \]
 This works, but the definition necessarily uses runtime case splits on $\Maybe$
 values, many of which could be optimized away during staging. Also, not having
@@ -1053,8 +1098,9 @@ in any $\MonadGen$, so from now on we have:
 We often want to case-split on object-level data inside a monadic action, and
 perform different actions in different branches. At first, this may seem
 problematic, because we cannot directly compute metaprograms from object-level
-case splits. Fortunately, with a little bit more work, this is actually possible
-in any $\MonadGen$, for any value type.
+case splits. Fortunately, with a little bit more work, this is possible in any
+$\MonadGen$, for any value type, using a variation of the so-called ``trick''
+\cite{eta-expansion-trick}.
 
 We demonstrate this for lists. An object-level $\mbf{case}$ on lists introduces
 two points where code generation can continue. We define a metatype which gives
@@ -1090,10 +1136,10 @@ At this point, it makes sense to aim for a monad transformer library where
 binding-time improvement is defined compositionally, by recursion on the
 transformer stack. The base case is the following:
 \begin{alignat*}{3}
-  & \hspace{-2em}\mathrlap{\newtype \Identity\,\vA := \Identity\,\{\runIdentity : \vA\} }\\
-  & \hspace{-2em}\mathrlap{\instance \Improve\,\Identity\,\Gen\,\where}\\
-  & \hspace{-2em}\ind \mup\,\vx   &&= \return \qt{\runIdentity\,\spl \vx}\\
-  & \hspace{-2em}\ind \mdown\,\vx &&= \unGen\,\vx \dlr \lam \va.\,\qt{\Identity\,\spl \va}
+  & \hspace{-4em}\mathrlap{\newtype \Identity\,\vA := \Identity\,\{\runIdentity : \vA\} }\\
+  & \hspace{-4em}\mathrlap{\instance \Improve\,\Identity\,\Gen\,\where}\\
+  & \hspace{-4em}\ind \mup\,\vx   &&= \return \qt{\runIdentity\,\spl \vx}\\
+  & \hspace{-4em}\ind \mdown\,\vx &&= \unGen\,\vx \dlr \lam \va.\,\qt{\Identity\,\spl \va}
 \end{alignat*}
 We recover the object-level $\Maybe$ as $\MaybeT\,\Identity$, from the following $\MaybeT$:
 \[ \newtype \MaybeT\,(\vM : \VTy \to \Ty)\,(\vA : \VTy) := \MaybeT\,\{\runMaybeT : \vM\,(\Maybe\,\vA)\} \]
@@ -1150,12 +1196,12 @@ with a different expression. For instance, ignoring newtype wrappers for now,
 \[ \mdown \dlr \mdo \{\modify\,(\lam \vx.\,\qt{\spl \vx + \spl \vx}); \modify\,(\lam \vx.\,\qt{\spl \vx + \spl \vx});\return\,\qt{()}\} \]
 is unstaged to
 \[ \qt{\lam \vx.\,((),\,(\vx + \vx) + (\vx + \vx))} \]
-which duplicates the evaluation of $\vx + \vx$. The solution is to force the
-evaluation of the new state in the object language, by let-insertion. A similar
-phenomenon happens with the $\mit{local}$ function in $\Reader$. So we define
-``stricter'' versions of these operations. We also return $\Up ()$ from
-actions instead of $()$ --- the former is more convenient, because the $\mdown$
-operation can be immediately used on it.
+which duplicates the evaluation of $\vx + \vx$. The duplication can be avoided
+by let-binding the result in the object language. A similar phenomenon happens
+with the $\mit{local}$ function in $\Reader$. So we define ``stricter'' versions
+of these operations. We also return $\Up ()$ from actions instead of $()$ ---
+the former is more convenient, because the $\mdown$ operation can be immediately
+used on it.
 \begingroup
 \allowdisplaybreaks
 \begin{alignat*}{3}
@@ -1182,12 +1228,16 @@ There is a deficiency in our library so far. Assuming $\vb : \Up\Bool$, consider
   & \hspace{-1em}     && \mathrlap{\modify' (\lam \vx.\,\qt{\spl \vx + 10})}
 \end{alignat*}
 The $\modify' (\lam \vx. \qt{\spl \vx + 10})$ action gets inlined in both case
-branches during unstaging. This follows from the definition of monadic binding in
-$\Gen$ and the $\mit{split}$ function in the desugaring of $\mbf{case}$. Code
-generation is continued in both branches with the same action. If we have
-multiple Boolean $\mbf{case}$ splits sequenced after each other, that yields
-exponential code size. Right now, we can fix this by let-binding the problematic
-action:
+branches during unstaging, yielding the following:
+\begin{alignat*}{3}
+   & boooo
+\end{alignat*}
+The duplication follows from the definition of monadic binding in $\Gen$ and the
+$\mit{split}$ function in the desugaring of $\mbf{case}$. Code generation is
+continued in both branches with the same action. If we have multiple Boolean
+$\mbf{case}$ splits sequenced after each other, that yields exponential code
+size. Right now, we can fix this by let-binding the problematic action:
+
 %% \begin{alignat*}{5}
 %%   & \mdo && (\gen \dlr \mdown\,(\case \vb\,\of \True \to \mput' \qt{10};\False &&\to \mput' \qt{20})) \bind \mup \\
 %%   &      && \mathrlap{\modify' (\lam \vx.\,\qt{\spl \vx + 10})}
@@ -1511,6 +1561,7 @@ This problem of generating well-typed mutual blocks was addressed by Yallop and
 Kiselyov in \cite{DBLP:conf/pepm/YallopK19}. In contrast to this work, which
 used control effects and mutable references in MetaOCaml, we present a solution
 that does not use side effects in the metalanguage.
+
 
 The solution is to extend $\CTy$ with finite products of computations,
 i.e.\ assume $() : \CTy$ and $({,}) : \CTy \to \CTy \to \CTy$, together with
@@ -2212,9 +2263,10 @@ for the generativity axiom.
 By the presheaf and logical relations interpretation of CFTT as shown in this appendix,
 we obtain \emph{unstaging} and \emph{soundness} of unstaging, following \cite{staged2ltt}.
 
-\emph{Completeness} of unstaging is shown by straightforward induction on the
-syntax of the object theory, the same way as in \cite{staged2ltt}, and we omit
-it here.
+\emph{Strictness} of unstaging holds trivially, since there are no $\beta$ and
+$\eta$ rules in the object theory. \emph{Completeness} of unstaging is shown by
+straightforward induction on the syntax of the object theory, the same way as in
+\cite{staged2ltt}, and we omit it here.
 
 \interlinepenalty=10000
 \bibliography{references}

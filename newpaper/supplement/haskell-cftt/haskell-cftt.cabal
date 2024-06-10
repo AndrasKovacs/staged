@@ -19,7 +19,6 @@ library
       CFTT.Gen
       CFTT.Improve
       CFTT.Join
-      CFTT.MonadTailCall
       CFTT.Pull
       CFTT.SOP
       CFTT.Split

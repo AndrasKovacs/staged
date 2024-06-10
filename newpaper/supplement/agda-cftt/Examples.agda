@@ -124,7 +124,7 @@ exM3 = Λ λ x → down $
 
 -- Section 3.6. example from the paper
 exM4 : ↑C (Tree∘ ℕ∘ ⇒ StateT∘ (List∘ ℕ∘) (MaybeT∘ Identity∘) (Tree∘ ℕ∘))
-exM4 = DefRec λ f → Λ λ t → down $
+exM4 = DefRec λ f → Λ λ t → down $ do
   caseM t λ where
     leaf         → pure leaf∘
     (node n l r) → do

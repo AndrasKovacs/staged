@@ -26,6 +26,7 @@ record Pull (A : Set) : Set where
     step      : St → Gen (Step St A)
 open Pull public
 
+
 -- Convenience function for printing out all state shapes.
 getStRep : ∀ {A} → Pull A → Uₛ
 getStRep (pull _ _ {{StSOP}} _ _) = IsSOP.Rep StSOP
@@ -244,6 +245,29 @@ step (filter f as) s = step as s >>= λ where
   (yield a s) → f a >>= λ where
                   true  → pure $ yield a s
                   false → pure $ skip s
+
+-- Selective
+--------------------------------------------------------------------------------
+
+select : ∀ {A B} ⦃ _ : IsSOP A ⦄ → Pull (Either A B) → Pull (A → B) → Pull B
+St    (select {A} {B} abs fs) = St abs × St fs × Maybe A
+skips (select {A} {B} abs fs) = false
+seed  (select {A} {B} abs fs) = do s ← seed abs; s' ← seed fs; pure (s , s' , nothing)
+step (select {A} {B} abs fs) (sabs , sfs , just a) = step fs sfs >>= λ where
+  stop          → pure stop
+  (skip sfs)    → pure $ skip (sabs , sfs , just a)
+  (yield f sfs) → pure $ yield (f a) (sabs , sfs , nothing)
+step (select {A} {B} abs fs) (sabs , sfs , nothing) =
+  step abs sabs >>= λ where
+    stop            → pure stop
+    (skip sabs)     → pure $ skip (sabs , sfs , nothing)
+    (yield ab sabs) → case ab of λ where
+      (left a)  → step fs sfs >>= λ where
+         stop          → pure stop
+         (skip sfs)    → pure $ skip (sabs , sfs , just a)
+         (yield f sfs) → pure $ yield (f a) (sabs , sfs , nothing)
+      (right b) → pure $ yield b (sabs , sfs , nothing)
+
 
 -- Folding
 --------------------------------------------------------------------------------

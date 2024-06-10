@@ -1,3 +1,4 @@
+{-# language ScopedTypeVariables #-}
 
 module CFTT.Tree where
 
@@ -31,3 +32,12 @@ instance Typeable a => CasePull (Tree a) (Maybe (Up a, Up (Tree a), Up (Tree a))
           Stop      -> pure Stop
           Skip s    -> pure $ Skip (Right (a, (l, r), s))
           Yield c s -> pure $ Yield c ((Right (a, (l, r), s)))
+
+
+-- myMap :: forall (a :: Up Type)(b :: Up Type). (Up $$a -> Up $$b) -> Up [$$a] -> Up [$$b]
+-- myMap f as = [||
+--    let go :: [$$a] -> [$$b]
+--        go []     = []
+--        go (a:as) = $$(f [||a||]) : go as
+--    in go $$as
+--   ||]

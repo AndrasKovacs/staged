@@ -18,63 +18,71 @@ Reallocated glb_str_end (elt_size=4) to 20 items from 10.
 Reallocated singl_function (elt_size=4) to 100 items from 50.
 Warning--no number and no volume in twolevel
 Warning--page numbers missing in both pages and numpages fields in twolevel
+Warning--empty address in DBLP:conf/lfp/Bondorf92
 Warning--empty address in DBLP:conf/sfp/Breitner14
+Warning--empty address in DBLP:conf/popl/ChoiAYT11
+Warning--empty address in DBLP:conf/ppdp/DanvyN01
 Warning--empty address in DBLP:conf/icfp/VriesL14
 Warning--empty address in DBLP:conf/haskell/EisenbergW12
 Warning--empty address in DBLP:conf/pldi/FlanaganSDF93
 Warning--empty address in DBLP:conf/ifl/HinzeHJ10
+Warning--empty publisher in hofmann95conservativity
+Warning--empty address in hofmann95conservativity
 Warning--empty address in Hofmann97syntaxand
 Warning--empty address in whynotw
 Warning--empty address in partial-evaluation
 Warning--empty address in DBLP:conf/popl/KiselyovBPS17
+Warning--empty address in DBLP:conf/emsoft/KiselyovST04
 Warning--empty address in DBLP:conf/pepm/0001K24
 Warning--empty address in DBLP:conf/tlca/Levy99
+Warning--empty address in DBLP:conf/popl/LiangHJ95
 Warning--empty address in DBLP:conf/pldi/MaurerDAJ17
 Warning--empty address in DBLP:books/daglib/0071307
 Warning--empty address in DBLP:conf/haskell/PickeringLW20
 Warning--empty address in DBLP:conf/ppdp/RobinsonL17
+Warning--empty address in DBLP:conf/pepm/SwadiTKP06
 Warning--empty address in wadler89theoremsforfree
 Warning--empty address in DBLP:conf/popl/WadlerB89
 Warning--empty address in DBLP:conf/pepm/YallopK19
-You've used 36 entries,
+You've used 47 entries,
             5981 wiz_defined-function locations,
-            1765 strings with 26915 characters,
-and the built_in function-call counts, 38726 in all, are:
-= -- 4717
-> -- 1077
+            1861 strings with 30346 characters,
+and the built_in function-call counts, 52057 in all, are:
+= -- 6447
+> -- 1410
 < -- 0
-+ -- 340
-- -- 390
-* -- 2584
-:= -- 3770
-add.period$ -- 188
-call.type$ -- 36
-change.case$ -- 224
-chr.to.int$ -- 35
-cite$ -- 56
-duplicate$ -- 3616
-empty$ -- 2530
-format.name$ -- 470
-if$ -- 9193
++ -- 447
+- -- 510
+* -- 3442
+:= -- 4981
+add.period$ -- 243
+call.type$ -- 47
+change.case$ -- 292
+chr.to.int$ -- 46
+cite$ -- 75
+duplicate$ -- 4882
+empty$ -- 3411
+format.name$ -- 618
+if$ -- 12501
 int.to.chr$ -- 3
 int.to.str$ -- 1
-missing$ -- 117
-newline$ -- 413
-num.names$ -- 277
-pop$ -- 1304
+missing$ -- 168
+newline$ -- 521
+num.names$ -- 364
+pop$ -- 1774
 preamble$ -- 1
-purify$ -- 510
+purify$ -- 666
 quote$ -- 0
-skip$ -- 1392
+skip$ -- 1865
 stack$ -- 0
-substring$ -- 3038
-swap$ -- 355
+substring$ -- 4141
+swap$ -- 492
 text.length$ -- 0
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 946
-warning$ -- 20
-while$ -- 285
+type$ -- 1220
+warning$ -- 28
+while$ -- 383
 width$ -- 0
-write$ -- 838
+write$ -- 1078
 (There was 1 error message)

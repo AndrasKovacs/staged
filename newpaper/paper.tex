@@ -1034,14 +1034,29 @@ code in $\msf{IO}$.
 
 \subsection{Monads}\label{sec:monads}
 
-Let us start with the $\Maybe$ monad. We have $\data \Maybe\,\vA :=
+First, following the style of Haskell's monad transformer library \texttt{mtl}
+\cite{mtl}, we define a class for monads that support code generation.
+\begin{alignat*}{3}
+&\tyclass\,\Monad\,\vM \RA \MonadGen\,\vM\,\where\\
+&\ind \liftGen : \Gen\,\vA \to \M\,\vA
+\end{alignat*}
+We also redefine $\gen$ and $\genRec$ to work in any $\MonadGen$, so from now on
+we have:
+\begin{alignat*}{3}
+ &\gen   &&: \MonadGen\,\vM \RA \Up \vA \to \vM\,(\Up \vA)\\
+ &\genRec &&: \MonadGen\,\vM \RA (\Up \vA \to \Up \vA) \to \vM\,(\Up \vA)
+\end{alignat*}
+In the rest of this paper, we shall only mention $\ReaderT$, $\MaybeT$ and
+$\StateT$ as monad transformers. For all of these, we can define the $\MonadGen$
+instance simply by $\liftGen = \lift \circ \liftGen$.
+
+Let us look at the $\Maybe$ monad now. We have $\data \Maybe\,\vA :=
 \Nothing\,|\,\Just\,\vA$, and $\Maybe$ itself is available as a $\VTy \to \VTy$
 metafunction. However, we cannot directly fashion a monad out of $\Maybe$, since
-we do not have enough type formers in $\VTy$. In particular, we cannot store
-functions inside $\Maybe$ which rules out the applicative $\ap$ operation.  We
-could try to use the following type for binding:
+we do not have polymorphism in $\VTy$, nor can we store functions inside
+$\Maybe$. We could try to use the following type for binding:
 \[ (\bind) : \Up(\Maybe\,\vA) \to (\Up\vA \to \Up(\Maybe\,\vB)) \to \Up(\Maybe\,\vB) \]
-This works, but the definition necessarily uses runtime case splits on $\Maybe$
+This would work, but the definition would necessarily use runtime case splits on $\Maybe$
 values, many of which could be optimized away during staging. Also, not having
 a ``real'' monad is inconvenient for the purpose of code reuse.
 
@@ -1070,29 +1085,15 @@ With this, we get the $\Monad$ instance for free from $\MaybeT_\M$ and $\Gen$. A
 \[ \letdef \vn : \Maybe\,\Nat := \spl(\mdown\,\$\,\mdo \{\vx \fro \return\,\qt{10}; \vy \fro \return\,\qt{20}; \return\,\qt{\vx + \vy})\});\,... \]
 Since $\MaybeT_\M$ is meta-level, its monadic binding fully computes at unstaging time. Thus, the above code is computed to
 \[ \letdef \vn : \Maybe\,\Nat := \Just\,(10 + 20);\;... \]
-Assume also a $\lift : \Monad\,\vM \RA \vM\,\vA \to \MaybeT_\M\,\vM\,\vA$ operation which
-comes from $\MaybeT_\M$ being a monad transformer. We can do let-insertion in
-$\MaybeT_\M\,\Gen$ by simply lifting:
-\begin{alignat*}{3}
-  &\gen' : \Up \vA \to \MaybeT_\M\,\Gen\,(\Up \vA) \\
-  &\gen'\,\va = \lift\,(\gen\,\va)
-\end{alignat*}
-However, it is more convenient to proceed in the style of Haskell's monad
-transformer library \texttt{mtl} \cite{mtl}, and have a class for monads that
-support code generation:
-\begin{alignat*}{3}
-&\tyclass\,\Monad\,\vM \RA \MonadGen\,\vM\,\where\\
-&\ind \liftGen : \Gen\,\vA \to \M\,\vA\\
-&\instance \MonadGen\,\Gen\,\where\,\liftGen = \id \\
-&\instance \MonadGen\,\vM \RA \MonadGen\,(\MaybeT_\M\,\vM)\,\where\,\liftGen = \lift \circ \liftGen
-\end{alignat*}
-The $\MonadGen$ instance can be defined uniformly for every monad transformer as
-$\liftGen = \lift \circ \liftGen$. We also redefine $\gen$ and $\genRec$ to work
-in any $\MonadGen$, so from now on we have:
-\begin{alignat*}{3}
- &\gen   &&: \MonadGen\,\vM \RA \Up \vA \to \vM\,(\Up \vA)\\
- &\genRec &&: \MonadGen\,\vM \RA (\Up \vA \to \Up \vA) \to \vM\,(\Up \vA)
-\end{alignat*}
+We can also use $\gen$ for let-insertion in $\MaybeT\,\Gen$, since it has a $\MonadGen$
+instance.
+%% Assume also a $\lift : \Monad\,\vM \RA \vM\,\vA \to \MaybeT_\M\,\vM\,\vA$ operation which
+%% comes from $\MaybeT_\M$ being a monad transformer. We can do let-insertion in
+%% $\MaybeT_\M\,\Gen$ by simply lifting:
+%% \begin{alignat*}{3}
+%%   &\gen' : \Up \vA \to \MaybeT_\M\,\Gen\,(\Up \vA) \\
+%%   &\gen'\,\va = \lift\,(\gen\,\va)
+%% \end{alignat*}
 
 \subsubsection{Case splitting in monads}
 We often want to case-split on object-level data inside a monadic action, and
@@ -1222,59 +1223,68 @@ is unstaged to
 
 \subsection{Joining Control Flow in Monads}\label{sec:joining-control-flow-in-monads}
 
-There is a deficiency in our library so far. Assuming $\vb : \Up\Bool$, consider:
-\begin{alignat*}{5}
-  & \hspace{-1em}\mdo && (\case \vb\,\of\,\True\to \mput' \qt{10}; \False &&\to \mput' \qt{20})\\
-  & \hspace{-1em}     && \mathrlap{\modify' (\lam \vx.\,\qt{\spl \vx + 10})}
-\end{alignat*}
-The $\modify' (\lam \vx. \qt{\spl \vx + 10})$ action gets inlined in both case
-branches during unstaging, yielding the following:
+There is a deficiency in our library so far. Consider:
 \begin{alignat*}{3}
-   & boooo
+  & \vf : \Bool \to \StateT\,\Nat\,(\MaybeT\,\Identity)\,()\\
+  & \vf\,\vb := \spl(\mdown \dlr \mdo \\
+  & \ind \case \qt{\vb}\,\of\,\True\to \mput' \qt{10}; \False \to \mput' \qt{20}\\
+  & \ind\modify'\,(\lambda\,x.\,\qt{\spl x + \spl x}))
 \end{alignat*}
-The duplication follows from the definition of monadic binding in $\Gen$ and the
+This is unstaged to the following (omitting newtype wrappers):
+\begin{alignat*}{3}
+  & \vf\,\vb\,\vs := \case\,\vb\,\of \\
+  & \ind \True\hspace{0.2em} \to \letdef \vs := 10; \letdef \vs := \vs + \vs; \Just\,((),\vs)\\
+  & \ind \False \to \letdef \vs := 20; \letdef \vs := \vs + \vs; \Just\,((),\vs)
+\end{alignat*}
+Notice that the final state modification gets inlined into both branches. The
+duplication follows from the definition of monadic binding in $\Gen$ and the
 $\mit{split}$ function in the desugaring of $\mbf{case}$. Code generation is
 continued in both branches with the same action. If we have multiple Boolean
 $\mbf{case}$ splits sequenced after each other, that yields exponential code
-size. Right now, we can fix this by let-binding the problematic action:
-
-%% \begin{alignat*}{5}
-%%   & \mdo && (\gen \dlr \mdown\,(\case \vb\,\of \True \to \mput' \qt{10};\False &&\to \mput' \qt{20})) \bind \mup \\
-%%   &      && \mathrlap{\modify' (\lam \vx.\,\qt{\spl \vx + 10})}
-%% \end{alignat*}
-\begin{alignat*}{5}
-  & \mdo && \msf{action} \fro \gen \dlr \mdown\,(\case \vb\,\of \True \to \mput' \qt{10};\False &&\to \mput' \qt{20}) \\
-  &      && \mup\,\msf{action}\\
-  &      && \mathrlap{\modify' (\lam \vx.\,\qt{\spl \vx + 10})}
-\end{alignat*}
-This removes code duplication by round-tripping through an object-level
-$\mbf{let}$. This solution is fairly good in a state monad, where $\mdown$ only
-introduces a runtime pair constructor, and it is feasible to compile
-object-level pairs as unboxed data, without overheads. However, for $\Maybe$,
-$\mdown$ introduces a runtime $\Just$ or $\Nothing$, and $\mup$ introduces a
-runtime case split. A better solution would be to introduce two let-bound
-\emph{join points} before the offending $\mbf{case}$, one for returning a
-$\Just$ and one for returning $\Nothing$, but fusing away the actual runtime
-constructors. So, for example, we would like to produce object code which looks
-like the following:
+size. A possible fix is to let-bind the branching action:
 \begin{alignat*}{3}
-  & \letdef\,\mit{joinJust}\,\vn := ...\\
-  & \letdef\,\mit{joinNothing}\,() := ...\\
-  & \case \vx == 10\,\of\\
-  & \ind \True \hspace{0.2em}\to \mit{joinJust}\,(\vx + 10) \\
-  & \ind \False \to \mit{joinNothing}\,()
+  & \vf\,\vb := \spl(\mdown \dlr \mdo \\
+  & \ind \msf{act} \fro \gen \dlr \mdown \dlr \case \qt{\vb}\,\of\,\True\to \mput' \qt{10}; \False \to \mput' \qt{20} \\
+  & \ind \mup\,\msf{act} \\
+  & \ind\modify\,(\lambda\,x.\,\qt{\spl x + \spl x}))
 \end{alignat*}
-Such fused returns are possible whenever we have a $\Gen\,\vA$ action at the
-bottom of the transformer stack, such that $\vA$ is isomorphic to a meta-level
-finite sum of value types. Recall that $\Gen\,\vA$ is defined as $\{\vR : \VTy\} \to
-(\vA \to \Up \vR) \to \Up \vR$. Here, if $\vA$ is a finite sum, we can rearrange $\vA \to
-\Up \vR$ to a finite product of functions.
+However, this yields suboptimal code:
+\begin{alignat*}{3}
+  & \vf\,\vb\,\vs :=\\
+  & \ind \letdef\,\msf{act}\,\vs := \case\,\vb\,\of \True\hspace{0.2em}\to \letdef \vs := 10; \Just((), \vs)\\
+  & \ind\hspace{8.5em}                               \False \to \letdef \vs := 20; \Just((), \vs);\\
+  & \ind \case \msf{act}\,\vs\,\of\\
+  & \ind\ind \Just\,(\_,\,\vs) \to \letdef \vs := \vs + \vs; \Just\,((),\,\vs)\\
+  & \ind\ind \Nothing\hspace{0.6em} \to \Nothing
+\end{alignat*}
+This solution is fairly good in a state monad, where $\mdown$ only introduces a
+runtime pair constructor, and it is feasible to compile object-level pairs as
+unboxed data, without overheads. However, for $\Maybe$, $\mdown$ introduces a
+runtime $\Just$ or $\Nothing$, and $\mup$ introduces a runtime case split. A
+better solution would be to introduce two let-bound join points before
+the offending $\mbf{case}$, one for returning a $\Just$ and one for returning
+$\Nothing$, but fusing away the actual runtime constructors:
+\begin{alignat*}{3}
+  & \vf\,\vb\,\vs :=\\
+  & \ind \letdef\,\msf{joinNothing}\,\vs := \Nothing;\\
+  & \ind \letdef\,\msf{joinJust}\,\hspace{1.8em}\vs := \letdef \vs := \vs + \vs; \Just\,((),\,\vs);\\
+  & \ind \case \msf{b}\,\of\\
+  & \ind \ind \True\hspace{0.2em}  \to \letdef \vs := 10; \msf{joinJust}\,\vs\\
+  & \ind \ind \False \to \letdef \vs := 20; \msf{joinJust}\,\vs
+\end{alignat*}
+Here, $\msf{joinNothing}$ happens to be dead code, but it is easy to clean that up in
+downstream compilation. Such ``fused'' returns are possible whenever we have a
+$\Gen\,\vA$ action at the bottom of the transformer stack, such that $\vA$ is
+isomorphic to a meta-level finite sum of value types. Recall that $\Gen\,\vA$ is
+defined as $\{\vR : \VTy\} \to (\vA \to \Up \vR) \to \Up \vR$. Here, if $\vA$ is
+a finite sum, we can rearrange $\vA \to \Up \vR$ to a finite product of
+functions.
 
 We could proceed with finite sums, but we will need finite
-\emph{sums-of-products} ($\SOP$ in short) later in Section in \ref{sec:stream-fusion}, so we
-develop SOP-s. We view $\SOP$-s as a Tarski-style universe consisting of a type of
-descriptions and a way of interpreting descriptions into $\MTy$ (``$\El$'' for
-``elements'' of the type).
+\emph{sums-of-products} ($\SOP$ in short) later in Section in
+\ref{sec:stream-fusion}, so we develop SOP-s. We view $\SOP$-s as a Tarski-style
+universe consisting of a type of descriptions and a way of interpreting
+descriptions into $\MTy$ (``$\El$'' for ``elements'' of the type).
 \begin{alignat*}{3}
   &\USOP : \MTy                    &&\ind \El_\SOP : \USOP \to \MTy \\
   &\USOP = \List\,(\List\,\VTy)    &&\ind \El_\SOP\,\vA = ...
@@ -1340,20 +1350,28 @@ as a result value.
   & \instance\,(\MonadJoin\,\vM,\,\IsSOP\,\vS) \RA \MonadJoin\,(\StateT_\M\,\vS\,\vM)\,\where\\
   & \ind \join\,(\StateT_\M\,\vma) = \StateT_\M\,(\join \circ \vma)
 \end{alignat*}
-
-Now, whenever the return value of a $\mbf{case}$-splitting action is a sum of
-products of values (this includes just returning an object value, which is by
-far the most common situation), we can use $\join \dlr \case \vx\,\of ...$ to
-eliminate code duplication, without creating runtime sum types.
+Now, we can write the following in our running example:
+\begin{alignat*}{3}
+  & \vf : \Bool \to \StateT\,\Nat\,(\MaybeT\,\Identity)\,()\\
+  & \vf\,\vb := \spl(\mdown \dlr \mdo \\
+  & \ind \join \dlr \case \qt{\vb}\,\of\,\True\to \mput' \qt{10}; \False \to \mput' \qt{20}\\
+  & \ind\modify'\,(\lambda\,x.\,\qt{\spl x + \spl x}))
+\end{alignat*}
+It might make sense to also have a simple ``desugaring'' rule that inserts a
+$\join$ whenever we have a object-level case split with more than one branch. At
+worst, this generates some noise and dead code that is easy to remove by
+conservative code optimization.
 
 \subsection{Code Example}
 
-We look at a slightly larger code example. We define annotated binary trees as
+We look at a slightly larger code example in Figure \ref{fig:codeinp}. We define
+annotated binary trees as
 \[ \data \Tree\,\vA := \Leaf\,|\,\Node\,\vA\,(\Tree\,\vA)\,(\Tree\,\vA). \]
 We write $\msf{fail : M\,A}$ for returning $\Nothing$ in any monad transformer
 stack that contains $\MaybeT$. We define a function which traverses a tree and
 replaces values with values taken from a list. If the tree contains $0$, we
 throw an error. If we run out of list elements, we leave values unchanged.
+\begin{figure}
 \begin{alignat*}{4}
   &  \letrec &&\vf : \Tree\,\Nat \to \StateT\,(\List\,\Nat)\,(\MaybeT\,\Identity)\,(\Tree\,\Nat) \\
   &          &&\vf\,\vt := \spl \big(\mdown \dlr \case \vt\,\of\\
@@ -1368,6 +1386,9 @@ throw an error. If we run out of list elements, we leave values unchanged.
   &          &&\ind \ind \vr \fro \mup\,\qt{\vf\,\spl \vr} \\
   &          &&\ind \ind \return \qt{\Node\,\spl \vn\,\spl \vl\,\spl \vr}\big)
 \end{alignat*}
+\caption{Monadic source code}
+\label{fig:codeinp}
+\end{figure}
 Here, all of the $\case$ matches are done on object-level values, so they are
 all desugared to applications of $\msf{split}$.
 \begin{itemize}
@@ -1382,12 +1403,14 @@ all desugared to applications of $\msf{split}$.
 Here, we intentionally tuned the definition for a nice-looking staging output.
 However, we could also just default to ``safe'' choices everywhere: we could use
 a joint point in every $\mbf{case}$ with two or more branches, and use the
-strict state modifications everywhere. This would only add a small amount of
-administrative noise that can be easily cleaned up by the downstream compiler.
+strict state modifications everywhere, and leave it up to the downstream compiler
+to clean up the code.
 
-Let us look at the unstaging output. We omit newtype wrappers and use nested
-pattern matching on pairs, but otherwise this is exactly the code that we get in
-our Agda implementation.
+We show the unstaging output on Figure \ref{fig:codeout}. We omit newtype
+wrappers and use nested pattern matching on pairs, but otherwise this is exactly
+the code that we get in our Agda implementation. Again, the only flaw in this
+code is the dead binding for $\msf{joinNothing}$.
+\begin{figure}\label{fig:codeout}
 \begin{alignat*}{4}
   &  \letrec &&\vf : \Tree\,\Nat \to \StateT\,(\List\,\Nat)\,(\MaybeT\,\Identity)\,(\Tree\,\Nat) \\
   &          &&\vf := \lam \vt\,\vns.\, \case\,\vt\,\of\\
@@ -1405,9 +1428,9 @@ our Agda implementation.
   &          &&\ind \ind \ind \ind \Nil \hspace{2.65em}\to \msf{joinJust}\,\vn\,\vns\\
   &          &&\ind \ind \ind \ind \Cons\,\vn\,\vns \to \msf{joinJust}\,\vn\,\vns
 \end{alignat*}
-The only flaw in this code is the $\msf{joinNothing}$, which is never called,
-becase we joined an action that never throws an error. But this is also easy to
-clean up afterwards.
+\caption{Unstaged monadic code}
+\label{fig:codeout}
+\end{figure}
 \subsection{Discussion}
 
 So far, we have a monad transformer library with the following features:
@@ -2110,7 +2133,7 @@ changes. Supporting W-types, as a way to get inductive families \cite{TODO}, is
 the biggest extension here. We extend Section 5 of \cite{staged2ltt} here. In
 the syntax of CFTT, $\vW$-types are as follows. The formal specification of
 syntactic $\vW{-}\msf{elim}$ is rather gnarly, because of the usage of explicit
-substitutions, but we write it out here anways.
+substitutions, but we write it out here anyways.
 
 \begin{notation} We use $\p^N$ for $N$-fold
 weakening and we also use numerals as De Bruijn indices, to abbreviate

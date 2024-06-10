@@ -1126,7 +1126,7 @@ following:
 \end{alignat*}
 In a native implementation of CFTT it may make sense to extend do-notation, so
 that we elaborate $\mbf{case}$ on object values to an application of the
-appropriate $\mit{split}$ function. We adopt this in the rest of the paper, so
+appropriate splitting function. We adopt this in the rest of the paper, so
 when working in a $\MonadGen$, we can write $\case \vas\,\of \Nil \to ...;
 \Cons\,\va\,\vas \to ...$, binding $\va : \Up \vA$ and $\vas : \Up(\List\,\vA)$
 in the $\Cons$ case.
@@ -1160,8 +1160,8 @@ $\Maybe$ value inside an $\vM$ action. This is legal, since we know from the
 $\Improve\,\vF\,\vM$ assumption that $\vM$ is a $\MonadGen$. In $\mdown$ we also use
 $\lam\case ...$ to shorten $\lam \vx.\,\case \vx\,\of ...$.
 
-In the meta level, we can reuse essentially all definitions from \texttt{mtl}.
-From there, only the continuation monad transformer fails to support
+In the meta level, we can borrow essentially all definitions from
+\texttt{mtl}. Only the continuation monad transformer fails to support
 binding-time-improvement in CFTT, because of the obvious need for dynamic
 closures. In the following we only present $\StateT$ and $\ReaderT$.
 
@@ -1290,7 +1290,9 @@ descriptions into $\MTy$ (``$\El$'' for ``elements'' of the type).
   &\USOP = \List\,(\List\,\VTy)    &&\ind \El_\SOP\,\vA = ...
 \end{alignat*}
 A type description is a list of lists of value types. We decode this to a sum of
-products of value types. We omit the definition here. $\USOP$ is closed under
+products of value types. For example, $\El_\SOP\,[[\Bool,\,\Bool],\,[]]$ (using
+Haskell-like list notation) is isomorphic to $\Either\,(\Lift\Bool,\,\Lift\Bool)\,()$.
+$\USOP$ is closed under
 value types, finite product types and finite sum types. For instance, we have
 $\Either_\SOP : \USOP \to \USOP \to \USOP$ together with $\Left_\SOP : \El_\SOP\,\vA
 \to \El_\SOP\,(\Either_\SOP\,\vA\,\vB)$, $\Right_\SOP : \El_\SOP\,\vB \to
@@ -1350,9 +1352,8 @@ as a result value.
   & \instance\,(\MonadJoin\,\vM,\,\IsSOP\,\vS) \RA \MonadJoin\,(\StateT_\M\,\vS\,\vM)\,\where\\
   & \ind \join\,(\StateT_\M\,\vma) = \StateT_\M\,(\join \circ \vma)
 \end{alignat*}
-Now, we can write the following in our running example:
+Now, we can modify our running example as follows.
 \begin{alignat*}{3}
-  & \vf : \Bool \to \StateT\,\Nat\,(\MaybeT\,\Identity)\,()\\
   & \vf\,\vb := \spl(\mdown \dlr \mdo \\
   & \ind \join \dlr \case \qt{\vb}\,\of\,\True\to \mput' \qt{10}; \False \to \mput' \qt{20}\\
   & \ind\modify'\,(\lambda\,x.\,\qt{\spl x + \spl x}))
@@ -2278,8 +2279,8 @@ representable presheaf $\Subo\blank\Gamma \times \wh{\Elprod\,A}$ to the
 constant presheaf $\wh{\USOP}$, the Yoneda lemma implies that $f$ is constant and
 hence the generativity axiom is validated.
 
-Since the logical relation interpretation of identity is trivial, it is also trivial
-for the generativity axiom.
+Finally, since the logical relation interpretation of the identity type is trivial,
+the logical relation interpretation for the generativity axiom is also trivial.
 
 \subsection{Summary}
 
@@ -2287,7 +2288,7 @@ By the presheaf and logical relations interpretation of CFTT as shown in this ap
 we obtain \emph{unstaging} and \emph{soundness} of unstaging, following \cite{staged2ltt}.
 
 \emph{Strictness} of unstaging holds trivially, since there are no $\beta$ and
-$\eta$ rules in the object theory. \emph{Completeness} of unstaging is shown by
+$\eta$ rules in the object theory. \emph{Stability} of unstaging is shown by
 straightforward induction on the syntax of the object theory, the same way as in
 \cite{staged2ltt}, and we omit it here.
 

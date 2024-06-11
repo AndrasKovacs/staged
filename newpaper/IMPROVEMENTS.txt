@@ -15,14 +15,21 @@ CHANGES
 
 TODO
 - Add staged monad citation to Section 3.3.
+
 - Revise related work.
   - Add section on HOAS and Cocon
   - Revise staged monad stuff
   - Add MLTon reference to defunctionalization
+
 - Add missing citations to appendix
 - Add missing section references
 - Re-check whole thing
-- Disable line numbering as suggested by author instructions
+- Disable line numbering as suggested by author instructions,
+  anonimize name
+
+- Mention fibrant/cofibrant somewhere?
+- Add citation for typeclass dictionary-passing to intro section
+
 
 FOR CAMERA-READY:
 - Add acknowledgements

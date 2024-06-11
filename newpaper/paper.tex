@@ -439,15 +439,11 @@ object language (like debugging, profiling, IDEs) may not work for metaprogrammi
 metaprogramming may introduce heavy noise and boilerplate, obscuring the logic
 of programs and imposing restrictions on code structure.
 
-\textbf{Two-level type theory} (2LTT) \cite{twolevel,staged2ltt} makes it
-possible to use expressive dependent type theories for metaprogramming
-for a wide range of object languages. In this paper, we use 2LTT to sweeten the
-deal of staged compilation, aiming for a combination of strong guarantees, good
-ergonomics, high level of abstraction and easy-to-optimize code output.
-
-We develop a particular two-level type theory for this purpose, which we
-call \textbf{CFTT}, short for ``closure-free type theory''. This consists
-of:
+We use \textbf{two-level type theory} (2LTT) \cite{twolevel,staged2ltt} to
+sweeten the deal of staged compilation, aiming for a combination of strong
+guarantees, good ergonomics, high level of abstraction and easy-to-optimize code
+output. We develop a particular two-level type theory for this purpose, which we
+call \textbf{CFTT}, short for ``closure-free type theory''. This consists of:
 \begin{itemize}
 \item A simply-typed object theory with first-order functions, general recursion and
       finitary algebraic data types. This language is easy to optimize and compile
@@ -547,7 +543,7 @@ use the term ``metatype'' to refer to inhabitants of $\MTy$, and use
 ``metaprogram'' for inhabitants of metatypes. $\MTy$ supports dependent
 functions, $\Sigma$-types and indexed inductive types \cite{inductivefamilies}.
 
-Formally, $\MTy$ is additionally indexed by universes levels (orthogonally to
+Formally, $\MTy$ is additionally indexed by universe levels (orthogonally to
 staging), and we have $\MTy_i : \MTy_{i+1}$. However, universe levels add noise
 and they are not too relevant to the current paper, so we will omit them.
 
@@ -622,8 +618,8 @@ to define computations and values alike, and can be used to shadow binders:
   &\vf\,\vx := \letdef \vx := \vx + 10; \letdef \vx := \vx + 20; \vx * 10
 \end{alignat*}
 We also allow $\mbf{newtype}$ definitions, both in $\VTy$ and $\CTy$. These are
-assumed to be erased at runtime. In the Haskell implementation they are
-important for guiding type class resolution, and we think that the explicit
+assumed to be erased at runtime. In the Haskell and Agda implementations they
+are important for guiding instance resolution, and we think that the explicit
 wrapping makes many definitions more comprehensible in CFTT as well.
 
 Values are call-by-value at runtime; they are computed eagerly in function
@@ -872,17 +868,17 @@ the differences.
   constructor.
 \item Staging mainly supports optimization by \emph{programmers} by providing
   control over code generation. Unstaging does not translate higher-order
-  functions to anything in particular. Instead, it is the execution of
-  higher-order metaprograms that produce first-order programs.
+  functions to anything in particular. Instead, unstaging is the execution of
+  higher-order metaprograms which produce first-order programs.
 \end{itemize}
 
 \subsection{Staged Semantics of CFTT}\label{sec:semantics-of-staging}
 
-We give an overview of the unstaging algorithm together with its correctness.
-Our main task is to extend \cite{staged2ltt} with identity types and inductive
-types in the metalanguage, since we use them in this paper. For inductive types,
-it is the most sensible to add W-types, since all inductive families can be
-faithfully derived from them in our setting \cite{whynotw}.
+To obtain an unstaging algorithm, together with its correctness, the main task
+is to extend \cite{staged2ltt} with identity types and inductive families in the
+metalanguage, since we use those types in this paper. For inductive types, it is the
+most sensible to add W-types, since all inductive families can be faithfully
+derived from them in our setting \cite{whynotw}.
 
 This however requires a substantial amount of technical background from
 \cite{staged2ltt}, so we relegate it to Appendix \ref{appendix:A}. Here we only

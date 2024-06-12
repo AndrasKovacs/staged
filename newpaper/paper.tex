@@ -1,8 +1,9 @@
 
 %% build: latexmk -pdf -pvc paper.tex
 
-\documentclass[acmsmall,screen,review,anonymous]{acmart}
-%% \documentclass[nonacm,acmsmall,review]{acmart}
+%% \documentclass[acmsmall,screen,review,anonymous]{acmart}
+%% \documentclass[nonacm,acmsmall]{acmart}
+\documentclass[acmsmall,screen]{acmart}
 %% \raggedbottom
 
 %% \BibTeX command to typeset BibTeX logo in the docs
@@ -303,14 +304,22 @@
 %% Of note is the shared affiliation of the first two authors, and the
 %% "authornote" and "authornotemark" commands
 %% used to denote shared contribution to the research.
-\author{András Kovács}
-\email{andrask@chalmers.se}
-\orcid{0000-0002-6375-9781}
+
+\author{First Last}
 \affiliation{%
-  \institution{University of Gothenburg}
-  \country{Sweden}
-  \city{Gothenburg}
+  \institution{Institution}
+  \country{Country}
+  \city{City}
 }
+
+%% \author{András Kovács}
+%% \email{andrask@chalmers.se}
+%% \orcid{0000-0002-6375-9781}
+%% \affiliation{%
+%%   \institution{University of Gothenburg}
+%%   \country{Sweden}
+%%   \city{Gothenburg}
+%% }
 
 \begin{abstract}
 Many abstraction tools in functional programming rely heavily on general-purpose
@@ -660,12 +669,11 @@ more convenient. We will see that the ability to insert $\mbf{let}$-s without
 restriction is very convenient in code generation, and likewise the ability to
 have arbitrary object expressions in $\mbf{case}$ bodies. In this paper we go
 with the most liberal object syntax, at the cost of needing more downstream
-processing.
-
-On the other side of the spectrum, one might imagine generating object code in
-low-level A-normal form. This is more laborious, but it could be also
-interesting, because it forces us to invent abstractions for manipulating ANF in
-the metalanguage.
+processing. On the other side of the spectrum, one might imagine generating
+object code in low-level A-normal form. This is more laborious, but it could be
+also interesting, because it would force us to invent abstractions for
+manipulating ANF in the metalanguage. We leave such lower-level object languages
+for future investigation.
 
 \subsubsection{Object-level definitional equality} This is a distinct notion
 from runtime semantics. Object programs are embedded in CFTT, which is a

@@ -10,7 +10,6 @@ Repeated entry---line 5196 of file references.bib
  : @phdthesis{DBLP:phd/ethos/Coutts11
  :                                   ,
 I'm skipping whatever remains of this entry
-Warning--I didn't find a database entry for "TODO"
 Reallocated singl_function (elt_size=4) to 100 items from 50.
 Reallocated glb_str_ptr (elt_size=4) to 20 items from 10.
 Reallocated global_strs (elt_size=200001) to 20 items from 10.
@@ -22,7 +21,9 @@ Warning--empty address in DBLP:conf/lfp/Bondorf92
 Warning--empty address in DBLP:conf/sfp/Breitner14
 Warning--empty address in DBLP:conf/popl/ChoiAYT11
 Warning--empty address in DBLP:conf/ppdp/DanvyN01
+Warning--empty address in sop
 Warning--empty address in DBLP:conf/icfp/VriesL14
+Warning--empty address in Dybjer96internaltype
 Warning--empty address in DBLP:conf/haskell/EisenbergW12
 Warning--empty address in DBLP:conf/pldi/FlanaganSDF93
 Warning--empty address in DBLP:conf/ifl/HinzeHJ10
@@ -34,55 +35,57 @@ Warning--empty address in partial-evaluation
 Warning--empty address in DBLP:conf/popl/KiselyovBPS17
 Warning--empty address in DBLP:conf/emsoft/KiselyovST04
 Warning--empty address in DBLP:conf/pepm/0001K24
+Warning--page numbers missing in both pages and numpages fields in DBLP:journals/corr/abs-2302-08837
 Warning--empty address in DBLP:conf/tlca/Levy99
 Warning--empty address in DBLP:conf/popl/LiangHJ95
 Warning--empty address in DBLP:conf/pldi/MaurerDAJ17
 Warning--empty address in DBLP:books/daglib/0071307
 Warning--empty address in DBLP:conf/haskell/PickeringLW20
+Warning--page numbers missing in both pages and numpages fields in DBLP:journals/corr/abs-1901-03378
 Warning--empty address in DBLP:conf/ppdp/RobinsonL17
 Warning--empty address in DBLP:conf/pepm/SwadiTKP06
 Warning--empty address in wadler89theoremsforfree
 Warning--empty address in DBLP:conf/popl/WadlerB89
 Warning--empty address in DBLP:conf/pepm/YallopK19
-You've used 47 entries,
+You've used 55 entries,
             5981 wiz_defined-function locations,
-            1861 strings with 30346 characters,
-and the built_in function-call counts, 52057 in all, are:
-= -- 6447
-> -- 1410
+            1919 strings with 31935 characters,
+and the built_in function-call counts, 60938 in all, are:
+= -- 7674
+> -- 1631
 < -- 0
-+ -- 447
-- -- 510
-* -- 3442
-:= -- 4981
-add.period$ -- 243
-call.type$ -- 47
-change.case$ -- 292
-chr.to.int$ -- 46
-cite$ -- 75
-duplicate$ -- 4882
-empty$ -- 3411
-format.name$ -- 618
-if$ -- 12501
-int.to.chr$ -- 3
++ -- 516
+- -- 587
+* -- 4040
+:= -- 5787
+add.period$ -- 284
+call.type$ -- 55
+change.case$ -- 341
+chr.to.int$ -- 53
+cite$ -- 87
+duplicate$ -- 5694
+empty$ -- 3985
+format.name$ -- 710
+if$ -- 14729
+int.to.chr$ -- 4
 int.to.str$ -- 1
-missing$ -- 168
-newline$ -- 521
-num.names$ -- 364
-pop$ -- 1774
+missing$ -- 199
+newline$ -- 609
+num.names$ -- 423
+pop$ -- 2063
 preamble$ -- 1
-purify$ -- 666
+purify$ -- 777
 quote$ -- 0
-skip$ -- 1865
+skip$ -- 2153
 stack$ -- 0
-substring$ -- 4141
-swap$ -- 492
+substring$ -- 4830
+swap$ -- 572
 text.length$ -- 0
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 1220
-warning$ -- 28
-while$ -- 383
+type$ -- 1398
+warning$ -- 32
+while$ -- 443
 width$ -- 0
-write$ -- 1078
+write$ -- 1260
 (There was 1 error message)

@@ -2,7 +2,7 @@
 %%% Do NOT edit. File created by BibTeX with style
 %%% ACM-Reference-Format-Journals [18-Jan-2012].
 
-\begin{thebibliography}{47}
+\begin{thebibliography}{55}
 
 %%% ====================================================================
 %%% NOTE TO THE USER: you can override these defaults by providing
@@ -128,6 +128,17 @@
 \showDOI{\tempurl}
 
 
+\bibitem[Cartmell(1978)]%
+        {cartmellthesis}
+\bibfield{author}{\bibinfo{person}{John Cartmell}.}
+  \bibinfo{year}{1978}\natexlab{}.
+\newblock \emph{\bibinfo{title}{Generalised algebraic theories and contextual
+  categories}}.
+\newblock \bibinfo{thesistype}{Ph.\,D. Dissertation}. \bibinfo{school}{Oxford
+  University}.
+\newblock
+
+
 \bibitem[Choi et~al\mbox{.}(2011)]%
         {DBLP:conf/popl/ChoiAYT11}
 \bibfield{author}{\bibinfo{person}{Wontae Choi}, \bibinfo{person}{Baris
@@ -190,10 +201,26 @@
 \showDOI{\tempurl}
 
 
-\bibitem[de~Vries and L{\"{o}}h(2014)]%
+\bibitem[de~Vries and L{\"{o}}h(2014a)]%
+        {sop}
+\bibfield{author}{\bibinfo{person}{Edsko de Vries} {and}
+  \bibinfo{person}{Andres L{\"{o}}h}.} \bibinfo{year}{2014}\natexlab{a}.
+\newblock \showarticletitle{True sums of products}. In
+  \bibinfo{booktitle}{\emph{Proceedings of the 10th {ACM} {SIGPLAN} workshop on
+  Generic programming, {WGP} 2014, Gothenburg, Sweden, August 31, 2014}},
+  \bibfield{editor}{\bibinfo{person}{Jos{\'{e}}~Pedro Magalh{\~{a}}es} {and}
+  \bibinfo{person}{Tiark Rompf}} (Eds.). \bibinfo{publisher}{{ACM}},
+  \bibinfo{pages}{83--94}.
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.1145/2633628.2633634}
+\showDOI{\tempurl}
+
+
+\bibitem[de~Vries and L{\"{o}}h(2014b)]%
         {DBLP:conf/icfp/VriesL14}
 \bibfield{author}{\bibinfo{person}{Edsko de Vries} {and}
-  \bibinfo{person}{Andres L{\"{o}}h}.} \bibinfo{year}{2014}\natexlab{}.
+  \bibinfo{person}{Andres L{\"{o}}h}.} \bibinfo{year}{2014}\natexlab{b}.
 \newblock \showarticletitle{True sums of products}. In
   \bibinfo{booktitle}{\emph{Proceedings of the 10th {ACM} {SIGPLAN} workshop on
   Generic programming, {WGP} 2014, Gothenburg, Sweden, August 31, 2014}},
@@ -231,6 +258,23 @@
 \newblock
 \urldef\tempurl%
 \url{https://doi.org/10.1007/BF01211308}
+\showDOI{\tempurl}
+
+
+\bibitem[Dybjer(1995)]%
+        {Dybjer96internaltype}
+\bibfield{author}{\bibinfo{person}{Peter Dybjer}.}
+  \bibinfo{year}{1995}\natexlab{}.
+\newblock \showarticletitle{Internal Type Theory}. In
+  \bibinfo{booktitle}{\emph{Types for Proofs and Programs, International
+  Workshop TYPES'95, Torino, Italy, June 5-8, 1995, Selected Papers}}
+  \emph{(\bibinfo{series}{Lecture Notes in Computer Science},
+  Vol.~\bibinfo{volume}{1158})}, \bibfield{editor}{\bibinfo{person}{Stefano
+  Berardi} {and} \bibinfo{person}{Mario Coppo}} (Eds.).
+  \bibinfo{publisher}{Springer}, \bibinfo{pages}{120--134}.
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.1007/3-540-61780-9\_66}
 \showDOI{\tempurl}
 
 
@@ -291,6 +335,22 @@
 \tempurl}
 
 
+\bibitem[Harper et~al\mbox{.}(1993)]%
+        {Harper93lf}
+\bibfield{author}{\bibinfo{person}{Robert Harper}, \bibinfo{person}{Furio
+  Honsell}, {and} \bibinfo{person}{Gordon Plotkin}.}
+  \bibinfo{year}{1993}\natexlab{}.
+\newblock \showarticletitle{A framework for defining logics}.
+\newblock \bibinfo{journal}{\emph{J. ACM}} \bibinfo{volume}{40},
+  \bibinfo{number}{1} (\bibinfo{date}{Jan.} \bibinfo{year}{1993}),
+  \bibinfo{pages}{143--184}.
+\newblock
+\showISSN{0004-5411}
+\urldef\tempurl%
+\url{https://doi.org/10.1145/138027.138060}
+\showDOI{\tempurl}
+
+
 \bibitem[Hinze et~al\mbox{.}(2010)]%
         {DBLP:conf/ifl/HinzeHJ10}
 \bibfield{author}{\bibinfo{person}{Ralf Hinze}, \bibinfo{person}{Thomas
@@ -328,6 +388,23 @@
   \bibinfo{booktitle}{\emph{Semantics and Logics of Computation}}.
   \bibinfo{publisher}{Cambridge University Press}, \bibinfo{pages}{79--130}.
 \newblock
+
+
+\bibitem[Hofmann(1999)]%
+        {Hofmann:1999:SAH:788021.788940}
+\bibfield{author}{\bibinfo{person}{Martin Hofmann}.}
+  \bibinfo{year}{1999}\natexlab{}.
+\newblock \showarticletitle{Semantical Analysis of Higher-Order Abstract
+  Syntax}. In \bibinfo{booktitle}{\emph{Proceedings of the 14th Annual IEEE
+  Symposium on Logic in Computer Science}} \emph{(\bibinfo{series}{LICS '99})}.
+  \bibinfo{publisher}{IEEE Computer Society}, \bibinfo{address}{Washington, DC,
+  USA}, \bibinfo{pages}{204--}.
+\newblock
+\showISBNx{0-7695-0158-3}
+\urldef\tempurl%
+\url{http://dl.acm.org/citation.cfm?id=788021.788940}
+\showURL{%
+\tempurl}
 
 
 \bibitem[Huber(2016)]%
@@ -445,6 +522,21 @@
 \showDOI{\tempurl}
 
 
+\bibitem[Kov{\'{a}}cs(2023)]%
+        {DBLP:journals/corr/abs-2302-08837}
+\bibfield{author}{\bibinfo{person}{Andr{\'{a}}s Kov{\'{a}}cs}.}
+  \bibinfo{year}{2023}\natexlab{}.
+\newblock \showarticletitle{Type-Theoretic Signatures for Algebraic Theories
+  and Inductive Types}.
+\newblock \bibinfo{journal}{\emph{CoRR}}  \bibinfo{volume}{abs/2302.08837}
+  (\bibinfo{year}{2023}).
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.48550/ARXIV.2302.08837}
+\showDOI{\tempurl}
+\showeprint[arXiv]{2302.08837}
+
+
 \bibitem[Kovács(2022)]%
         {staged-demo}
 \bibfield{author}{\bibinfo{person}{András Kovács}.}
@@ -538,6 +630,21 @@
 \tempurl}
 
 
+\bibitem[Nanevski et~al\mbox{.}(2008)]%
+        {nanevski2008contextual}
+\bibfield{author}{\bibinfo{person}{Aleksandar Nanevski}, \bibinfo{person}{Frank
+  Pfenning}, {and} \bibinfo{person}{Brigitte Pientka}.}
+  \bibinfo{year}{2008}\natexlab{}.
+\newblock \showarticletitle{Contextual modal type theory}.
+\newblock \bibinfo{journal}{\emph{{ACM} Trans. Comput. Log.}}
+  \bibinfo{volume}{9}, \bibinfo{number}{3} (\bibinfo{year}{2008}),
+  \bibinfo{pages}{23:1--23:49}.
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.1145/1352582.1352591}
+\showDOI{\tempurl}
+
+
 \bibitem[Nielson(1984)]%
         {DBLP:phd/ethos/Nielson84a}
 \bibfield{author}{\bibinfo{person}{Flemming Nielson}.}
@@ -578,6 +685,23 @@
 \urldef\tempurl%
 \url{https://doi.org/10.1145/3406088.3409021}
 \showDOI{\tempurl}
+
+
+\bibitem[Pientka et~al\mbox{.}(2019)]%
+        {DBLP:journals/corr/abs-1901-03378}
+\bibfield{author}{\bibinfo{person}{Brigitte Pientka}, \bibinfo{person}{Andreas
+  Abel}, \bibinfo{person}{Francisco Ferreira}, \bibinfo{person}{David
+  Thibodeau}, {and} \bibinfo{person}{R{\'{e}}becca Zucchini}.}
+  \bibinfo{year}{2019}\natexlab{}.
+\newblock \showarticletitle{Cocon: Computation in Contextual Type Theory}.
+\newblock \bibinfo{journal}{\emph{CoRR}}  \bibinfo{volume}{abs/1901.03378}
+  (\bibinfo{year}{2019}).
+\newblock
+\showeprint[arXiv]{1901.03378}
+\urldef\tempurl%
+\url{http://arxiv.org/abs/1901.03378}
+\showURL{%
+\tempurl}
 
 
 \bibitem[Reynolds(1998)]%

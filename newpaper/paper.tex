@@ -664,16 +664,18 @@ informally.
 Why not just make the object language less liberal, e.g.\ by disallowing
 $\lambda$ under $\mbf{case}$ or $\mbf{let}$, thereby making call saturation
 easier or more obvious? There is a trade-off between making the object language
-more restricted, and thus easier to compile, and making \emph{metaprogramming}
-more convenient. We will see that the ability to insert $\mbf{let}$-s without
+more restricted, and thus easier to compile, and making metaprogramming more
+convenient. We will see that the ability to insert $\mbf{let}$-s without
 restriction is very convenient in code generation, and likewise the ability to
 have arbitrary object expressions in $\mbf{case}$ bodies. In this paper we go
 with the most liberal object syntax, at the cost of needing more downstream
-processing. On the other side of the spectrum, one might imagine generating
-object code in low-level A-normal form. This is more laborious, but it could be
-also interesting, because it would force us to invent abstractions for
-manipulating ANF in the metalanguage. We leave such lower-level object languages
-for future investigation.
+processing.
+
+%% On the other side of the spectrum, one might imagine generating
+%% object code in low-level A-normal form. This is more laborious, but it could be
+%% also interesting, because it would force us to invent abstractions for
+%% manipulating ANF in the metalanguage. We leave such lower-level object languages
+%% for future investigation.
 
 \subsubsection{Object-level definitional equality} This is a distinct notion
 from runtime semantics. Object programs are embedded in CFTT, which is a
@@ -1180,7 +1182,7 @@ $\Maybe$ value inside an $\vM$ action. This is legal, since we know from the
 $\Improve\,\vF\,\vM$ assumption that $\vM$ is a $\MonadGen$. In $\mdown$ we also use
 $\lam\case ...$ to shorten $\lam \vx.\,\case \vx\,\of ...$.
 
-In the meta level, we can borrow essentially all definitions from
+On the meta level, we can borrow essentially all definitions from
 \texttt{mtl}. Only the continuation monad transformer fails to support
 binding-time-improvement in CFTT, because of the obvious need for dynamic
 closures. In the following we only present $\StateT$ and $\ReaderT$.
@@ -1256,7 +1258,7 @@ This is unstaged to the following (omitting newtype wrappers):
   & \ind \True\hspace{0.2em} \to \letdef \vs := 10; \letdef \vs := \vs + \vs; \Just\,((),\vs)\\
   & \ind \False \to \letdef \vs := 20; \letdef \vs := \vs + \vs; \Just\,((),\vs)
 \end{alignat*}
-Notice that the final state modification gets inlined into both branches. The
+Notice that the final state modification gets inlined into both branches. This
 duplication follows from the definition of monadic binding in $\Gen$ and the
 $\mit{split}$ function in the desugaring of $\mbf{case}$. Code generation is
 continued in both branches with the same action. If we have multiple Boolean
@@ -1277,13 +1279,14 @@ However, this yields suboptimal code:
   & \ind\ind \Just\,(\_,\,\vs) \to \letdef \vs := \vs + \vs; \Just\,((),\,\vs)\\
   & \ind\ind \Nothing\hspace{0.6em} \to \Nothing
 \end{alignat*}
-This solution is fairly good in a state monad, where $\mdown$ only introduces a
-runtime pair constructor, and it is feasible to compile object-level pairs as
-unboxed data, without overheads. However, for $\Maybe$, $\mdown$ introduces a
-runtime $\Just$ or $\Nothing$, and $\mup$ introduces a runtime case split. A
-better solution would be to introduce two let-bound join points before
-the offending $\mbf{case}$, one for returning a $\Just$ and one for returning
-$\Nothing$, but fusing away the actual runtime constructors:
+This solution is fairly good when we only have $\State$ or $\Reader$ effects, where
+$\mdown$ only introduces a runtime pair constructor, and it is feasible to
+compile object-level pairs as unboxed data, without overheads. However, for
+$\Maybe$, $\mdown$ introduces a runtime $\Just$ or $\Nothing$, and $\mup$
+introduces a runtime case split. A better solution would be to introduce two
+let-bound join points before the offending $\mbf{case}$, one for returning a
+$\Just$ and one for returning $\Nothing$, but fusing away the actual runtime
+constructors:
 \begin{alignat*}{3}
   & \vf\,\vb\,\vs :=\\
   & \ind \letdef\,\msf{joinNothing}\,\vs := \Nothing;\\
@@ -1329,9 +1332,16 @@ representations when needed, so we define a class for the representable types:
 Above, $\vA \simeq \Rep$ denotes a record containing a pair of back-and-forth
 functions, together with proofs (as propositional equalities) that they are
 inverses. We will overload $\mit{rep}$ as the forward conversion function with
-type $\vA \to \El_\SOP\,\Rep$, and write $\mit{rep}^{-1}$ for its inverse. Now we define
-an isomorphic presentation of $\El_\SOP\,\vA \to \Lift \vR$ as a product of
-object-level functions:
+type $\vA \to \El_\SOP\,\Rep$, and write $\mit{rep}^{-1}$ for its inverse.
+
+In 2LTT literature, a metatype $\vA$ is called \emph{cofibrant} if $\vA \to \vB$ is
+isomorphic to an object type whenever $\vB$ is isomorphic to an object type
+\cite{twolevel}. We conjecture that our $\IsSOP$ types are exactly the cofibrant
+types in this sense. However, ``cofibrant'' is not very descriptive in our
+setting, so we shall keep writing $\IsSOP$.
+
+Accordingly, we define an isomorphic presentation of $\El_\SOP\,\vA \to
+\Lift \vR$ as a product of object-level functions:
 \begin{alignat*}{3}
   &\mathrlap{\mit{Fun}_{\SOP\Lift} : \USOP \to \Ty \to \MTy}\\
   &\mit{Fun}_{\SOP\Lift}\,\Nil\,&& \vR = ()\\
@@ -1536,13 +1546,16 @@ A pull stream is a meta-level specification of a state machine:
 \end{alignat*}
 In the $\Pull$ constructor, $\vS$ is the type of the internal state which is
 required to be a sum-of-products of value types by the $\IsSOP\,\vS$
-constraint. Borrowing terminology from Coutts \cite{DBLP:phd/ethos/Coutts11}, we
-call each product in the state a \emph{state shape}.
+constraint. The next field with type $\Gen\,\vS$ is the initial state, while
+transitions are represented by the $\vS \to \Gen\,(\Step\,\vS\,\vA)$
+field. Possible transitions are stopping ($\Stop$), transitioning to a new state
+while outputting a value ($\Yield$) and making a silent transition to a new
+state ($\Skip$).
 
-The next field with type $\Gen\,\vS$ is the initial state, while transitions
-are represented by the $\vS \to \Gen\,(\Step\,\vS\,\vA)$ field. Possible transitions
-are stopping ($\Stop$), transitioning to a new state while outputting a value
-($\Yield$) and making a silent transition to a new state ($\Skip$).
+Our definition roughly follows the non-staged stream fusion setup of
+Coutts \cite{DBLP:phd/ethos/Coutts11}; the difference is the addition of
+$\IsSOP$ and $\Gen$ in our version. Also, borrowing terminology from Coutts, we
+call each product in the state a \emph{state shape}.
 
 Let us see some operations on streams now. $\Pull$ is evidently a $\Functor$. It
 is not quite a ``zippy'' applicative functor, because its application operator
@@ -1911,7 +1924,8 @@ unstaging and its soundness proof. In general, there is a close correspondence
 between logical frameworks that represent object languages in HOAS style
 (e.g.\ \cite{Harper93lf}) and two-level type theories, and in some cases the two
 kinds of presentations are inter-derivable \cite[Section
-  3.3]{DBLP:journals/corr/abs-2302-08837}.
+  3.3]{DBLP:journals/corr/abs-2302-08837}. In fact, our Agda implementation
+of CFTT also uses a HOAS embedding of the object theory.
 
 Cocon is a logical framework that has a dependently typed meta level
 (``computation'' level) and an object language that is configured by a signature
@@ -1920,13 +1934,17 @@ dependently typed metaprogramming language, but there are several
 differences. First, Cocon supports and emphasizes intensional analysis
 (i.e.\ the ability to do structural induction on object code), which is made
 possible through a contextual modality \cite{nanevski2008contextual}. In
-contrast, intensional analysis is missing from 2LTTs. However, in Cocon, we can
-only metaprogram object-level terms by specifying their object-level contexts
-(i.e.\ possible free variables), while in 2LTTs the object-level contexts are
-implicit and are only computed during code generation. The latter style is
-more convenient for staged compilation applications, where intensional analysis
-is rarely used and explicit context tracking would add a significant amount of
+contrast, intensional analysis is missing from 2LTTs so far. However, in Cocon,
+we can only manipulate object terms at the meta level by specifying their
+concrete object-level contexts (i.e.\ possible free variables), while in 2LTTs
+the object-level contexts are implicit and are only computed during code
+generation. The latter style is more convenient for staged compilation
+applications, where explicit context tracking would add a significant amount of
 bureaucracy.
+
+Nonetheless, it seems to be possible and useful to have a
+system which simultaneously supports intensional analysis through contextual
+types and the 2LTT-style implicit contexts.
 
 \subsubsection*{CPS and monads in staged programming} Writing code generators
 in continuation-passing style was first proposed by Bondorf
@@ -1988,9 +2006,11 @@ guaranteed to succeed on arbitrary stream programs.
 Coutts developed pull stream fusion in depth in
 \cite{DBLP:phd/ethos/Coutts11}. We borrowed the basic design and the basic
 stream combinator definitions from there. This account is also close to existing
-stream implementations in Haskell. Coutts characterized fusibility in a
-non-staged setting, in terms of ``good consumers'' and ``good producers''.  This
-scheme does not cover $\concatMap$.
+stream implementations in Haskell. We find it interesting that our staged
+definitions are very close to the non-staged versions there; essentially all of
+the additional complexity is compartmentalized in our $\SOP$ module.  Coutts
+characterized fusibility in a non-staged setting, in terms of ``good consumers''
+and ``good producers'', but this scheme does not cover $\concatMap$.
 
 \section{Conclusions and Future Work}
 
@@ -2021,7 +2041,7 @@ Also, rebuilding known abstractions in staged programming is valuable because it
 provides a \emph{semantic explanation} of how abstractions can be compiled, and
 provides insights that could be reused even in non-staged settings. For
 instance, in this paper we demonstrated that compiling monadic code can be done
-by using \emph{the same monads} in the metalanguage, extended with code
+by using the same monads in the metalanguage, extended with code
 generation as an effect.
 
 Continuing this line of thought, it could be interesting to also adapt to 2LTT
@@ -2072,7 +2092,7 @@ abstractions could be revisited in the staged setting.
 \newpage
 
 \appendices
-\section{Staging in CFTT}\label{appendix:A}
+\section{Staged Semantics for CFTT}\label{appendix:A}
 
 In this appendix we describe the semantics of CFTT, from which the unstaging
 algorithm is obtained, and also describe the soundness and completeness of the
@@ -2107,7 +2127,7 @@ assumed to be stable under substitution.
   basic type formers, identity types and W-types. We write $\Gamma \ext A$ for
   an extended context. Additionally, we have Coquand-style universes,
   i.e.\ $\U_i : \MTy_{i+1}\,\Gamma$ such that there is an isomorphism
-  $\msf{MetaTm}_{i+1}\,\Gamma\,\U_i \simeq \MTy_i\,\Gamma$.  We use $\El$ and
+  $\msf{MetaTm}\,\Gamma\,\U_i \simeq \MTy_i\,\Gamma$.  We use $\El$ and
   $\code$ to denote the components of this isomorphism.
 \item
   For object-level types, we have $\Ty : \MTy_0\,\Gamma$, $\VTy :
@@ -2115,8 +2135,8 @@ assumed to be stable under substitution.
   type formers and inclusion operations $\msf{V} : \MTm\,\Gamma\,\VTy \to \MTm\,\Gamma\,\Ty$
   and $\msf{C} : \MTm\,\Gamma\,\CTy \to \MTm\,\Gamma\,\Ty$.
 \item For object-level terms, we have $\Tm : \MTm\,\Gamma\,\Ty \to \Set$,
-  supporting context extension, i.e.\ we have $\Gamma,\ext\,A$ for
-  $A : \MTm\,\Gamma\,\Ty$ such that $\Sub\,\Gamma\,(\Delta\,\ext\,A)$ is isomorphic
+  supporting context extension, i.e.\ we have $\Gamma\ext A$ for
+  $A : \MTm\,\Gamma\,\Ty$ such that $\Sub\,\Gamma\,(\Delta\ext A)$ is isomorphic
   to $(\sigma : \Sub\,\Gamma\,\Delta) \times \Tm\,\Gamma\,(A[\sigma])$. All
   object-level term formers are supported in $\Tm$.
 \item Staging operations: we have $\Lift : \MTm\,\Gamma\,\Ty \to \MTy\,\Gamma$ together
@@ -2125,10 +2145,11 @@ assumed to be stable under substitution.
 \end{itemize}
 \end{definition}
 This presentation is a bit more verbose than the surface syntax used in the
-paper. First, the meta level uses explicit coding and decoding operations for
-universes, while the surface syntax assumes Russell-style universes. Second, the
-object level has $\VTy$ and $\CTy$ as Tarski-style universes with explicit
-inclusion into $\Ty$, while the surface syntax used implicit coercions.
+paper. First, the meta level uses explicit coding and decoding for universes,
+while the surface syntax assumes Russell-style universes. Second, the object
+level has $\VTy$ and $\CTy$ as Tarski-style universes with explicit inclusions
+$\msf{V}$ and $\msf{C}$ into $\Ty$, while the surface syntax used implicit
+coercions.
 
 Also, this is not the only possible presentation. Here, we follow the style of
 the informal syntax by having a separate \emph{sort} for object-level terms,
@@ -2142,7 +2163,7 @@ of two styles:
   operations.
 \item The ``higher-order abstract syntax'' (HOAS) or ``logical framework'' style
   would only have metatypes and metaterms, no quoting or splicing, and would
-  reuse metafunctions to represent object-level binders.Our Agda implementation
+  reuse metafunctions to represent object-level binders. Our Agda implementation
   actually follows this style.
 \end{itemize}
 In the context of CFTT, the choice between HOAS and 2LTT styles is a matter of
@@ -2189,7 +2210,7 @@ result of evaluating $A$.
 \subsection{W-types}
 So far we have stayed close to \cite{staged2ltt}, with only cosmetic
 changes. Supporting W-types, as a way to get inductive families
-\cite{inductivefamilies}, is the biggest extension here. We extend Section 5 of
+\cite{whynotw}, is the biggest extension here. We extend Section 5 of
 \cite{staged2ltt} here. In the syntax of CFTT, $\vW$-types are as follows. The
 formal specification of syntactic $\vW{-}\msf{elim}$ is rather gnarly, because
 of the usage of explicit substitutions, but we write it out here anyways.
@@ -2246,8 +2267,8 @@ Note that the type of $\re\,u\,\gamma$ is $\re\,(B[\id,\,t] \Rightarrow
 \Rightarrow (\vW\,A\,B)[\p])\,(\gamma,\,\re\,t\,\gamma)$ by $\re$'s preservation
 of substitutions, which makes the above equation well-typed.
 
-Next, we give a logical relation interpretation for $\vW$. We define an
-inductive relation in $\whset$ as follows.
+Next, we give a logical relation interpretation for $\vW$. We inductively define
+a relation in $\whset$ as follows.
 \begin{alignat*}{3}
   & \vW\rel &&: \Gamma\rel\,\gamma\,\gamma' \to \ev\,(\vW\,A\,B)\,\gamma \to \re\,(\vW\,A\,B)\,\gamma' \to \whset\\
   & \vsup\rel &&: \hspace{0.8em}\{\alpha : \ev\,A\,\gamma\}\{\alpha' : \re\,A\,\gamma'\}(\alpha\rel : A\rel \gamma\rel\,\alpha\,\alpha')\\
@@ -2257,8 +2278,8 @@ inductive relation in $\whset$ as follows.
   &           &&\to \vW\rel\,\gamma\rel\,(\wh{\vsup}\,\alpha\,f)\,(\re_\vsup\,\alpha'\,f')
 \end{alignat*}
 Here, $(B \Rightarrow (\vW\,A\,B)[\p])\rel$ is the relational interpretation of the function type, which unfolds to
-pointwise preservation of relations. In short, $\vW\rel$ expresses that $\wh{\vsup}\,\alpha\,f$ is related $\re_\vsup\,\alpha'\,f'$
-when the arguments (inductively) related. We can immediately interpret $\vW$ and $\vsup$:
+pointwise preservation of relations. In short, $\vW\rel$ expresses that $\wh{\vsup}\,\alpha\,f$ is related to $\re_\vsup\,\alpha'\,f'$
+when the arguments are (inductively) related. We can immediately interpret $\vW$ and $\vsup$:
 \begin{alignat*}{3}
   & (\vW\,A\,B)\rel\,\gamma\rel\,t\,t' &&:= \vW\rel\,\gamma\rel\,t\,t'\\
   & (\vsup\,t\,u)\rel\,\gamma\rel      &&:= \vsup\rel\,(t\rel\,\gamma\rel)\,(u\rel\,\gamma\rel)
@@ -2268,7 +2289,7 @@ It only remains to interpret $\vW$-elimination and its $\beta$-rule. We need to 
 We do this by induction on $w\rel\,\gamma\rel :
 \vW\rel\,\gamma\rel\,(\ev\,w\,\gamma)\,(\re\,w\,\gamma')$. At this point it
 becomes rather tedious to compute and unfold the involved types, so we only give
-a compact definition here together with some informal explanation:
+a compact definition together with some informal explanation:
 \begin{alignat*}{3}
   &(\vW{-}\msf{elim}\,P\,s\,w)\rel\,\gamma\rel :=\\
   &\hspace{4em}\vW\rel{-}\msf{elim}\,(\lambda\,w\rel.\,\,P\rel\,(\gamma\rel,\,w\rel)\,(\ev\,(\welim\,P\,s\,w)\,\gamma)\,(\re\,(\welim\,P\,s\,w)\,\gamma'))\\
@@ -2307,8 +2328,8 @@ are mere propositions --- the latter because of equality reflection in the
 syntax.  In particular, if we have a witness of $\re\,(\Id\,t\,u)\,\gamma'$, we
 also have $\re\,t\,\gamma' = \re\,u\,\gamma'$ by equality reflection. Thus, the
 rest of the relational interpretation of $\Id$ is also trivial. Another way to
-think about this is that soundness expresses a form of canonicity, but if we
-have equality reflection then syntactic identities are always canonical.
+think about this: soundness expresses a form of canonicity, but if we have
+equality reflection then terms with identity types are always canonical.
 
 \subsection{Generativity}
 

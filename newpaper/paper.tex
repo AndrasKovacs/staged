@@ -1039,8 +1039,8 @@ action. Running this with $\runGen$ yields $\qt{\letdef \vx := 10 + 10; \letdef 
   := 20 + 20; \vx + \vy}$. We can also define a ``safer'' binding-time improvement for
 products, using let-insertion:
 \begin{alignat*}{6}
-  &\hspace{-2em}\mathrlap{\mup : \Up (\vA,\,\vB) \to \Gen\,(\Up \vA,\,\Up \vB)            \hspace{5em} \mdown : \Gen\,(\Up \vA,\, \Up \vB) \to \Up(\vA,\,\vB)} \\
-  &\hspace{-2em}\mup\,\vx = \mdo &&\vx \fro \gen\,\vx                                    && \ind\ind \mdown\,\vx = \mdo &&(\va,\,\vb) \fro \vx\\
+  &\hspace{-2em}\mathrlap{\mup : \Up (\vA,\,\vB) \to \Gen\,(\Up \vA,\,\Up \vB)             \hspace{5em} \mdown : \Gen\,(\Up \vA,\, \Up \vB) \to \Up(\vA,\,\vB)} \\
+  &\hspace{-2em}\mup\,\vx = \mdo &&\vx \fro \gen\,\vx                                    && \ind\ind \mdown\,\vx = \runGen \dlr \mdo &&(\va,\,\vb) \fro \vx\\
   &\hspace{-2em}               &&\return (\qt{\fst\,\spl \vx},\,\qt{\snd\,\spl \vx})     &&                           &&\return \qt{(\spl \va,\, \spl \vb)}
 \end{alignat*}
 

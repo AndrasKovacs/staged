@@ -2301,7 +2301,7 @@ the induction motive, which matches the goal type. The second argument is the
 method for $\vsup\rel$; its $a\rel$ and $f\rel$ inputs are the relatedness
 witnesses stored in a $\vsup\rel$, while $\mathit{hyp}$ is induction hypothesis,
 witnessing the inductive motive for every output of $f\rel$. In the body here,
-we need to witness the motive in the case where $w$ is a $\vsup$, which causes
+we need to witness the motive in the case where $w\rel\,\gamma\rel$ is a $\vsup\rel$, which causes
 both $\ev\,(\welim\,P\,s\,w)\,\gamma$ and $\re\,(\welim\,P\,s\,w)\,\gamma'$ to
 compute further to applications of $\ev\,s\,\gamma$ and $\re\,s\,\gamma'$
 respectively. Hence, we use $s\rel$ to relate the two sides. This definition

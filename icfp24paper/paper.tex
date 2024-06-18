@@ -1,0 +1,2378 @@
+
+%% build: latexmk -pdf -pvc paper.tex
+
+%% \documentclass[acmsmall,screen,review,anonymous]{acmart}
+%% \documentclass[nonacm,acmsmall]{acmart}
+\documentclass[acmsmall,screen]{acmart}
+%% \raggedbottom
+
+%% \BibTeX command to typeset BibTeX logo in the docs
+\AtBeginDocument{%
+  \providecommand\BibTeX{{%
+    \normalfont B\kern-0.5em{\scshape i\kern-0.25em b}\kern-0.8em\TeX}}}
+
+
+%% \setcopyright{rightsretained}
+%% \acmPrice{}
+%% \acmDOI{10.1145/3547641}
+%% \acmYear{2022}
+%% \copyrightyear{2022}
+%% \acmSubmissionID{icfp22main-p52-p}
+%% \acmJournal{PACMPL}
+%% \acmVolume{6}
+%% \acmNumber{ICFP}
+%% \acmArticle{110}
+%% \acmMonth{8}
+
+
+%% These commands are for a JOURNAL article.
+
+%% \acmJournal{JACM}
+%% \acmVolume{37}
+%% \acmNumber{4}
+%% \acmArticle{111}
+%% \acmMonth{8}
+
+%%
+%% Submission ID.
+%% Use this when submitting an article to a sponsored event. You'll
+%% receive a unique submission ID from the organizers
+%% of the event, and this ID should be used as the parameter to this command.
+%%\acmSubmissionID{123-A56-BU3}
+
+\bibliographystyle{ACM-Reference-Format}
+%%
+%% The majority of ACM publications use numbered citations and
+%% references.  The command \citestyle{authoryear} switches to the
+%% "author year" style.
+%%
+%% If you are preparing content for an event
+%% sponsored by ACM SIGGRAPH, you must use the "author year" style of
+%% citations and references.
+%% Uncommenting
+%% the next command will enable that style.
+\citestyle{acmauthoryear}
+
+%% --------------------------------------------------------------------------------
+
+\usepackage{xcolor}
+\usepackage{mathpartir}
+\usepackage{todonotes}
+\presetkeys{todonotes}{inline}{}
+\usepackage{scalerel}
+\usepackage{bm}
+\usepackage{mathtools}
+\usepackage{stmaryrd}
+\usepackage[title]{appendix}
+
+\newcommand{\mit}[1]{{\mathsf{#1}}}
+\newcommand{\msf}[1]{{\mathsf{#1}}}
+\newcommand{\mbf}[1]{{\mathbf{#1}}}
+\newcommand{\mbb}[1]{\mathbb{#1}}
+\newcommand{\rel}{^{\approx}}
+\newcommand{\U}{\mathsf{U}}
+\newcommand{\Id}{\msf{Id}}
+\newcommand{\p}{\mathsf{p}}
+\newcommand{\q}{\mathsf{q}}
+\newcommand{\code}{\mathsf{code}}
+\newcommand{\bs}[1]{\boldsymbol{#1}}
+\newcommand{\wh}[1]{\widehat{#1}}
+\newcommand{\mdo}{\mbf{do}\,}
+\newcommand{\ind}{\hspace{1em}}
+\newcommand{\bif}{\mbf{if}\,}
+\newcommand{\bthen}{\mbf{then}\,}
+\newcommand{\belse}{\mbf{else}\,}
+\newcommand{\return}{\mbf{return}\,}
+\newcommand{\pure}{\mbf{pure}\,}
+\newcommand{\lam}{\lambda\,}
+\newcommand{\data}{\mbf{data}\,}
+\newcommand{\where}{\mbf{where}}
+\newcommand{\M}{\msf{M}}
+\newcommand{\letrec}{\mbf{letrec}\,}
+\newcommand{\of}{\mbf{of}\,}
+\newcommand{\go}{\mit{go}}
+\newcommand{\add}{\mit{add}}
+\newcommand{\letdef}{\mbf{let\,}}
+\newcommand{\map}{\mit{map}}
+\newcommand{\emptycon}{\scaleobj{.75}\bullet}
+\newcommand{\Tyo}{\msf{Ty}_{\mbbo}}
+\newcommand{\Tmo}{\msf{Tm}_{\mbbo}}
+\newcommand{\Cono}{\msf{Con}_{\mbbo}}
+\newcommand{\Subo}{\msf{Sub}_{\mbbo}}
+\newcommand{\whset}{\wh{\Set}}
+\newcommand{\ev}{\mbb{E}}
+\newcommand{\re}{\mbb{R}}
+\newcommand{\welim}{\vW{-}\msf{elim}}
+
+\newcommand{\mbbc}{\mbb{C}}
+\newcommand{\mbbo}{\mbb{O}}
+
+\newcommand{\vas}{\mathsf{as}}
+\newcommand{\vbs}{\mathsf{bs}}
+\newcommand{\vcs}{\mathsf{cs}}
+\newcommand{\vxs}{\mathsf{xs}}
+\newcommand{\vys}{\mathsf{ys}}
+\newcommand{\vsp}{\mathsf{sp}}
+\newcommand{\vma}{\mathsf{ma}}
+\newcommand{\vga}{\mathsf{ga}}
+\newcommand{\vm}{\mathsf{m}}
+\newcommand{\vn}{\mathsf{n}}
+\newcommand{\vk}{\mathsf{k}}
+\newcommand{\vA}{\mathsf{A}}
+\newcommand{\vB}{\mathsf{B}}
+\newcommand{\vC}{\mathsf{C}}
+\newcommand{\vS}{\mathsf{S}}
+\newcommand{\vF}{\mathsf{F}}
+\newcommand{\vR}{\mathsf{R}}
+\newcommand{\vM}{\mathsf{M}}
+\newcommand{\vmb}{\mathsf{mb}}
+\newcommand{\mAs}{\mathsf{As}}
+\newcommand{\va}{\mathsf{a}}
+\newcommand{\vb}{\mathsf{b}}
+\newcommand{\vc}{\mathsf{c}}
+\newcommand{\vd}{\mathsf{d}}
+\newcommand{\vx}{\mathsf{x}}
+\newcommand{\vy}{\mathsf{y}}
+\newcommand{\vz}{\mathsf{z}}
+\newcommand{\vf}{\mathsf{f}}
+\newcommand{\vfs}{\mathsf{fs}}
+\newcommand{\vg}{\mathsf{g}}
+\newcommand{\vh}{\mathsf{h}}
+\newcommand{\vt}{\mathsf{t}}
+\newcommand{\vs}{\mathsf{s}}
+\newcommand{\vr}{\mathsf{r}}
+\newcommand{\vu}{\mathsf{u}}
+\newcommand{\vl}{\mathsf{l}}
+\newcommand{\vns}{\mathsf{ns}}
+\newcommand{\vW}{\mathsf{W}}
+\newcommand{\vsup}{\mathsf{sup}}
+\newcommand{\vid}{\mathsf{id}}
+\newcommand{\whW}{\wh{\vW}}
+
+
+\newcommand{\SOP}{\msf{SOP}}
+\newcommand{\El}{\msf{El}}
+\newcommand{\USOP}{\msf{U}_{\msf{SOP}}}
+\newcommand{\Uprod}{\msf{U_P}}
+\newcommand{\Elprod}{\msf{El_{P}}}
+\newcommand{\IsSOP}{\msf{IsSOP}}
+\newcommand{\forEach}{\msf{forEach}}
+\newcommand{\single}{\msf{single}}
+\newcommand{\msplit}{\msf{split}}
+\newcommand{\mapGen}{\msf{mapGen}}
+\newcommand{\genPull}{\msf{gen_{Pull}}}
+\newcommand{\Set}{\msf{Set}}
+\newcommand{\casePull}{\msf{case_{Pull}}}
+\newcommand{\appull}{\ap_{\Pull}}
+
+\newcommand{\Con}{\msf{Con}}
+\newcommand{\Sub}{\msf{Sub}}
+\newcommand{\Tm}{\msf{Tm}}
+
+\newcommand{\ext}{\triangleright}
+
+\newcommand{\Int}{\msf{Int}}
+\newcommand{\List}{\msf{List}}
+\newcommand{\Tree}{\msf{Tree}}
+\newcommand{\Node}{\msf{Node}}
+\newcommand{\Leaf}{\msf{Leaf}}
+\newcommand{\Nil}{\msf{Nil}}
+\newcommand{\Cons}{\msf{Cons}}
+\newcommand{\Reader}{\msf{Reader}}
+\newcommand{\ReaderT}{\msf{ReaderT}}
+\newcommand{\Monad}{\msf{Monad}}
+\newcommand{\Applicative}{\msf{Applicative}}
+\newcommand{\class}{\msf{class}}
+\newcommand{\Functor}{\msf{Functor}}
+\newcommand{\Bool}{\msf{Bool}}
+\newcommand{\Statel}{\msf{State}}
+\newcommand{\fro}{\leftarrow}
+\newcommand{\case}{\mbf{case\,}}
+\newcommand{\foldr}{\msf{foldr}}
+\newcommand{\foldl}{\msf{foldl}}
+\newcommand{\rep}{\msf{rep}}
+\newcommand{\concatMap}{\msf{concatMap}}
+
+\newcommand{\Lift}{{\Uparrow}}
+\newcommand{\Up}{{\Uparrow}}
+\newcommand{\spl}{{\bs{\sim}}}
+\newcommand{\ql}{{\bs{\langle}}}
+\newcommand{\qr}{{\bs{\rangle}}}
+\newcommand{\bind}{\mathbin{>\!\!>\mkern-6.7mu=}}
+
+\newcommand{\MTy}{\msf{MetaTy}}
+\newcommand{\MTm}{\msf{MetaTm}}
+\newcommand{\VTy}{\msf{ValTy}}
+\newcommand{\Ty}{\msf{Ty}}
+\newcommand{\CTy}{\msf{CompTy}}
+\newcommand{\True}{\msf{True}}
+\newcommand{\False}{\msf{False}}
+\newcommand{\fst}{\msf{fst}}
+\newcommand{\snd}{\msf{snd}}
+
+\newcommand{\blank}{{\mathord{\hspace{1pt}\text{--}\hspace{1pt}}}}
+
+\newcommand{\Nat}{\msf{Nat}}
+\newcommand{\Zero}{\msf{Zero}}
+\newcommand{\Suc}{\msf{Suc}}
+\newcommand{\Maybe}{\msf{Maybe}}
+\newcommand{\MaybeT}{\msf{MaybeT}}
+\newcommand{\Nothing}{\msf{Nothing}}
+\newcommand{\Just}{\msf{Just}}
+
+\theoremstyle{remark}
+\newtheorem{notation}{Notation}
+\newtheorem*{axiom}{Axiom}
+
+\newcommand{\id}{\mit{id}}
+\newcommand{\mup}{\mbf{up}}
+\newcommand{\mdown}{\mbf{down}}
+\newcommand{\tyclass}{\mbf{class}}
+\newcommand{\instance}{\mbf{instance}\,}
+\newcommand{\Improve}{\msf{Improve}}
+\newcommand{\Gen}{\msf{Gen}}
+\newcommand{\unGen}{\mit{unGen}}
+\renewcommand{\Vec}{\msf{Vec}}
+\newcommand{\gen}{\mit{gen}}
+\newcommand{\genRec}{\mit{genRec}}
+\newcommand{\fmap}{<\!\!\$\!\!>}
+\newcommand{\ap}{{<\!\!*\!\!>}}
+\newcommand{\runGen}{\mit{runGen}}
+\newcommand{\qt}[1]{\ql#1\qr}
+\newcommand{\lift}{\mit{lift}}
+\newcommand{\liftGen}{\mit{liftGen}}
+\newcommand{\MonadGen}{\msf{MonadGen}}
+\newcommand{\MonadState}{\msf{MonadState}}
+\newcommand{\MonadReader}{\msf{MonadReader}}
+\newcommand{\RA}{\Rightarrow}
+\newcommand{\EitherT}{\msf{EitherT}}
+\newcommand{\Either}{\msf{Either}}
+\newcommand{\Left}{\msf{Left}}
+\newcommand{\Right}{\msf{Right}}
+\newcommand{\StateT}{\msf{StateT}}
+\newcommand{\Identity}{\msf{Identity}}
+
+\newcommand{\Stop}{\msf{Stop}}
+\newcommand{\Skip}{\msf{Skip}}
+\newcommand{\Yield}{\msf{Yield}}
+
+\newcommand{\runIdentity}{\mit{runIdentity}}
+\newcommand{\runReaderT}{\mit{runReaderT}}
+\newcommand{\newtype}{\mbf{newtype}\,}
+\newcommand{\runMaybeT}{\mit{runMaybeT}}
+\newcommand{\runStateT}{\mit{runStateT}}
+\newcommand{\runState}{\mit{runState}}
+\newcommand{\dlr}{\,\$\,}
+\newcommand{\ImproveF}{\msf{ImproveF}}
+\newcommand{\ExceptT}{\msf{ExceptT}}
+\newcommand{\State}{\msf{State}}
+\newcommand{\SumVS}{\msf{SumVS}}
+\newcommand{\ProdCS}{\msf{ProdCS}}
+\newcommand{\Here}{\msf{Here}}
+\newcommand{\There}{\msf{There}}
+\newcommand{\IsSumVS}{\msf{IsSumVS}}
+\newcommand{\MonadJoin}{\msf{MonadJoin}}
+\newcommand{\Stream}{\msf{Stream}}
+\newcommand{\join}{\mit{join}}
+\newcommand{\modify}{\mit{modify}}
+\newcommand{\get}{\mit{get}}
+\newcommand{\mput}{\mit{put}}
+\newcommand{\Rep}{\mit{Rep}}
+\newcommand{\encode}{\mit{encode}}
+\newcommand{\decode}{\mit{decode}}
+\newcommand{\mindex}{\mit{index}}
+\newcommand{\mtabulate}{\mit{tabulate}}
+\newcommand{\States}{\mit{States}}
+\newcommand{\seed}{\mit{seed}}
+\newcommand{\step}{\mit{step}}
+\newcommand{\Step}{\msf{Step}}
+\newcommand{\Pull}{\msf{Pull}}
+\newcommand{\MkPull}{\msf{MkPull}}
+
+%% --------------------------------------------------------------------------------
+
+%%
+%% end of the preamble, start of the body of the document source.
+%% \hypersetup{draft}
+\begin{document}
+
+\title{Closure-Free Functional Programming in a Two-Level Type Theory}
+%% \titlenote{}
+
+%% The "author" command and its associated commands are used to define
+%% the authors and their affiliations.
+%% Of note is the shared affiliation of the first two authors, and the
+%% "authornote" and "authornotemark" commands
+%% used to denote shared contribution to the research.
+
+\author{András Kovács}
+\orcid{0000-0002-6375-9781}
+\email{andrask@chalmers.se}
+\affiliation{%
+  \institution{University of Gothenburg}
+  \country{Sweden}
+  \city{Gothenburg}
+}
+
+%% \author{András Kovács}
+%% \email{andrask@chalmers.se}
+%% \orcid{0000-0002-6375-9781}
+%% \affiliation{%
+%%   \institution{University of Gothenburg}
+%%   \country{Sweden}
+%%   \city{Gothenburg}
+%% }
+
+\begin{abstract}
+Many abstraction tools in functional programming rely heavily on general-purpose
+compiler optimization to achieve adequate performance. For example, monadic
+binding is a higher-order function which yields runtime closures in the absence
+of sufficient compile-time inlining and beta-reductions, thereby significantly
+degrading performance. In current systems such as the Glasgow Haskell Compiler,
+there is no strong guarantee that general-purpose optimization can eliminate
+abstraction overheads, and users only have indirect and fragile control over
+code generation through inlining directives and compiler options. We propose a
+two-stage language to simultaneously get strong guarantees about code generation
+and strong abstraction features. The object language is a simply-typed
+first-order language which can be compiled without runtime closures. The
+compile-time language is a dependent type theory. The two are integrated in a
+two-level type theory.
+
+We demonstrate two applications of the system. First, we develop monads and
+monad transformers. Here, abstraction overheads are eliminated by staging and we
+can reuse almost all definitions from the existing Haskell ecosystem. Second,
+we develop pull-based stream fusion. Here we make essential use of dependent
+types to give a concise definition of a $\mathsf{concatMap}$ operation with
+guaranteed fusion. We provide an Agda implementation and a typed Template
+Haskell implementation of these developments.
+
+\end{abstract}
+
+\begin{CCSXML}
+<ccs2012>
+   <concept>
+       <concept_id>10003752.10003790.10011740</concept_id>
+       <concept_desc>Theory of computation~Type theory</concept_desc>
+       <concept_significance>500</concept_significance>
+       </concept>
+   <concept>
+       <concept_id>10011007.10011006.10011041.10011047</concept_id>
+       <concept_desc>Software and its engineering~Source code generation</concept_desc>
+       <concept_significance>500</concept_significance>
+       </concept>
+ </ccs2012>
+\end{CCSXML}
+
+\ccsdesc[500]{Theory of computation~Type theory}
+\ccsdesc[500]{Software and its engineering~Source code generation}
+
+\keywords{two-level type theory, staged compilation}
+
+\maketitle
+
+
+\section{Introduction}\label{sec:introduction}
+
+Modern functional programming supports many convenient abstractions. These often
+come with significant runtime overheads. Sometimes the overheads are acceptable,
+but in other cases compiler optimization is crucial. Monads in Haskell is an
+example for the latter. Even the $\Reader$ monad, which is one of the simplest
+in terms of implementation, yields large overheads when compiled without
+optimizations. Consider the following:
+\begin{alignat*}{3}
+  &\vf :: \Int \to \Reader\,\Bool\,\Int \\
+  &\vf\,\vx = \mdo\{\vb \fro \msf{ask}; \bif \vx\, \bthen \return (\vx + 10)\, \belse \return (\vx + 20)\}
+\end{alignat*}
+With optimizations enabled, GHC compiles this roughly to the code below:
+\begin{alignat*}{3}
+  &\vf :: \Int \to \Bool \to \Int \\
+  &\vf = \lam \vx\,\vb.\, \bif \vb\, \bthen \vx + 10\, \belse \vx + 20
+\end{alignat*}
+Without optimizations we roughly get:
+\begin{alignat*}{3}
+  &\vf = \lam \vx.\,(\bind)\,\msf{monadReader}\,(\msf{ask}\,\msf{monadReaderReader})\,(\lam \vb.\,\bif \vb\\
+  &\ind \bthen\return\,\msf{monadReader}\,(\vx + 10)\\
+  &\ind \belse\hspace{0.25em}\return\,\msf{monadReader}\,(\vx + 20))
+\end{alignat*}
+Here, $\msf{monadReader}$ and $\msf{monadReaderReader}$ are runtime
+dictionaries, respectively for the $\msf{Monad}$ and $\msf{MonadReader}$
+instances, and, for example, $(\bind)\,\msf{monadReader}$ is a field projection
+from the dictionary. This results from the dictionary-passing elaboration of
+type classes \cite{DBLP:conf/popl/WadlerB89}. We get a runtime closure from the
+$\lam \vb.\,...$ function, and $(\bind)$, $\msf{ask}$ and $\mbf{return}$ also
+produce additional closures.
+
+The difference between optimized and unoptimized code is already large here, and
+it gets even larger when we consider monad transformers or code that is
+polymorphic over monads. In Haskell, such code is pervasive, even in fairly
+basic programs which do not use fancy abstractions. Consider the $\msf{mapM}$
+function from the Haskell Prelude:
+\begin{alignat*}{3}
+  & \msf{mapM} :: \Monad\,\vm \Rightarrow (\va \to \vm\,\vb) \to [\va] \to \vm\,[\vb]
+\end{alignat*}
+This is a third-order rank-2 polymorphic function in disguise, because
+its monad dictionary argument contains the polymorphic second-order method
+$(\bind)$.  Compiling $\msf{mapM}$ efficiently relies on inlining the instance
+dictionary, then inlining the methods contained there, and also inlining the
+functions that the higher-order binding is applied to.
+
+GHC's optimization efforts are respectable, and it has gotten quite adept over
+its long history of development. However, there is no strong guarantee that
+certain optimizations will happen. Control over optimizations remains tricky,
+fragile and non-compositional. \texttt{INLINE} and \texttt{REWRITE} pragmas can
+be used to control code generation \cite{ghcdocs}, but without strong
+guarantees, and their advanced usage requires knowledge of GHC internals. For
+example, correctly specifying the \emph{ordering} of certain rule applications
+is often needed. We also have to care about formal function arities. Infamously,
+the function composition operator is defined as $(.)\,\vf\,\vg = \lam \vx \to
+\vf\,(\vg\,\vx)$ in the base libraries, instead of as $(.)\,\vf\,\vg\,\vx =
+\vf\,(\vg\,\vx)$, to get better inlining behavior \cite{ghcbase}. It is common
+practice in high-performance Haskell programming to visually review GHC's
+optimized code output.
+
+\subsection{Closure-Free Staged Compilation}
+
+In this paper we use staged compilation to address issues of robustness. The
+idea is to shift as much work as possible from general-purpose optimization to
+metaprograms.
+
+Metaprograms can be deterministic, transparent, and can be run efficiently,
+using fast interpreters or machine code compilation. In contrast,
+general-purpose optimizers are slower to run, less transparent and less
+robust. Also, metaprogramming allows library authors to exploit
+domain-specific optimizations, while it is not realistic for general-purpose
+optimizers to know about all domains.
+
+On the other hand, metaprogramming requires some additional care and input from
+programmers. Historically, there have been problems with ergonomics as well. In
+weakly-typed staged systems, code generation might fail \emph{too late} in the
+pipeline, producing incomprehensible errors. Or, tooling that works for an
+object language (like debugging, profiling, IDEs) may not work for metaprogramming, or
+metaprogramming may introduce heavy noise and boilerplate, obscuring the logic
+of programs and imposing restrictions on code structure.
+
+We use \textbf{two-level type theory} (2LTT) \cite{twolevel,staged2ltt} to
+sweeten the deal of staged compilation, aiming for a combination of strong
+guarantees, good ergonomics, high level of abstraction and easy-to-optimize code
+output. We develop a particular two-level type theory for this purpose, which we
+call \textbf{CFTT}, short for ``closure-free type theory''. This consists of:
+\begin{itemize}
+\item A simply-typed object theory with first-order functions, general recursion and
+      finitary algebraic data types. This language is easy to optimize and compile
+      in the downstream pipeline, but it lacks many convenience features.
+\item A dependent type theory for the compile-time language. This
+      allows us to recover many features by metaprogramming.
+\end{itemize}
+Since the object language is first-order, we guarantee that all programs in CFTT
+can be ultimately compiled without any dynamic closures, using only calls and
+jumps to statically known code. Why emphasize closures?  They are the
+foundation to almost all abstraction tools in functional programming:
+\begin{itemize}
+\item Higher-order functions in essentially all functional languages are implemented with closures.
+\item Type classes in Haskell use dictionary-passing, which relies on closures for function methods \cite{DBLP:conf/popl/WadlerB89}.
+\item Functors and first-class modules in OCaml \cite{leroy2023ocaml} and other ML-s rely on closures.
+\end{itemize}
+Hence, doing functional programming without closures is a clear demonstration
+that we can get rid of abstraction overheads.
+
+Perhaps surprisingly, little practical programming relies essentially on
+closures. Most of the time, programmers use higher-order functions for
+\emph{abstraction}, such as when mapping over lists, where it is expected that
+the mapping function will be inlined. We note though that our setup is
+compatible with closures as well, and it can support two separate type formers
+for closure-based and non-closure-based ``static'' functions. Having both of
+these would be desirable in a practical system. In the current work we focus on
+the closure-free case because it is much less known and developed, and it is
+interesting to see how far we can go with it.
+
+
+%% For example, difference lists
+%% \cite{TODO} are often implemented with closures, but they can be also
+%% implemented as binary trees, with the same programming interface.
+
+%% \todo{Essential closures: CPS? Threaded interpreters?}
+%% Whole-program defunctionalization is also possible, and it is notably used by
+%% the MLton compiler \cite{TODO}. While this can be practical and effective, it
+%% can be also expensive and require whole-program processing. Also, conceptually
+%% speaking, it does not eliminate closures but instead makes them more transparent
+%% to optimizations. In this paper we do not use defunctionalization.
+
+
+\subsection{Contributions}
+
+\begin{itemize}
+\item In Section \ref{sec:overview-of-cftt} we present the two-level type theory
+  CFTT, where the object level is first-order simply-typed and the meta level is
+  dependently typed. The object language supports an operational semantics
+  without runtime closures, and can be compiled with only statically known
+  function calls. We provide a supplementary Agda formalization of the
+  operational semantics of the object language.
+\item
+  In Section \ref{sec:monad-transformers} we build a staged library for monad
+  transformers \cite{DBLP:conf/popl/LiangHJ95}. We believe that this is a good
+  demonstration, because monads and monad transformers are the most widely used
+  effect system in Haskell, and at the same time their compilation to efficient
+  code can be surprisingly difficult. The continuation monad is well-known in
+  staged compilation \cite{DBLP:conf/lfp/Bondorf92}, and staged state monads
+  have also been used
+  \cite{DBLP:conf/pepm/SwadiTKP06,DBLP:conf/emsoft/KiselyovST04,DBLP:journals/scp/CaretteK11}.
+  These works used specific monads as tools for domain-specific code
+  generation. In contrast, we propose ubiquitous staging for general-purpose
+  monadic programming, where users can write code that looks similar to monadic
+  code in Haskell but with deterministic and robust compilation to efficient
+  code.
+\item In Section \ref{sec:stream-fusion} we build a pull-based stream fusion library. Here,
+  we demonstrate essential usage of dependent types, in providing guaranteed
+  fusion for arbitrary combinations of $\concatMap$ and $\mit{zip}$. We use a
+  state machine representation that is based on \emph{sums-of-products} of
+  object-level values. We show that CFTT is compatible with a
+  \emph{generativity} axiom, which internalizes the fact that metaprograms
+  cannot inspect the structure of object-level terms. We use this to show that
+  the universe of sums-of-products is closed under $\Sigma$-types. This in turn
+  enables a very concise definition of $\concatMap$.
+\item
+  We adapt the contents of the paper to typed Template Haskell
+  \cite{DBLP:journals/pacmpl/XiePLWYW22}, with some modifications,
+  simplifications and fewer guarantees about generated code.  In particular,
+  Haskell does not have enough dependent types for the simple $\concatMap$
+  definition, but we can still work around this limitation. We also provide a
+  precise Agda embedding of CFTT and our libraries as described in this
+  paper. Here, the object theory is embedded as a collection of postulated
+  operations, and we can use Agda's normalization command to print out generated
+  object code.
+\end{itemize}
+
+\section{Overview of CFTT}\label{sec:overview-of-cftt}
+
+In the following we give an overview of CFTT features. We first review the
+meta-level language, then the object-level one, and finally the staging
+operations which bridge between the two.
+
+\subsection{The Meta Level}\label{sec:the-meta-level}
+
+$\bs{\MTy}$ is the universe of types in the compile-time language. We will often
+use the term ``metatype'' to refer to inhabitants of $\MTy$, and use
+``metaprogram'' for inhabitants of metatypes. $\MTy$ supports dependent
+functions, $\Sigma$-types and indexed inductive types \cite{inductivefamilies}.
+
+Formally, $\MTy$ is additionally indexed by universe levels (orthogonally to
+staging), and we have $\MTy_i : \MTy_{i+1}$. However, universe levels add noise
+and they are not too relevant to the current paper, so we will omit them.
+
+Throughout this paper we use a mix of Agda and Haskell syntax for
+CFTT. Dependent functions and implicit arguments follow Agda. A basic example:
+\begin{alignat*}{3}
+  &\id : \{\vA : \MTy\} \to \vA \to \vA\\
+  &\id = \lam \vx.\, \vx
+\end{alignat*}
+Here, the type argument is implicit, and it gets inferred when we use the
+function. For example, $\id\,\True$ is elaborated to $\id\,\{\Bool\}\,\True$,
+where the braces mark an explicit application for the implicit argument.
+Inductive types can be introduced using a Haskell-like ADT notation, or with a
+GADT-style one:
+\begin{alignat*}{3}
+  &                                           &&\hspace{4em}\data\,\Bool_\M &&: \MTy\,\where\\
+  & \data\,\Bool_\M : \MTy = \True_\M\,|\,\False_\M &&\hspace{4em}\ind\ind \True_\M &&: \Bool_\M\\
+  &                                           &&\hspace{4em}\ind\ind \False_\M &&: \Bool_\M
+\end{alignat*}
+Note that we added an $_\M$ subscript to the type; when analogous types can be
+defined both on the meta and object levels, we will sometimes use this subscript
+to disambiguate the meta-level version.
+
+We use Haskell-like newtype notation, such as in $\newtype \msf{Wrap}\,\vA =
+\msf{Wrap}\,\{\mit{unWrap} : \vA \}$, and also a similar notation for (dependent)
+record types, for instance as in
+\[\data \msf{Record} = \msf{Record}\,\{\mit{field1} : \vA,\,\mit{field2} : \vB\}.\]
+All construction and elimination rules for type formers in $\MTy$ stay within
+$\MTy$. For example, induction on meta-level values can only produce meta-level
+values.
+
+\subsection{The Object Level}\label{sec:the-object-level}
+
+$\bs{\Ty}$ is the universe of types in the object language. It is itself a
+metatype, so we have $\Ty : \MTy$. All construction and elimination rules of
+type formers in $\Ty$ stay within $\Ty$. We further split $\Ty$ to two
+sub-universes.
+
+First, $\bs{\VTy} : \MTy$ is the universe of \emph{value types}. $\VTy$ supports
+parameterized algebraic data types, where parameters can have arbitrary types,
+but all constructor field types must be in $\VTy$. Since $\VTy$ is a
+sub-universe of $\Ty$, we have that when $\vA : \VTy$ then also $\vA :
+\Ty$. Formally, this is specified as an explicit embedding operation, but we
+will use implicit subtyping for convenience.
+
+Second, $\bs{\CTy} : \MTy$ is the universe of \emph{computation types}. This is
+also a sub-universe of $\Ty$ with implicit coercions. For now, we only specify
+that $\CTy$ contains functions whose domains are value types:
+\[ \blank\to\blank : \VTy \to \Ty \to \CTy \]
+For instance, if $\Bool : \VTy$ is defined as an object-level ADT, then $\Bool
+\to \Bool : \CTy$, hence also $\Bool \to \Bool : \Ty$. However, $(\Bool \to
+\Bool) \to \Bool$ is ill-formed, since the domain is not a value type. Let us look at an
+example for an object-level program, where we already have natural numbers
+declared as $\data \Nat := \Zero\,|\,\Suc\,\Nat$:
+\begin{alignat*}{3}
+  &\hspace{-1em}\rlap{$\add : \Nat \to \Nat \to \Nat$}\\
+  &\hspace{-1em}\add :=\,&& \mathrlap{\letrec \go\,\vn\,\vm := \case \vn\,\of}\\
+  &\hspace{-1em}         && \ind \Zero     &&\to \vm;\\
+  &\hspace{-1em}         && \ind \Suc\,\vn &&\to \Suc\,(\go\,\vn\,\vm);\\
+  &\hspace{-1em}         && \go
+\end{alignat*}
+Recursive definitions are introduced with $\letrec$. The general syntax is
+$\letrec \vx : \vA := \vt; \vu$, where the $\vA$ type annotation can be
+omitted. $\mbf{letrec}$ can be only used to define computations, not values
+(hence, only functions can be recursive so far).
+
+Object-level definitions use $:=$ as notation, instead of the $=$ that is used
+for meta-level ones. We also have non-recursive $\mbf{let}$, which can be used
+to define computations and values alike, and can be used to shadow binders:
+\begin{alignat*}{3}
+  &\vf : \Nat \to \Nat\\
+  &\vf\,\vx := \letdef \vx := \vx + 10; \letdef \vx := \vx + 20; \vx * 10
+\end{alignat*}
+We also allow $\mbf{newtype}$ definitions, both in $\VTy$ and $\CTy$. These are
+assumed to be erased at runtime. In the Haskell and Agda implementations they
+are important for guiding instance resolution, and we think that the explicit
+wrapping makes many definitions more comprehensible in CFTT as well.
+
+Values are call-by-value at runtime; they are computed eagerly in function
+applications and $\mbf{let}$-s. $\mbf{let}$-definitions can be used to define
+inhabitants of any type, and the type of the $\mbf{let}$ body can be also
+arbitrary. Additionally, the right hand sides of $\mbf{case}$ branches can also
+have arbitrary types. So the following is well-formed:
+\begin{alignat*}{3}
+  &\vf : \mathrlap{\Bool \to \Nat \to \Nat}\\
+  &\vf\,\vb := \case \vb\,\of \True \to (\lam \vx.\, \vx + 10); \False &&\to (\lam \vx.\, \vx * 10)
+\end{alignat*}
+In contrast, computations are call-by-name, and the only way we can compute with
+functions is to apply them to value arguments. The call-by-name strategy is
+fairly benign here and does not lead to significant duplication of computation,
+because functions cannot escape their scope; they cannot be passed as arguments
+or stored in data constructors. This makes it possible to run object programs
+without using dynamic closures. This point is not completely straightforward;
+consider the previous $\vf$ function which has $\lambda$-expressions under a
+$\mbf{case}$.
+
+However, the call-by-name semantics lets us transform $\vf$ to $\lam
+\vb\,\vx.\,\case \vb\,\of \True \to \vx + 10; \False \to \vx * 10$, and more
+generally we can transform programs so that every function call becomes
+\emph{saturated}. This means that every function call is of the form
+$\vf\,\vt_1\,\vt_2\,...\,\vt_n$, where $\vf$ is a function variable and the
+definition of $\vf$ immediately $\lambda$-binds $n$ arguments. We do not detail
+this here. We provide formal syntax and operational semantics of the object
+language in the Agda supplement. We formalized the specific translation steps
+that are involved in call saturation, but only specified the full translation
+informally.
+
+Why not just make the object language less liberal, e.g.\ by disallowing
+$\lambda$ under $\mbf{case}$ or $\mbf{let}$, thereby making call saturation
+easier or more obvious? There is a trade-off between making the object language
+more restricted, and thus easier to compile, and making metaprogramming more
+convenient. We will see that the ability to insert $\mbf{let}$-s without
+restriction is very convenient in code generation, and likewise the ability to
+have arbitrary object expressions in $\mbf{case}$ bodies. In this paper we go
+with the most liberal object syntax, at the cost of needing more downstream
+processing.
+
+%% On the other side of the spectrum, one might imagine generating
+%% object code in low-level A-normal form. This is more laborious, but it could be
+%% also interesting, because it would force us to invent abstractions for
+%% manipulating ANF in the metalanguage. We leave such lower-level object languages
+%% for future investigation.
+
+\subsubsection{Object-level definitional equality} This is a distinct notion
+from runtime semantics. Object programs are embedded in CFTT, which is a
+dependently typed language, so sometimes we need to decide definitional equality of
+object programs during type checking. The setup is simple: we have no $\beta$ or
+$\eta$ rules for object programs at all, nor any rule for $\mbf{let}$-unfolding.
+The main reason is the following: we care about the size and efficiency of
+generated code, and these properties are not stable under $\beta\eta$-conversion
+and $\mbf{let}$-unfolding. Moreover, since the object language has general
+recursion, we do not have a sensible and decidable notion of program equivalence
+anyway.
+
+\subsubsection{Comparison to call-by-push-value}
+We took inspiration from call-by-push-value (CBPV) \cite{DBLP:conf/tlca/Levy99},
+and there are similarities to our object language, but there are also
+significant differences. Both systems have a value-computation distinction, with
+call-by-name computations and call-by-value values. However, our object theory
+supports variable binding at arbitrary types while CBPV only supports value
+variables. In CBPV, a let-definition for a function is only possible by first
+packing it up as a closure value (or ``thunk''), which clearly does not suit our
+applications.  Investigating the relation between CBPV and our object language
+could be future work.
+
+%% \subsubsection{Spectrum of possible object languages}
+%% There is a trade-off between making the object language more restricted, and
+%% thus easier to compile, and making metaprogramming more convenient. We will see
+%% that the ability to insert $\mbf{let}$-s without restriction is convenient, and
+%% likewise the ability to have $\lambda$-abstraction under $\mbf{case}$ bodies,
+%% although these features necessitate more downstream processing, to bring
+%% programs to saturated form. On the other side of the spectrum, one might imagine
+%% generating object code in low-level A-normal form. This is more laborious, but
+%% it could be also interesting, because it forces us to invent abstractions for
+%% manipulating ANF in the metalanguage. In a similar vein, Allais recently
+%% proposed metaprogramming quantum circuits in a two-level type theory
+%% \cite{TODO}.
+
+%% more restricted, and thus easier to compile, and making \emph{metaprogramming}
+%% more convenient. We will see that the ability to insert $\mbf{let}$-s without
+%% restriction is very convenient in code generation, and likewise the ability to
+%% have arbitrary object expressions in $\mbf{case}$ bodies. In this paper we go
+%% with the most liberal object syntax, at the cost of needing more downstream
+%% processing. The call-by-name nature of computation types requires a bit of a
+%% change of thinking from programmers, but we believe that it is well worth to
+%% have for the metaprogramming convenience.
+
+%% On the other side of the spectrum, one might imagine generating object code in
+%% low-level A-normal form. This is more laborious, but it could be also
+%% interesting, because it forces us to invent abstractions for manipulating ANF in
+%% the metalanguage. In a similar vein, Allais recently proposed metaprogramming
+%% quantum circuits in a two-level type theory \cite{TODO}. We leave such setups
+%% with low-level object languages to future investigation.
+
+
+%% Finally, one might compare our object language to call-by-push-value
+%% (CBPV). Indeed, we took inspiration from CBPV, and there are similarities, but
+%% also differences. In both systems there is a value-computation distinction, and
+%% values are call-by-value, and computations are call-by-name. However, our object
+%% language allows variable binding at arbitrary types, while CBPV only supports it
+%% at value types. In CBPV, a let-definition for a function is only possible by
+%% first packing it up as a closure value (or: ``thunk''), which clearly does not
+%% work for us.  Also, CBPV makes a judgment-level structural distinction between
+%% values and computations, while we use type universes for that. Generally
+%% speaking, type-based restrictions are easier to work with in dependent type
+%% theories than structural restrictions.
+
+%% The reasons are the following. First, since the object
+%% language has general recursion, most $\beta$-rules are only valid in the
+%% operational semantics up to some restrictions, and $\beta$-conversion is not
+%% decidable to begin with. Second, in metaprogramming we care about the size and
+%% efficiency of generated code, and these properties are not stable under $\beta$
+%% and $\eta$. Hence, the sensible choice is to do metaprogramming up to strict
+%% syntactic equality of object programs.
+
+%% Let us discuss the object language. First, notice that there is no polymorphism
+%% or any kind of type dependency. Although we can define lists as $\data \List\,A
+%% : \VTy := \Nil\,|\,\Cons\,A\,(\List\,A)$, the parameterization is just a
+%% shorthand; all concrete instantiations of the type are distinct. This
+%% monomorphism makes it easy to use different memory layouts for different types.
+%% For example, types which look like products may be unboxed. We could also make a
+%% distinction between boxed and unboxed sum types. We do not explore this in
+%% detail, we just note that monomorphic types make it easy to control memory
+%% layouts, and we believe that this is an important part of performance
+%% optimization.
+
+%% Second, there are no higher-order functions, and functions also cannot be stored
+%% in data structures. Hence, locally defined functions can never escape their
+%% scope, and all function calls are to functions defined in the current
+%% scope. This makes it possible to run object programs without using dynamic
+%% closures. This latter point might not be completely straightforward; what
+%% about the previous $f$ function which has $\lambda$-expressions under a
+%% $\mbf{case}$, should that require closures?
+
+%% We say that it should not. We make this formal formal in Section \ref{TODO};
+%% here we only give an intuitive explanation. In short, we choose a call-by-name
+%% runtime semantics for functions, which means that the only way we can compute
+%% with a function is by applying it to all arguments and extracting the resulting
+%% value.  Hence, the only way to compute with $f$ is to apply it to \emph{two}
+%% arguments, so $f$ is operationally equivalent to $\lam b\,x.\,\case b\,\of \True
+%% \to x + 10; \False \to x * 10$.  In Section \ref{TODO} we show that all object
+%% programs can be transformed to a \emph{saturated} form, where the arity of every
+%% function call matches the number of topmost $\lambda$-binders in the definition
+%% of the called function. Then, the local functions can be compiled either to
+%% top-level functions by lambda-lifting, or if they are only tail-called, left in
+%% place as join points \cite{TODO}.
+
+%% Why not just make the object language less liberal, e.g.\ by disallowing
+%% $\lambda$ under $\mbf{case}$ or $\mbf{let}$, thereby making call saturation
+%% easier or more obvious? There is a trade-off between making the object language
+%% more restricted, and thus easier to compile, and making \emph{metaprogramming}
+%% more convenient. We will see that the ability to insert $\mbf{let}$-s without
+%% restriction is very convenient in code generation, and likewise the ability to
+%% have arbitrary object expressions in $\mbf{case}$ bodies. In this paper we go
+%% with the most liberal object syntax, at the cost of needing more downstream
+%% processing. The call-by-name nature of computation types requires a bit of a
+%% change of thinking from programmers, but we believe that it is well worth to
+%% have for the metaprogramming convenience.
+
+%% On the other side of the spectrum, one might imagine generating object code in
+%% low-level A-normal form. This is more laborious, but it could be also
+%% interesting, because it forces us to invent abstractions for manipulating ANF in
+%% the metalanguage. In a similar vein, Allais recently proposed metaprogramming
+%% quantum circuits in a 2LTT \cite{TODO}. We leave such setups
+%% with low-level object languages to future investigation.
+
+%% Finally, one might compare our object language to call-by-push-value
+%% (CBPV). Indeed, we took inspiration from CBPV, and there are similarities, but
+%% also differences. In both systems there is a value-computation distinction, and
+%% values are call-by-value, and computations are call-by-name. However, our object
+%% language allows variable binding at arbitrary types, while CBPV only supports it
+%% at value types. In CBPV, a let-definition for a function is only possible by
+%% first packing it up as a closure value (or: ``thunk''), which clearly does not
+%% work for us.  Also, CBPV makes a judgment-level structural distinction between
+%% values and computations, while we use type universes for that. Generally
+%% speaking, type-based restrictions are easier to work with in dependent type
+%% theories than structural restrictions.
+
+\subsection{Staging}\label{sec:staging}
+
+With what we have seen so far, there is no interaction between the meta and
+object levels. We make such interaction possible with the following primitives.
+
+\begin{itemize}
+\item For $\vA : \Ty$, we have $\Lift \vA : \MTy$, pronounced as ``lift $\vA$''. This is
+      the type of metaprograms that produce $\vA$-typed object programs.
+\item For $\vA : \Ty$ and $\vt : \vA$, we have $\ql \vt \qr : \Lift \vA$, pronounced ``quote $\vt$''. This
+      is the metaprogram which immediately returns $\vt$.
+\item For $\vt : \Lift \vA$, we have $\spl \vt : A$, pronounced ``splice
+  $\vt$''. This inserts the result of a metaprogram into an object
+  term. \emph{Notation:} splicing binds stronger than function application, so
+  $\vf\,\spl \vx$ is parsed as $\vf\,(\spl \vx)$. We borrow this from
+  MetaML \cite{metaml}.
+\item We have $\ql \spl \vt \qr \equiv \vt$ and $\spl \ql \vt \qr \equiv \vt$ as definitional equalities.
+\end{itemize}
+
+We use \textbf{unstaging} to refer to the process of extracting object code from
+CFTT programs, by evaluating all metaprograms in splices. This term has been
+sporadically used in the literature, see
+e.g.\ \cite{DBLP:journals/cacm/RompfO12}, or \cite{DBLP:conf/popl/ChoiAYT11},
+with a somewhat different meaning in a multi-stage context. The main precursor
+to this paper used ``staging'' instead of our ``unstaging'' \cite{staged2ltt};
+we use the latter because the former conflicts with other common usages of
+``staging''.
+
+
+Let us look at some basic examples. Recall the meta-level identity function; it
+can be used at the object-level too, by applying it to quoted terms:
+  \[ \letdef \vn : \Nat := \spl(\id\,\ql 10 + 10 \qr); ... \]
+Here, $\id$ is used at type $\Lift \Nat$. During unstaging, the expression in
+the splice is evaluated, so we get $\spl\ql 10 + 10 \qr$, which is
+definitionally the same as $10 + 10$, which is our code output here. Boolean
+short-circuiting is another basic use-case:
+\begin{alignat*}{3}
+  &\mit{and} : \Up\Bool \to \Up\Bool \to \Up\Bool\\
+  &\mit{and}\,\vx\,\vy = \ql\case \spl \vx\,\of \True \to \spl \vy; \False \to \False\qr
+\end{alignat*}
+Since the $y$ expression is inlined under a $\case$ branch at every use site, it
+is only computed at runtime when $x$ evaluates to $\True$. In many situations,
+staging can be used instead of laziness to implement short-circuiting, and often
+with better runtime performance, avoiding the overhead of thunking. Consider the
+$\map$ function now:
+\begin{alignat*}{3}
+  & \hspace{-5em}\mathrlap{\map : \{\vA\,\vB : \VTy\} \to (\Up \vA \to \Up \vB) \to \Up (\List\,\vA) \to \Up(\List\,\vB)}\\
+  & \hspace{-5em}\mathrlap{\map\,\vf\,\vas = \ql\letrec \go\,\vas := \case \vas\,\of}\\
+  & \hspace{-5em}\ind\ind\ind\ind\ind \ind\Nil             &&\to \Nil;\\
+  & \hspace{-5em}\ind\ind\ind\ind\ind \ind\Cons\,\va\,\vas &&\to \Cons\,\spl(\vf\,\ql \va \qr)\,(\go\,\vas);\\
+  & \hspace{-5em}\ind\ind\ind\ind\ind\go\,\spl\vas \qr
+\end{alignat*}
+For example, this can be used as $\letdef \vf\,\vas : \List\,\Nat \to
+\List\,\Nat := \spl(\map\,(\lam \vx.\,\ql \spl \vx + 10 \qr)\,\qt{\vas}) $.
+This is unstaged to a recursive definition where the mapping function is inlined
+into the $\Cons$ case as $\Cons\,\va\,\vas \to \Cons\,(\va + 10)\,(\go\,\vas)$.
+Note that $\map$ has to abstract over value types, since lists can only contain
+values, not functions. Also, the mapping function has type $\Up \vA \to \Up
+\vB$, instead of $\Up (\vA \to \vB)$. The former type is often preferable to the
+latter; the former is a metafunction with useful computational content, while
+the latter is merely a black box that computes object code. If we have $\vf :
+\Up(\vA \to \vB)$, and $\vf$ computes to $\ql \lam \vx.\,\vt\qr$, then $\spl
+\vf\,\vu$ is unstaged to an undesirable ``administrative'' $\beta$-redex $(\lam
+\vx.\,\vt)\,\vu$.
+
+\subsubsection{Comparison to defunctionalization}
+Defunctionalization is a program translation which represents higher-order
+functions using only first-order functions and inductive data
+\cite{DBLP:journals/lisp/Reynolds98a,DBLP:conf/ppdp/DanvyN01}. The idea is to
+represent each closure as a constructor of an inductive type, and implement
+closure application as a top-level first-order function which switches on all
+possible closure constructors. Hence, like our unstaging algorithm,
+defunctionalization produces first-order code from higher-order code. We summarize
+the differences.
+\begin{itemize}
+\item Defunctionalization mainly supports \emph{compiler optimizations}, by making
+  closures transparent to analysis. It is not an optimization by itself; it does
+  not change the amount of dynamic control flow or dynamic allocations in a
+  program. A dynamic closure call becomes a dynamic case-switch and a
+  heap-allocated ``functional'' closure becomes a heap-allocated inductive
+  constructor.
+\item Staging mainly supports optimization by \emph{programmers} by providing
+  control over code generation. Unstaging does not translate higher-order
+  functions to anything in particular. Instead, unstaging is the execution of
+  higher-order metaprograms which produce first-order programs.
+\end{itemize}
+
+\subsection{Staged Semantics of CFTT}\label{sec:semantics-of-staging}
+
+To obtain an unstaging algorithm, together with its correctness, the main task
+is to extend \cite{staged2ltt} with identity types and inductive families in the
+metalanguage, since we use those types in this paper. For inductive types, it is the
+most sensible to add W-types, since all inductive families can be faithfully
+derived from them in our setting \cite{whynotw}.
+
+This however requires a substantial amount of technical background from
+\cite{staged2ltt}, so we relegate it to Appendix \ref{appendix:A}. Here we only
+give an overview.
+\begin{itemize}
+\item The input of unstaging is a CFTT term with an object-level type, which
+      only depends on object-level free variables. The output is a term in the
+      object theory. In the other direction, there is an evident embedding of
+      object-theoretic terms as CFTT terms.
+\item \emph{Soundness} means that unstaging followed by embedding is the
+      identity map, up to conversion. In other words, unstaging respects conversion
+      of CFTT terms.
+\item \emph{Stability} means that embedding followed by unstaging is the
+      identity map. In other words, unstaging has no action on terms which are
+      already purely object-level (i.e.\ contain no splices).
+\end{itemize}
+In \cite{staged2ltt}, there is one more property, called \emph{strictness},
+which means that unstaging does not perform $\beta\eta$-conversion in the
+object theory, but this holds trivially in our case since we do not have such
+conversion rules.
+
+However, for CFTT we slightly depart from the above notion of soundness, for the
+following reason. We would like to assume certain propositional identities as
+\emph{axioms} in the metalanguage, without blocking unstaging as a
+computation. We use such an axiom to good effect in Section
+\ref{sec:concatmap-for-streams}.
+
+Axioms clearly block computation, so they are incompatible with the mentioned
+notion of soundness. But we are only interested in equations which hold
+definitionally during unstaging. Hence, we can do the following: first, we erase
+all identity proofs and their transports from CFTT programs, then we proceed
+with unstaging as in \cite{staged2ltt}. This erasure can be formalized as a
+syntactic translation \cite{next700} from CFTT to CFTT extended with the
+equality reflection principle, which says that propositional equality implies
+definitional equality (see e.g.\ \cite{hofmann95conservativity}). Thus,
+soundness of staging for CFTT holds up to erasure of identity proofs.
+
+\section{Monads \& Monad Transformers}\label{sec:monad-transformers}
+
+In this section we build a library for monads and monad transformers. We believe
+that this is a good demonstration of CFTT's abilities, since monads are
+ubiquitous in Haskell programming and they also introduce a great amount of
+abstraction that should be optimized away.
+
+\subsection{Binding-Time Improvements}\label{sec:binding-time-improvements}
+
+We do a preliminary overview before getting to monads. In the staged compilation
+and partial evaluation literature, the term \emph{binding time improvement} is
+used to refer to such conversions, where the ``improved'' version supports more
+compile-time computation \cite[Chapter 12]{partial-evaluation}.
+
+Translation from $\Up \vA \to \Up \vB$ to $\Up(\vA \to \vB)$ is a basic
+binding-time improvement, as an $\eta$-expansion \cite{eta-expansion-trick}. The
+two types are equivalent during unstaging, up to the runtime equivalence of
+object programs, and we can convert back and forth in CFTT, the same way as in
+MetaML \cite[Section 9]{metaml}:
+\begin{alignat*}{3}
+  &\mup : \Up (\vA \to \vB) \to \Up \vA \to \Up \vB && \ind\ind \mdown : (\Up \vA \to \Up \vB) \to \Up (\vA \to \vB) \\
+  &\mup\,\vf\,\va = \ql \spl \vf\, \spl \va\qr   && \ind\ind \mdown\,\vf = \ql \lam \va.\,\spl(\vf\,\ql \va \qr) \qr
+\end{alignat*}
+We cannot show internally, using propositional equality, that these functions are
+inverses, since we do not have $\beta\eta$-rules for object functions; but we
+will not need this proof in the rest of the paper.
+
+ A general strategy for generating efficient ``fused''
+programs, is to try to work as much as possible with improved representations,
+and only convert back to object code at points where runtime dependencies are
+unavoidable. Let us look at binding-time-improvement for product types now:
+\begin{alignat*}{3}
+  &\mup : \Up (\vA,\,\vB) \to (\Up \vA,\,\Up \vB) && \ind\ind \mdown : (\Up \vA,\,\Up \vB) \to \Up(\vA,\,\vB) \\
+  &\mup\,\vx = (\qt{\fst\,\spl \vx},\, \qt{\snd\,\spl \vx})   && \ind\ind \mdown\,(\vx,\,\vy) = \qt{(\spl \vx,\,\spl \vy)}
+\end{alignat*}
+
+Here we overload Haskell-style product type notation, both for types and the
+pair constructor, at both levels. There is a problem with this conversion
+though: $\mup$ uses $\vx : \Up(\vA,\,\vB)$ twice, which can increase code size
+and duplicate runtime computations. For example, $\mdown\,({\mup\,\ql \vf\,\vx
+  \qr})$ is staged to $\ql (\fst\,(\vf\,\vx),\,\snd\,(\vf\,\vx)) \qr$. It would
+be safer to first let-bind an expression with type $\Up(\vA,\,\vB)$, and then
+only use projections of the newly bound variable. This is called
+\emph{let-insertion} in staged compilation. But it is impossible to use
+let-insertion in $\mup$ because the return type is in $\MTy$, and we cannot
+introduce object binders in meta-level code.
+
+\subsection{The Code Generation Monad}\label{sec:the-code-generation-monad}
+
+A principled solution to the previous issue is to write code generators in
+continuation-passing style, as first proposed by Bondorf
+\cite{DBLP:conf/lfp/Bondorf92}. This can be structured as a continuation monad,
+and later works used explicit monadic notation for it
+\cite{DBLP:conf/emsoft/KiselyovST04,DBLP:journals/scp/CaretteK11,DBLP:conf/pepm/SwadiTKP06}. Our
+definition is as follows:
+\begin{alignat*}{3}
+  & \newtype \Gen\,(\vA : \MTy) = \Gen\,\{\unGen : \{\vR : \Ty\} \to (\vA \to \Up \vR) \to \Up \vR\}
+\end{alignat*}
+This is a monad in $\MTy$ in a standard sense:
+\begin{alignat*}{3}
+  &\mathrlap{\instance \Monad\,\Gen\,\where}\\
+  &\ind \return \va        &&= \Gen \dlr \lam \vk.\,\vk\,\va\\
+  &\ind \mit{ga} \bind \vf &&= \Gen \dlr \lam \vk.\,\unGen\,\mit{ga}\,(\lam \va.\,\unGen\,(\vf\,\va)\,\vk))
+\end{alignat*}
+In \cite{DBLP:conf/emsoft/KiselyovST04},\cite{DBLP:journals/scp/CaretteK11} and
+\cite{DBLP:conf/pepm/SwadiTKP06}, the answer type is a parameter to the
+continuation monad, while we have it as polymorphic. We have found that
+polymorphic answer types are more convenient, because we do not have to
+anticipate the type of the code output when are defining a code generator. We
+can ``run'' actions as follows:
+\begin{alignat*}{3}
+  &\runGen : \Gen\,(\Up \vA) \to \Up \vA\\
+  &\runGen\,\vma = \unGen\,\vma\,\id
+\end{alignat*}
+From now on, we reuse Haskell-style type classes and $\mbf{do}$-notation in
+CFTT. We will use type classes in an informal way, without precisely specifying
+how they work. However, type classes are used in essentially the same way in the
+Agda and Haskell implementations, with modest technical differences.  From the
+$\Monad$ instance, the $\Functor$ and $\Applicative$ instances can be also
+derived. We reuse $({\fmap})$ and $({\ap})$ for applicative notation as well.
+
+We can let-bind object expressions in $\Gen$:
+\begin{alignat*}{3}
+  & \gen : \{\vA : \Ty\} \to \Up \vA \to \Gen\,(\Up \vA) \\
+  & \gen\,\va = \Gen \dlr \lam \vk.\,\ql \letdef \vx : \vA := \spl \va; \spl(\vk\,\ql \vx \qr) \qr
+\end{alignat*}
+And also recursive definitions of computations:
+\begin{alignat*}{3}
+  & \genRec : \{\vA : \CTy\} \to (\Up \vA \to \Up \vA) \to \Gen\,(\Up \vA) \\
+  & \genRec\,\vf = \Gen \dlr \lam \vk.\,\qt{\letrec \vx : \vA := \spl(\vf\,\qt{\vx}); \spl(\vk\,\qt{\vx})}
+\end{alignat*}
+Now, using $\mbf{do}$-notation, we may write $\mdo \{\vx \fro \gen\,\qt{10 + 10}; \vy \fro
+\gen\,\qt{20 + 20}\};\return \qt{\vx + \vy}\}$, for a $\Gen\,(\Up \Nat)$
+action. Running this with $\runGen$ yields $\qt{\letdef \vx := 10 + 10; \letdef \vy
+  := 20 + 20; \vx + \vy}$. We can also define a ``safer'' binding-time improvement for
+products, using let-insertion:
+\begin{alignat*}{6}
+  &\hspace{-2em}\mathrlap{\mup : \Up (\vA,\,\vB) \to \Gen\,(\Up \vA,\,\Up \vB)             \hspace{5em} \mdown : \Gen\,(\Up \vA,\, \Up \vB) \to \Up(\vA,\,\vB)} \\
+  &\hspace{-2em}\mup\,\vx = \mdo &&\vx \fro \gen\,\vx                                    && \ind\ind \mdown\,\vx = \runGen \dlr \mdo &&(\va,\,\vb) \fro \vx\\
+  &\hspace{-2em}               &&\return (\qt{\fst\,\spl \vx},\,\qt{\snd\,\spl \vx})     &&                           &&\return \qt{(\spl \va,\, \spl \vb)}
+\end{alignat*}
+
+Working in $\Gen$ is convenient, since we can freely generate object code and
+also have access to the full metalanguage. Also, the point of staging is that
+\emph{eventually} all metaprograms will be used for the purpose of code
+generation, so we eventually $\runGen$ all of our actions. So why not just
+always work in $\Gen$? The implicit nature of $\Gen$ may make it harder to
+reason about the size and content of generated code. This is a bit similar to
+the $\msf{IO}$ monad in Haskell \cite{jones2001tackling}, where eventually
+everything needs to run in $\msf{IO}$, but we may not want to write all of our
+code in $\msf{IO}$.
+
+\subsection{Monads}\label{sec:monads}
+
+First, following the style of Haskell's monad transformer library \texttt{mtl}
+\cite{mtl}, we define a class for monads that support code generation.
+\begin{alignat*}{3}
+&\tyclass\,\Monad\,\vM \RA \MonadGen\,\vM\,\where\\
+&\ind \liftGen : \Gen\,\vA \to \M\,\vA
+\end{alignat*}
+We also redefine $\gen$ and $\genRec$ to work in any $\MonadGen$, so from now on
+we have:
+\begin{alignat*}{3}
+ &\gen   &&: \MonadGen\,\vM \RA \Up \vA \to \vM\,(\Up \vA)\\
+ &\genRec &&: \MonadGen\,\vM \RA (\Up \vA \to \Up \vA) \to \vM\,(\Up \vA)
+\end{alignat*}
+In the rest of this paper, we only present $\ReaderT$, $\MaybeT$ and
+$\StateT$ as monad transformers. For all of these, we can define the $\MonadGen$
+instance simply by $\liftGen = \lift \circ \liftGen$.
+
+Let us look at the $\Maybe$ monad now. We have $\data \Maybe\,\vA :=
+\Nothing\,|\,\Just\,\vA$, and $\Maybe$ itself is available as a $\VTy \to \VTy$
+metafunction. However, we cannot directly fashion a monad out of $\Maybe$, since
+we do not have polymorphism in $\VTy$, nor can we store functions inside
+$\Maybe$. We could try to use the following type for binding:
+\[ (\bind) : \Up(\Maybe\,\vA) \to (\Up\vA \to \Up(\Maybe\,\vB)) \to \Up(\Maybe\,\vB) \]
+This would work, but the definition would necessarily use runtime case splits on $\Maybe$
+values, many of which could be optimized away during staging. Also, not having
+a ``real'' monad is inconvenient for the purpose of code reuse.
+
+Instead, our strategy is to only use proper monads in $\MTy$, and convert
+between object types and meta-monads when necessary, as a form of binding-time
+improvement. We define a class for this conversion:
+\begin{alignat*}{3}
+  &\hspace{-9em}\mathrlap{\tyclass\,\MonadGen\,\vM \RA \Improve\,(\vF : \VTy \to \Ty)\,(\vM : \MTy \to \MTy)\,\where} \\
+  &\hspace{-9em}\ind \mup   &&: \{\vA : \VTy\} \to \Up(\vF\,\vA) \to \vM\,(\Up \vA)\\
+  &\hspace{-9em}\ind \mdown &&: \{\vA : \VTy\} \to \vM\,(\Up \vA) \to \Up(\vF\,\vA)
+\end{alignat*}
+Assume that $\Maybe_\M$ is the standard meta-level monad, and $\MaybeT_\M$ is
+the standard monad transformer, defined as follows:
+\[ \newtype \MaybeT_\M\,\vM\,\vA = \MaybeT_\M\,\{\runMaybeT_\M : \vM\,(\Maybe_\M\,\vA)\} \]
+Now, the binding-time improvement of $\Maybe$ is as follows:
+\begin{alignat*}{3}
+  &\instance \Improve\,\Maybe\,(\MaybeT_\M\,\Gen)\,\where\\
+  %% &\ind \mup : \Up\,(\Maybe\,\vA) \to \MaybeT_\M\,\Gen\,(\Up\,\vA) \\
+  &\ind \mup\,\vma = \MaybeT_\M \dlr \Gen \dlr \lam \vk.\\
+  &\ind\ind \qt{\case \spl \vma\,\of \Nothing \to \spl(\vk\,\Nothing_\M);\Just\,\va \to \spl(\vk\,(\Just_\M\qt{\va}))}\\
+  %% &\ind \mdown : \MaybeT_\M\,\Gen\,(\Up\,A) \to \Up\,(\Maybe\,A) \\
+  &\ind \mdown\,(\MaybeT_\M\,(\Gen\,\vma)) = \\
+  &\ind\ind \vma\,(\lam \vx.\,\case \vx\,\of \Nothing_\M \to \qt{\Nothing}; \Just_\M\,\va \to \qt{\Just\,\spl \va})
+\end{alignat*}
+With this, we get the $\Monad$ instance for free from $\MaybeT_\M$ and $\Gen$. A small example:
+\[ \letdef \vn : \Maybe\,\Nat := \spl(\mdown\,\$\,\mdo \{\vx \fro \return\,\qt{10}; \vy \fro \return\,\qt{20}; \return\,\qt{\vx + \vy})\});\,... \]
+Since $\MaybeT_\M$ is meta-level, its monadic binding fully computes at unstaging time. Thus, the above code is computed to
+\[ \letdef \vn : \Maybe\,\Nat := \Just\,(10 + 20);\;... \]
+We can also use $\gen$ for let-insertion in $\MaybeT\,\Gen$, since it has a $\MonadGen$
+instance.
+%% Assume also a $\lift : \Monad\,\vM \RA \vM\,\vA \to \MaybeT_\M\,\vM\,\vA$ operation which
+%% comes from $\MaybeT_\M$ being a monad transformer. We can do let-insertion in
+%% $\MaybeT_\M\,\Gen$ by simply lifting:
+%% \begin{alignat*}{3}
+%%   &\gen' : \Up \vA \to \MaybeT_\M\,\Gen\,(\Up \vA) \\
+%%   &\gen'\,\va = \lift\,(\gen\,\va)
+%% \end{alignat*}
+
+\subsubsection{Case splitting in monads}
+We often want to case-split on object-level data inside a monadic action, and
+perform different actions in different branches. At first, this may seem
+problematic, because we cannot directly compute metaprograms from object-level
+case splits. Fortunately, with a little bit more work, this is possible in any
+$\MonadGen$, for any value type, using a variation of the so-called ``trick''
+\cite{eta-expansion-trick}.
+
+We demonstrate this for lists. An object-level $\mbf{case}$ on lists introduces
+two points where code generation can continue. We define a metatype which gives
+us a ``view'' on these points:
+\[ \data \msf{SplitList}\,\vA = \Nil'\,|\,\Cons'\,(\Up \vA)\,(\Up (\List\,\vA)) \]
+We can generate code for a case split, returning a view on it:
+\begin{alignat*}{3}
+  &\mit{split} : \Up (\List\,\vA) \to \Gen\,(\msf{SplitList}\,\vA)\\
+  &\mit{split}\,\vas = \Gen \dlr \lam \vk.\,\qt{\case \spl \vas\,\of \Nil \to \spl(\vk\,\Nil'); \Cons\,\va\,\vas \to \spl(\vk\,(\Cons'\,\qt{\va}\,\qt{\vas}))}
+\end{alignat*}
+Now, in any $\MonadGen$, assuming $\vas : \Up(\List\,\vA)$, we may write
+\begin{alignat*}{3}
+  &\mdo \{\mit{sp} \fro \liftGen\;(\!\mit{split}\,\vas);(\case \mit{sp}\,\of \Nil' \to ...;\Cons'\,\va\,\vas \to ...)\}
+\end{alignat*}
+This can be generalized to splitting on any object value. In the Agda and
+Haskell implementations, we overload it with a class similar to the following:
+\begin{alignat*}{3}
+  & \hspace{-2em}\mathrlap{\tyclass\,\mit{Split}\,(\vA : \VTy)\,\where}\\
+  & \hspace{-2em}\ind \mit{SplitTo} &&: \MTy \\
+  & \hspace{-2em}\ind \mit{split}   &&: \Lift \vA \to \Gen\,\mit{SplitTo}
+\end{alignat*}
+In a native implementation of CFTT it may make sense to extend do-notation, so
+that we elaborate $\mbf{case}$ on object values to an application of the
+appropriate splitting function. We adopt this in the rest of the paper, so
+when working in a $\MonadGen$, we can write $\case \vas\,\of \Nil \to ...;
+\Cons\,\va\,\vas \to ...$, binding $\va : \Up \vA$ and $\vas : \Up(\List\,\vA)$
+in the $\Cons$ case.
+
+\subsection{Monad Transformers}\label{monad-transformers}
+
+At this point, it makes sense to aim for a monad transformer library where
+binding-time improvement is defined compositionally, by recursion on the
+transformer stack. The base case is the following:
+\begin{alignat*}{3}
+  & \hspace{-4em}\mathrlap{\newtype \Identity\,\vA := \Identity\,\{\runIdentity : \vA\} }\\
+  & \hspace{-4em}\mathrlap{\instance \Improve\,\Identity\,\Gen\,\where}\\
+  & \hspace{-4em}\ind \mup\,\vx   &&= \return \qt{\runIdentity\,\spl \vx}\\
+  & \hspace{-4em}\ind \mdown\,\vx &&= \unGen\,\vx \dlr \lam \va.\,\qt{\Identity\,\spl \va}
+\end{alignat*}
+We recover the object-level $\Maybe$ as $\MaybeT\,\Identity$, from the following $\MaybeT$:
+\[ \newtype \MaybeT\,(\vM : \VTy \to \Ty)\,(\vA : \VTy) := \MaybeT\,\{\runMaybeT : \vM\,(\Maybe\,\vA)\} \]
+With this, improvement can be generally defined for $\MaybeT$:
+\begin{alignat*}{3}
+  &\instance \Improve\,\vF\,\vM \RA \Improve\,(\MaybeT\,\vF)\,(\MaybeT_\M\,\vM)\,\where\\
+  &\ind \mup\,\vx = \MaybeT_\M \dlr \mdo\\
+  &\ind\ind \vma \fro \mup\,\qt{\runMaybeT\,\spl \vx}\\
+  &\ind\ind \case \vma\,\of \Nothing \to \return \Nothing_\M\\
+  &\hspace{6.5em}         \Just\,\va \hspace{1.15em}\to \return (\Just_\M\,\va)\\
+  &\ind \mdown\,(\MaybeT_\M\,\vx) = \qt{\MaybeT\,\spl(\mdown \dlr \vx \bind \lam\case\\
+  &\ind\ind\Nothing_\M \to \return \qt{\Nothing}\\
+  &\ind\ind\Just_\M\,\va\hspace{1.15em} \to \return \qt{\Just\,\spl \va})}
+\end{alignat*}
+In the $\mbf{case}$ in $\mup$, we use our syntax sugar for matching on a
+$\Maybe$ value inside an $\vM$ action. This is legal, since we know from the
+$\Improve\,\vF\,\vM$ assumption that $\vM$ is a $\MonadGen$. In $\mdown$ we also use
+$\lam\case ...$ to shorten $\lam \vx.\,\case \vx\,\of ...$.
+
+On the meta level, we can borrow essentially all definitions from
+\texttt{mtl}. Only the continuation monad transformer fails to support
+binding-time-improvement in CFTT, because of the obvious need for dynamic
+closures. In the following we only present $\StateT$ and $\ReaderT$.
+
+We start with $\StateT$. We assume $\StateT_\M$ as the standard meta-level
+definition. The object-level $\StateT$ has type $(\vS : \VTy)(\vF : \VTy \to
+\Ty)(\vA : \VTy) \to \VTy$; the state parameter $\vS$ has to be a value type,
+since it is an input to an object-level function.
+\begin{alignat*}{3}
+  &\instance \Improve\,\vF\,\vM \RA \Improve\,(\StateT\,\vS\,\vF)\,(\StateT_\M\,(\Up \vS)\,\vM)\,\where\\
+  &\ind \mup\,\vx = \StateT_\M \dlr \lam \vs.\,\mdo\\
+  &\ind\ind \mit{as} \fro \mup\,\qt{\runStateT\,\spl \vx\,\spl \vs}\\
+  &\ind\ind \case \mit{as}\,\,\of (\va,\,\vs) \to \return (\va,\,\vs)\\
+  &\ind \mdown\,\vx = \qt{ \StateT\,(\lam \vs.\, \spl(\mdown \dlr \mdo\\\
+  &\ind \ind (\va,\,\vs) \fro \runStateT_\M\,\vx\,\qt{\vs}\\
+  &\ind \ind \return \qt{(\spl \va,\, \spl \vs)}))}
+\end{alignat*}
+Like before in $\MaybeT$, we rely on object-level case splitting in the
+definition of $\mup$. For $\Reader$, the environment parameter also has to be a
+value type, and we define improvement as follows.
+\begin{alignat*}{3}
+  &\hspace{-5em}\mathrlap{\instance \Improve\,\vF\,\vM \RA \Improve\,(\ReaderT\,\vR\,\vF)\,(\ReaderT_\M\,(\Up \vR)\,\vM)\,\where}\\
+  &\hspace{-5em}\ind \mup\,\vx   &&= \ReaderT_\M \dlr \lam \vr.\, \mup\,\qt{\runReaderT\,\spl \vx\,\spl \vr}\\
+  &\hspace{-5em}\ind \mdown\,\vx &&= \qt{\ReaderT\,(\lam \vr.\,\spl(\mdown\,(\runReaderT_\M\,\vx\,\qt{\vr})))}
+\end{alignat*}
+
+\subsubsection{$\State$ and $\Reader$ operations} If we use
+the $\modify$ function that we already have in $\State_\M$, a curious thing
+happens. The meaning of $\modify\,(\lam \vx.\,\qt{\spl \vx + \spl \vx})$ is to
+replace the current state $\vx$, as an object expression, with the expression
+$\qt{\spl \vx + \spl \vx}$, and this happens at unstaging time. This behaves as an
+``inline'' modification which replaces every subsequent mention of the state
+with a different expression. For instance, ignoring newtype wrappers for now,
+\[ \mdown \dlr \mdo \{\modify\,(\lam \vx.\,\qt{\spl \vx + \spl \vx}); \modify\,(\lam \vx.\,\qt{\spl \vx + \spl \vx});\return\,\qt{()}\} \]
+is unstaged to
+\[ \qt{\lam \vx.\,((),\,(\vx + \vx) + (\vx + \vx))} \]
+which duplicates the evaluation of $\vx + \vx$. The duplication can be avoided
+by let-binding the result in the object language. A similar phenomenon happens
+with the $\mit{local}$ function in $\Reader$. So we define ``stricter'' versions
+of these operations. We also return $\Up ()$ from actions instead of $()$ ---
+the former is more convenient, because the $\mdown$ operation can be immediately
+used on it.
+\begingroup
+\allowdisplaybreaks
+\begin{alignat*}{3}
+  & \mput' : (\MonadState\,(\Up \vS)\,\vM,\,\MonadGen\,\vM) \RA \Up \vS \to \vM\,(\Up ()) \\
+  & \mput'\,\vs = \mdo \{\vs \fro \gen\,\vs; \mput\,\vs; \return \qt{()}\}\\
+  &\\
+  & \modify' : (\MonadState\,(\Up \vS)\,\vM,\,\MonadGen\,\vM) \RA (\Up \vS \to \Up \vS) \to \vM\,(\Up ()) \\
+  & \modify'\,\vf = \mdo \{\vs \fro \get; \mput'\,(\vf\,\vs)\}\\
+  &\\
+  & \mit{local'} : (\MonadReader\,(\Up \vR)\,\vM,\,\MonadGen\,\vM) \RA (\Up \vR \to \Up \vR) \to \vM\,\vA \to \vM\,\vA\\
+  & \mit{local'}\,\vf\,\vma = \mdo \{\vr \fro \mit{ask}; \vr \fro \gen\,(\vf\,\vr);\mit{local}\,(\lam \_.\,\vr)\,\vma\}
+\end{alignat*}
+\endgroup
+Now,
+\[ \mdown \dlr \mdo \{\modify'\,(\lam \vx.\,\qt{\spl \vx + \spl \vx}); \modify'\,(\lam \vx.\,\qt{\spl \vx + \spl \vx})\} \]
+is unstaged to
+\[ \qt{\lam \vx.\,\letdef x := \vx + \vx; \letdef \vx := \vx + \vx; ((),\,\vx)}. \]
+
+\subsection{Joining Control Flow in Monads}\label{sec:joining-control-flow-in-monads}
+
+There is a deficiency in our library so far. Consider:
+\begin{alignat*}{3}
+  & \vf : \Bool \to \StateT\,\Nat\,(\MaybeT\,\Identity)\,()\\
+  & \vf\,\vb := \spl(\mdown \dlr \mdo \\
+  & \ind \case \qt{\vb}\,\of\,\True\to \mput' \qt{10}; \False \to \mput' \qt{20}\\
+  & \ind\modify'\,(\lambda\,x.\,\qt{\spl x + \spl x}))
+\end{alignat*}
+This is unstaged to the following (omitting newtype wrappers):
+\begin{alignat*}{3}
+  & \vf\,\vb\,\vs := \case\,\vb\,\of \\
+  & \ind \True\hspace{0.2em} \to \letdef \vs := 10; \letdef \vs := \vs + \vs; \Just\,((),\vs)\\
+  & \ind \False \to \letdef \vs := 20; \letdef \vs := \vs + \vs; \Just\,((),\vs)
+\end{alignat*}
+Notice that the final state modification gets inlined into both branches. This
+duplication follows from the definition of monadic binding in $\Gen$ and the
+$\mit{split}$ function in the desugaring of $\mbf{case}$. Code generation is
+continued in both branches with the same action. If we have multiple Boolean
+$\mbf{case}$ splits sequenced after each other, that yields exponential code
+size. A possible fix is to let-bind the branching action:
+\begin{alignat*}{3}
+  & \vf\,\vb := \spl(\mdown \dlr \mdo \\
+  & \ind \msf{act} \fro \gen \dlr \mdown \dlr \case \qt{\vb}\,\of\,\True\to \mput' \qt{10}; \False \to \mput' \qt{20} \\
+  & \ind \mup\,\msf{act} \\
+  & \ind\modify\,(\lambda\,x.\,\qt{\spl x + \spl x}))
+\end{alignat*}
+However, this yields suboptimal code:
+\begin{alignat*}{3}
+  & \vf\,\vb\,\vs :=\\
+  & \ind \letdef\,\msf{act}\,\vs := \case\,\vb\,\of \True\hspace{0.2em}\to \letdef \vs := 10; \Just\,((), \vs)\\
+  & \ind\hspace{8.5em}                               \False \to \letdef \vs := 20; \Just\,((), \vs);\\
+  & \ind \case \msf{act}\,\vs\,\of\\
+  & \ind\ind \Just\,(\_,\,\vs) \to \letdef \vs := \vs + \vs; \Just\,((),\,\vs)\\
+  & \ind\ind \Nothing\hspace{0.6em} \to \Nothing
+\end{alignat*}
+This solution is fairly good when we only have $\State$ or $\Reader$ effects, where
+$\mdown$ only introduces a runtime pair constructor, and it is feasible to
+compile object-level pairs as unboxed data, without overheads. However, for
+$\Maybe$, $\mdown$ introduces a runtime $\Just$ or $\Nothing$, and $\mup$
+introduces a runtime case split. A better solution would be to introduce two
+let-bound join points before the offending $\mbf{case}$, one for returning a
+$\Just$ and one for returning $\Nothing$, but fusing away the actual runtime
+constructors:
+\begin{alignat*}{3}
+  & \vf\,\vb\,\vs :=\\
+  & \ind \letdef\,\msf{joinNothing}\,\vs := \Nothing;\\
+  & \ind \letdef\,\msf{joinJust}\,\hspace{1.8em}\vs := \letdef \vs := \vs + \vs; \Just\,((),\,\vs);\\
+  & \ind \case \msf{b}\,\of\\
+  & \ind \ind \True\hspace{0.2em}  \to \letdef \vs := 10; \msf{joinJust}\,\vs\\
+  & \ind \ind \False \to \letdef \vs := 20; \msf{joinJust}\,\vs
+\end{alignat*}
+Here, $\msf{joinNothing}$ happens to be dead code, but it is easy to clean up in
+downstream compilation. Such ``fused'' returns are possible whenever we have a
+$\Gen\,\vA$ action at the bottom of the transformer stack, such that $\vA$ is
+isomorphic to a meta-level finite sum of value types. Recall that $\Gen\,\vA$ is
+defined as $\{\vR : \VTy\} \to (\vA \to \Up \vR) \to \Up \vR$. Here, if $\vA$ is
+a finite sum, we can rearrange $\vA \to \Up \vR$ to a finite product of
+functions.
+
+We could proceed with finite sums, but we will need finite
+\emph{sums-of-products} ($\SOP$ in short) later in Section in
+\ref{sec:stream-fusion}, so we develop SOP-s. SOPs have been used in generic and
+staged programming; see e.g.\ \cite{sop} and
+\cite{DBLP:conf/haskell/PickeringLW20}. We view $\SOP$-s as a Tarski-style
+universe consisting of a type of descriptions and a way of interpreting
+descriptions into $\MTy$ (``$\El$'' for ``elements'' of the type).
+\begin{alignat*}{3}
+  &\USOP : \MTy                    &&\ind \El_\SOP : \USOP \to \MTy \\
+  &\USOP = \List\,(\List\,\VTy)    &&\ind \El_\SOP\,\vA = ...
+\end{alignat*}
+A type description is a list of lists of value types. We decode this to a sum of
+products of value types. For example, $\El_\SOP\,[[\Bool,\,\Bool],\,[]]$ (using
+Haskell-like list notation) is isomorphic to $\Either\,(\Lift\Bool,\,\Lift\Bool)\,()$.
+$\USOP$ is closed under
+value types, finite product types and finite sum types. For instance, we have
+$\Either_\SOP : \USOP \to \USOP \to \USOP$ together with $\Left_\SOP : \El_\SOP\,\vA
+\to \El_\SOP\,(\Either_\SOP\,\vA\,\vB)$, $\Right_\SOP : \El_\SOP\,\vB \to
+\El_\SOP\,(\Either_\SOP\,\vA\,\vB)$ and a case splitting operation. It is more
+convenient to work with type formers in $\MTy$, and only convert to $\SOP$
+representations when needed, so we define a class for the representable types:
+\begin{alignat*}{3}
+  & \hspace{-5em}\mathrlap{\tyclass\,\IsSOP\,(\vA : \MTy)\,\where} \\
+  & \hspace{-5em}\ind \Rep      &&: \USOP \\
+  & \hspace{-5em}\ind \mit{rep} &&: \vA \simeq \El_\SOP\,\Rep
+\end{alignat*}
+Above, $\vA \simeq \Rep$ denotes a record containing a pair of back-and-forth
+functions, together with proofs (as propositional equalities) that they are
+inverses. We will overload $\mit{rep}$ as the forward conversion function with
+type $\vA \to \El_\SOP\,\Rep$, and write $\mit{rep}^{-1}$ for its inverse.
+
+In 2LTT literature, a metatype $\vA$ is called \emph{cofibrant} if $\vA \to \vB$ is
+isomorphic to an object type whenever $\vB$ is isomorphic to an object type
+\cite{twolevel}. We conjecture that our $\IsSOP$ types are exactly the cofibrant
+types in this sense. However, ``cofibrant'' is not very descriptive in our
+setting, so we shall keep writing $\IsSOP$.
+
+Accordingly, we define an isomorphic presentation of $\El_\SOP\,\vA \to
+\Lift \vR$ as a product of object-level functions:
+\begin{alignat*}{3}
+  &\mathrlap{\mit{Fun}_{\SOP\Lift} : \USOP \to \Ty \to \MTy}\\
+  &\mit{Fun}_{\SOP\Lift}\,\Nil\,&& \vR = ()\\
+  &\mit{Fun}_{\SOP\Lift}\,(\Cons\,\vA\,\vB)\,&& \vR = (\Lift(\mit{foldr}\,(\to)\,\vR\,\vA),\,\mit{Fun}_{\SOP\Lift}\,\vB\,\vR)
+\end{alignat*}
+\begin{alignat*}{3}
+  &\mtabulate &&: (\El_\SOP\,\vA \to \Lift \vR) \to \mit{Fun}_{\SOP\Lift}\,\vA\,\vR\\
+  &\mindex    &&: \mit{Fun}_{\SOP\Lift}\,\vA\,\vR \to (\El_\SOP\,\vA \to \Lift \vR)
+\end{alignat*}
+We omit here the definitions of $\mtabulate$ and $\mindex$. We will also need to
+let-bind all functions in a $\mit{Fun}_{\SOP\Lift}$:
+\begin{alignat*}{3}
+  & \mathrlap{\mit{genFun}_{\SOP\Lift} : \{\vA : \USOP\} \to \mit{Fun}_{\SOP\Lift}\,\vA\,\vR \to \mit{Fun}_{\SOP\Lift}\,\vA\,\vR}\\
+  & \mit{genFun}_{\SOP\Lift}\,\{\Nil\}        && ()             &&= \return\,()\\
+  & \mit{genFun}_{\SOP\Lift}\,\{\Cons\,\_\,\vA\}&& (\vf,\,\mit{\vfs}) &&= ({,})\,{\fmap}\,\gen\,\vf\,{\ap}\,\mit{genFun}_{\SOP\Lift}\,\{\vA\}\,\vfs
+\end{alignat*}
+We introduce a class for monads that support control flow joining.
+\begin{alignat*}{3}
+  & \tyclass\,\Monad\,\vM \RA \MonadJoin\,\vM\,\where\\
+  & \ind \join : \IsSOP\,\vA \RA \vM\,\vA \to \vM\,\vA
+\end{alignat*}
+The most interesting instance is the ``base case'' for $\Gen$:
+\begin{alignat*}{3}
+  &\instance \MonadJoin\,\Gen\,\where\\
+  &\ind \join\,\vma = \Gen \dlr \lam \vk.\,\runGen \dlr \mdo\\
+  &\ind \ind \mit{joinPoints} \fro \mit{genFun}_{\SOP\Lift}\,(\mtabulate\,(\vk \circ \mit{rep}^{-1}))\\
+  &\ind \ind \va \fro \vma\\
+  &\ind \ind \return \dlr \mindex\,\mit{joinPoints}\,(\mit{rep}\,\va)
+\end{alignat*}
+Here we first convert $\vk : \vA \to \Lift \vR$ to a product of join points and
+let-bind each one of them. Then we generate code that returns to the appropriate
+join point for each return value. Other $\MonadJoin$ instances are straightforward. In
+$\StateT_\M$, we need the extra $\IsSOP\,\vS$ constraint because $\vS$ is returned
+as a result value.
+\begin{alignat*}{3}
+  & \instance\,(\MonadJoin\,\vM) \RA \MonadJoin\,(\MaybeT_\M\,\vM)\,\where\\
+  & \ind \join\,(\MaybeT_\M\,\vma) = \MaybeT_\M\,(\join\,\vma)\\
+  & \instance\,(\MonadJoin\,\vM) \RA \MonadJoin\,(\ReaderT_\M\,\vR\,\vM)\,\where\\
+  & \ind \join\,(\ReaderT_\M\,\vma) = \ReaderT_\M\,(\join \circ \vma)\\
+  & \instance\,(\MonadJoin\,\vM,\,\IsSOP\,\vS) \RA \MonadJoin\,(\StateT_\M\,\vS\,\vM)\,\where\\
+  & \ind \join\,(\StateT_\M\,\vma) = \StateT_\M\,(\join \circ \vma)
+\end{alignat*}
+Now, the following definition yields the previously seen code output with
+$\msf{joinNothing}$ and $\msf{joinJust}$.
+\begin{alignat*}{3}
+  & \vf\,\vb := \spl(\mdown \dlr \mdo \\
+  & \ind \join \dlr \case \qt{\vb}\,\of\,\True\to \mput' \qt{10}; \False \to \mput' \qt{20}\\
+  & \ind\modify'\,(\lambda\,x.\,\qt{\spl x + \spl x}))
+\end{alignat*}
+It might make sense to also have a simple ``desugaring'' rule that inserts a
+$\join$ whenever we have a object-level case split with more than one branch. At
+worst, this generates some noise and dead code that is easy to remove by
+conservative code optimization.
+
+\subsection{Code Example}
+
+We look at a slightly larger code example in Figure \ref{fig:codeinp}. We define
+annotated binary trees as
+\[ \data \Tree\,\vA := \Leaf\,|\,\Node\,\vA\,(\Tree\,\vA)\,(\Tree\,\vA). \]
+We write $\msf{fail : M\,A}$ for returning $\Nothing$ in any monad transformer
+stack that contains $\MaybeT$. We define a function which traverses a tree and
+replaces values with values taken from a list. If the tree contains $0$, we
+throw an error. If we run out of list elements, we leave values unchanged.
+\begin{figure}
+\begin{alignat*}{4}
+  &  \letrec &&\vf : \Tree\,\Nat \to \StateT\,(\List\,\Nat)\,(\MaybeT\,\Identity)\,(\Tree\,\Nat) \\
+  &          &&\vf\,\vt := \spl \big(\mdown \dlr \case \vt\,\of\\
+  &          &&\ind \Leaf \to \return \qt{\Leaf} \\
+  &          &&\ind \Node\,\vn\,\vl\,\vr \to \mdo\\
+  &          &&\ind \ind \case \qt{\spl \vn == 0}\,\of\,\True \hspace{0.2em}\to \msf{fail}\\
+  &          &&\ind \ind \ind \hspace{6.7em}             \False \to \return () \\
+  &          &&\ind \ind \vns \fro \get \\
+  &          &&\ind \ind \vn\hspace{0.35em}\fro\join \dlr \case \vns\,\of\,\Nil \hspace{2.65em}\to \return \vn \\
+  &          &&\ind \ind \ind \hspace{8.2em}\Cons\,\vn\,\vns \to \mdo \{\msf{put}\,\vns; \return \vn\} \\
+  &          &&\ind \ind \vl\hspace{0.1em} \fro \mup\,\qt{\vf\,\spl \vl} \\
+  &          &&\ind \ind \vr \fro \mup\,\qt{\vf\,\spl \vr} \\
+  &          &&\ind \ind \return \qt{\Node\,\spl \vn\,\spl \vl\,\spl \vr}\big)
+\end{alignat*}
+\caption{Monadic source code}
+\label{fig:codeinp}
+\end{figure}
+Here, all of the $\case$ matches are done on object-level values, so they are
+all desugared to applications of $\msf{split}$.
+\begin{itemize}
+\item Note the $\join$: without it, the recursive $\Node$ traversal code would be inlined in both case branches.
+\item We do not use $\join$ when checking $\qt{\spl n == 0}$. Here, it
+      happens to be superfluous, since the $\msf{fail}$ ``destroys'' all subsequent
+      code generation in the branch, by short-circuiting at the meta-level.
+\item Also, we can use $\msf{put}$ instead of the ``stricter'' $\msf{put'}$ because
+      the state modification immediately gets sequenced by the enclosing join point.
+\item To make object-level recursive calls, we just need to wrap them in $\mup$.
+\end{itemize}
+Here, we intentionally tuned the definition for a nice-looking staging output.
+However, we could also just default to ``safe'' choices everywhere: we could use
+a joint point in every $\mbf{case}$ with two or more branches, and use the
+strict state modifications everywhere, and leave it up to the downstream compiler
+to clean up the code.
+
+We show the unstaging output on Figure \ref{fig:codeout}. We omit newtype
+wrappers and use nested pattern matching on pairs, but otherwise this is exactly
+the code that we get in our Agda implementation. Again, the only flaw in this
+code is the dead binding for $\msf{joinNothing}$.
+\begin{figure}\label{fig:codeout}
+\begin{alignat*}{4}
+  &  \letrec &&\vf : \Tree\,\Nat \to \StateT\,(\List\,\Nat)\,(\MaybeT\,\Identity)\,(\Tree\,\Nat) \\
+  &          &&\vf := \lam \vt\,\vns.\, \case\,\vt\,\of\\
+  &          &&\ind \Leaf \to \Just\,(\Leaf,\,\vns) \\
+  &          &&\ind \Node\,\vn\,\vl\,\vr \to \case (\vn == 0)\,\of\\
+  &          &&\ind \ind \True \hspace{0.25em}\to \Nothing \\
+  &          &&\ind \ind \False \to \\
+  &          &&\ind \ind \ind \letdef \msf{joinNothing} := \lam \_.\,\Nothing;\\
+  &          &&\ind \ind \ind \letdef \msf{joinJust} := \lam \vn\,\vns.\,\case\,\vf\,\vl\,\vns\,\of\\
+  &          &&\ind \ind \ind \ind \ind \ind \Nothing\hspace{0.9em} \to \Nothing\\
+  &          &&\ind \ind \ind \ind \ind \ind \Just\,(\vl,\,\vns) \to \case\,\vf\,\vr\,\vns\,\of\\
+  &          &&\ind \ind \ind \ind \ind \ind \ind \Nothing\hspace{.95em} \to \Nothing\\
+  &          &&\ind \ind \ind \ind \ind \ind \ind \Just\,(\vr,\,\vns) \to \Just\,(\Node\,\vn\,\vl\,\vr,\,\vns);\\
+  &          &&\ind \ind \ind \case \vns\,\of\\
+  &          &&\ind \ind \ind \ind \Nil \hspace{2.65em}\to \msf{joinJust}\,\vn\,\vns\\
+  &          &&\ind \ind \ind \ind \Cons\,\vn\,\vns \to \msf{joinJust}\,\vn\,\vns
+\end{alignat*}
+\caption{Unstaged monadic code}
+\label{fig:codeout}
+\end{figure}
+\subsection{Discussion}
+
+So far, we have a monad transformer library with the following features:
+\begin{itemize}
+\item Almost all definitions from the well-known Haskell ecosystem of monads and monad transformers
+      can be directly reused, in the meta level.
+\item We can pattern match on object-level values in monadic code, insert object-level $\mbf{let}$-s
+      with $\gen$ and avoid code duplication with $\join$.
+\item In monadic code, object-level data constructors are only ever created by
+      $\mdown$, and matching on object-level data is only created by $\mit{split}$
+      and $\mup$. Monadic operations are fully fused, and all function calls can be
+      compiled to statically known saturated calls.
+\end{itemize}
+
+As to potential weaknesses, first, the system as described in this section has
+some syntactic noise and requires extra attention from programmers.  We believe
+that the noise can be mitigated very effectively in a native CFTT
+implementation. It was demonstrated in a 2LTT implementation in
+\cite{staged-demo} that almost all quotes and splices are unambiguously
+inferable, if we require that stages of let-definitions are always specified (as
+we do here). Moreover, $\mup$ and $\mdown$ should be also effectively inferable,
+using bidirectional elaboration. With such inference, monadic code in CFTT would
+look only slightly more complicated than in Haskell.
+
+Second, in CFTT we cannot store computations (e.g.\ functions or $\State$
+actions) in runtime data structures, nor can we have computations in $\State$
+state or in $\Reader$ environments. However, it would be possible to extend CFTT
+with a closure type former that converts computations to values, in which case
+there is no such limitation anymore. Here, closure-freedom would be still
+available; we would be able to pick where to use or avoid the closure type
+former.
+
+\subsection{Agda \& Haskell Implementations}
+
+We implemented everything in this section in both Agda and typed Template
+Haskell. We summarize features and differences:
+\begin{itemize}
+\item The Haskell implementation can be used to generate code that can be
+      further compiled by GHC; here the object language is taken to be Haskell
+      itself. Since Haskell does not distinguish value and computation types, we do
+      not track them in the library, and we do not get guaranteed closure-freedom
+      from GHC.
+\item In Agda, we postulate all types and terms of the object theory in a
+  faithful way (i.e.\ equivalently to the CFTT syntax presented here), and take
+  Agda itself to be the metalanguage. Here, we can test ``staging'' by running Agda
+  programs which compute object expressions. However, we can only inspect
+  staging output and cannot compile or run object programs.
+\item For sums-of-products in Haskell, we make heavy use of \emph{singleton
+  types} \cite{DBLP:conf/haskell/EisenbergW12} to emulate dependent types. This adds significant
+  noise. Also, in $\IsSOP$ instances we can only define the conversion functions
+  and cannot prove that they are inverses, because Haskell does not have enough support
+  for dependent types.
+\end{itemize}
+
+\section{Stream Fusion}\label{sec:stream-fusion}
+
+Stream fusion refers to a collection of techniques for generating efficient code
+from declarative definitions involving streams of values, where intermediate
+data structures are eliminated. Stream fusion can be broadly grouped into
+\emph{push} fusion, which is based on Church-encodings of inductive lists, and
+$\emph{pull}$ fusion, which is based on Church-encodings of coinductive lists;
+see e.g.\ \cite{DBLP:conf/ifl/HinzeHJ10}. The two styles have different
+trade-offs, and in practical programming it is a good idea to support both, but
+in this section we focus on pull streams.
+
+The reason is that pull streams have been historically more difficult to
+efficiently compile, and we can demonstrate significant improvements in CFTT.
+We also use dependent types in a more essential way than in the previous
+section.
+
+
+\subsection{Streams}
+
+A pull stream is a meta-level specification of a state machine:
+\begin{alignat*}{3}
+  & \data \Step\,\vS\,\vA = \Stop\,|\,\Skip\,\vS\,|\,\Yield\,\vA\,\vS\\
+  & \data \Pull\,(\vA : \MTy) : \MTy\,\where\\
+  & \ind \Pull : (\vS : \MTy) \to \IsSOP\,\vS \RA \Gen\,\vS \to (\vS \to \Gen\,(\Step\,\vS\,\vA)) \to \Pull\,\vA
+\end{alignat*}
+In the $\Pull$ constructor, $\vS$ is the type of the internal state which is
+required to be a sum-of-products of value types by the $\IsSOP\,\vS$
+constraint. The next field with type $\Gen\,\vS$ is the initial state, while
+transitions are represented by the $\vS \to \Gen\,(\Step\,\vS\,\vA)$
+field. Possible transitions are stopping ($\Stop$), transitioning to a new state
+while outputting a value ($\Yield$) and making a silent transition to a new
+state ($\Skip$).
+
+Our definition roughly follows the non-staged stream fusion setup of
+Coutts \cite{DBLP:phd/ethos/Coutts11}; the difference is the addition of
+$\IsSOP$ and $\Gen$ in our version. Also, borrowing terminology from Coutts, we
+call each product in the state a \emph{state shape}.
+
+Let us see some operations on streams now. $\Pull$ is evidently a $\Functor$. It
+is not quite a ``zippy'' applicative functor, because its application operator
+requires an extra $\IsSOP$ constraint:
+\begin{alignat*}{3}
+  &\mit{repeat} : \vA \to \Pull\,\vA\\
+  &\mit{repeat}\,\va = \Pull\,()\,(\return\,())\,(\lam \_.\,\return \dlr \Yield\,\va\,())
+\end{alignat*}
+\begin{alignat*}{3}
+  &\hspace{-7em}\mathrlap{({\ap_{\Pull}}) : \IsSOP\,\vA \RA \Pull\,(\vA \to \vB) \to \Pull\,\vA \to \Pull\,\vB }\\
+  &\hspace{-7em}\mathrlap{({\ap_{\Pull}})\,(\Pull\,\vS\,\seed\,\step)\,(\Pull\,\vS'\,\seed'\,\step') =}\\
+  &\hspace{-7em}\mathrlap{ \ind \Pull\,(\vS,\,\vS',\,\Maybe\,\vA)\,(({,}) \fmap \seed \ap ((,\Nothing) \fmap \seed') \dlr \lam \case }\\
+  &\hspace{-7em}\mathrlap{ \ind \ind (\vs,\,\vs',\,\Just\,\va) \to \step\,\vs \bind \lam \case}\\
+  &\hspace{-7em} \ind \ind \ind \Stop        &&\to \return \Stop \\
+  &\hspace{-7em} \ind \ind \ind \Skip\,\vs     &&\to \return \dlr \Skip\,(\vs,\,\vs',\,\Just\,\va) \\
+  &\hspace{-7em} \ind \ind \ind \Yield\,\vf\,\vs &&\to \return \dlr \Yield\,(\vf\,\va)\,(\vs,\,\vs',\,\Nothing) \\
+  &\hspace{-7em} \mathrlap{\ind \ind (\vs,\,\vs',\,\Nothing) \to \step'\,\vs' \bind \lam \case }\\
+  &\hspace{-7em} \ind \ind \ind \Stop         &&\to \return \Stop \\
+  &\hspace{-7em} \ind \ind \ind \Skip\,\vs'     &&\to \return \dlr \Skip\,(\vs,\,\vs',\,\Nothing) \\
+  &\hspace{-7em} \ind \ind \ind \Yield\,\va\,\vs' &&\to \return \dlr \Skip\,(\vs,\,\vs',\,\Just\,\va)
+\end{alignat*}
+
+In $\mit{repeat}$, the state is the unit type, while in $({\appull})$ we take
+the product of states, and also add another $\Maybe\,\vA$ that is used to buffer
+a single value while we are stepping the $\Pull\,(\vA \to \vB)$ stream.
+The $\IsSOP$ constraints for the new machine states are implicitly dispatched
+by instance resolution; this works in the Agda and Haskell versions too. We can
+derive $\mit{zip}$ and $\mit{zipWith}$ from $({\appull})$ and $({\fmap})$ for
+streams, with the restriction that the zipped streams must all produce $\IsSOP$
+values.
+
+$\Pull$ is also a monoid with stream appending as the binary operation.
+\begin{alignat*}{3}
+  & \mit{empty} : \Pull\,\vA\\
+  & \mit{empty} = \Pull\,()\,(\return\,())\,(\lam \_.\,\return \Stop)
+\end{alignat*}
+\begin{alignat*}{5}
+  & \hspace{-5em}\mathrlap{({<>}) : \Pull\,\vA \to \Pull\,\vA \to \Pull\,\vA} \\
+  & \hspace{-5em}\mathrlap{({<>})\,(\Pull\,\vS\,\seed\,\step)\,(\Pull\,\vS'\,\seed'\,\step') = \Pull\,(\Either\,\vS\,\vS')\,(\Left \fmap \seed)\,\lam \case} \\
+  & \hspace{-5em}\ind \Left\,\vs &&\to \step\,s \bind \lam \case &&\Stop             &&\to (\Skip \circ \Right) \fmap \seed'\\
+  & \hspace{-5em}                    &&                          &&\Skip\,\vs        &&\to \return \dlr \Skip\,(\Left\,\vs) \\
+  & \hspace{-5em}                    &&                        &&\Yield\,\va\,\vs    &&\to \return \dlr \Yield\,\va\,(\Left\,\vs)\\
+  & \hspace{-5em}\ind \Right\,\vs' &&\to \step\,s' \bind \lam \case &&\Stop          &&\to \return \Stop\\
+  & \hspace{-5em}                    &&                        &&\Skip\,\vs'         &&\to \return \dlr \Skip\,(\Right\,\vs') \\
+  & \hspace{-5em}                    &&                        &&\Yield\,\va\,\vs'   &&\to \return \dlr \Yield\,\va\,(\Right\,\vs')
+\end{alignat*}
+These definitions are standard for streams; compared to the non-staged
+definitions in previous literature, the only additional noise is just the $\Gen$
+monad in the initial states and the transitions. Likewise, we can give standard
+definitions for usual stream functions such as $\msf{filter}$, $\msf{take}$ or
+$\msf{drop}$.
+
+\subsection{Running Streams with Mutual Recursion}
+
+How do we generate object code from streams? The state $\vS$ is given as a
+finite sums of products, but the sums and the products are on the meta level, so
+we cannot directly use $\vS$ in object code. Similarly as in the the treatment
+of join points, we tabulate the $\vS \to \Gen\,\Step\,\vS\,\vA$ transition
+function to a product of functions. However, these functions need to be
+\emph{mutually recursive}, since it is possible to transition from any state to
+any other state, and each such transition is represented as a function call.
+This problem of generating well-typed mutual blocks was addressed in
+\cite{DBLP:conf/pepm/YallopK19}. In contrast to this work, which used control
+effects and mutable references in MetaOCaml, we present a solution that does not
+use side effects in the metalanguage.
+
+
+The solution is to extend $\CTy$ with finite products of computations,
+i.e.\ assume $() : \CTy$ and $({,}) : \CTy \to \CTy \to \CTy$, together with
+pairing and projections. These types, like functions, are call-by-name in the
+runtime semantics, and they also cannot escape the scope of their definition.
+Hence, we can also ``saturate'' programs that involve computational product types:
+every computation definition at type $(\vA,\,\vB)$ can be translated to a pair,
+and every projection of a let-defined variable can be statically matched up with
+a pairing in the variable definition. Thus, a recursive let-definition at type
+$(\vA \to \vB,\,\vA \to \vB)$ can be always compiled to a pair of mutual
+functions.
+
+We redefine the previous $\mit{Fun}_{\SOP\Lift}$ to return a computation type
+instead:
+\begin{alignat*}{3}
+  &\mathrlap{\mit{Fun}_{\SOP\Lift} : \USOP \to \Ty \to \CTy}\\
+  &\mit{Fun}_{\SOP\Lift}\,\Nil\,&& \vR = ()\\
+  &\mit{Fun}_{\SOP\Lift}\,(\Cons\,\vA\,\vB)\,&& \vR = (\mit{foldr}\,(\to)\,\vR\,\vA,\,\mit{Fun}_{\SOP\Lift}\,\vB\,\vR)
+\end{alignat*}
+\begin{alignat*}{3}
+  &\mtabulate &&: (\El_\SOP\,\vA \to \Lift \vR) \to \Lift(\mit{Fun}_{\SOP\Lift}\,\vA\,\vR)\\
+  &\mindex    &&: \Lift(\mit{Fun}_{\SOP\Lift}\,\vA\,\vR) \to (\El_\SOP\,\vA \to \Lift \vR)
+\end{alignat*}
+Even for join points, this is just as efficient as the previous
+$\mit{Fun}_{\SOP\Lift}$ version, since a definition of a product of functions
+will get compiled to a sequence of function definitions. In addition, we can use
+it to generate object code from streams. There are several choices for this, but
+in CFTT the $\msf{foldr}$ function is as good as we can get.
+\begin{alignat*}{3}
+  &\hspace{-13em}\mathrlap{\foldr : \{\vA : \MTy\}\{\vB : \Ty\} \to (\vA \to \Lift \vB \to \Lift \vB) \to \Lift \vB \to \Pull\,\vA \to \Lift\,\vB}\\
+  &\hspace{-13em}\mathrlap{\foldr\,\{\vA\}\,\{\vB\}\,\vf\,\vb\,(\Pull\,\vS\,\seed\,\step) = \ql}\\
+  &\hspace{-13em}\mathrlap{\ind \letrec \vfs : \mit{Fun}_{\SOP\Lift}\,(\Rep\,\{\vS\})\,\vB := \spl\big(\mtabulate \dlr \lam \vs.\,\unGen\,(\step\,(\rep^{-1}\,\vs)) \dlr \lam \case} \\
+  &\hspace{-13em}\ind \ind \ind \Stop            &&\to \vb \\
+  &\hspace{-13em}\ind \ind \ind \Skip\,\vs       &&\to \mindex\,\qt{\vfs}\,(\rep\,\vs) \\
+  &\hspace{-13em}\ind \ind \ind \Yield\,\va\,\vs &&\to \vf\,\va\,(\mindex\,\qt{\vfs}\,(\rep\,\vs))\big);\\
+  &\hspace{-13em}\mathrlap{\ind \spl\big(\unGen\,\seed \dlr \lam s.\,\mindex\,\qt{\vfs}\,(\rep\,\vs)\big)\qr}
+\end{alignat*}
+This $\foldr$ is quite flexible because it can produce object terms with computation types.
+For instance, we can define $\foldl$ from $\foldr$:
+\begin{alignat*}{3}
+  &\foldl : \{\vA : \MTy\}\{\vB : \VTy\} \to (\Lift \vB \to \vA \to \Lift \vB) \to \Lift \vB \to \Pull\,\vA \to \Lift\,\vB\\
+  &\foldl\,\vf\,\vb\,\vas = \spl(\foldr\,(\lam \va\,\vg.\,\qt{\lam \vb.\,\spl \vg\,\spl(\vf\,\qt{\vb}\,\spl \va)})\,\qt{\lam \vb.\,\vb}\,\vas)\,\spl \vb
+\end{alignat*}
+Note that since we abstract $\vB$ in a runtime function, it must be a value
+type. Here, each $\Stop$ and $\Yield$ in the transition function gets
+interpreted as a $\lambda$-expression in the output. However, those $\lambda$-s
+will be lifted out in the scope, yielding a proper mutually tail-recursive
+definition with an accummulator for $\vB$. Contrast this to the GHC base
+library, where $\foldl$ for lists is also defined from $\foldr$, to enable
+push-based fusion, but where a substantial \emph{arity analysis} is used in
+the compiler to (incompletely) eliminate the intermediate closures
+\cite{DBLP:conf/sfp/Breitner14}.
+
+\subsection{$\mbf{concatMap}$ for Streams}\label{sec:concatmap-for-streams}
+
+Can we have a list-like $\Monad$ instance for streams, with singleton streams
+for $\return$ and $\concatMap$ for binding? This is not possible. Aiming at
+\[ \concatMap : (\vA \to \Pull\,\vB) \to \Pull\,\vA \to \Pull\,\vB, \]
+the $\vA \to \Pull\,\vB$ function can contain an infinite number of different
+machine state types, which cannot be represented in a finite amount of object
+code. Here by ``infinite'' we mean the notion that is internally available in
+the meta type theory. For instance, we can define a $\Nat_\M \to \Pull\,\vB$
+function which for each $\vn : \Nat_\M$ produces a concatenation of $\vn$
+streams. Hence, we shall have the following function instead:
+\[ \concatMap : \IsSOP\,\vA \RA (\vA \to \Pull\,\vB) \to \Pull\,\vA \to \Pull\,\vB \]
+The idea is the following: if $\USOP$ is closed under $\Sigma$-types, we can directly
+define this $\concatMap$, by taking the appropriate dependent sum of the $\vA
+\to \USOP$ family of machine states, which we extract from the $\vA \to
+\Pull\,\vB$ function. Let us write $\Sigma\,\vA\,\vB : \MTy$ for dependent sums,
+for $\vA : \MTy$ and $\vB : \vA \to \MTy$, and reuse $({,})$ for pairing.  We
+also use the following field projection functions: $\mit{projS} : \Pull\,\vA \to
+\MTy$, $\mit{projSeed} : (\vas : \Pull\,\vA) \to \mit{projS}\,\vas$, and
+$\mit{projStep} : (\vas : \Pull\,\vA) \to \mit{projS}\,\vas \to
+\Gen\,(\Step\,(\mit{projS}\,\vas)\,\vA)$.  For now, we assume that the following
+instance exists:
+\[ \instance (\IsSOP\,\vA,\,\{\va : \vA\} \to \IsSOP\,(\vB\,\va)) \RA \IsSOP\,(\Sigma\,\vA\,\vB) \]
+Above, $\{\va : \vA\} \to \IsSOP\,(\vB\,\va)$ is a universally quantified
+instance constraint; this can be also represented in Agda. The definition of
+$\concatMap$ is as follows.
+\begin{alignat*}{3}
+  & \mathrlap{\concatMap : \IsSOP\,\vA \RA (\vA \to \Pull\,\vB) \to \Pull\,\vA \to \Pull\,\vB }\\
+  & \mathrlap{\concatMap\,\{\vA\}\,\{\vB\}\,\vf\,(\Pull\,\vS\,\seed\,\step) = }\\
+  & \mathrlap{\ind \Pull\,(\vS,\,\Maybe\,(\Sigma\,\vA\,(\mit{projS} \circ \vf)))\,(({,}) \fmap \seed\,\ap\,\return\,\Nothing) \dlr \lam \case }\\
+  & \mathrlap{\ind \ind (\vs,\,\Nothing) \to \step\,\vs \bind \lam \case }\\
+  & \ind \ind \ind \ind \Stop                 &&\to \return \Stop\\
+  & \ind \ind \ind \ind \Skip\,\vs            &&\to \return \dlr \Skip\,(\vs,\, \Nothing)\\
+  & \ind \ind \ind \ind \Yield\,\va\,\vs      &&\to \mdo \{\vs' \fro \mit{projSeed}\,(\vf\,\va); \return \dlr \Skip\,(\vs,\,\Just\,(\va,\,\vs'))\}\\
+  & \mathrlap{\ind \ind (\vs,\,\Just\,(\va,\,\vs')) \to \mit{projStep}\,(\vf\,\va)\,\vs' \bind \lam \case }\\
+  & \ind \ind \ind \ind \Stop                &&\to \return \dlr \Skip\,(\vs,\,\Nothing) \\
+  & \ind \ind \ind \ind \Skip\,\vs'          &&\to \return \dlr \Skip\,(\vs,\,\Just\,(\va,\,\vs'))\\
+  & \ind \ind \ind \ind \Yield\,\vb\,\vs'    &&\to \return \dlr \Yield\,\vb\,(\vs,\, \Just\,(\va,\,\vs'))
+\end{alignat*}
+Here, $\Nothing$ marks the states where we are in the ``outer'' loop, running
+the $\Pull\,\vA$ stream until we get its next value. $\Just$ marks the states of
+the ``inner'' loop, where we have a concrete $\va : \vA$ value and we run the
+$(\vf\,\va)$ stream until it stops. In the inner loop, the machine state type
+depends on the $\va : \vA$ value, hence the need for $\Sigma$. How do we get
+$\IsSOP$ for $\Sigma$? The key observations are:
+\begin{itemize}
+ \item Metaprograms cannot inspect the structure of object terms.
+ \item Object types do not depend on object terms.
+\end{itemize}
+Hence, we expect that during unstaging, every $\vf : \Lift\,\vA \to \VTy$
+function has to be constant. More generally in the semantics in Appendix \ref{appendix:A}, every function whose domain is a product
+of object types and whose codomain is a constant presheaf, is a constant
+function. We may call these constancy statements \emph{generativity axioms},
+since they reflect the inability of metaprograms to inspect terms, and
+``generativity'' often refers to this property in the staged compilation
+literature.
+
+Let us write $\Uprod = \List\,\VTy$ and $\Elprod : \Uprod \to \MTy$ for a
+universe of finite products of value types. Concretely, in CFTT and the Agda
+implementation, we assume the following:
+\\\\
+\noindent \textbf{Axiom (generativity).}\textit{ For every $\vf : \Elprod\,\vA \to \USOP$ and $\va,\,\va' : \Elprod\,\vA$,
+we have that $\vf\,\va = \vf\,\va'$.}
+\\\\
+See Section \ref{appendix:generativity} in Appendix $\ref{appendix:A}$ for a
+validation of this axiom. We remark that there is no risk of staging getting
+stuck, because propositional equality proofs get erased, as we described in
+Section \ref{sec:semantics-of-staging}. We also remark that although
+generativity is inconsistent with inspecting the structure of object terms, it
+is consistent with inspecting the structure of object types.
+
+From generativity, we derive $\Sigma_\SOP : (\vA : \USOP) \to (\vB : \El_\SOP\,\vA \to \USOP)
+\to \USOP$ as follows. First, for each $\vA : \Uprod$, we define $\msf{loop_{\vA}} :
+\Elprod\,\vA$ as a product of non-terminating object programs. This is only needed
+to get arbitrary inhabitants with which we can call $\Elprod\,A \to \USOP$
+functions.
+
+Then, $\Sigma_\SOP\,\vA\,\vB$ is defined as the concatenation of $\vA_i \times
+\vB\,(\msf{inject_i}\,\msf{loop_{\vA_i}})$ for each $\vA_i \in \vA$, where
+$({\times})$ is the product type former in $\USOP$ and $\msf{inject_i}$
+has type $\Elprod\,\vA_i \to \El_\SOP\,\vA$. This is similar to the definition of
+non-dependent products in $\USOP$, except that we have to get rid of the type
+dependency by instantiating $\vB$ with arbitrary programs.
+
+Then, we can show using the generativity axiom that $\Sigma_\SOP$ supports
+projections, pairing and the $\beta\eta$-rules. These are all needed when we
+define the $\IsSOP$ instance, when we have to prove that encoding via $\rep$
+is an isomorphism. Concretely, assuming $\IsSOP\,\vA$ and $\{\va : \vA\} \to
+\IsSOP\,(\vB\,\va)$, we define $\Rep$ and $\msf{rep}$ for $\Sigma\,\vA\,\vB$ as follows:
+\[ \Rep\,\{\Sigma\,\vA\,\vB\} = \Sigma\,(\Rep\,\{\vA\})\,(\lam \vx.\,\Rep\,\{\vB\,(\rep^{-1}\,\vx)\}) \]
+\[  \rep\,\{\Sigma\,\vA\,\vB\}\,(\va,\,\vb) = (\rep\,\{\vA\}\,\va,\,\rep\,\{\vB\,(\rep^{-1}\,(\rep\,\vx))\}\,\vb) \]
+Note that $\rep$ is only well-typed up to the fact that $\rep^{-1} \circ \rep =
+\id$; the Agda definition contains an additional transport that we omit here.
+This is, in fact, our reason for including the isomorphism equations in
+$\IsSOP$.
+
+This, in turn, necessitates using SOP instead of finite sums, for the following
+reason. We can define a product type former for finite sums of value types, by
+taking the pairwise products of components, but in this case the products would
+be object-level products, which do not support $\beta\eta$ rules. This implies
+that we cannot prove $\beta\eta$-rules for the derived product type in finite
+sums. In contrast, when we define products for SOP-s, we take \emph{meta-level}
+pairwise products of components, which does support $\beta$ and $\eta$.
+
+We skip the full definition of $\Sigma_\SOP$ here. The reader may refer to the
+$\SOP$ module in the Agda implementation, which is altogether 260 lines with all
+$\IsSOP$ instances.
+
+\subsection{Let-Insertion \& Case Splitting in Monadic Style}
+
+While $\Pull$ is not a monad, and hence also not a $\MonadGen$, we can still use
+a monadic style of stream programming with good ergonomics. First, we need
+singleton streams for ``returning'':
+\begin{alignat*}{3}
+  & \mit{single} : \vA \to \Pull\,\vA \\
+  & \mit{single}\,\va = \Pull\,\Bool_\M\,\True \dlr \lam \vb.\,\return \dlr\mbf{if}\,\vb\,\mbf{then}\,\Yield\,\va\,\False\,\mbf{else}\,\Stop
+\end{alignat*}
+Now, we should use this operation with care, since it has two states and can
+contribute to a code size blow-up. For example, $\concatMap$ over $\single$
+introduces at least a doubling of the number of state shapes. Although
+let-insertion and case splitting could be derived as $\concatMap$ over
+$\single$, to avoid the size explosion we give more specialized definitions
+instead. First, we define an embedding of $\Gen$ operations in streams.
+\begin{alignat*}{3}
+  & \hspace{-11em}\mathrlap{\mit{bind_{\Gen}} : \IsSOP\,\vA \RA \Gen\,\vA \to (\vA \to \Pull\,\vB) \to \Pull\,\vB}\\
+  & \hspace{-11em}\mathrlap{\mit{bind_{\Gen}}\,\vga\,\vf\,=}\\
+  & \hspace{-11em}\mathrlap{\ind \Pull\,(\Sigma\,\vA\,(\mit{projS} \circ \vf))\,(\mdo \{\va \fro \vga; \vs \fro \mit{projSeed}\,(\vf\,\va); \return (\va,\,\vs)) \dlr \lam \case}\\
+  & \hspace{-11em}\mathrlap{\ind \ind (\va,\,\vs) \to \mit{projStep}\,(\vf\,\va)\,\vs \bind \lam \case }\\
+  & \hspace{-11em}\ind \ind \ind \Stop            &&\to \return \Stop\\
+  & \hspace{-11em}\ind \ind \ind \Skip\,\vs       &&\to \return \dlr \Skip\,(\va,\,\vs) \\
+  & \hspace{-11em}\ind \ind \ind \Yield\,\vb\,\vs &&\to \return \dlr \Yield\,\vb\,(\va,\,\vs)
+\end{alignat*}
+We recover let-insertion and case splitting as follows:
+\begin{alignat*}{3}
+  &\mit{gen_\Pull} : \Lift \vA \to (\Lift \vA \to \Pull\,\vB) \to \Pull\,\vB\\
+  &\mit{gen_\Pull}\,\va = \mit{bind_{\Gen}}\,(\gen\,\va)
+\end{alignat*}
+\begin{alignat*}{3}
+  &\mit{case_\Pull} : (\mit{Split}\,\vA,\,\IsSOP\,(\mit{SplitTo}\,\{\vA\})) \RA \Lift \vA \to (\mit{SplitTo}\,\{\vA\} \to \Pull\,\vB) \to \Pull\,\vB\\
+  &\mit{case_\Pull}\,\va = \mit{bind_{\Gen}}\,(\mit{split}\,\va)
+\end{alignat*}
+Let us look at small example. We write $\mit{forEach}$ for $\concatMap$ with
+flipped arguments.
+\begin{alignat*}{3}
+  &\hspace{-4em}\mathrlap{\mit{forEach}\,(\mit{take}\,\qt{100}\,(\mit{countFrom}\,\qt{0})) \dlr \lam \vx.}\\
+  &\hspace{-4em}\mathrlap{\gen_\Pull\, \qt{\spl \vx * 2} \dlr \lam \vy.}\\
+  &\hspace{-4em}\mathrlap{\mit{case_\Pull}\,\qt{\spl \vx < 50} \dlr \lam \case}\\
+  &\hspace{-4em} \ind \True  &&\to \mit{take}\,\vy\,(\mit{countFrom}\,x)\\
+  &\hspace{-4em} \ind \False &&\to \single\,\vy
+\end{alignat*}
+Here, in every $\forEach$ iteration, $\gen_\Pull\,\qt{\spl \vx * 2}$ evaluates
+the given expression and saves the result to the machine state. Then,
+$\mit{case_\Pull}$ branches on an object-level Boolean expression. If we use
+$\foldr$ to generate object code from this definition, we get \emph{four}
+mutually defined functions. We get two state shapes from $\single\,\vy$ and one
+from $\mit{take}\,\vy\,(\mit{countFrom}\,x)$; we sum these to get three for the
+$\mit{case_\Pull}$, then finally we get an extra shape from $\mit{forEach}$ which
+introduces an additional $\Maybe$.
+
+\subsection{Discussion}
+
+Our stream library has a strong support for programming in a monadic style, even
+though $\Pull$ is not literally a monad. We can bind object values with
+$\concatMap$, and we can also do let-insertion and case splitting for them. We
+also get guaranteed well-typing, closure-freedom, and arbitrary mixing of
+zipping and $\concatMap$.
+
+We highlight the usage of the generativity axiom as well. Previously in staged
+compilation, intensional analysis (i.e. the ability to analyze object code) has
+been viewed as a desirable feature that increases the expressive power of a
+system. To our knowledge, our work is the first one that exploits the
+\emph{lack} of intensional analysis in metaprogramming. This is a bit similar to
+parametricity in type theories, where the inability to analyze types has a
+payoff in the form of ``free theorems'' \cite{wadler89theoremsforfree}.
+
+Regarding the practical application of our stream library, we think that it
+would make sense to support both push and pull fusion in a realistic
+implementation, and allow users to benefit from the strong points of both. Push
+streams, which we do not present in this paper, have proper $\Monad$ and
+$\MonadGen$ instances and are often more convenient to use in CFTT. They are
+also better for deep traversals of structures where they can utilize unbounded
+stack allocations, while pull streams need heap allocations for unbounded space
+in the machine state.
+
+\subsection{Agda \& Haskell Implementations}
+
+
+In Agda, to avoid computation getting stuck on the generativity axiom, we use
+the \texttt{primTrustMe} built-in \cite{agdadocs} to automatically erase the axiom
+when the sides of the equation are definitionally equal. Otherwise the
+implementation closely follows this section.
+
+In Haskell there are some limitations. First, in $\concatMap$, the
+projection function $\mit{projS}$ cannot be defined, because Haskell is not
+dependently typed, and the other field projections are also out of reach. We
+only have a weaker ``positive'' recursion principle for existential types. It
+might be the case that a strongly typed $\concatMap$ is possible with only weak
+existentials, but we attempted this and found that it introduces too much
+technical complication.
+
+So instead of giving a single generic definition for $\concatMap$ for $\IsSOP$
+types, we define $\concatMap$ just for object types,\footnote{Recall that we do
+not distinguish value and computation types in Haskell.} and define
+$\mit{case_\Pull}$ separately for each object type, as an overloaded class
+method. In each of these definitions, we only need to deal with a concrete
+finite number of machine state types, which is feasible to handle with weak
+existentials.
+
+Also, the generativity axiom is \emph{false} in Template Haskell, since it is
+possible to look inside quoted expressions. Instead, we use type coercions that
+can fail at unstaging time. If library users do not violate generativity, these
+coercions disappear and the code output will not contain unsafe coercions.
+
+\section{Related Work}\label{sec:related-work}
+
+\subsubsection*{Two-level calculi.}
+Two-level lambda calculi were first developed in the context of abstract
+interpretation and partial evaluation
+\cite{DBLP:phd/ethos/Nielson84a,DBLP:books/daglib/0071307}.  This line of
+research is characterized by simple types, having the same language features at
+different stages, and an emphasis on \emph{binding time analysis},
+i.e.\ automatically inferring stage annotations as part of a pipeline for
+partial evaluation and program optimization.
+
+Later and independently, the same notion of level appeared in homotopy type
+theory, first in Voevodsky's Homotopy Type System \cite{hts}, and subsequently
+developed as 2LTT in \cite{twolevel}. Here, dependent types are essential, and
+we have different theories at the two stages. The application of 2LTT to staged
+compilation was developed in \cite{staged2ltt}. Binding-time analysis has not
+been developed in this setting; 2LTT-s have been meant to be used as surface
+languages to directly work in.
+
+\subsubsection*{Higher-order abstract syntax and logical frameworks.}
+Hofmann's work on the semantics of higher-order abstract syntax (HOAS) is an
+important precursor to our work \cite{Hofmann:1999:SAH:788021.788940}. It
+anticipates many of the later developments in logical frameworks and two-level
+type theories. In particular, we build on Hofmann's presheaf model for our 2LTT
+semantics, and his sketch of adequacy for HOAS corresponds to our definition of
+unstaging and its soundness proof. In general, there is a close correspondence
+between logical frameworks that represent object languages in HOAS style
+(e.g.\ \cite{Harper93lf}) and two-level type theories, and in some cases the two
+kinds of presentations are inter-derivable \cite[Section
+  3.3]{DBLP:journals/corr/abs-2302-08837}. In fact, our Agda implementation
+of CFTT also uses a HOAS embedding of the object theory.
+
+Cocon is a logical framework that has a dependently typed meta level
+(``computation'' level) and an object language that is configured by a signature
+\cite{DBLP:journals/corr/abs-1901-03378}. Cocon, like 2LTTs, can be used as a
+dependently typed metaprogramming language, but there are several
+differences. First, Cocon supports and emphasizes intensional analysis
+(i.e.\ the ability to do structural induction on object code), which is made
+possible through a contextual modality \cite{nanevski2008contextual}. In
+contrast, intensional analysis is missing from 2LTTs so far. However, in Cocon,
+we can only manipulate object terms at the meta level by specifying their
+concrete object-level contexts (i.e.\ possible free variables), while in 2LTTs
+the object-level contexts are implicit and are only computed during code
+generation. The latter style is more convenient for staged compilation
+applications, where explicit context tracking would add a significant amount of
+bureaucracy.
+
+Nonetheless, it seems to be possible and useful to have a
+system which simultaneously supports intensional analysis through contextual
+types and the 2LTT-style implicit contexts, and it would be interesting
+to consider in future work.
+
+\subsubsection*{CPS and monads in staged programming} Writing code generators
+in continuation-passing style was first proposed by Bondorf
+\cite{DBLP:conf/lfp/Bondorf92}. Flanagan et al.'s ANF translation algorithm uses
+CPS for let-insertion as well \cite{DBLP:conf/pldi/FlanaganSDF93}, similarly to
+our $\gen$ function. These sources do no use explicit monadic notation
+though. Jones et al.\ discuss CPS and binding-time improvement in partial
+evaluation in \cite{partial-evaluation}. In
+\cite{DBLP:conf/emsoft/KiselyovST04}, \cite{DBLP:conf/pepm/SwadiTKP06} and
+\cite{DBLP:journals/scp/CaretteK11}, the composition of state and continuation
+monads was used, similarly to our $\StateT\,S\,\Gen$, but without polymorphic
+answer types. The definition of let-insertion here is again similar to ours.
+
+\subsubsection*{Tracking function arities and closures in types} Downen et al.'s
+intermediate language $\mathcal{IL}$ has similar motivations as our object
+language \cite{DBLP:journals/pacmpl/DownenAJE20}. In both systems, function
+types are distinguished from closure types, enjoy universal $\eta$-conversion
+and have an explicit calling arity. In fact, our object language can be almost
+viewed as a small simply-typed fragment of $\mathcal{IL}$, with only
+$\mbf{letrec}$ missing from $\mathcal{IL}$.
+
+\subsubsection*{Sums-of-products} $\SOP$ was proposed for generic Haskell programming
+by De Vries and Löh \cite{DBLP:conf/icfp/VriesL14}. Our own $\SOP$
+implementation in Haskell is mostly the same as in ibid. The
+$\SOP$-of-object-code representation appeared as well in typed Template Haskell
+in \cite{DBLP:conf/haskell/PickeringLW20}. $\eta$-expansion for object-level
+finite sums is known as ``the trick'' \cite{eta-expansion-trick}.
+
+\subsubsection*{Join points}
+The use join points in GHC's core language is partly motivated by avoiding code
+duplication in case-of-case transformations
+\cite{DBLP:conf/pldi/MaurerDAJ17}. In our monad library, case-of-case is
+implicitly and eagerly computed during staging, and we similarly use join points
+to avoid code duplication.
+
+\subsubsection*{Stream fusion}
+The staged stream fusion library $\mathit{strymonas}$ by Kiselyov et al.\ is the
+primary prior art \cite{DBLP:conf/popl/KiselyovBPS17}. Here, streams are
+represented as a sum type of push and pull representations, allowing both
+zipping and $\concatMap$-ing. However, fusion is not guaranteed for all
+combinations; zipping two $\concatMap$-s reifies one of the streams in a runtime
+closure. In newer versions of the library, fusion is complete
+\cite{DBLP:conf/pepm/0001K24}, however, an exposition of this has not yet been
+published. Additionally, $\mathit{strymonas}$ heavily relies on mutable
+references in the object language, and also uses some switching on object-level
+data to implement control flow. This style of code output can be still reliably
+optimized by downstream compilers (C or OCaml), but our solution is more
+conservative in that it does not use any mutation or runtime switching.
+This ``purity'' of our streams also makes them easier to generalize, e.g.\
+by using arbitrary $\MonadGen$ monads instead of $\Gen$ in stream internals.
+
+\emph{Machine fusion} \cite{DBLP:conf/ppdp/RobinsonL17} supports splitting
+streams to multiple streams while avoiding duplicated computation; this is not
+possible in $\mathit{strymonas}$ or our library. Machine fusion also supports
+$\concatMap$ and zipping. However, its state machine representation is
+significantly more complicated than ours, and its fusion algorithm is not
+guaranteed to succeed on arbitrary stream programs.
+
+Coutts developed pull stream fusion in depth in
+\cite{DBLP:phd/ethos/Coutts11}. We borrowed the basic design and the basic
+stream combinator definitions from there. This account is also close to existing
+stream implementations in Haskell. We find it interesting that our staged
+definitions are very close to the non-staged versions there; essentially all of
+the additional complexity is compartmentalized in our $\SOP$ module.  Coutts
+characterized fusibility in a non-staged setting, in terms of ``good consumers''
+and ``good producers'', but this scheme does not cover $\concatMap$.
+
+\section{Conclusions and Future Work}
+
+We believe that a programming language in the style of this paper would be
+highly useful, especially in high-performance functional programming and
+domain-specific programming. In particular, the pipeline for using and compiling
+monads could look like the following.
+\begin{itemize}
+\item Users write definitions in a style similar to Haskell, without quotes,
+      splices, $\mup$-s and $\mdown$-s, only marking stages in type annotations and
+      in let-definitions, with $:=$ and $=$.  Storing monadic actions at runtime
+      requires an explicit boxing operation that yields a closure type.
+\item Type- and stage-directed elaboration adds the missing operations, and also desugars
+      case splitting using $\join$ and the underlying splitting function.
+\item In the downstream compiler, fast \& conservative optimization passes are
+      sufficient, since abstraction overheads are already eliminated by staging. Eliminating
+      dead code and unused arguments would be important, as we have not yet addressed
+      this through staging.
+\item A systematic way to de-duplicate code would be also needed, probably already
+      during staging.
+\end{itemize}
+
+Going a bit further, we believe that a 2LTT-based language could be a good design point
+for programming in general, buying us plenty of control over code generation for
+a modest amount of extra complexity.
+
+Also, rebuilding known abstractions in staged programming is valuable because it
+provides a \emph{semantic explanation} of how abstractions can be compiled, and
+provides insights that could be reused even in non-staged settings. For
+instance, in this paper we demonstrated that compiling monadic code can be done
+by using the same monads in the metalanguage, extended with code
+generation as an effect.
+
+Continuing this line of thought, it could be interesting to also adapt to 2LTT
+the style of \emph{binding-time analysis} that is well-known in partial
+evaluation. For example, we might do program optimization in the following way.
+First, start with monadic code in a non-staged language. Second, try to infer
+stages, inventing quotes, splices, $\mup$-s and $\mdown$-s, thereby translating
+definitions to a 2LTT. Third, perform staging and proceed from there. This would
+be more fragile than unambiguous stage inference, but we would still benefit from
+shifting a lot of machinery into staging (which is deterministic and efficient).
+
+We also find it interesting how little impact closure-freedom had on the
+developments in this paper. This provides some evidence that in staged
+functional programming, closures can be an opt-in feature instead of the
+pervasive default.
+
+In this paper we only briefly looked at two applications. Both monad
+transformers and streams could be further developed, and many other programming
+abstractions could be revisited in the staged setting.
+\begin{itemize}
+\item
+     We did not discuss the issue of \emph{tail calls} in monadic code. For
+     example, a tail call in $\Maybe$ should not case split on the result, while
+     in our current library, making a call with $\mup$ always does so. We did
+     develop an abstraction for tail calls in the Agda and Haskell
+     implementations, but omitted it here partly for lack of space, and partly
+     because we have not yet explored much of the design space.
+
+\item In a practical stream library, it would be useful to further try to
+     minimize the size of the machine state. In the Agda and Haskell versions, we
+     additionally track whether streams can $\Skip$, to provide more efficient
+     zipping for non-skipping ``synchronous'' streams. However, this could be
+     refined in many ways, and we could also try to represent the transition
+     graph in an observable way, thereby enabling merging or deleting states.
+
+\item It seems promising to look for synergies between push streams, pull streams
+     and monad transformers. It seems that pull streams could be generalized from
+     $\Gen$ to different monads, in the representation of transitions and initial
+     states. This would allow putting a $\Pull$ \emph{on the top} of a monad
+     transformer stack. On the other hand, push streams form a proper monad, but
+     they cannot be used to ``transform'' other monads, so they can be placed
+     at the \emph{bottom} of a transformer stack.
+\item We could try to lean more heavily on datatype-generic programming and
+     generalize abstractions for more object types. For example, push and pull
+     streams could be generalized to inductive and coinductive Church-codings of
+     arbitrary value types.
+\end{itemize}
+
+\section*{Acknowledgements}
+I thank the anonymous reviewers and Sebastian Graf, for their comments and suggestions
+on draft versions of this paper.
+
+\newpage
+
+\appendices
+\section{Staged Semantics for CFTT}\label{appendix:A}
+
+In this appendix we describe the semantics of CFTT, from which the unstaging
+algorithm is obtained, and also describe the soundness and completeness of the
+algorithm. We borrow the setup from \cite{staged2ltt}; we use terminology and
+definitions from there by default, and focus on differences and extensions.
+
+\begin{notation} In the following, we work in a mostly unspecified extensional
+type theory, writing $\Set$ for universes (omitting universe levels), $(x : A) \to B$
+for $\Pi$-types, $(x : A) \times B$ for $\Sigma$-types and $\blank\!=\!\blank$ for
+extensional identity.
+
+\end{notation}
+
+\subsection{Models and Syntax of CFTT}
+
+We give an algebraic \cite{cartmellthesis,DBLP:journals/corr/abs-2302-08837}
+specification for the models of CFTT and define the syntax of CFTT to be the
+initial model. In the following, all type and term formers are implicitly
+assumed to be stable under substitution.
+
+\begin{definition}[] A model of CFTT consists of the following.
+
+\begin{itemize}
+\item A category with a terminal object; in the syntax this is the category
+  of contexts and parallel substitutions. We use $\Con : \Set$ for contexts,
+  $\Sub : \Con \to \Con \to \Set$ for morphisms and $\emptycon : \Con$ for the
+  terminal object (which is the empty context in the syntax).
+\item A family structure in the sense of category-with-families \cite{Dybjer96internaltype},
+  specifying metatypes and terms. This structure is additionally indexed by
+  universe levels, so we have $\MTy_i : \Con \to \Set$ and $\msf{MetaTm}_i :
+  (\Gamma : \Con) \to \MTy_i\,\Gamma \to \Set$ for $i \in \mbb{N}$. We support
+  basic type formers, identity types and W-types. We write $\Gamma \ext A$ for
+  an extended context. Additionally, we have Coquand-style universes,
+  i.e.\ $\U_i : \MTy_{i+1}\,\Gamma$ such that there is an isomorphism
+  $\msf{MetaTm}\,\Gamma\,\U_i \simeq \MTy_i\,\Gamma$.  We use $\El$ and
+  $\code$ to denote the components of this isomorphism.
+\item
+  For object-level types, we have $\Ty : \MTy_0\,\Gamma$, $\VTy :
+  \MTy_0\,\Gamma$ and $\CTy : \MTy_0\,\Gamma$, together with all object-level
+  type formers and inclusion operations $\msf{V} : \MTm\,\Gamma\,\VTy \to \MTm\,\Gamma\,\Ty$
+  and $\msf{C} : \MTm\,\Gamma\,\CTy \to \MTm\,\Gamma\,\Ty$.
+\item For object-level terms, we have $\Tm : \MTm\,\Gamma\,\Ty \to \Set$,
+  supporting context extension, i.e.\ we have $\Gamma\ext A$ for
+  $A : \MTm\,\Gamma\,\Ty$ such that $\Sub\,\Gamma\,(\Delta\ext A)$ is isomorphic
+  to $(\sigma : \Sub\,\Gamma\,\Delta) \times \Tm\,\Gamma\,(A[\sigma])$. All
+  object-level term formers are supported in $\Tm$.
+\item Staging operations: we have $\Lift : \MTm\,\Gamma\,\Ty \to \MTy\,\Gamma$ together
+  with isomorphisms $\Tm\,\Gamma\,A \simeq \MTm\,\Gamma\,(\Lift A)$.
+  We write $\ql\!\blank\!\qr$ and $\spl\!\blank$ for the components of the isomorphism.
+\end{itemize}
+\end{definition}
+This presentation is a bit more verbose than the surface syntax used in the
+paper. First, the meta level uses explicit coding and decoding for universes,
+while the surface syntax assumes Russell-style universes. Second, the object
+level has $\VTy$ and $\CTy$ as Tarski-style universes with explicit inclusions
+$\msf{V}$ and $\msf{C}$ into $\Ty$, while the surface syntax used implicit
+coercions.
+
+Also, this is not the only possible presentation. Here, we follow the style of
+the informal syntax by having a separate \emph{sort} for object-level terms,
+together with explicit quoting and splicing. However, we do not have a sort for
+object types and instead specify them as terms of metatypes. This is a mixture
+of two styles:
+\begin{itemize}
+\item The ``classic'' 2LTT style would have separate sorts and staging
+  operations for all of $\Ty$, $\CTy$ and $\VTy$. Here the two levels are
+  specified independently and level-mixing is only possible through staging
+  operations.
+\item The ``higher-order abstract syntax'' (HOAS) or ``logical framework'' style
+  would only have metatypes and metaterms, no quoting or splicing, and would
+  reuse metafunctions to represent object-level binders. Our Agda implementation
+  follows this style.
+\end{itemize}
+In the context of CFTT, the choice between HOAS and 2LTT styles is a matter of
+taste, and the two are inter-derivable \cite[Section
+  3.3]{DBLP:journals/corr/abs-2302-08837}.
+
+\subsection{Presheaf Model}
+
+Unstaging is defined as evaluation of the syntax of CFTT in a particular
+presheaf model.
+\begin{itemize}
+  \item The \emph{object theory} is the simple type theory supporting only value
+    types and computation types as described in Section
+    \ref{sec:the-object-level} and also in the Agda
+    formalization. Object-theoretic terms are not quotiented by
+    $\beta\eta$-conversion. Substitution is a recursively defined operation on
+    terms.
+  \item $\mbbo$ is the category whose objects are contexts of the object theory,
+    and morphisms are parallel substitutions, as lists of terms. With this,
+    object-theoretic types form a constant presheaf which we denote
+    as $\Tyo : \mbbo^{\msf{op}} \to \Set$, and terms form a dependent presheaf over $\Tyo$ which we write as
+    $\Tmo$.
+  \item
+  In the presheaf model of CFTT, every typing context (and also every closed
+  type) is modeled as a presheaf over $\mbbo$. The interpretation of meta-level
+  type formers is standard, following Hofmann \cite{Hofmann97syntaxand} and
+  Huber \cite{huber-thesis}.
+\item $\Ty : \MTy_0\,\Gamma$ is the displayed presheaf which is constantly
+  $\Tyo$. $\VTy$ and $\CTy$ are modeled analogously.
+\item $\Lift A : \MTy_0\,\Gamma$ is modeled as follows. We have that $A :
+  \MTy\,\Gamma\,\Ty$, but since $\Ty$ is defined as constantly $\Tyo$, it
+  follows that $A$ is a natural transformation from $\Gamma$ to $\Tyo$. Hence,
+  we define $\Lift A : \MTy_0\,\Gamma$ to be $\Tmo[A]$, where $[\blank]$ is
+  substitution in presheaves, i.e.\ the reindexing of a displayed presheaf by a
+  natural transformation.
+\item
+  $\Tm\,\Gamma\,A$ is simply defined to be $\MTy\,\Gamma\,(\Lift A)$ in the model. Hence,
+  quotation and splicing are both interpreted as identity maps.
+\end{itemize}
+Now, we can take a closed term $t : \Tm\,\emptycon\,A$ in CFTT and evaluate it
+in the presheaf model to obtain an object-theoretic term whose type is the
+result of evaluating $A$.
+
+\subsection{W-types}
+So far we have stayed close to \cite{staged2ltt}, with only cosmetic
+changes. Supporting W-types, as a way to get inductive families \cite{whynotw},
+is the biggest extension here. We extend Section 5 of \cite{staged2ltt}. In the
+syntax of CFTT, $\vW$-types are as follows. The formal specification of
+syntactic $\vW{-}\msf{elim}$ is rather gnarly, because of the usage of explicit
+substitutions, but we write it out here anyways.
+
+\begin{notation} We use $\p^N$ for $N$-fold
+weakening and we also use numerals as De Bruijn indices, to abbreviate
+$\q[\p^N]$. We write $\msf{app}$ and $\msf{lam}$ for $\Pi$ application and
+abstraction. We write $\blank{\Rightarrow}\blank$ for non-dependent function
+types. Finally, for the sake of brevity we omit the component maps of the isomorphism
+$\re_\ext : \re\,(\Gamma \ext A) \simeq ((\gamma : \re\,\Gamma) \times \re\,A\,\gamma)$.
+\end{notation}
+\begin{alignat*}{3}
+  &\vW   &&: (A : \MTy_i\,\Gamma) \to \MTy_j\,(\Gamma\,\ext\,A) \to \MTy_{\msf{max}(i,j)}\,\Gamma\\
+  &\vsup &&: (a : \MTm\,\Gamma\,A) \to \MTm\,\Gamma\,(B[\vid,\,a] \Rightarrow \vW\,A\,B) \to \MTm\,\Gamma\,(\vW\,A\,B)\\
+  &\vW{-}\msf{elim}  &&: (P : \MTy\,(\Gamma\,\ext\,\vW\,A\,B))\\
+  &                  && \hspace{0.6em}\to \MTm\,(\Gamma\,\ext\,A\,\ext\,B \Rightarrow (\vW\,A\,B)[p]\,\ext\,\Pi\,(B[p])\,(P[\p^3,\,\msf{app}\,1\,0]))\,(P[\p^3,\,\vsup\,2\,1))\\
+  &                  && \hspace{0.6em}\to (w : \MTm\,\Gamma\,(\vW\,A\,B)) \to \MTm\,\Gamma\,(P[\id,\,w])\\
+  & \vW{\beta}       &&:
+    \vW{-}\msf{elim}\,P\,s\,(\vsup\,a\,f) = s[\id,\,a,\,f,\,\msf{lam}\,(\vW{-}\msf{elim}\,(P[\p^2,\,\q])\,(s[\p])\,(\msf{app}\,f\,0)]
+\end{alignat*}
+We shall omit the $i$ and $j$ universe levels in the following. In $\whset$,
+i.e.\ internally to presheaves over $\mbbo$, we also have the standard W-type.
+\begin{alignat*}{3}
+  & \wh{\vW}   &&: (A : \whset) \to (A \to \whset) \to \whset\\
+  & \wh{\vsup} &&: (a : A) \to (B\,a \to \wh{\vW}\,A\,B) \to \wh{\vW}\,A\,B\\
+  & \wh{\vW{-}\msf{elim}} &&: (P : \wh{\vW}\,A\,B \to \whset)\\
+  & && \hspace{0.6em}\to ((a : A)(f : B\,a \to \wh{\vW}\,A\,B) \to ((b : B\,a) \to P\,(f\,b)) \to P\,(\wh{\vsup}\,a\,f))\\
+  & && \hspace{0.6em}\to (w : \wh{\vW}\,A\,B) \to P\,w\\
+  & \wh{\vW}{\beta} &&: \wh{\vW{-}\msf{elim}}\,P\,s\,(\wh{\vsup}\,a\,f) = s\,a\,f\,(\lambda\,b.\,\wh{\vW{-}\msf{elim}}\,P\,s\,(f\,b))
+\end{alignat*}
+In the presheaf model we interpret $\vW$ using $\whW$.
+\begin{alignat*}{3}
+  & \ev\,(\vW\,A\,B)\,\gamma   &&:= \wh{\vW}\,(\ev\,A\,\gamma)\,(\lambda\,\alpha.\,\ev\,B\,(\gamma,\,\alpha))\\
+  & \ev\,(\vsup\,a\,f)\,\gamma &&:= \wh{\vsup}\,(\ev\,a\,\gamma)\,(\lambda\,\beta.\,\ev\,f\,(\gamma, \beta))\\
+  & \ev\,(\vW{-}\msf{elim}\,P\,s\,w)\,\gamma &&:= \wh{\vW{-}\msf{elim}}\,(\lambda\,w.\,\ev\,P\,(\gamma,\,w))\,(\lambda\,a\,f\,g.\,\ev\,s\,(\gamma,\,a,\,f,\,g))\,(\ev\,w\,\gamma)
+\end{alignat*}
+
+%% W-elim̂ (λ w. E P (γ, w)) (λ a f g. E s (γ, a, f, g)) (E w γ)
+Now, assuming $A : \MTy\,\Gamma$ and $B : \MTy\,(\Gamma\,\ext\,A)$, we consider
+$\re\,(\vW\,A\,B) : (\gamma : \re\,\Gamma) \to \whset$. Externally, the elements
+of $\re\,(\vW\,A\,B)\,\gamma$ are CFTT terms with a $\vW$-type in purely
+object-level contexts. We call such terms \emph{restricted}. Now, we internalize
+the restriction of the $\vsup$ constructor:
+\[ \re_{\vsup} : (\alpha : \re\,A\,\gamma) \to \re\,(B \Rightarrow (W\,A\,B)[\p])\,(\gamma,\,\alpha) \to \re\,(W\,A\,B)\,\gamma \]
+Externally, $\re_{\vsup}$ applies $\vsup$ to restricted terms. Note that in
+$\re\,(B \Rightarrow (W\,A\,B)[\p])\,(\gamma,\,\alpha)$, the type $B \Rightarrow (W\,A\,B)[\p]$ is in
+the context $(\Gamma\,\ext\,A)$, which makes it possible to pass $(\gamma,\,\alpha)$ as
+argument; this ``instantiates'' $B$ to $\alpha$. With this, we can also
+show that $\re$ preserves $\vsup$:
+\[ \re\,(\vsup\,t\,u)\,\gamma = \re_\vsup\,(\re\,t\,\gamma)\,(\re\,u\,\gamma) \]
+Note that the type of $\re\,u\,\gamma$ is $\re\,(B[\id,\,t] \Rightarrow
+\vW\,A\,B)\,\gamma$, which is equal to $\re\,((B \Rightarrow
+(\vW\,A\,B)[\p])[\id,\,t])\,\gamma$, which is in turn equal to $\re\,(B
+\Rightarrow (\vW\,A\,B)[\p])\,(\gamma,\,\re\,t\,\gamma)$ by $\re$'s preservation
+of substitutions, which makes the above equation well-typed.
+
+Next, we give a logical relation interpretation for $\vW$. We inductively define
+a relation in $\whset$ as follows.
+\begin{alignat*}{3}
+  & \vW\rel &&: \Gamma\rel\,\gamma\,\gamma' \to \ev\,(\vW\,A\,B)\,\gamma \to \re\,(\vW\,A\,B)\,\gamma' \to \whset\\
+  & \vsup\rel &&: \hspace{0.8em}\{\alpha : \ev\,A\,\gamma\}\{\alpha' : \re\,A\,\gamma'\}(\alpha\rel : A\rel \gamma\rel\,\alpha\,\alpha')\\
+  &           &&\to \{f \hspace{0.5em}: \ev\,B\,(\gamma,\,\alpha) \to \ev\,(\vW\,A\,B)\,\gamma\}\\
+  &           &&\to \{f' \hspace{0.2em}: \re\,(B \Rightarrow (\vW\,A\,B)[\p])\,(\gamma',\,\alpha')\}\\
+  &           &&\to (f\rel : (B \Rightarrow (\vW\,A\,B)[\p])\rel\,(\gamma\rel,\,\alpha\rel)\,f\,f')\\
+  &           &&\to \vW\rel\,\gamma\rel\,(\wh{\vsup}\,\alpha\,f)\,(\re_\vsup\,\alpha'\,f')
+\end{alignat*}
+Here, $(B \Rightarrow (\vW\,A\,B)[\p])\rel$ is the relational interpretation of
+the function type, which unfolds to pointwise preservation of relations. We also
+define $(\vW\,A\,B)\rel\,\gamma\rel\,t\,t'$ to be $\vW\rel\,\gamma\rel\,t\,t'$.
+In short, $\vW\rel$ expresses that $\wh{\vsup}\,\alpha\,f$ is related to
+$\re_\vsup\,\alpha'\,f'$ when the arguments are (inductively) related. Similarly, we
+interpret $(\vsup\,t\,u)\rel\,\gamma\rel$ as
+$\vsup\rel\,(t\rel\,\gamma\rel)\,(u\rel\,\gamma\rel)$. It only remains to
+interpret $\vW$-elimination and its $\beta$-rule. We need to define
+\[ (\vW{-}\msf{elim}\,P\,s\,w)\rel\,\gamma\rel : P\rel\,(\gamma\rel,\,w\rel\,\gamma\rel)\,(\ev\,(\welim\,P\,s\,w)\,\gamma)\,(\re\,(\welim\,P\,s\,w)\,\gamma'). \]
+We do this by induction on $w\rel\,\gamma\rel :
+\vW\rel\,\gamma\rel\,(\ev\,w\,\gamma)\,(\re\,w\,\gamma')$. At this point it
+becomes rather tedious to compute and unfold the involved types, so we only give
+a compact definition together with some informal explanation:
+\begin{alignat*}{3}
+  &(\vW{-}\msf{elim}\,P\,s\,w)\rel\,\gamma\rel :=\\
+  &\hspace{4em}\vW\rel{-}\msf{elim}\,(\lambda\,w\rel.\,\,P\rel\,(\gamma\rel,\,w\rel)\,(\ev\,(\welim\,P\,s\,w)\,\gamma)\,(\re\,(\welim\,P\,s\,w)\,\gamma'))\\
+  &\hspace{8.1em}(\lambda\,a\rel\,f\rel\,\mathit{hyp}.\,\,s\rel\,(\gamma\rel,\,a\rel,\,f\rel,\,\mathit{hyp}))\\
+  &\hspace{8.1em}(w\rel\,\gamma\rel)
+\end{alignat*}
+$\vW\rel{-}\msf{elim}$ is the eliminator for $\vW\rel$. Its first argument is
+the induction motive, which matches the goal type. The second argument is the
+method for $\vsup\rel$; its $a\rel$ and $f\rel$ inputs are the relatedness
+witnesses stored in a $\vsup\rel$, while $\mathit{hyp}$ is induction hypothesis,
+witnessing the inductive motive for every output of $f\rel$. In the body here,
+we need to witness the motive in the case where $w$ is a $\vsup$, which causes
+both $\ev\,(\welim\,P\,s\,w)\,\gamma)$ and $\re\,(\welim\,P\,s\,w)\,\gamma')$ to
+compute further to applications of $\ev\,s\,\gamma$ and $\re\,s\,\gamma'$
+respectively. Hence, we use $s\rel$ to relate the two sides. This definition
+also respects $\vW\beta$, by the $\beta$ rule for $\vW\rel$.
+
+\subsection{Identity type}
+
+In this section we assume an \emph{extensional} identity type in CFTT. As we
+mentioned in Section \ref{sec:semantics-of-staging}, we can show soundness of staging with
+extensional identity and certain \emph{postulated} identities, but we cannot do
+the same with intensional identity. Hence, we formulate unstaging as consisting
+of two steps: first, a translation of intensional identity to extensional (which
+amounts to proof erasure), followed by evaluation in the presheaf model.
+
+Extensional identity in CFTT type is interpreted as the standard extensional
+identity in presheaves, i.e.\ we have $\ev\,(\msf{Id}\,A\,t\,u)\,\gamma :=
+\ev\,t\,\gamma = \ev\,u\,\gamma$. This supports $\msf{refl}$, transport,
+uniqueness of identity and equality reflection; we omit the fairly trivial
+definitions here. We choose the relational interpretation to be trivial as well,
+i.e.\ $(\msf{Id}\,t\,u)\rel\,\gamma\rel\,p\,p' := \top$.
+
+This is because both $\ev\,(\Id\,t\,u)\,\gamma$ and $\re\,(\Id\,t\,u)\,\gamma'$
+are mere propositions --- the latter because of equality reflection in the
+syntax.  In particular, if we have a witness of $\re\,(\Id\,t\,u)\,\gamma'$, we
+also have $\re\,t\,\gamma' = \re\,u\,\gamma'$ by equality reflection. Thus, the
+rest of the relational interpretation of $\Id$ is also trivial. Another way to
+think about this: soundness expresses a form of canonicity, but if we have
+equality reflection then terms with identity types are always canonical.
+
+\subsection{Generativity} \label{appendix:generativity}
+
+The generativity axiom from Section \ref{sec:concatmap-for-streams} has the following type, in internal
+CFTT syntax:
+\[ (A : \U_\msf{P})(f : \Elprod\,A \to \USOP)(x\,y : \Elprod\,A) \to f\,x = f\,y  \]
+In the presheaf model, we have the following:
+\begin{itemize}
+\item $\wh{\Uprod}$ is the set (constant presheaf) of lists of object-theoretic types.
+\item $\wh{\USOP}$ is the set of lists of lists of object-theoretic types.
+\item $\wh{\Elprod\,A}$ is the presheaf such that $\wh{\Elprod\,A}\,\Gamma$ is
+  the set of products of object-theoretic terms in context $\Gamma$, with types
+  of components taken from $A$.
+\end{itemize}
+Unfolding the type of generativity in the presheaf model, it suffices to show
+that assuming
+\begin{itemize}
+\item $A : \wh{\Uprod}$, $\Gamma : \Cono$, $x,\,y : \wh{\Elprod\,A}\,\Gamma$
+\item and $f : (\Delta : \Cono) \to \Subo\,\Delta\,\Gamma \to \wh{\Elprod\,A}\,\Delta \to \wh{\USOP}$ such that $f$ is natural with respect to object-theoretic substitution,
+\end{itemize}
+we have that $f\,\Gamma\,\id\,x = f\,\Gamma\,\id\,y$.
+
+Now, $\wh{\Elprod\,A}$ is a representable presheaf since it is a finite product
+of object-theoretic terms. Also, since $f$ is a natural transformation from the
+representable presheaf $\Subo\blank\Gamma \times \wh{\Elprod\,A}$ to the
+constant presheaf $\wh{\USOP}$, the Yoneda lemma implies that $f$ is constant and
+hence the generativity axiom is validated.
+
+Finally, since the logical relation interpretation of the identity type is trivial,
+the logical relation interpretation for the generativity axiom is also trivial.
+
+\subsection{Summary}
+
+By the presheaf and logical relations interpretation of CFTT as shown in this appendix,
+we obtain \emph{unstaging} and \emph{soundness} of unstaging, following \cite{staged2ltt}.
+
+\emph{Strictness} of unstaging holds trivially, since there are no $\beta$ and
+$\eta$ rules in the object theory. \emph{Stability} of unstaging is shown by
+straightforward induction on the syntax of the object theory, the same way as in
+\cite{staged2ltt}, and we omit it here.
+
+\interlinepenalty=10000
+\bibliography{references}
+
+\end{document}
+\endinput

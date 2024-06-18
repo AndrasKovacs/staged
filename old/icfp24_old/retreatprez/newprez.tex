@@ -1,0 +1,710 @@
+%% build: latexmk -pdf -pvc prez.tex
+
+\documentclass[dvipsnames,aspectratio=169]{beamer}
+\usetheme{Madrid}
+
+%% kill footline
+\setbeamertemplate{footline}[frame number]{}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}{}
+
+%% bibliography
+\bibliographystyle{alpha}
+\setbeamerfont{bibliography item}{size=\footnotesize}
+\setbeamerfont{bibliography entry author}{size=\footnotesize}
+\setbeamerfont{bibliography entry title}{size=\footnotesize}
+\setbeamerfont{bibliography entry location}{size=\footnotesize}
+\setbeamerfont{bibliography entry note}{size=\footnotesize}
+\setbeamertemplate{bibliography item}{}
+
+%% kill ball enumeration
+\setbeamertemplate{enumerate items}[circle]
+\setbeamertemplate{section in toc}[circle]
+
+%% kill block shadows
+\setbeamertemplate{blocks}[rounded][shadow=false]
+\setbeamertemplate{title page}[default][colsep=-4bp,rounded=true]
+
+%% kill ball itemize
+\setbeamertemplate{itemize items}[circle]
+
+%% --------------------------------------------------------------------------------
+
+\usepackage[utf8]{inputenc}
+%% \usepackage[hidelinks]{hyperref}
+\usepackage{amsmath}
+\usepackage{cite}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{amsfonts}
+\usepackage{mathpartir}
+\usepackage{scalerel}
+\usepackage{stmaryrd}
+\usepackage{bm}
+\usepackage{graphicx}
+\usepackage{fontspec}
+\usepackage{textcomp}
+
+\setmonofont[Scale=0.8]{DejaVu Sans Mono}
+
+%% --------------------------------------------------------------------------------
+
+%% HoTT style composition
+\makeatletter
+\DeclareRobustCommand{\sqcdot}{\mathbin{\mathpalette\morphic@sqcdot\relax}}
+\newcommand{\morphic@sqcdot}[2]{%
+  \sbox\z@{$\m@th#1\centerdot$}%
+  \ht\z@=.33333\ht\z@
+  \vcenter{\box\z@}%
+}
+\makeatother
+
+\renewcommand{\mit}[1]{{\mathit{#1}}}
+\newcommand{\ttt}[1]{{\texttt{#1}}}
+\newcommand{\msf}[1]{{\mathsf{#1}}}
+\newcommand{\mbf}[1]{{\mathbf{#1}}}
+\newcommand{\mbb}[1]{\mathbb{#1}}
+\newcommand{\U}{\mathsf{U}}
+\newcommand{\code}{\mathsf{code}}
+\newcommand{\bs}[1]{\boldsymbol{#1}}
+\newcommand{\wh}[1]{\widehat{#1}}
+\newcommand{\mdo}{\mbf{do}\,}
+\newcommand{\ind}{\hspace{1em}}
+\newcommand{\bif}{\mbf{if}\,}
+\newcommand{\bthen}{\mbf{then}\,}
+\newcommand{\belse}{\mbf{else}\,}
+\newcommand{\return}{\mbf{return}\,}
+\newcommand{\pure}{\mbf{pure}\,}
+\newcommand{\lam}{\lambda\,}
+\newcommand{\data}{\mbf{data}\,}
+\newcommand{\where}{\mbf{where}}
+\newcommand{\M}{\msf{M}}
+\newcommand{\letrec}{\mbf{letrec}\,}
+\newcommand{\of}{\mbf{of}\,}
+\newcommand{\go}{\mit{go}}
+\newcommand{\add}{\mit{add}}
+\newcommand{\letdef}{\mbf{let\,}}
+\newcommand{\map}{\mit{map}}
+\newcommand{\emptycon}{\scaleobj{.75}\bullet}
+\newcommand{\Tyo}{\msf{Ty}_{\mbbo}}
+\newcommand{\Tmo}{\msf{Tm}_{\mbbo}}
+\newcommand{\whset}{\wh{\Set}}
+\newcommand{\ev}{\mbb{E}}
+\newcommand{\re}{\mbb{R}}
+
+
+\newcommand{\mbbc}{\mbb{C}}
+\newcommand{\mbbo}{\mbb{O}}
+
+\newcommand{\vas}{\mathsf{as}}
+\newcommand{\vbs}{\mathsf{bs}}
+\newcommand{\vcs}{\mathsf{cs}}
+\newcommand{\vxs}{\mathsf{xs}}
+\newcommand{\vys}{\mathsf{ys}}
+\newcommand{\vsp}{\mathsf{sp}}
+\newcommand{\vma}{\mathsf{ma}}
+\newcommand{\vga}{\mathsf{ga}}
+\newcommand{\vm}{\mathsf{m}}
+\newcommand{\vn}{\mathsf{n}}
+\newcommand{\vk}{\mathsf{k}}
+\newcommand{\vA}{\mathsf{A}}
+\newcommand{\vB}{\mathsf{B}}
+\newcommand{\vC}{\mathsf{C}}
+\newcommand{\vS}{\mathsf{S}}
+\newcommand{\vF}{\mathsf{F}}
+\newcommand{\vR}{\mathsf{R}}
+\newcommand{\vM}{\mathsf{M}}
+\newcommand{\vmb}{\mathsf{mb}}
+\newcommand{\mAs}{\mathsf{As}}
+\newcommand{\va}{\mathsf{a}}
+\newcommand{\vb}{\mathsf{b}}
+\newcommand{\vc}{\mathsf{c}}
+\newcommand{\vd}{\mathsf{d}}
+\newcommand{\vx}{\mathsf{x}}
+\newcommand{\vy}{\mathsf{y}}
+\newcommand{\vz}{\mathsf{z}}
+\newcommand{\vf}{\mathsf{f}}
+\newcommand{\vfs}{\mathsf{fs}}
+\newcommand{\vg}{\mathsf{g}}
+\newcommand{\vh}{\mathsf{h}}
+\newcommand{\vt}{\mathsf{t}}
+\newcommand{\vs}{\mathsf{s}}
+\newcommand{\vr}{\mathsf{r}}
+\newcommand{\vu}{\mathsf{u}}
+\newcommand{\vl}{\mathsf{l}}
+\newcommand{\vns}{\mathsf{ns}}
+\newcommand{\vW}{\mathsf{W}}
+\newcommand{\vsup}{\mathsf{sup}}
+\newcommand{\vid}{\mathsf{id}}
+\newcommand{\whW}{\wh{\vW}}
+
+
+\newcommand{\SOP}{\msf{SOP}}
+\newcommand{\El}{\msf{El}}
+\newcommand{\USOP}{\msf{U}_{\msf{SOP}}}
+\newcommand{\Uprod}{\msf{U_P}}
+\newcommand{\Elprod}{\msf{El_{P}}}
+\newcommand{\IsSOP}{\msf{IsSOP}}
+\newcommand{\forEach}{\msf{forEach}}
+\newcommand{\single}{\msf{single}}
+\newcommand{\msplit}{\msf{split}}
+\newcommand{\mapGen}{\msf{mapGen}}
+\newcommand{\genPull}{\msf{gen_{Pull}}}
+\newcommand{\Set}{\msf{Set}}
+\newcommand{\casePull}{\msf{case_{Pull}}}
+\newcommand{\appull}{\ap_{\Pull}}
+
+\newcommand{\Con}{\msf{Con}}
+\newcommand{\Sub}{\msf{Sub}}
+\newcommand{\Tm}{\msf{Tm}}
+\newcommand{\Mor}{\msf{Tm}}
+
+\newcommand{\ext}{\triangleright}
+
+\newcommand{\Int}{\msf{Int}}
+\newcommand{\List}{\msf{List}}
+\newcommand{\Tree}{\msf{Tree}}
+\newcommand{\Node}{\msf{Node}}
+\newcommand{\Leaf}{\msf{Leaf}}
+\newcommand{\Nil}{\msf{Nil}}
+\newcommand{\Cons}{\msf{Cons}}
+\newcommand{\Reader}{\msf{Reader}}
+\newcommand{\ReaderT}{\msf{ReaderT}}
+\newcommand{\Monad}{\msf{Monad}}
+\newcommand{\Applicative}{\msf{Applicative}}
+\newcommand{\class}{\msf{class}}
+\newcommand{\Functor}{\msf{Functor}}
+\newcommand{\Bool}{\msf{Bool}}
+\newcommand{\Statel}{\msf{State}}
+\newcommand{\fro}{\leftarrow}
+\newcommand{\case}{\mbf{case\,}}
+\newcommand{\foldr}{\msf{foldr}}
+\newcommand{\foldl}{\msf{foldl}}
+\newcommand{\rep}{\msf{rep}}
+\newcommand{\concatMap}{\msf{concatMap}}
+
+\newcommand{\Lift}{{\Uparrow}}
+\newcommand{\Up}{{\Uparrow}}
+\newcommand{\spl}{{\bs{\sim}}}
+\newcommand{\ql}{{\bs{\langle}}}
+\newcommand{\qr}{{\bs{\rangle}}}
+\newcommand{\bind}{\mathbin{>\!\!>\mkern-6.7mu=}}
+
+\newcommand{\MTy}{\msf{MetaTy}}
+\newcommand{\MTm}{\msf{MetaTm}}
+\newcommand{\VTy}{\msf{ValTy}}
+\newcommand{\Ty}{\msf{Ty}}
+\newcommand{\CTy}{\msf{CompTy}}
+\newcommand{\True}{\msf{True}}
+\newcommand{\False}{\msf{False}}
+\newcommand{\fst}{\msf{fst}}
+\newcommand{\snd}{\msf{snd}}
+
+\newcommand{\blank}{{\mathord{\hspace{1pt}\text{--}\hspace{1pt}}}}
+
+\newcommand{\Nat}{\msf{Nat}}
+\newcommand{\Zero}{\msf{Zero}}
+\newcommand{\Suc}{\msf{Suc}}
+\newcommand{\Maybe}{\msf{Maybe}}
+\newcommand{\MaybeT}{\msf{MaybeT}}
+\newcommand{\Nothing}{\msf{Nothing}}
+\newcommand{\Just}{\msf{Just}}
+
+\theoremstyle{remark}
+\newtheorem{notation}{Notation}
+\newtheorem*{axiom}{Axiom}
+
+\newcommand{\id}{\mit{id}}
+\newcommand{\mup}{\mbf{up}}
+\newcommand{\mdown}{\mbf{down}}
+\newcommand{\tyclass}{\mbf{class}}
+\newcommand{\instance}{\mbf{instance}\,}
+\newcommand{\Improve}{\msf{Improve}}
+\newcommand{\Gen}{\msf{Gen}}
+\newcommand{\unGen}{\mit{unGen}}
+\renewcommand{\Vec}{\msf{Vec}}
+\newcommand{\gen}{\mit{gen}}
+\newcommand{\genRec}{\mit{genRec}}
+\newcommand{\fmap}{<\!\!\$\!\!>}
+\newcommand{\ap}{{<\!\!*\!\!>}}
+\newcommand{\runGen}{\mit{runGen}}
+\newcommand{\qt}[1]{\ql#1\qr}
+\newcommand{\lift}{\mit{lift}}
+\newcommand{\liftGen}{\mit{liftGen}}
+\newcommand{\MonadGen}{\msf{MonadGen}}
+\newcommand{\MonadState}{\msf{MonadState}}
+\newcommand{\MonadReader}{\msf{MonadReader}}
+\newcommand{\RA}{\Rightarrow}
+\newcommand{\EitherT}{\msf{EitherT}}
+\newcommand{\Either}{\msf{Either}}
+\newcommand{\Left}{\msf{Left}}
+\newcommand{\Right}{\msf{Right}}
+\newcommand{\StateT}{\msf{StateT}}
+\newcommand{\Identity}{\msf{Identity}}
+
+\newcommand{\Stop}{\msf{Stop}}
+\newcommand{\Skip}{\msf{Skip}}
+\newcommand{\Yield}{\msf{Yield}}
+
+\newcommand{\runIdentity}{\mit{runIdentity}}
+\newcommand{\runReaderT}{\mit{runReaderT}}
+\newcommand{\newtype}{\mbf{newtype}\,}
+\newcommand{\runMaybeT}{\mit{runMaybeT}}
+\newcommand{\runStateT}{\mit{runStateT}}
+\newcommand{\runState}{\mit{runState}}
+\newcommand{\dlr}{\,\$\,}
+\newcommand{\ImproveF}{\msf{ImproveF}}
+\newcommand{\ExceptT}{\msf{ExceptT}}
+\newcommand{\State}{\msf{State}}
+\newcommand{\SumVS}{\msf{SumVS}}
+\newcommand{\ProdCS}{\msf{ProdCS}}
+\newcommand{\Here}{\msf{Here}}
+\newcommand{\There}{\msf{There}}
+\newcommand{\IsSumVS}{\msf{IsSumVS}}
+\newcommand{\MonadJoin}{\msf{MonadJoin}}
+\newcommand{\Stream}{\msf{Stream}}
+\newcommand{\join}{\mit{join}}
+\newcommand{\modify}{\mit{modify}}
+\newcommand{\get}{\mit{get}}
+\newcommand{\mput}{\mit{put}}
+\newcommand{\Rep}{\mit{Rep}}
+\newcommand{\encode}{\mit{encode}}
+\newcommand{\decode}{\mit{decode}}
+\newcommand{\mindex}{\mit{index}}
+\newcommand{\mtabulate}{\mit{tabulate}}
+\newcommand{\States}{\mit{States}}
+\newcommand{\seed}{\mit{seed}}
+\newcommand{\step}{\mit{step}}
+\newcommand{\Step}{\msf{Step}}
+\newcommand{\Pull}{\msf{Pull}}
+\newcommand{\MkPull}{\msf{MkPull}}
+
+%% --------------------------------------------------------------------------------
+
+\title{Polarized Lambda-Calculus at Runtime, Dependent Types at Compile Time}
+\author{András Kovács}
+%% \institute{University of Gothenburg}
+\date{4 June 2024, CS retreat}
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}
+
+\large{\textbf{András Kovács}}
+\vspace{0.3em}
+\hrule
+\vspace{1em}
+
+Postdoc in Logic and Types under Thierry Coquand since 2023 September.
+\vspace{1em}
+
+Started in economics \& finance in Budapest, switched to CS,
+did PhD in type theory.
+\vspace{1em}
+
+Some current interests:
+\begin{itemize}
+\item Fitness, nutrition.
+\item ``Harsh vocals'' (screaming in metal music).
+\end{itemize}
+\vspace{1em}
+
+Research:
+\begin{itemize}
+  \item Type theory: theory of inductive types, universes.
+  \item Making proof assistants run fast (annoyed by Agda \& Coq).
+  \item High-level high-performance programming (annoyed by Haskell).
+\end{itemize}
+
+
+\end{frame}
+
+\begin{frame}[fragile]{Compiling monads today in Haskell}
+
+\begin{columns}
+\begin{column}{0.3\textwidth}
+\textbf{GHC's input:}
+\begin{verbatim}
+    f :: Reader Bool Int
+    f = do
+      b ← ask
+      if b then return 10
+           else return 20
+
+
+
+\end{verbatim}
+\end{column}
+\begin{column}{0.5\textwidth}
+\textbf{GHC's \texttt{-O0} output:}
+\begin{verbatim}
+    dict :: Monad (Reader Int)
+    dict = MkDict bindReader returnReader
+
+    f :: Reader Bool Int
+    f x = (>>=) dict (ask dict) (\b →
+      case b of
+        True  → return dict 10
+        False → return dict 20)
+\end{verbatim}
+\end{column}
+\end{columns}
+
+\end{frame}
+
+
+\begin{frame}[fragile]{Compiling monads today in Haskell}
+
+\begin{columns}
+\begin{column}{0.3\textwidth}
+\textbf{GHC's \texttt{-O1} output:}
+\begin{verbatim}
+    f :: Bool → Int
+    f b = case b of
+      True  → 10
+      False → 20
+\end{verbatim}
+
+\end{column}
+\begin{column}{0.6\textwidth}
+\begin{itemize}
+  \item Elaboration to \texttt{-O0} is deterministic and relatively cheap.
+  \item Going from \texttt{-O0} to \texttt{-O1} is \alert{hard} and needs
+        a lot of machinery.
+\end{itemize}
+\end{column}
+\end{columns}
+\vspace{2em}
+
+Example: \ttt{mapM} is third-order, rank-2 polymorphic, but almost all usages should
+compile to first-order monomorphic code.
+\begin{verbatim}
+    mapM :: Monad m => (a → m b) → [a] → m [b]
+\end{verbatim}
+
+GHC has to guess the programmer's intent.
+\vspace{1em}
+
+\end{frame}
+
+\begin{frame}[fragile]{Doing it differently}
+
+\begin{columns}
+\begin{column}{0.3\textwidth}
+\textbf{Input in WIP language:}
+\begin{verbatim}
+    f : Reader Bool Int
+    f := do
+      b ← ask
+      if b then return 10
+           else return 20
+\end{verbatim}
+
+\end{column}
+\begin{column}{0.6\textwidth}
+\begin{itemize}
+\item Looks similar to Haskell.
+\item Desugaring \& elaboration does slightly more work.
+\item Compiles to efficient code \emph{deterministically, without
+      general-purpose optimization}.
+\end{itemize}
+\end{column}
+\end{columns}
+\vspace{1em}
+\pause
+
+\begin{block}{}
+\textbf{Main idea}
+\begin{itemize}
+\item We use a \emph{two-level type theory (2LTT)}:
+  \begin{itemize}
+    \item Metalanguage (compile time): dependently typed, fancy features.
+    \item Object language (runtime): simpler \& lower-level.
+    \item The two are smoothly integrated.
+  \end{itemize}
+\item Monadic programs are \emph{metaprograms} which generate efficient
+  runtime code.
+\item Most optimizations are implemented in libraries instead of compiler internals.
+\end{itemize}
+\end{block}
+
+\end{frame}
+
+\begin{frame}[fragile]{The 2LTT}
+
+Two type universes for the two levels.
+\vspace{1em}
+\begin{enumerate}
+\item \textbf{\ttt{MetaTy}}: universe of meta-level types. Supports
+      $\Pi$, $\Sigma$, inductive families.
+\item \textbf{\ttt{Ty}}: universe of object-level types.
+  \begin{itemize}
+  \item \ttt{Ty} is itself an element of \ttt{MetaTy}.
+  \item No polymorphism or type dependency in \ttt{Ty}.
+  \item Two sub-universes:
+  \begin{itemize}
+  \item \ttt{CompTy} contains \emph{computation types}: functions, computational products.
+  \item \ttt{ValTy}  contains \emph{value types}: ADT-s and closure types.
+  \item ADT constructors only store values, functions only take value inputs.
+  \end{itemize}
+  \end{itemize}
+\end{enumerate}
+\vspace{0.5em}
+
+\end{frame}
+
+\begin{frame}[fragile]{The 2LTT}
+
+\begin{columns}
+\begin{column}{0.4\textwidth}
+\textbf{A metaprogram}:
+\begin{verbatim}
+  id : {A : MetaTy} → A → A
+  id x = x
+
+
+
+
+\end{verbatim}
+\end{column}
+
+\begin{column}{0.6\textwidth}
+\textbf{An object program:}
+\begin{verbatim}
+  data List (A : ValTy) := Nil | Cons A List
+
+  myMap : List Int → List Int
+  myMap ns := case xs of
+    Nil       → Nil
+    Cons n ns → Cons (n + 10) (myMap ns)
+\end{verbatim}
+\end{column}
+\end{columns}
+
+
+\end{frame}
+
+\begin{frame}[fragile]{The 2LTT - interaction between stages}
+
+\begin{itemize}
+\item \textbf{Lifting}: for \ttt{A : Ty}, we have \ttt{⇑A : MetaTy}, as the type of
+      metaprograms that produce \ttt{A}-typed object programs.
+\item \textbf{Quoting}: for \ttt{t : A} and \ttt{A : Ty}, we have \ttt{<t>} as the metaprogram
+      which immediately returns \ttt{t}.
+\item \textbf{Splicing}: for \ttt{t : ⇑A}, we have \ttt{\char`~t : A} which runs the
+       metaprogram \ttt{t} and inserts its output in some object-level code.
+\item Definitional equalities: \ttt{\char`~<t> ≡ t} and \ttt{<\char`~t> ≡ t}.
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}[fragile]{Staged example}
+
+\begin{verbatim}
+    map : {A B : ValTy} → (⇑A → ⇑B) → ⇑(List A) → ⇑(List B)
+    map f as = <letrec go as := case as of
+                  Nil       → Nil
+                  Cons a as → Cons ~(f <a>) (go as)
+                in go ~as>
+
+    myMap : List Int → List Int
+    myMap ns := ~(map (λ x. <~x + 10>) <ns>)
+\end{verbatim}
+
+\end{frame}
+
+\begin{frame}[fragile]{Staged example - with stage inference}
+
+\begin{verbatim}
+    map : {A B : ValTy} → (A → B) → List A → List B
+    map f = letrec go as := case as of
+                  Nil       → Nil
+                  Cons a as → Cons (f a) (go as)
+            in go
+
+    myMap : List Int → List Int
+    myMap := map (λ x. x + 10)
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]{A monad for code generation}
+
+Type classes only exist in the metalanguage.
+\begin{verbatim}
+    class Monad (m : MetaTy → MetaTy) where
+      return : a → m a
+      (>>=)  : m a → (a → m b) → m b
+\end{verbatim}
+\ttt{Gen} is a Monad whose effect is \textbf{generating object code}:
+\begin{verbatim}
+    newtype Gen A = Gen {unGen : {R : Ty} → (A → ⇑R) → ⇑R}
+    instance Monad Gen where ...
+
+    runGen : Gen (⇑A) → ⇑A
+    runGen (Gen f) = f id
+\end{verbatim}
+
+Generating an object-level \ttt{let}-definition:
+\begin{verbatim}
+    gen : {A : Ty} → ⇑A → Gen ⇑A
+    gen {A} a = Gen $ λ k. <let x : A := ~a in ~(k <x>)>
+\end{verbatim}
+
+\end{frame}
+
+\begin{frame}[fragile]{A monad for code generation}
+
+\begin{columns}
+\begin{column}{0.4\textwidth}
+\textbf{Staged input:}
+\begin{verbatim}
+    myAction : ⇑Int → Gen ⇑Int
+    myAction x = do
+      y ← gen <~x + ~x>
+      z ← gen <~y * ~y>
+      pure <~y * ~z>
+
+    foo : Int
+    foo := ~(runGen $ myAction <10>)
+\end{verbatim}
+\end{column}
+\begin{column}{0.5\textwidth}
+\textbf{Output:}
+\begin{verbatim}
+    foo : Int
+    foo := let y := 10 + 10 in
+           let z := y * y in
+           y * z
+
+
+
+
+\end{verbatim}
+\end{column}
+\end{columns}
+
+\end{frame}
+
+\begin{frame}[fragile]{Staging monads}
+
+Example for \ttt{Reader}:
+\vspace{0.7em}
+
+\begin{verbatim}
+    newtype Identity (A : ValTy) := Identity {runIdentity : A}
+
+    newtype ReaderT (R : ValTy) (M : ValTy → Ty)(A : ValTy) :=
+      Reader {runReader : R → A}
+
+    newtype ReaderTᴹ(R : MetaTy) (M : MetaTy → MetaTy)(A : MetaTy) =
+      Readerᴹ {runReaderᴹ : R → A}
+\end{verbatim}
+
+
+
+
+\end{frame}
+
+
+\begin{frame}[fragile]{Staging monads}
+
+Instead of programming at type \ttt{ReaderTₒ R Identityₒ} (which is not a
+monad!), we program at \ttt{ReaderT (⇑R) Gen}, and define back-and-forth
+conversions:
+
+\begin{verbatim}
+    up : ⇑(ReaderT R Identity A) → ReaderTᴹ (⇑R) Gen (⇑A)
+    up f = ReaderTᴹ $ λ r. pure <runIdentity (runReaderT ~f ~r)>
+
+    down : ReaderTᴹ (⇑R) Gen (⇑A) → ⇑(ReaderTₒ R Identity A)
+    down (ReaderTᴹ f) = <ReaderTₒ (λ r. Identity (~runGen (f <r>)))>
+\end{verbatim}
+
+\begin{block}{}
+\textbf{In general:} up/down is defined by recursion on a transformer stack. The
+bottom \ttt{Identity} is swapped to \ttt{Gen} at the meta-level.
+\end{block}
+\end{frame}
+
+
+\begin{frame}[fragile]{Staging monads}
+
+\begin{columns}
+\begin{column}{0.5\textwidth}
+Somewhat explicit source code:
+\begin{verbatim}
+    f : ReaderT Int Int
+    f := ~(down $ do
+       x <- ask
+       pure <~x + 100>)
+\end{verbatim}
+\end{column}
+\begin{column}{0.5\textwidth}
+With more inference:
+\begin{verbatim}
+    f : ReaderT Int Int
+    f := do
+       x <- ask
+       pure (x + 100)
+\end{verbatim}
+\end{column}
+\end{columns}
+\vspace{2em}
+
+Generated output:
+\begin{verbatim}
+    f : ReaderT Int Identity Int
+    f := ReaderT (λ n. Identity (n + 100))
+\end{verbatim}
+
+\end{frame}
+
+\begin{frame}[fragile]{Polarization \& Closure-Freedom}
+
+\emph{Computation} and \emph{value} types are tracked
+in the object language.
+\vspace{1em}
+
+There's a value type former for \emph{closures},
+that we \textbf{have not yet used} in this talk.
+\vspace{1em}
+
+The computational function type guarantees compilation
+without closures, with only statically known calls!
+\vspace{1em}
+
+Essentially usage of closures is surprisingly rare
+in programming.
+
+\end{frame}
+
+
+\begin{frame}
+
+\begin{itemize}
+  \item Conditionally accepted at ICFP 24: \emph{Closure-Free Functional Programming in a Two-Level Type Theory}.
+  \item More things in paper: case splitting on object-level data, join points,
+    stream fusion, more about polarized types.
+  \item Implementations:
+    \begin{itemize}
+      \item In Agda and typed Template Haskell with some limitations.
+      \item Standalone implementation planned, help from Ondrej Kubánek (MSc project).
+    \end{itemize}
+\end{itemize}
+\vspace{2em}
+
+\begin{center}
+
+  \Large{\textbf{Thank you!}}
+
+\end{center}
+
+
+
+\end{frame}
+
+
+
+
+\end{document}

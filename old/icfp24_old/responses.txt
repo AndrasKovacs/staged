@@ -1,0 +1,335 @@
+Hi András,
+
+I LOVE this paper. Thank you for writing it :) Quite a bit of feedback below,
+but much of it is due to my lack of background or my naive excitement about
+topics you touch.
+
+Section 2
+204.5: I got a bit thrown off that Bool : Ty (which of course it is, by
+coercion) and then realised that I actually expected (->) : ValTy -> CompTy ->
+CompTy, because AFAIR that's what CBPV has. Maybe it doesn't hurt to point out
+that you generalise the codomain to Ty? Either way, it was not too bad since I
+managed to figure it out. Ah, later there is 2.2.2, so perhaps forward reference
+that you are going to discuss differences to CBPV?
+
+292: (non-actionable) Your `and` is the perfect example for why Laziness is slow
+when the inliner has to give up. GHC's inliner is crucial in getting rid of
+(accidental) laziness, because no timely amount of strictness analysis will be
+able to save you from allocating a thunk. A thunk means effectively a
+higher-order parameter, the result of which is essentially impossible to unbox
+without regressions.
+
+Section 3
+
+3.3: (flow) You start out saying that "ValTy does not have enough type formers"
+without giving an example (perhaps because we need to store CompTy in
+Just?). Then you give a type for a monadic bind operator which is somehow
+problematic (I couldn't really tell at this point without an example), and
+finally continue to give the `Improve` class which at first blush seems quite
+unrelated to the problem of using monads. I would have preferred to know *why* I
+would need the Improve class.
+
+I could live quite well with you dictating at the beginning of 3.3 that we
+inherit `Monad Maybe` (in `Ty`) via `MaybeT_M Gen`, via the following type class
+and instance `Improve`.
+
+Perhaps you can point out the introductory troubles by an example now? Otherwise perhaps leave it out?
+
+3.5: (examples first) At this point, I would have enjoyed less code for SOP
+(it's clear that you can implement `join` *somehow*; SOP is just an IMO boring
+technique to do so) and instead many more examples of the code you want to
+generate. It's all a bit opaque at the moment. Furthermore as you point out, the
+initial StateT example does not really explain the problem well; we can simply
+let-bind. By contrast, every Maybe.>>= introduces a control-flow diamond and we
+must be very careful not to duplicate code there. Hence I would have appreciated
+a simple example using only MaybeT and not be distracted by StateT. Coming back
+to this critique after reading later sections, I see why you want to familiarise
+the reader with SOP. But it is quite a detour from the problem we want to solve
+here. Perhaps make `instance MonadJoin Gen` its own subsection immediately
+*following* 3.5? You can just go by example in 3.5, which is the motivation for
+the entire SOP business.
+
+647.5: (distraction) I don't understand the `A` in `El_SOP A`. Shouldn't `A` be some kind of list of lists? Ah, I was confusing `A` for a nullary data con. Nevermind. perhaps leave out the `A` if you omit the defn anyway?
+
+674: (examples first) Although I was able to follow the generic-programming-style definition, perhaps it's a good idea to calculate the example `tabulate (f : Maybe A -> Up R) = (f Nothing, down (f . Just))` (correct?!), so that we get a feeling for the contents of those tuples. Especially since your motivating example in 630 just gives the staged object code, not the original metaprogram. Maybe an example for `index` as well. Or leave out the whole SOP detail, as discussed above.
+
+695: (non-actionable) Knowing what hoops the Simplifier goes through to achieve introduction of join points, the degree to which you can rely on type class inference here is remarkable!
+
+709.5: (suggestion) You could just make `join` part of the `case` desugaring and lean on a local simplification pass (something like GHC's "simple optimiser" SimpleOpt) over object code to inline single occurrences and clean up those administrative redexes. You would need to automatically infer `IsSOP` for that, but you do something more complicated for `Split` already...
+
+Regarding administrative cleanup: David Christiansen sent me this link last year, you might find it interesting: https://www.youtube.com/watch?v=LIEX3tUliHw.
+
+729.5: (suggestion) Perhaps prime the new `n` and `ns`, so that we see the `put` update in the staged code as `joinJust n' ns'` in the `Cons` branch?
+
+752-771: (examples first) I think it would have helped me greatly to see this example at the begin of 3.5; leaving out the `join $ ...` would simply lead to inlining `joinJust` and thus duplicating the continuation. Perhaps put it in a figure and do a short forward reference at the begin of 3.5?
+
+Section 4
+835: `IsSumVS` should be `IsSum`, I think
+
+844: (flow) I take it that the implicit insertion of < _ > around () is now part of the desugaring? As well as "splitting" λ? Oh, it appears this is *all* on the meta-level, including the Step constructors. Is that so? At this point I wonder: Will we see Steps at the object level? (We do not.) I think it's worth pointing this out! It's easy to lose track with implicit desugarings etc.. I see that this remark comes in L889, but it does not hurt to repeat it earlier (just the part that says "state S and Step is on the meta level and will be erased by staging").
+
+841: (idea) Regarding the extra IsSOP constraint once more: as I see it, the IsSOP constraint seems a bit accidental. You never case on `A`! That means you never need to `join`, that means we don't need IsSOP. Shouldn't it be possible to live just with `A : ValTy` (which I think is more general than IsSOP)? After all, you really want <*> in the object language, where (->) restricts `A` to be a `ValTy`... It's no longer the <*> in the meta language, but neither is it at the moment. `A : ValTy` should still allow you to solve IsSOP for the new state triple. (Or is it `Lift A : MetaTy` that I want? Still a bit confused by all this.)
+
+918: The Pull argument to foldr must come last
+
+924.5: Different λs. than above
+
+936: (remark) Note that the reason you don't need arity analysis is your unrestricted eta-expansion. If you had closures in your object language, that would be far harder to justify, because you could lose sharing of (by-value) bindings, for example in `\x -> let y = expensive x in \z -> x + y` eta expansion is only improving if you can guarantee that all call sites pass 2 arguments at once. That can only be recovered by arity analysis. Unrestricted eta is really only safe in pure by-name calculi, I think.
+
+950.5: "if USOP is closed [under?] Σ-types, we can directly define this concatMap"
+982.5: (flow) Although this is short before narrative goes into semantic detail that I lack the background for, I understood "we expect that during staging, every f : ⇑ A → ValTy function has to be constant" very well, whereas those two key observation bullets you bring before make only sense to me after having acknowledged the quoted statement.
+
+Here's what I would do to help *me* understand better :) I would say "for `IsSOP (Σ A B)`, we need that every f : ⇑ A → ValTy is constant, otherwise ... it is impossible to map back from Rep to meta type" (not sure about the second half-sentence, but sth like that). Then call this property generativity and make those key observations, and only then go into formal detail what generativity is.
+
+998: (bug) I might have gotten lost, but shouldn't the components of El_P(A) be value types? How can you embed non-terminating programs? I suppose It's all in the elided definition of El_P(A)... I had a look at the Agda formalisation (it's cool that I can do that :)). Apparently, you have `loop∘ :: ↑V a`, which seems counter-intuitive. Perhaps the postulated type of `loop∘` is too general and should rather be `loop∘ : ∀ {A} → ↑C A`? Unfortunately that probably means your definition of `loopₚ` won't type-check... I wonder if you really need an inhabitant in Σₛ. Can't you just assume habitability to be decidable and skip when there is no inhabitant? I guess you will figure something out.
+
+999.5: Wrong A in `El_P A`
+1017: (suggestion) When you say "finite sums", you presumably mean "finite dependent sums", right? I find it a bit confusing to leave out the qualifier in this context, because finite products are a special case of finite dependent sums, but not of finite non-dependent sums. Also in the next sentence you say "product type former", which I take to be the non-dependent kind. I generally find this clash in literature very frustrating; couldn't they have thought about other names??
+
+1004-1019: If you find yourself lacking space and wanting to talk about other stuff, I personally wouldn't mind cutting down on this paragraph because you got me lost. It is impressive that you could prove what you did, but it is not particularly illuminating to read about it here due to my lacking background.
+
+1035.5: (suggestion) I find bind_single a bit opaque without considering how it's used. Couldn't you specialise it to gen_pull and then say "case_pull is similar"? It's nice that you can share code, but that seems like an implementation detail that does not help in presenting in the paper.
+
+1052.5: "Let us look at [a] small example."
+Section 5
+
+1120.5: (remark) Unlike your object language, KaCC exhibits arity through thunks {_}; hence you want to do arity analysis in such a system in order to commute those thunks as far in as possible. The point of KaCC is to give a type system in which it is possible to encode the unrestricted η you enjoy; arity analysis then is about inferring that rewriting `f :: a ~> {b ~> c}` to `f :: a ~> b ~> {c}` (IIRC) is contextually improving in the scope of `f`.
+
+1139.5: "The use [of] join points in GHC's [C]ore language ..." couldn't resist :)
+
+1139.5: I think the case-of-case is enabled by `split`/"the trick"; otherwise you wouldn't have meta cases to compute
+1174.5: (remark) Re: duplication; one major point is that while `join` allows sharing of the different kinds of continuations (e.g., `k Nothing`, `k (Just x)`), it is not so good at avoiding duplication among the different `k` cases, e.g., `k (Skip s)` and `k (Yield a s)`. I suppose it is on `k` to move out common code...
+
+Agda Supplement
+Besides the bug above, I don't have much to contribute here... I was a bit surprised that SOP.agda does not check with 2.6.4, but it checks with 2.6.2.2.
+
+Haskell Supplement
+The optimised ex5M looks as expected. Nice!! Still contains a space leak in the huge `Right (case a1 of ... case a2 of ... Node ...)` constructor, though.
+
+exS7 is impressive!
+
+Ramblings: We are still relying on unboxing done by GHC. I think it should be within reach of your framework to have a function `unbox :: BoxitySig ty -> Up ty -> Up ty` (not sure if the types are right) that users can control unboxing of their definition with. It takes a boxity signature specifying where and how deep to unbox `ty`, for example `"( _, I# _ ) -> (# _ | _ #)" :: BoxitySig ((a, Int) -> Either b c)` that will do the worker/wrapper split to `a -> Int# -> (# a | b #)`.
+
+This seems like a more reliable way than to infer the best possible boxity signature, as done by GHC.
+
+This could be extended to specify passing boxed args as CbV vs. CbN as well, for example `"( I# _, !, _ ) -> _ :: BoxitySig ((Int, Int, Int) -> Int)` means "unbox triple, and unbox first component. Then pass the second Int boxed by-value and the last Int by-need/name.".
+
+At this point, `BoxitySig` should rather be named `CallingConvention`. I suppose we could have something like that for GHC today, in compiler land instead of library land... Seems much better than specifying these things indirectly through strictness annotations and whatnot.
+
+I really wonder what a hypothetical language would look like in which all this was inferred. Oh, that's part of your previous paper, for example this code. However, I can't really extrapolate from that.  I would really like to see where we can get in terms of Haskell syntax, because that is what I know. Concretely, how would exM5 look like in a Staged Haskell with splice/quote inference as well as your syntactic sugar? Is this within reach?
+
+exM5 :: Tree Int -> StateT [Int] (ExceptT () Identity) (Tree Int)
+exM5 t :=
+  Up.case t of
+    Nothing        -> pure Leaf
+    Just (n, l, r) -> do
+      Up.if (n == 0)
+        then throwError Up.tt
+        else pure Up.tt
+      ns <- get
+      n <- Up.case ns of
+        Nothing      -> pure n
+        Just (n, ns) -> put' ns >> pure n
+      l <- exM5 l
+      r <- exM5 r
+      pure (Node n l r)
+Something like that would be awesome.
+
+Cheers,
+Sebastian
+
+--------------------------------------------------------------------------------
+
+204.5:
+  The reason for not having "(->) : ValTy -> CompTy -> Ty" is the following: in
+  CBPV, the "F : ValTy -> CompTy" operator together with the above function type
+  implies that an ANF-style sequencing of all intermediate computations is
+  enforced. This is too verbose for a surface language; I want to be able to
+  nest function applications.
+
+  The F : ValTy -> CompTy can be recovered as (() -> A), similarly as in ML
+  languages. I agree though that explicit sequencing and F looks more elegant
+  in an IR and I would consider elaborating the surface-object-language to
+  that style.
+
+3.3
+  By not having enough type formers in ValTy, I think I simply meant the lack of
+  polymorphism and functions there. For any real monad in a universe U we need
+  >>= to be higher-order and polymorphic. I should expand on this.
+
+3.5
+  Leading with an extra join example sounds good.
+
+647.5: "perhaps leave out the `A` if you omit the defn anyway?"
+  Yeah.
+
+709.5:
+  I did consider that desugaring, but omitted it to harmonize with the later code
+  example, where I want to closely follow the Agda definition and explicitly have
+  both a joined and a non-joined case expression. I should still mention this
+  desugaring.
+
+844:
+  Hmm, I did say it's a meta-level state-machine, and there are also no ⇑-s
+  anywhere in the definitions, so I thought it should be fairly clearly all-meta.
+
+841:
+  The IsSOP A implies that the new internal state type is still IsSOP, which in
+  turn is forced by us having concatMap and foldr. ConcatMap needs IsSOP because
+  it needs a sigma-type for the state, and plain ValTy is not closed under
+  sigma, nor products of ValTypes.
+
+  There are other design points, where having a full Applicative is
+  possible. For example, if I omit Skip from streams, zipping does not need any
+  buffering, so I can drop the IsSOP A constraint. But without Skip there is no
+  concatMap, and appending is also a bit crappy, so this is kinda a trade-off.
+
+  In my older staged fusion demo in Haskell I have something like this, where I
+  only support concatMap in Push, not in Pull, and I also don't have Skip.
+
+  I think that's an OK design point, but now I find the "high-powered" staged
+  Pull approach more exciting. The main reason is that I can parameterize Pull
+  over arbitrary monads, using it like a "transformer", while the same is
+  impossible with Push. I shortly mentioned this in the conclusion section in
+  the paper.
+
+936:
+  I'm not sure what you mean here, but: if I have "Closure : CompTy -> ValTy", I
+  still have the unrestricted eta conversion for (->).
+
+998:
+  I think the Uₚ/Elₚ definitions are correct in the paper text.
+  "Habitability to be decidable": this might work but it requires induction on
+  object types, while the looping programs can be defined in a uniform generative
+  manner.
+
+  I just talked with a colleague today though and it seems that it's also possible
+  to not define loop-s at all, and instead postulate the desired sigma type
+  directly, with propositional beta and eta rules.
+
+1017:
+  I do mean "finite non-dependent sums". I agree that this paragraph is
+  super compressed and I hope that I'll be able to sufficient unpack it in the
+  next version.
+
+  To give a bit more background:
+
+  Even if I assume generativity, there is no true Σ-type in ValTy. I can try to
+  define Σ A B as simply the object-level pair type of "A" and "B loop", but then
+  I don't get β and η, because there is no β and η for pairs in the object
+  language.
+
+  Similarly, we don't Σ in a universe of finite-sums-of-ValTys either, because
+  we would need a Σ in ValTy when we flatten a sum-of-sums.
+
+  We do get Σ in the universe of products-of-ValTys, because now we can
+  take a meta-level product which has βη.
+
+  Since we definitely want to have more than one state shape in streams,
+  this leaves us with SOP as the sensible notion of internal state.
+
+1035.5:
+  I have simplified bindSingle since the submitted version, now it's just
+  "bindGen : IsSOP A => Gen A → (A → Pull B) → Pull B" which is a bit more compact.
+  It was a fairly silly overcomplication in the paper.
+
+  It's also the version that sensible generalizes to M from Gen, e.g. here:
+  https://github.com/AndrasKovacs/staged/blob/main/newpaper/hs-agda/agda-cftt2/PullM.agda#L188
+
+Agda supplement:
+
+  IIRC it's the stdlib version change that breaks just one
+  line. I happened to have 2.6.2.2 but probably it's more convenient to support
+  the latest Hackage Agda.
+
+Haskell supplement:
+
+  I did not make a serious attempt at optimizing the output. I started writing
+  the TH version just as a rough validation of the paper, and then switched over
+  to Agda when the lack of precise and dependent typing became too
+  problematic. A more serious TH version, as you say, would attempt to output
+  unboxed and unlifted code directly. I played around with this but I gave up
+  when I was not able to get RuntimeRep-polymorphic ADT-s, which is a big pain
+  in practice.Is it possible to hack together something like that?  I also have
+  ideas about eliminating a significant number of quotes and splices in user
+  code in Haskell, that I haven't implemented.
+
+  Your example code looks totally doable. I'd even allow "Node <$> exM5 l <*>
+  exM5 r", which requires some coercive subtyping for functions, but I already
+  implemented that in my older 2ltt demo.
+
+
+-- Denotational interpreters
+--------------------------------------------------------------------------------
+
+Background: I don't know much about semantics of partial languages,
+formalization of static analyses or abstract interpretation. I only briefly
+looked at guarded recursive and step-indexed definitional interpreters for the
+small formalization for my new paper.
+
+I didn't have any issues reading section 2.
+
+I understood the motivations and definitions reasonably well in all non-appendix
+parts. The main result is apparently the generic soundness for by-need
+interpretation, and it is clear that it cuts down on proof obligations
+nicely. However a) the meat of the generic abstraction theorem in the appendix
+still got technical and I didn't try to follow b) I did not feel the
+"inevitability" of many definitions.
+
+I did feel that it's a good idea to have guarded recursion and decorate the
+result with small-step traces; this is mostly what I would have naively tried to
+formalize.
+
+But the choice of notion of domain (model?) is not that clear to me. The Domain,
+Trace and HasBind instances together form something that looks like a
+"higher-order model" which gets "telescopically contextualized" to a first-order
+model of the object theory. This "higher-order model" and "contextualization"
+comes from the paper "Internal sconing is enough" by Bocquet, Kaposi and
+Sattler. I don't know how relevant this is to the current paper, maybe not at
+all, it's just the thing that I associated to when looking at the generic
+interpreter.
+
+Also, I would like to have a well-scoped and perhaps a well-typed version of the
+object syntax. I that case, I think that "stuck" could be altogether dropped
+from the generic interpreter. Also, I often find "free-floating" variable names
+to be kinda fuzzy and confusing in formalization.
+
+I think the following two things could help me, personally:
+- A "minimalistic" but more typed and maybe more abstract implementation of the
+  idea of traced guarded recursion. For example, well-scoped pure lambda
+  calculus with weakenings and parallel substitutions.
+- Presentation that's more in terms of universal properties or in terms of
+  theories/signatures for object languages in general. Now, this may be simply
+  unfeasible, because already in the realm of nice & total type theories many
+  things are not feasible in a theory-generic way (like normalization,
+  canonicity, etc.).
+
+Minor comments:
+
+- I find it surprising that this is the first denotational by-need semantics. Is
+  there a compactly explainable reason why we didn't have it earlier?
+
+- Is the Agda supplement public?
+
+- Absence analysis
+  In Fig 1. funₓ(f) maps "x" to Absence, but in the traced evaluation in 2.2 at
+  step (5), the bound vars are instead erased from the mapping. Since the text
+  says that φ talks about usage of free vars, erasure seems more appropriate.
+
+- The last paragraph of 2.3 seems kinda redundant, I don't see an essential
+  difference between inter and intra-module modularity as described.
+
+- Fig. 8 (cosmetics, personal preference): I don't like the style where we have
+  bottom-up dependencies in "where" blocks. Top-down left-right is how I read
+  normal text, so it's also what I prefer in code.
+
+- Fig 8:
+  Can we simplify the interpreter in the CBV case quite a lot? Concretely,
+  having "Value τ" in environments and function domains instead of "D τ". Would
+  it be useful to have this if we only care about CBV?
+
+- 5.2:
+  "There's only a finite number of transitions between LOOK-s"
+  Could you enshrine this already in the definition of traces? I.e. traces
+  could be mixed inductive-coinductive, where LOOK-ing is delayed but all other
+  steps are inductive.

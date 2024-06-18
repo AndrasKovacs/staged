@@ -1,0 +1,17 @@
+\frametitle{Polarization \& Closure-Freedom}
+
+\emph{Computation} and \emph{value} types are tracked
+in the object language.
+\vspace{1em}
+
+There's a value type former for \emph{closures},
+that we \textbf{have not yet used} in this talk.
+\vspace{1em}
+
+The computational function type guarantees compilation
+without closures, with only statically known calls!
+\vspace{1em}
+
+Essentially usage of closures is surprisingly rare
+in programming.
+

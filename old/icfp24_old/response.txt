@@ -1,0 +1,248 @@
+
+
+Review A
+--------------------------------------------------------------------------------
+
+Questions:
+
+- What are the main formal/"soundness" results from the previous paper(s) on
+  two-level type theory that section 2.4 extends?"
+
+The main result is soundness, which means that in each program that has
+an object-level type and only depends on object-level free variables, all quotes
+and splices can be computed away, and the result is definitionally equal to what
+we started with. This is theorem 5.2. in Kovács 22. There's also "completeness"
+(roughly meaning that every object program can be represented in the staged
+language) and "strictness" (meaning that the staging algorithm performs no
+beta-eta conversion on object terms).
+
+However, we glossed over completeness for CFTT (because it's easy and
+mechanically follows Kovács22) and strictness holds trivially for CFTT since
+there are no beta-eta rules in the object theory. Although now we think that we
+should include these points in the paper revisions.
+
+- How does the code size/complexity of your approach compare to say Haskell
+  standard library definitions of monad / monad transformer operations?
+
+For each supported transformer in the library, we need an extra Join and an
+Improve instance. This is around 5 lines for each transformer in the our code
+supplement. We also need let-inserting versions of operations like "put" and
+"modify".
+
+- How does performance compare on a like-for-like basis (say, with all normal
+  GHC optimizations enabled and without)?
+  ...
+  What degree of change at the level of library/interface clients is/would be
+  necessary for "normal" Haskell programs to make use of your approach?
+
+The Template Haskell implementation is useful for TH power users but we do not
+think that a) it can fully replace GHC optimizations b) ordinary users of monads
+in Haskell would want to use the staged version.
+
+For an example for a), if we write a staged "State (↑Int)" program, although the
+overhead of the monadic binding will be eliminated, we still need to use GHC's
+-O1 optimization to also unbox the involved "Int"-s. There are limitations on
+memory layout control, data specialization and code deduplication in Haskell
+which are annoying even when we use staging, and it's more convenient to just
+leave some things to GHC's optimization.
+
+For b), users would need to write explicit quotes and splices and reorganize
+their code to comply with GHC stage restrictions (which means that TH code
+cannot be in the same module as the splice that uses it!).
+
+This is not to say that the TH implementation is useless; we're using it in some
+of our TH code to good effect, it's just that our vision in Section 6 about
+staged monads is more realistic in a standalone CFTT implementation or in a
+major extension of an existing language.
+
+Addressing other questions
+------------------------------------------------------------
+
+- discussion of ... defunctionalization ... lambda-lifting
+
+We did cut out a discussion of defunctionalization from the paper, for lack of
+space. In short, defunc by itself does not eliminate closures nor dynamic
+control; a dynamic call to a heap-allocated closure becomes a dynamic switch on
+a tag in a heap-allocated defunctionalized closure. In contrast, CFTT programs
+compile to truly closure-free code where the only source of dynamic control flow is
+case-switching on user-introduced algebraic data types. That said, if we add
+closure types to CFTT, defunc can be still used in the usual way for those
+closures.
+
+As to lambda-lifting, it's actually required in CFTT compilation, for the
+let-defined local functions that are not join points, i.e. called somewhere
+in non-tail position.
+
+- we get soundness of W-types
+
+Yes, it is the soundness mentioned in our previous answer here. Perhaps more
+precisely, it's "soundness of staging in the presence of W-types".
+
+- cross-stage persistence
+
+(This also addresses Reviewer B's related question)
+
+CFTT in the current form does not support any CSP, like previous 2LTT-s. By this
+we mean that it's not possible to write a definition that can be later reused at
+both levels, without explicit conversions. For such a thing to be possible, we
+would need syntax for a language fragment which can be interpreted into both
+levels, perhaps as a form of "stage-polymorphism". Technically, the meta type
+theory is expressive enough to embed languages that can be then interpreted into
+both levels, but that would likely be less convenient to use than "native" stage
+polymorphism.
+
+We think though that the issue of code duplication across levels is mitigated in
+CFTT. First, lots of code can't be duplicated because they're not even
+expressible in the object language. The monads in the paper are like this: we
+only have a meta-monad library. In other cases we don't really want to use the
+same definitions across stages. E.g. we would use operations on push/pull
+streams instead of operations on object-level lists, for most list
+functions. For meta-level code we'd use ordinary non-fused lists instead,
+because we expect to get sufficient performance at compile time without fancy
+optimizations. Our impression of prior works in staging is that compile-time
+performance tends to be good enough, and at the meta level it's better to focus on
+abstraction, clarity and modularity instead of performance.
+
+This still leaves plenty of code to be potentially duplicated,
+e.g. implementations of standard immutable data structures, so there's certainly
+reason to look at CSP or stage polymorphism in the future.
+
+
+Thank you for the other comments as well, we'll take them into account in
+revisions.
+
+
+
+Review B
+--------------------------------------------------------------------------------
+
+Questions:
+
+- In multiple systems with staging, only one of <~t> = t and ~<t> = t is true,
+  and not always definitionally. Is this unconditionally true?
+
+It is. It holds in the semantics in Kovács 22. Also, from an implementation
+perspective, there is nothing fancy in the equational theories of 2LTT-s and
+CFTT, compared to plain MLTT. Supporting ↑_ in a 2LTT is not more difficult
+than supporting the following type in Agda:
+
+  -- with eta rule
+  record ↑ (A : Set₀) : Set₁ where
+    constructor <_>
+    field
+      ~_ : A
+
+- What about 'cross-stage persistence'?
+
+See my answer to Reviewer A regarding CSP.
+
+- Finally tagless for syntactic noise
+
+The most important thing for noise-reduction is inference of quotes and
+splices. It works very effectively with bidirectional elaboration, as
+demonstrated in the Kovács22 supplement, mainly because universes of types carry
+stage information (unlike in TH and MetaOCaml). Generally we only need to
+disambiguate let-definitions, as we do in the current paper with "=" and ":=",
+to be able to infer quotes and splices unambiguously. Hence, we consider
+splice/quote noise to be basically solved but there may be other kinds of
+staging noise in practice, like the up/down conversions.
+
+Addressing other questions/comments
+------------------------------------------------------------
+
+- on "staging" terminology
+
+Skimming through the literature, we're surprised and slightly horrified that
+indeed, our "staging" is idiosyncratic terminology. We are open to changing
+"staging" to "unstaging". Are there other choices though that we could use?
+
+- Extra citations
+
+We are very grateful for these pointers. The "functors and monads" and the
+"combinatorial circuits" papers seem to be very relevant and we'll be sure to
+mention these in the contributions section already.
+
+As to Section 3.2, we did not intend to suggest that we invented anything
+related to let-insertion and the Trick, but we do agree that we should make this
+more obvious by including citations there (and not just in the related works
+section). We'll also include the SOP & strymonas citations.
+
+- "universe reflection" & "finitely presented"
+
+In the HoTT-flavored 2LTT literature, the former is called "fibrant" and the
+latter is called "cofibrant". We found these terms un-enlightening in the staged
+programming context, so we skipped them, but we could mention them in a
+footnote. About IsSOP, we conjecture that in CFTT it precisely captures the
+notion of "finite presentation" or "cofibrancy", i.e. every cofibrant type is
+isomorphic to a SOP.
+
+- Section 2.4
+
+This section is intended to be read as an appendix of Kovács22; it's a modest
+extension but still requires a lot of technical background from there. This is a
+bit awkward but we're not sure what to do. The addition of W-types and identity
+is not a significant contribution by itself but we also don't want to just
+handwave it. Maybe it could be turned into an appendix of this paper?
+
+- exotic terms in HOAS
+
+Exotic terms in CFTT are ruled out by the soundness & completeness of staging.
+This is closely related to "adequacy" of HOAS in logical frameworks.
+
+- The mixture of meta-language and object language can be very hard to read at times.
+
+We agree that coloring could help and we could add it in a revision of the paper.
+
+Also thanks for the other comments, we'll take them into account.
+
+
+
+Review C
+--------------------------------------------------------------------------------
+
+Questions:
+
+- In section 3.5, what becomes of the original example?
+
+  The code output looks as if "modify' (λ x. <~x + 10>)"
+  was inlined in the case branches:
+  λ s. case b of
+    True  → let s := 10; let s := s + 10; ((), s)
+    False → let s := 20; let s := s + 10; ((), s)
+
+  The fix would indeed have "join $ case b of ..."
+  In a revision of the paper we could include these examples too.
+
+- Extraction from Agda code
+
+It wouldn't be hard! We could write a non-total interpreter for the object
+language in Agda, and extract code for that, or just print Haskell code as
+strings. We didn't implement these because we already had most of the examples
+in executable form in Template Haskell.
+
+- This example looks very much toyish and unmotivated
+
+We don't think that it's toyish. In GHC it took significant engineering effort
+and lots of tuning to reliably get similar code optimization for similar code
+examples. There are lots of redexes and unfoldings in the non-optimized monadic
+code, and GHC has to compute them using a general algorithm that also has to avoid
+code size blow-ups.
+
+- Rupicola: thanks, we will check this work out.
+
+Addressing other questions/comments
+------------------------------------------------------------
+
+- "A weakness of the paper is that the intended model underlying the soundness
+  of the approach is sketched very briefly."
+
+We think that Section 2.4 is not very technically difficult when taken together with
+Kovács22, for which it is basically an addendum; see also our answer to "Section
+2.4" for Review B. We could spell out more details in an extended revision of
+the paper or perhaps put them in an appendix.
+
+- "MonadGen M": yes, we introduced things in a wrong order
+- "reuse essentially all definitions from mtl": We'll write something clearer,
+   here we meant mtl in a more language-agnostic way.
+
+We'll act on the other comments as well.

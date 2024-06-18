@@ -381,7 +381,7 @@ in terms of implementation, yields large overheads when compiled without
 optimizations. Consider the following:
 \begin{alignat*}{3}
   &\vf :: \Int \to \Reader\,\Bool\,\Int \\
-  &\vf\,\vx = \mdo\{\vb \fro \msf{ask}; \bif \vx\, \bthen \return (\vx + 10)\, \belse \return (\vx + 20)\}
+  &\vf\,\vx = \mdo\{\vb \fro \msf{ask}; \bif \vb\, \bthen \return (\vx + 10)\, \belse \return (\vx + 20)\}
 \end{alignat*}
 With optimizations enabled, GHC compiles this roughly to the code below:
 \begin{alignat*}{3}

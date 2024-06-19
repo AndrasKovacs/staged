@@ -1393,7 +1393,7 @@ $\msf{joinNothing}$ and $\msf{joinJust}$.
   & \ind\modify'\,(\lambda\,x.\,\qt{\spl x + \spl x}))
 \end{alignat*}
 It might make sense to also have a simple ``desugaring'' rule that inserts a
-$\join$ whenever we have a object-level case split with more than one branch. At
+$\join$ whenever we have an object-level case split with more than one branch. At
 worst, this generates some noise and dead code that is easy to remove by
 conservative code optimization.
 

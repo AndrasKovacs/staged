@@ -1435,7 +1435,7 @@ all desugared to applications of $\msf{split}$.
       the state modification immediately gets sequenced by the enclosing join point.
 \item To make object-level recursive calls, we just need to wrap them in $\mup$.
 \end{itemize}
-Here, we intentionally tuned the definition for a nice-looking staging output.
+Here, we intentionally tuned the definition for a nice-looking unstaged output.
 However, we could also just default to ``safe'' choices everywhere: we could use
 a joint point in every $\mbf{case}$ with two or more branches, and use the
 strict state modifications everywhere, and leave it up to the downstream compiler

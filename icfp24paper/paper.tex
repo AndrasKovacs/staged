@@ -380,7 +380,7 @@ in terms of implementation, yields large overheads when compiled without
 optimizations. Consider the following:
 \begin{alignat*}{3}
   &\vf :: \Int \to \Reader\,\Bool\,\Int \\
-  &\vf\,\vx = \mdo\{\vb \fro \msf{ask}; \bif \vx\, \bthen \return (\vx + 10)\, \belse \return (\vx + 20)\}
+  &\vf\,\vx = \mdo\{\vb \fro \msf{ask}; \bif \vb\, \bthen \return (\vx + 10)\, \belse \return (\vx + 20)\}
 \end{alignat*}
 With optimizations enabled, GHC compiles this roughly to the code below:
 \begin{alignat*}{3}
@@ -1392,7 +1392,7 @@ $\msf{joinNothing}$ and $\msf{joinJust}$.
   & \ind\modify'\,(\lambda\,x.\,\qt{\spl x + \spl x}))
 \end{alignat*}
 It might make sense to also have a simple ``desugaring'' rule that inserts a
-$\join$ whenever we have a object-level case split with more than one branch. At
+$\join$ whenever we have an object-level case split with more than one branch. At
 worst, this generates some noise and dead code that is easy to remove by
 conservative code optimization.
 
@@ -1434,7 +1434,7 @@ all desugared to applications of $\msf{split}$.
       the state modification immediately gets sequenced by the enclosing join point.
 \item To make object-level recursive calls, we just need to wrap them in $\mup$.
 \end{itemize}
-Here, we intentionally tuned the definition for a nice-looking staging output.
+Here, we intentionally tuned the definition for a nice-looking unstaged output.
 However, we could also just default to ``safe'' choices everywhere: we could use
 a joint point in every $\mbf{case}$ with two or more branches, and use the
 strict state modifications everywhere, and leave it up to the downstream compiler
@@ -2095,7 +2095,7 @@ by grant 2019.0116 of the Knut and Allice Wallenberg Foundation.
 \section{Staged Semantics for CFTT}\label{appendix:A}
 
 In this appendix we describe the semantics of CFTT, from which the unstaging
-algorithm is obtained, and also describe the soundness and completeness of the
+algorithm is obtained, and also describe the soundness and stability of the
 algorithm. We borrow the setup from \cite{staged2ltt}; we use terminology and
 definitions from there by default, and focus on differences and extensions.
 
@@ -2301,8 +2301,8 @@ the induction motive, which matches the goal type. The second argument is the
 method for $\vsup\rel$; its $a\rel$ and $f\rel$ inputs are the relatedness
 witnesses stored in a $\vsup\rel$, while $\mathit{hyp}$ is induction hypothesis,
 witnessing the inductive motive for every output of $f\rel$. In the body here,
-we need to witness the motive in the case where $w$ is a $\vsup$, which causes
-both $\ev\,(\welim\,P\,s\,w)\,\gamma)$ and $\re\,(\welim\,P\,s\,w)\,\gamma')$ to
+we need to witness the motive in the case where $w\rel\,\gamma\rel$ is a $\vsup\rel$, which causes
+both $\ev\,(\welim\,P\,s\,w)\,\gamma$ and $\re\,(\welim\,P\,s\,w)\,\gamma'$ to
 compute further to applications of $\ev\,s\,\gamma$ and $\re\,s\,\gamma'$
 respectively. Hence, we use $s\rel$ to relate the two sides. This definition
 also respects $\vW\beta$, by the $\beta$ rule for $\vW\rel$.

@@ -2211,10 +2211,9 @@ result of evaluating $A$.
 \subsection{W-types}
 So far we have stayed close to \cite{staged2ltt}, with only cosmetic
 changes. Supporting W-types, as a way to get inductive families \cite{whynotw},
-is the biggest extension here. We extend Section 5 of \cite{staged2ltt}. In the
-syntax of CFTT, $\vW$-types are as follows. The formal specification of
-syntactic $\vW{-}\msf{elim}$ is rather gnarly, because of the usage of explicit
-substitutions, but we write it out here anyways.
+is the biggest extension here. We extend Section 5 of \cite{staged2ltt}. The
+formal specification of syntactic $\vW{-}\msf{elim}$ is rather gnarly, because
+of the usage of explicit substitutions, but we write it out here anyways.
 
 \begin{notation} We use $\p^N$ for $N$-fold
 weakening and we also use numerals as De Bruijn indices, to abbreviate
@@ -2223,6 +2222,8 @@ abstraction. We write $\blank{\Rightarrow}\blank$ for non-dependent function
 types. Finally, for the sake of brevity we omit the component maps of the isomorphism
 $\re_\ext : \re\,(\Gamma \ext A) \simeq ((\gamma : \re\,\Gamma) \times \re\,A\,\gamma)$.
 \end{notation}
+
+In the syntax of CFTT, $\vW$-types are as follows.
 \begin{alignat*}{3}
   &\vW   &&: (A : \MTy_i\,\Gamma) \to \MTy_j\,(\Gamma\,\ext\,A) \to \MTy_{\msf{max}(i,j)}\,\Gamma\\
   &\vsup &&: (a : \MTm\,\Gamma\,A) \to \MTm\,\Gamma\,(B[\vid,\,a] \Rightarrow \vW\,A\,B) \to \MTm\,\Gamma\,(\vW\,A\,B)\\

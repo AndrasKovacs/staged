@@ -2,7 +2,7 @@
 %%% Do NOT edit. File created by BibTeX with style
 %%% ACM-Reference-Format-Journals [18-Jan-2012].
 
-\begin{thebibliography}{55}
+\begin{thebibliography}{56}
 
 %%% ====================================================================
 %%% NOTE TO THE USER: you can override these defaults by providing
@@ -547,6 +547,19 @@
 \newblock
 \urldef\tempurl%
 \url{https://doi.org/10.5281/zenodo.6757373}
+\showDOI{\tempurl}
+
+
+\bibitem[Kovács(2024)]%
+        {cftt-artifacts}
+\bibfield{author}{\bibinfo{person}{András Kovács}.}
+  \bibinfo{year}{2024}\natexlab{}.
+\newblock \bibinfo{title}{Artifacts for the paper "Closure-Free Functional
+  Programming in a Two-Level Type Theory"}.
+\newblock
+\newblock
+\urldef\tempurl%
+\url{https://doi.org/10.5281/zenodo.11495881}
 \showDOI{\tempurl}
 
 

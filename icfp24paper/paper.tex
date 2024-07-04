@@ -24,7 +24,6 @@
 %% \acmArticle{110}
 %% \acmMonth{8}
 
-
 %% These commands are for a JOURNAL article.
 
 %% \acmJournal{JACM}
@@ -852,7 +851,7 @@ short-circuiting is another basic use-case:
   &\mit{and} : \Up\Bool \to \Up\Bool \to \Up\Bool\\
   &\mit{and}\,\vx\,\vy = \ql\case \spl \vx\,\of \True \to \spl \vy; \False \to \False\qr
 \end{alignat*}
-Since the $y$ expression is inlined under a $\case$ branch at every use site, it
+Since the $y$ expression is inlined under a $\mbf{case}$ branch at every use site, it
 is only computed at runtime when $x$ evaluates to $\True$. In many situations,
 staging can be used instead of laziness to implement short-circuiting, and often
 with better runtime performance, avoiding the overhead of thunking. Consider the
@@ -2089,6 +2088,9 @@ I thank the anonymous reviewers, Sebastian Graf and Jacques Carette, for their
 comments and suggestions on draft versions of this paper. This work was supported
 by grant 2019.0116 of the Knut and Allice Wallenberg Foundation.
 
+\section*{Data Availability Statement}
+The Agda and Haskell artifacts are available in \cite{cftt-artifacts}.
+
 \newpage
 
 \appendices
@@ -2189,8 +2191,7 @@ presheaf model.
   \item
   In the presheaf model of CFTT, every typing context (and also every closed
   type) is modeled as a presheaf over $\mbbo$. The interpretation of meta-level
-  type formers is standard, following Hofmann \cite{Hofmann97syntaxand} and
-  Huber \cite{huber-thesis}.
+  type formers is standard, following \cite{Hofmann97syntaxand} and \cite{huber-thesis}.
 \item $\Ty : \MTy_0\,\Gamma$ is the displayed presheaf which is constantly
   $\Tyo$. $\VTy$ and $\CTy$ are modeled analogously.
 \item $\Lift A : \MTy_0\,\Gamma$ is modeled as follows. We have that $A :

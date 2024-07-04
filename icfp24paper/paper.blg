@@ -47,45 +47,45 @@ Warning--empty address in DBLP:conf/pepm/SwadiTKP06
 Warning--empty address in wadler89theoremsforfree
 Warning--empty address in DBLP:conf/popl/WadlerB89
 Warning--empty address in DBLP:conf/pepm/YallopK19
-You've used 55 entries,
+You've used 56 entries,
             5981 wiz_defined-function locations,
-            1919 strings with 31935 characters,
-and the built_in function-call counts, 60938 in all, are:
-= -- 7674
-> -- 1631
+            1923 strings with 32095 characters,
+and the built_in function-call counts, 61644 in all, are:
+= -- 7756
+> -- 1648
 < -- 0
-+ -- 516
-- -- 587
-* -- 4040
-:= -- 5787
-add.period$ -- 284
-call.type$ -- 55
-change.case$ -- 341
-chr.to.int$ -- 53
-cite$ -- 87
-duplicate$ -- 5694
-empty$ -- 3985
-format.name$ -- 710
-if$ -- 14729
++ -- 520
+- -- 594
+* -- 4076
+:= -- 5865
+add.period$ -- 289
+call.type$ -- 56
+change.case$ -- 346
+chr.to.int$ -- 54
+cite$ -- 88
+duplicate$ -- 5760
+empty$ -- 4032
+format.name$ -- 717
+if$ -- 14883
 int.to.chr$ -- 4
 int.to.str$ -- 1
 missing$ -- 199
-newline$ -- 609
-num.names$ -- 423
-pop$ -- 2063
+newline$ -- 620
+num.names$ -- 430
+pop$ -- 2083
 preamble$ -- 1
-purify$ -- 777
+purify$ -- 790
 quote$ -- 0
-skip$ -- 2153
+skip$ -- 2182
 stack$ -- 0
-substring$ -- 4830
-swap$ -- 572
+substring$ -- 4883
+swap$ -- 576
 text.length$ -- 0
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 1398
+type$ -- 1428
 warning$ -- 32
-while$ -- 443
+while$ -- 450
 width$ -- 0
-write$ -- 1260
+write$ -- 1281
 (There was 1 error message)

@@ -1,12 +1,12 @@
 # Fdb version 3
-["bibtex paper"] 1720106114 "paper.aux" "paper.bbl" "paper" 1720106114
+["bibtex paper"] 1720106463 "paper.aux" "paper.bbl" "paper" 1720106463
   "./ACM-Reference-Format.bst" 1680207646 90332 18dc4e5c9b5c2ddd337e9f97727d04f1 ""
-  "paper.aux" 1720106114 14456 9d69f62f573cedfca1e28a9b7e112381 "pdflatex"
+  "paper.aux" 1720106462 14456 10b0d8b16c33d6242c2ba249029d71f1 "pdflatex"
   "references.bib" 1720104739 204808 dfc9f9bc15c0bdde3f1163fd0054fd8f ""
   (generated)
   "paper.bbl"
   "paper.blg"
-["pdflatex"] 1720106113 "paper.tex" "paper.pdf" "paper" 1720106113
+["pdflatex"] 1720106461 "paper.tex" "paper.pdf" "paper" 1720106461
   "/etc/texmf/web2c/texmf.cnf" 1699607946 475 c0e671620eb5563b2130f56340a5fde8 ""
   "/usr/share/texlive/texmf-dist/fonts/enc/dvips/inconsolata/i4-t1-4.enc" 1558214095 7693 0f2dce6d313c82989ec3a67fc24df2a0 ""
   "/usr/share/texlive/texmf-dist/fonts/enc/dvips/libertine/lbtn_25tcsq.enc" 1490131464 2921 8ca0eb0831f9bc5da080d3697cfe67bf ""
@@ -14,7 +14,6 @@
   "/usr/share/texlive/texmf-dist/fonts/enc/dvips/libertine/lbtn_7grukw.enc" 1490131464 2934 a4a9158faed2e9e89c771b4e3b7fc12f ""
   "/usr/share/texlive/texmf-dist/fonts/enc/dvips/libertine/lbtn_fygcup.enc" 1490131464 2824 67c67e7402c76b84866a6f91f9790b12 ""
   "/usr/share/texlive/texmf-dist/fonts/enc/dvips/libertine/lbtn_kijugd.enc" 1490131464 2822 11e839d2bbb939844844619b2cff7df6 ""
-  "/usr/share/texlive/texmf-dist/fonts/enc/dvips/libertine/lbtn_mmutss.enc" 1490131464 3361 a3e7a9d193a85af13b0ee6341b66f7bd ""
   "/usr/share/texlive/texmf-dist/fonts/enc/dvips/libertine/lbtn_naooyc.enc" 1490131464 3357 5261ce65ba03aef9faf6135657b9abb6 ""
   "/usr/share/texlive/texmf-dist/fonts/enc/dvips/libertine/lbtn_nh77jq.enc" 1490131464 2933 8d808fcabf70c6c809bb14c283ece4da ""
   "/usr/share/texlive/texmf-dist/fonts/enc/dvips/libertine/lbtn_oexx6f.enc" 1490131464 2807 3bc923a7d38598e901b235df221224cb ""
@@ -31,8 +30,6 @@
   "/usr/share/texlive/texmf-dist/fonts/tfm/public/libertine/LinBiolinumT-tlf-t1.tfm" 1490131464 19548 768852037f39958c435d71846b8877ea ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/public/libertine/LinBiolinumTB-tlf-t1--base.tfm" 1490131464 1768 23aace73e6def3193d6e0453af90487b ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/public/libertine/LinBiolinumTB-tlf-t1.tfm" 1490131464 19416 aedd2db224ad278ddf2c411f52d86014 ""
-  "/usr/share/texlive/texmf-dist/fonts/tfm/public/libertine/LinBiolinumTB-tlf-ts1--base.tfm" 1490131464 1492 4b36a269f5ed277a1c1ee5650b9f1e79 ""
-  "/usr/share/texlive/texmf-dist/fonts/tfm/public/libertine/LinBiolinumTB-tlf-ts1.tfm" 1490131464 1520 56acc65055c7f839b207973a679ea3aa ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/public/libertine/LinBiolinumTI-tlf-t1--base.tfm" 1490131464 1988 34f48347175f643e8b2134cd8f7a90a3 ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/public/libertine/LinBiolinumTI-tlf-t1.tfm" 1490131464 20012 beadc3a52552515981c78cd731a40afe ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/public/libertine/LinLibertineT-tlf-ot1--base.tfm" 1490131464 1396 948c4e08512f70c39fade285ab551221 ""
@@ -112,7 +109,6 @@
   "/usr/share/texlive/texmf-dist/fonts/type1/public/txfonts/txsyb.pfb" 1136849748 24244 ffc0312cbd155e940e16287bb7cbb16c ""
   "/usr/share/texlive/texmf-dist/fonts/vf/public/libertine/LinBiolinumT-tlf-t1.vf" 1490131464 1728 e76e04a950024a95b620698b679c9810 ""
   "/usr/share/texlive/texmf-dist/fonts/vf/public/libertine/LinBiolinumTB-tlf-t1.vf" 1354061736 1728 4ae633ddccb76ba8d0a0906a5e2e8fdf ""
-  "/usr/share/texlive/texmf-dist/fonts/vf/public/libertine/LinBiolinumTB-tlf-ts1.vf" 1490131464 584 0095c505ecdae1f8645dfef0e584f7c3 ""
   "/usr/share/texlive/texmf-dist/fonts/vf/public/libertine/LinBiolinumTI-tlf-t1.vf" 1354061736 1728 0f47a4d345513e0ad2e29d47540d4f2a ""
   "/usr/share/texlive/texmf-dist/fonts/vf/public/libertine/LinLibertineT-tlf-ot1.vf" 1490131464 968 b4daf26f130460f16d670da7f3f6963f ""
   "/usr/share/texlive/texmf-dist/fonts/vf/public/libertine/LinLibertineT-tlf-t1.vf" 1354061736 1728 b078a050f24d7649619baa987d7216d8 ""
@@ -271,7 +267,6 @@
   "/usr/share/texlive/texmf-dist/tex/latex/libertine/OT1LinuxLibertineT-TLF.fd" 1490131464 3019 024cbcf380053dddffd4ac0b44aac808 ""
   "/usr/share/texlive/texmf-dist/tex/latex/libertine/T1LinuxBiolinumT-TLF.fd" 1490131464 2264 2324ece7d4d2a7fa3c2138d120196405 ""
   "/usr/share/texlive/texmf-dist/tex/latex/libertine/T1LinuxLibertineT-TLF.fd" 1490131464 2980 15412b63bb0119ade194e089fff355d4 ""
-  "/usr/share/texlive/texmf-dist/tex/latex/libertine/TS1LinuxBiolinumT-TLF.fd" 1490131464 1329 b3927c6411238357fc3ed8fd9bdc7eaa ""
   "/usr/share/texlive/texmf-dist/tex/latex/libertine/TS1LinuxLibertineT-TLF.fd" 1490131464 1689 42435c12d9d3dc0c446eb02409690ab9 ""
   "/usr/share/texlive/texmf-dist/tex/latex/libertine/libertine.sty" 1585343451 19187 009694a9db31ccbf28809b85025a2e3d ""
   "/usr/share/texlive/texmf-dist/tex/latex/mathpartir/mathpartir.sty" 1456439960 14401 0712448ba80da5750b26552c69bbf0c8 ""
@@ -327,10 +322,10 @@
   "/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map" 1699607959 4379155 98693266ff65f58d9f98aff394de12d2 ""
   "/var/lib/texmf/web2c/pdftex/pdflatex.fmt" 1710580752 2799665 29983c3f4f222b983fa07592e708955e ""
   "acmart.cls" 1707163490 116808 d16edcadad392adbaa0bbd66f1fd5e3f ""
-  "paper.aux" 1720106014 14456 3c778771156f332b4469a4063e3f9958 "pdflatex"
-  "paper.bbl" 1720106014 33338 7516a17d58760528a81be11a1608cef7 "bibtex paper"
-  "paper.out" 1720106014 6005 179983cfe75b9707b43e38664861c292 "pdflatex"
-  "paper.tex" 1720106112 133064 fa4e901c7bc875b280250ca30da192b0 ""
+  "paper.aux" 1720106442 14456 b0b9779aa2dc9d7df3183fe4ac0c4ecb "pdflatex"
+  "paper.bbl" 1720106403 33338 7516a17d58760528a81be11a1608cef7 "bibtex paper"
+  "paper.out" 1720106442 6005 179983cfe75b9707b43e38664861c292 "pdflatex"
+  "paper.tex" 1720106460 133051 9c416f276382b3fa1d2cd37683e50835 ""
   (generated)
   "paper.aux"
   "paper.log"

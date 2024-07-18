@@ -849,7 +849,7 @@ the latter is merely a black box that computes object code. If we have $\vf :
 \vf\,\vu$ is unstaged to an undesirable ``administrative'' $\beta$-redex $(\lam
 \vx.\,\vt)\,\vu$.
 
-\subsubsection{Comparison to defunctionalization}
+\subsubsection*{Comparison to defunctionalization}
 Defunctionalization is a program translation which represents higher-order
 functions using only first-order functions and inductive data
 \cite{DBLP:journals/lisp/Reynolds98a,DBLP:conf/ppdp/DanvyN01}. The idea is to
@@ -1090,7 +1090,7 @@ instance.
 %%   &\gen'\,\va = \lift\,(\gen\,\va)
 %% \end{alignat*}
 
-\subsubsection{Case splitting in monads}
+\subsubsection*{Case splitting in monads}
 We often want to case-split on object-level data inside a monadic action, and
 perform different actions in different branches. At first, this may seem
 problematic, because we cannot directly compute metaprograms from object-level
@@ -1181,7 +1181,7 @@ value type, and we define improvement as follows.
   &\hspace{-5em}\ind \mdown\,\vx &&= \qt{\ReaderT\,(\lam \vr.\,\spl(\mdown\,(\runReaderT_\M\,\vx\,\qt{\vr})))}
 \end{alignat*}
 
-\subsubsection{$\State$ and $\Reader$ operations} If we use
+\subsubsection*{$\State$ and $\Reader$ operations} If we use
 the $\modify$ function that we already have in $\State_\M$, a curious thing
 happens. The meaning of $\modify\,(\lam \vx.\,\qt{\spl \vx + \spl \vx})$ is to
 replace the current state $\vx$, as an object expression, with the expression
@@ -1213,7 +1213,7 @@ used on it.
 Now,
 \[ \mdown \dlr \mdo \{\modify'\,(\lam \vx.\,\qt{\spl \vx + \spl \vx}); \modify'\,(\lam \vx.\,\qt{\spl \vx + \spl \vx})\} \]
 is unstaged to
-\[ \qt{\lam \vx.\,\letdef x := \vx + \vx; \letdef \vx := \vx + \vx; ((),\,\vx)}. \]
+\[ \qt{\lam \vx.\,\letdef \vx := \vx + \vx; \letdef \vx := \vx + \vx; ((),\,\vx)}. \]
 
 \subsection{Joining Control Flow in Monads}\label{sec:joining-control-flow-in-monads}
 
@@ -1222,7 +1222,7 @@ There is a deficiency in our library so far. Consider:
   & \vf : \Bool \to \StateT\,\Nat\,(\MaybeT\,\Identity)\,()\\
   & \vf\,\vb := \spl(\mdown \dlr \mdo \\
   & \ind \case \qt{\vb}\,\of\,\True\to \mput' \qt{10}; \False \to \mput' \qt{20}\\
-  & \ind\modify'\,(\lambda\,x.\,\qt{\spl x + \spl x}))
+  & \ind\modify'\,(\lambda\,\vx.\,\qt{\spl \vx + \spl \vx}))
 \end{alignat*}
 This is unstaged to the following (omitting newtype wrappers):
 \begin{alignat*}{3}
@@ -1240,7 +1240,7 @@ size. A possible fix is to let-bind the branching action:
   & \vf\,\vb := \spl(\mdown \dlr \mdo \\
   & \ind \msf{act} \fro \gen \dlr \mdown \dlr \case \qt{\vb}\,\of\,\True\to \mput' \qt{10}; \False \to \mput' \qt{20} \\
   & \ind \mup\,\msf{act} \\
-  & \ind\modify\,(\lambda\,x.\,\qt{\spl x + \spl x}))
+  & \ind\modify\,(\lambda\,\vx.\,\qt{\spl \vx + \spl \vx}))
 \end{alignat*}
 However, this yields suboptimal code:
 \begin{alignat*}{3}
@@ -1361,7 +1361,7 @@ $\msf{joinNothing}$ and $\msf{joinJust}$.
 \begin{alignat*}{3}
   & \vf\,\vb := \spl(\mdown \dlr \mdo \\
   & \ind \join \dlr \case \qt{\vb}\,\of\,\True\to \mput' \qt{10}; \False \to \mput' \qt{20}\\
-  & \ind\modify'\,(\lambda\,x.\,\qt{\spl x + \spl x}))
+  & \ind\modify'\,(\lambda\,\vx.\,\qt{\spl \vx + \spl \vx}))
 \end{alignat*}
 It might make sense to also have a simple ``desugaring'' rule that inserts a
 $\join$ whenever we have an object-level case split with more than one branch. At
@@ -1580,7 +1580,7 @@ monad in the initial states and the transitions. Likewise, we can give standard
 definitions for usual stream functions such as $\msf{filter}$, $\msf{take}$ or
 $\msf{drop}$.
 
-\subsection{Running Streams with Mutual Recursion}
+\subsection{Running Streams With Mutual Recursion}
 
 How do we generate object code from streams? The state $\vS$ is given as a
 finite sums of products, but the sums and the products are on the meta level, so
@@ -1773,7 +1773,7 @@ instead. First, we define an embedding of $\Gen$ operations in streams.
 \begin{alignat*}{3}
   & \hspace{-11em}\mathrlap{\mit{bind_{\Gen}} : \IsSOP\,\vA \RA \Gen\,\vA \to (\vA \to \Pull\,\vB) \to \Pull\,\vB}\\
   & \hspace{-11em}\mathrlap{\mit{bind_{\Gen}}\,\vga\,\vf\,=}\\
-  & \hspace{-11em}\mathrlap{\ind \Pull\,(\Sigma\,\vA\,(\mit{projS} \circ \vf))\,(\mdo \{\va \fro \vga; \vs \fro \mit{projSeed}\,(\vf\,\va); \return (\va,\,\vs)) \dlr \lam \case}\\
+  & \hspace{-11em}\mathrlap{\ind \Pull\,(\Sigma\,\vA\,(\mit{projS} \circ \vf))\,(\mdo \{\va \fro \vga; \vs \fro \mit{projSeed}\,(\vf\,\va); \return (\va,\,\vs)\}) \dlr \lam \case}\\
   & \hspace{-11em}\mathrlap{\ind \ind (\va,\,\vs) \to \mit{projStep}\,(\vf\,\va)\,\vs \bind \lam \case }\\
   & \hspace{-11em}\ind \ind \ind \Stop            &&\to \return \Stop\\
   & \hspace{-11em}\ind \ind \ind \Skip\,\vs       &&\to \return \dlr \Skip\,(\va,\,\vs) \\
@@ -2184,7 +2184,7 @@ Now, we can take a closed term $t : \Tm\,\emptycon\,A$ in CFTT and evaluate it
 in the presheaf model to obtain an object-theoretic term whose type is the
 result of evaluating $A$.
 
-\subsection{W-types}
+\subsection{W-Types}
 So far we have stayed close to \cite{staged2ltt}, with only cosmetic
 changes. Supporting W-types, as a way to get inductive families \cite{whynotw},
 is the biggest extension here. We extend Section 5 of \cite{staged2ltt}. The
@@ -2286,7 +2286,7 @@ compute further to applications of $\ev\,s\,\gamma$ and $\re\,s\,\gamma'$
 respectively. Hence, we use $s\rel$ to relate the two sides. This definition
 also respects $\vW\beta$, by the $\beta$ rule for $\vW\rel$.
 
-\subsection{Identity type}
+\subsection{Identity Type}
 
 In this section we assume an \emph{extensional} identity type in CFTT. As we
 mentioned in Section \ref{sec:semantics-of-staging}, we can show soundness of staging with

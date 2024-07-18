@@ -447,32 +447,32 @@ FUNCTION { output.coden }       % UTAH
 FUNCTION { strip.articleno.or.eid }
 {
   't :=
-  t #1 #7 substring$ "Article" = 
+  t #1 #7 substring$ "Article" =
     {t #8 t text.length$ substring$ 't :=}
     { }
   if$
-  t #1 #7 substring$ "article" = 
+  t #1 #7 substring$ "article" =
     {t #8 t text.length$ substring$ 't :=}
     { }
   if$
-  t #1 #5 substring$ "Paper" = 
+  t #1 #5 substring$ "Paper" =
     {t #6 t text.length$ substring$ 't :=}
     { }
   if$
-  t #1 #5 substring$ "paper" = 
+  t #1 #5 substring$ "paper" =
     {t #6 t text.length$ substring$ 't :=}
     { }
   if$
-  % Strip any left trailing space or ~
+  % Strip any left trailing space or
   t #1 #1 substring$ " " =
     {t #2 t text.length$ substring$ 't :=}
     { }
-  if$ 
+  if$
   t #1 #1 substring$ "~" =
     {t #2 t text.length$ substring$ 't :=}
     { }
   if$
-  t 
+  t
 }
 
 

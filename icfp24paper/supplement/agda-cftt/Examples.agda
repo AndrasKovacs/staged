@@ -39,7 +39,7 @@ open import Pull
 -- Comment out to get the projections in all their glory.
 postulate
   CALL : {A : Set} → A
--- {-# DISPLAY fst∘ x = CALL #-}
+{-# DISPLAY fst∘ x = CALL #-}
 
 -- Basics
 --------------------------------------------------------------------------------

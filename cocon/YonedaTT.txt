@@ -1,0 +1,35 @@
+
+- Let's work in a generic ETT.
+- Assume an internal model of a TT M.
+- Then, M̂ is an internal model of an ETT, the presheaf model over M.
+- M̂ contains an internal family (TyM : Tŷ Γ, TmM : Tm̂ (Γ, Tyᴹ)) closed under the
+  type formers of M.
+
+  TyM : Tŷ Γ
+  TyM {Δ} _ :=
+
+
+The Yoneda embedding is a weak CwF morphism from M to M̂.
+
+Y : Con → Con̂
+Y Γ Δ = Sub Δ Γ
+
+Y : Sub Γ Δ → Sub YΓ YΔ
+Y σ δ = σ ∘ δ
+
+Y : Ty Γ → Tm̂ YΓ TyM
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+--------------------------------------------------------------------------------

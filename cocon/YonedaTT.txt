@@ -1,35 +1,177 @@
 
-- Let's work in a generic ETT.
-- Assume an internal model of a TT M.
-- Then, M̂ is an internal model of an ETT, the presheaf model over M.
-- M̂ contains an internal family (TyM : Tŷ Γ, TmM : Tm̂ (Γ, Tyᴹ)) closed under the
-  type formers of M.
+Let's work in a generic TT, have M as an internal model of some other TT.  We have another internal
+model M̂, which is the presheaf model over M. It generally models a 2LTT.
 
-  TyM : Tŷ Γ
-  TyM {Δ} _ :=
+Idea: all of our constructions for types, terms and substitutions of M are written internally to M̂;
+we never work directly with components of M.
 
+- We never have to deal with CwF combinators and De Bruijn variables.
+- We can do everything internally that we could do externally.
 
-The Yoneda embedding is a weak CwF morphism from M to M̂.
+We can fashion a type theory out of this. It has a dual context, where the left context is for the
+meta-level and the right context is for working internally in a presheaf model. In a sense, this is
+a "three-level" TT, where the inner theory is a 2LTT and the outer theory can embed multiple 2LTT-s
+over various internal models.
 
-Y : Con → Con̂
-Y Γ Δ = Sub Δ Γ
-
-Y : Sub Γ Δ → Sub YΓ YΔ
-Y σ δ = σ ∘ δ
-
-Y : Ty Γ → Tm̂ YΓ TyM
+This is a generalization of the logical framework Cocon by Pientka et al.:
+   https://arxiv.org/abs/1901.03378
 
 
+-- Let's call it 2LTT-F, for 2LTT-framework
+--------------------------------------------------------------------------------
+
+CONCISELY, having both an internal model and the internal 2LTT for it
+
+- A model of ETT
+- An internal model M of the object theory
+- A functor from Conᵒᵖ to the category of 2LTT models and strict morphisms
+
+- Yoneda embedding, natural in Γ
+
+  Y : Tm Γ Con        → TyI Γ ∙
+  Y : Tm Γ (Ty Ξ)     → TmI Γ (∙, Y Ξ) Ty
+  Y : Tm Γ (Sub Ξ Ξ') → TmI Γ (∙, Y Ξ) (Y Ξ')
+  Y : Tm Γ (Tm Ξ A)   → TmI Γ (∙, Y Ξ) (Tm (Y A))
+
+  TmI Γ Δ (Y∙)     ≃ TmI Γ Δ ⊤
+  TmI Γ Δ (Y(Ξ,A)) ≃ TmI Γ Δ (Σ (Y Ξ) (Y A))
+
+  - Yoneda preserves types, terms, substs strictly
+
+    Y Bool     = Λ _. Bool
+    Y (Pi A B) = Λ γ. (a : Y A γ) → Y B (γ, a)
+    Y (Lam t)  = Λ γ. (λ x. Y t (γ, x))
+    Y p        = Λ (γ, _). γ
+    Y q        = Λ (_, a). a
+    Y id       = Λ γ. γ
+
+  - running, natural in Γ
+  Λ : TmI Γ (∙, Y Ξ) Ty         → Tm Γ (Ty Ξ)
+  Λ : TmI Γ (∙, Y Ξ) (Y Ξ')     → Tm Γ (Sub Ξ Ξ')
+  Λ : TmI Γ (∙, Y Ξ) (Tm (Y A)) → Tm Γ (Tm Ξ A)
+
+  -- whenever well-typed
+  η : Λ (Y t) = t
+  β : Y (Λ t) = t
+
+  -- it follows that Λ strictly preserves everything as well
+
+  Looks OK!
+
+Context sugaring:
+
+  Γ : Con
+  A : Ty Γ
+  B : Ty (Γ,A)
+
+  (Γ, (Λ γ. YA γ), (Λ (γ,a). Y B (γ, a))) : Con
+
+  -- sugar:
+  (γ : Γ, a : A γ, b : B (γ, a))
+
+  -- desugar
+  (Γ, Λ γ. YA γ, Λ (γ, a). YB (γ, a)) : Con
+
+  -- sugar
+  Tm (γ : Γ, a : A γ, b : B (γ, a)) (C (γ, a, b))
+
+  -- desugar
+  Tm (Γ, Λ γ. YA γ, Λ (γ, a). YB (γ, a)) (Λ (γ, a, b). YC (γ, a, b))
+
+  Can we just omit Y in internal contexts? Seems so...
+  Can we just have Y for ty, tm subst as sort equality (Russell-style)
+
+-- We can also have multiple internal M models, and for each a 2LTT notation
+
+-- gluing, Weak cfw morphism example
+
+--    F : M → N
+--    F ∙     ≃ ∙
+--    F (Γ,A) ≃ F Γ, F A
+
+(Γ : Con)ᴳ     : Ty (F Γ)
+(A : Ty Γ)ᴳ    : Ty (γ : F Γ, Γᴳ γ, F A γ)
+(σ : Sub Γ Δ)ᴳ : Tm (γ : F Γ, Γᴳ γ) (Δᴳ (σ γ))
+(t : Tm Γ A)ᴳ  : Tm (γ : F Γ, Γᴳ γ)
+
+TODO: how to prove adequacy for this?
+
+   - ETT is always clearly adequate, but not decidable
+   - What about decidable object theories and equational completeness?
 
 
 
+VERSION 2: try to get rid of the original M as much as possible
+things are only ever constructed internally, no need for Y preservation,
+we only need β and η for Y.
+--------------------------------------------------------------------------------
+
+Goal: remove as much as possible from the internal model M assumption
+All we need is the representable internal telescopes
 
 
+- Model of ETT
+- functor from Conᵒᵖ to Mod_2LTT
+
+- representable telescopes internally
+
+  Tm : type
+  Ty : Tm → type
+  ...
+
+  Tel : type
+  El  : Tel → type
+  ∙   : Tel
+  _,_ : (Ξ : Tel) → (El Ξ → Ty) → Tel
+
+  El ∙     ≃ ⊤
+  El (Ξ,A) ≃ Σ(El Ξ)×(λ ξ. Tm (A x))
+
+- REFLECTION to meta-level
+
+  Con : Ty Γ
+  (↓,↑) : Tm Γ Con ≃ TmI Γ ∙ Tel
+
+  Ty : Tm Γ Con → Ty Γ
+  (↓,↑) : Tm Γ (Ty (↑Δ)) ≃ TmI Γ (∙, El Δ) Ty
+
+  Tm : (Δ : Tm Γ Con) → Tm Γ (Ty Δ) → Ty Γ
+  (↓,↑) : Tm Γ (Tm (↑Γ) (↑A)) ≃ TmI Γ (∙, El Δ) (Tm A)
+
+  Sub : Tm Γ Con → Tm Γ Con → Ty Γ
+  (↓,↑) : Tm Γ (Sub Δ Ξ) ≃ TmI Γ (∙, El Δ) (El Ξ)
+
+This could be Russell-style as well!
+
+After this, we recover the whole external FO model
+from the internal HO model
+
+(Γ : Con)ᴳ     : Ty (F Γ)
+(A : Ty Γ)ᴳ    : Ty ↑(γ : ↓(F Γ), γᴳ : ↓Γᴳ γ, t : ↓(F A) γ)
+(σ : Sub Γ Δ)ᴳ : Tm ↑(γ : ↓(F Γ), γᴳ : ↓Γᴳ γ) ↑(λ (γ, γᴳ). ↓Δᴳ (↓(F σ) γ))
+(t : Tm  Γ A)ᴳ : Tm ↑(γ : ↓(F Γ), γᴳ : ↓Γᴳ γ) ↑(λ (γ, γᴳ). ↓Aᴳ (↓(F t) γ))
+
+(Γ : Con)ᴳ     : Ty (γ : F Γ)
+(A : Ty Γ)ᴳ    : Ty (γ : F Γ, γᴳ : Γᴳ γ, t : F A γ)
+(σ : Sub Γ Δ)ᴳ : Tm (γ : F Γ, γᴳ : Γᴳ γ) (Δᴳ (F σ γ))
+(σ : Sub Γ Δ)ᴳ : Tm (γ : F Γ, γᴳ : Γᴳ γ) (Δᴳ (F t γ))
 
 
+-- Try to remove even more stuff
+--------------------------------------------------------------------------------
 
+Constant families internally?  Is constant families OK overall?
+What's an internal syntax for constant families?
+It's kinda weird... Because the context must be closed, and
+the substitutions must be closed too.
 
+-- K : ConI Γ → TyI Δ
+-- TmI Γ Δ (K Ξ) ≃ SubI Γ Δ Ξ
 
+-- Con : Ty Γ
+-- Tm Γ Con ≃ ConI Γ
 
+-- Ty : Tm Γ Con → Ty Γ
+-- Tm Γ (Ty Δ) ≃ TyI Γ (∙, K Δ)
 
 --------------------------------------------------------------------------------

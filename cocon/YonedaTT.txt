@@ -162,10 +162,16 @@ from the internal HO model
 
 Constant families internally?  Is constant families OK overall?
 What's an internal syntax for constant families?
+
 It's kinda weird... Because the context must be closed, and
 the substitutions must be closed too.
 
--- K : ConI Γ → TyI Δ
+But maybe it would be OK??
+
+K : ConI Γ → TyI Γ Δ
+
+TmI Γ Δ (K Ξ) ≃ Sub
+
 -- TmI Γ Δ (K Ξ) ≃ SubI Γ Δ Ξ
 
 -- Con : Ty Γ
@@ -173,5 +179,6 @@ the substitutions must be closed too.
 
 -- Ty : Tm Γ Con → Ty Γ
 -- Tm Γ (Ty Δ) ≃ TyI Γ (∙, K Δ)
+
 
 --------------------------------------------------------------------------------

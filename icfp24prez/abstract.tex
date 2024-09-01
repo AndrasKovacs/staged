@@ -1,0 +1,337 @@
+
+\documentclass{easychair}
+\raggedbottom
+
+\usepackage{doc}
+\usepackage{xcolor}
+\usepackage{mathpartir}
+\usepackage{todonotes}
+\presetkeys{todonotes}{inline}{}
+\usepackage{scalerel}
+\usepackage{bm}
+\usepackage{amssymb}
+
+\renewcommand{\mit}[1]{{\mathit{#1}}}
+\newcommand{\msf}[1]{{\mathsf{#1}}}
+\newcommand{\mbf}[1]{{\mathbf{#1}}}
+\newcommand{\mbb}[1]{\mathbb{#1}}
+\newcommand{\bs}[1]{\boldsymbol{#1}}
+\newcommand{\wh}[1]{\widehat{#1}}
+\newcommand{\mdo}{\mbf{do}\,}
+\newcommand{\ind}{\hspace{1em}}
+\newcommand{\bif}{\mbf{if}\,}
+\newcommand{\bthen}{\mbf{then}\,}
+\newcommand{\belse}{\mbf{else}\,}
+\newcommand{\return}{\mbf{return}\,}
+\newcommand{\pure}{\mbf{pure}\,}
+\newcommand{\lam}{\lambda\,}
+\newcommand{\data}{\mbf{data}\,}
+\newcommand{\where}{\mbf{where}}
+\newcommand{\M}{\msf{M}}
+\newcommand{\letrec}{\mbf{letrec}\,}
+\newcommand{\of}{\mbf{of}\,}
+\newcommand{\go}{\mit{go}}
+\newcommand{\add}{\mit{add}}
+\newcommand{\letdef}{\mbf{let\,}}
+\newcommand{\map}{\mit{map}}
+
+\newcommand{\vas}{\mathsf{as}}
+\newcommand{\vbs}{\mathsf{bs}}
+\newcommand{\vcs}{\mathsf{cs}}
+\newcommand{\vxs}{\mathsf{xs}}
+\newcommand{\vys}{\mathsf{ys}}
+\newcommand{\vsp}{\mathsf{sp}}
+\newcommand{\vma}{\mathsf{ma}}
+\newcommand{\vm}{\mathsf{m}}
+\newcommand{\vn}{\mathsf{n}}
+\newcommand{\vk}{\mathsf{k}}
+\newcommand{\vA}{\mathsf{A}}
+\newcommand{\vB}{\mathsf{B}}
+\newcommand{\vC}{\mathsf{C}}
+\newcommand{\vS}{\mathsf{S}}
+\newcommand{\vF}{\mathsf{F}}
+\newcommand{\vR}{\mathsf{R}}
+\newcommand{\vM}{\mathsf{M}}
+\newcommand{\vmb}{\mathsf{mb}}
+\newcommand{\mAs}{\mathsf{As}}
+\newcommand{\va}{\mathsf{a}}
+\newcommand{\vb}{\mathsf{b}}
+\newcommand{\vc}{\mathsf{c}}
+\newcommand{\vd}{\mathsf{d}}
+\newcommand{\vx}{\mathsf{x}}
+\newcommand{\vy}{\mathsf{y}}
+\newcommand{\vz}{\mathsf{z}}
+\newcommand{\vf}{\mathsf{f}}
+\newcommand{\vfs}{\mathsf{fs}}
+\newcommand{\vg}{\mathsf{g}}
+\newcommand{\vh}{\mathsf{h}}
+\newcommand{\vt}{\mathsf{t}}
+\newcommand{\vs}{\mathsf{s}}
+\newcommand{\vr}{\mathsf{r}}
+\newcommand{\vu}{\mathsf{u}}
+\newcommand{\vl}{\mathsf{l}}
+\newcommand{\vns}{\mathsf{ns}}
+
+\newcommand{\SOP}{\msf{SOP}}
+\newcommand{\El}{\msf{El}}
+\newcommand{\USOP}{\msf{U}_{\msf{SOP}}}
+\newcommand{\Uprod}{\msf{U_P}}
+\newcommand{\Elprod}{\msf{El_{P}}}
+\newcommand{\IsSOP}{\msf{IsSOP}}
+\newcommand{\forEach}{\msf{forEach}}
+\newcommand{\single}{\msf{single}}
+\newcommand{\msplit}{\msf{split}}
+\newcommand{\mapGen}{\msf{mapGen}}
+\newcommand{\genPull}{\msf{gen_{Pull}}}
+\newcommand{\Set}{\msf{Set}}
+\newcommand{\casePull}{\msf{case_{Pull}}}
+\newcommand{\appull}{\ap_{\Pull}}
+
+\newcommand{\ext}{\triangleright}
+
+\newcommand{\Int}{\msf{Int}}
+\newcommand{\List}{\msf{List}}
+\newcommand{\Tree}{\msf{Tree}}
+\newcommand{\Node}{\msf{Node}}
+\newcommand{\Leaf}{\msf{Leaf}}
+\newcommand{\Nil}{\msf{Nil}}
+\newcommand{\Cons}{\msf{Cons}}
+\newcommand{\Reader}{\msf{Reader}}
+\newcommand{\ReaderT}{\msf{ReaderT}}
+\newcommand{\Monad}{\msf{Monad}}
+\newcommand{\Applicative}{\msf{Applicative}}
+\newcommand{\class}{\msf{class}}
+\newcommand{\Functor}{\msf{Functor}}
+\newcommand{\Bool}{\msf{Bool}}
+\newcommand{\Statel}{\msf{State}}
+\newcommand{\fro}{\leftarrow}
+\newcommand{\case}{\mbf{case\,}}
+\newcommand{\foldr}{\msf{foldr}}
+\newcommand{\foldl}{\msf{foldl}}
+\newcommand{\rep}{\msf{rep}}
+\newcommand{\concatMap}{\msf{concatMap}}
+
+\newcommand{\Lift}{{\Uparrow}}
+\newcommand{\Up}{{\Uparrow}}
+\newcommand{\spl}{{\bs{\sim}}}
+\newcommand{\ql}{{\bs{\langle}}}
+\newcommand{\qr}{{\bs{\rangle}}}
+\newcommand{\bind}{\mathbin{>\!\!>\mkern-6.7mu=}}
+
+\newcommand{\MTy}{\msf{MetaTy}}
+\newcommand{\VTy}{\msf{ValTy}}
+\newcommand{\Ty}{\msf{Ty}}
+\newcommand{\CTy}{\msf{CompTy}}
+\newcommand{\True}{\msf{True}}
+\newcommand{\False}{\msf{False}}
+\newcommand{\fst}{\msf{fst}}
+\newcommand{\snd}{\msf{snd}}
+
+\newcommand{\blank}{{\mathord{\hspace{1pt}\text{--}\hspace{1pt}}}}
+
+\newcommand{\Nat}{\msf{Nat}}
+\newcommand{\Zero}{\msf{Zero}}
+\newcommand{\Suc}{\msf{Suc}}
+\newcommand{\Maybe}{\msf{Maybe}}
+\newcommand{\MaybeT}{\msf{MaybeT}}
+\newcommand{\Nothing}{\msf{Nothing}}
+\newcommand{\Just}{\msf{Just}}
+
+\theoremstyle{remark}
+\newtheorem{notation}{Notation}
+\newtheorem*{axiom}{Axiom}
+
+\newcommand{\id}{\mit{id}}
+\newcommand{\mup}{\mbf{up}}
+\newcommand{\mdown}{\mbf{down}}
+\newcommand{\tyclass}{\mbf{class}}
+\newcommand{\instance}{\mbf{instance}\,}
+\newcommand{\Improve}{\msf{Improve}}
+\newcommand{\Gen}{\msf{Gen}}
+\newcommand{\unGen}{\mit{unGen}}
+\renewcommand{\Vec}{\msf{Vec}}
+\newcommand{\gen}{\mit{gen}}
+\newcommand{\genRec}{\mit{genRec}}
+\newcommand{\fmap}{<\!\!\$\!\!>}
+\newcommand{\ap}{{<\!\!*\!\!>}}
+\newcommand{\runGen}{\mit{runGen}}
+\newcommand{\qt}[1]{\ql#1\qr}
+\newcommand{\lift}{\mit{lift}}
+\newcommand{\liftGen}{\mit{liftGen}}
+\newcommand{\MonadGen}{\msf{MonadGen}}
+\newcommand{\MonadState}{\msf{MonadState}}
+\newcommand{\MonadReader}{\msf{MonadReader}}
+\newcommand{\RA}{\Rightarrow}
+\newcommand{\EitherT}{\msf{EitherT}}
+\newcommand{\Either}{\msf{Either}}
+\newcommand{\Left}{\msf{Left}}
+\newcommand{\Right}{\msf{Right}}
+\newcommand{\StateT}{\msf{StateT}}
+\newcommand{\Identity}{\msf{Identity}}
+
+\newcommand{\Stop}{\msf{Stop}}
+\newcommand{\Skip}{\msf{Skip}}
+\newcommand{\Yield}{\msf{Yield}}
+
+\newcommand{\runIdentity}{\mit{runIdentity}}
+\newcommand{\runReaderT}{\mit{runReaderT}}
+\newcommand{\newtype}{\mbf{newtype}\,}
+\newcommand{\runMaybeT}{\mit{runMaybeT}}
+\newcommand{\runStateT}{\mit{runStateT}}
+\newcommand{\runState}{\mit{runState}}
+\newcommand{\dlr}{\,\$\,}
+\newcommand{\ImproveF}{\msf{ImproveF}}
+\newcommand{\ExceptT}{\msf{ExceptT}}
+\newcommand{\State}{\msf{State}}
+\newcommand{\SumVS}{\msf{SumVS}}
+\newcommand{\ProdCS}{\msf{ProdCS}}
+\newcommand{\Here}{\msf{Here}}
+\newcommand{\There}{\msf{There}}
+\newcommand{\IsSumVS}{\msf{IsSumVS}}
+\newcommand{\MonadJoin}{\msf{MonadJoin}}
+\newcommand{\Stream}{\msf{Stream}}
+\newcommand{\join}{\mit{join}}
+\newcommand{\modify}{\mit{modify}}
+\newcommand{\get}{\mit{get}}
+\newcommand{\mput}{\mit{put}}
+\newcommand{\Rep}{\mit{Rep}}
+\newcommand{\encode}{\mit{encode}}
+\newcommand{\decode}{\mit{decode}}
+\newcommand{\mindex}{\mit{index}}
+\newcommand{\mtabulate}{\mit{tabulate}}
+\newcommand{\States}{\mit{States}}
+\newcommand{\seed}{\mit{seed}}
+\newcommand{\step}{\mit{step}}
+\newcommand{\Step}{\msf{Step}}
+\newcommand{\Pull}{\msf{Pull}}
+\newcommand{\MkPull}{\msf{MkPull}}
+
+
+\title{Polarized Lambda-Calculus at Runtime, Dependent Types at Compile Time}
+\author{Andr\'as Kov\'acs}
+\authorrunning{Kov\'acs}
+\titlerunning{Polarized Lambda-Calculus at Runtime, Dependent Types at Compile Time}
+
+\institute{
+  University of Gothenburg
+  Gothenburg, Sweden \\
+  \email{andrask@chalmers.se}
+}
+
+\pagenumbering{gobble}
+\begin{document}
+\maketitle
+
+We describe a particular two-level type theory \cite{staged2ltt}:
+\begin{itemize}
+\item The object level is a polarized simply-typed calculus, with
+      computation types (functions, computational products) and value types
+      (inductive types, closures).
+\item The meta level is a standard dependent type theory.
+\end{itemize}
+This supports two-stage compilation, where we can use dependent types in the
+surface language, but only object-level constructions remain after staging. It
+appears to be an excellent setting for performance-focused staged programming.
+
+The polarization lets us control closures and function arities in a fairly
+lightweight way. In particular, if we do not use the explicit closure type
+former, then all function calls can be compiled to calls and jumps to statically
+known code locations. Hence, we migth ask: how much can we reproduce
+from the abstraction tools of functional programming, without using any runtime
+closures? Perhaps surprisingly, closures are rarely used in an essential way.
+\begin{itemize}
+\item A $\mit{map}$ function for lists is meant to be inlined, and after
+      inlining no runtime closures remain.
+\item Monadic binding in Haskell is a higher-order function. Without compiler optimizations,
+      we get a big overhead from a deluge of runtime closures; but with optimizations
+      we expect that no closures remain.
+\end{itemize}
+In the current work, we start to build up libraries in the mentioned two-level
+theory, aiming to minimize the usage of runtime closures and eliminate
+abstraction overheads. We want to shift work from general-purpose optimizing
+compilers to deterministic \& extensible metaprogramming. For example, instead
+of expecting GHC to sufficiently inline our monadic code, we implement efficient
+monadic code generation ourselves.
+
+\subsubsection*{Staged Monad Transformers}
+
+Despite recent competition from a variety of algebraic effect systems, monads
+and monad transformers remain the most widely used strongly-typed effect system,
+so it make sense for us to develop their staged flavor.
+
+In our approach, we \emph{don't use monads at all in the object
+language}. Instead, we use meta-level monads, and only convert down to the
+object level when runtime control dependencies force us to do so. Generally, the
+staged version of a monad is obtained by extending it with \emph{code generation
+as an effect}. The code generation monad is the following:
+\begin{alignat*}{3}
+  &\newtype \Gen : \MTy \to \MTy \\
+  &\newtype \Gen\,A = \Gen\,(\{R : \msf{ObjTy}\} \to (A \to \Up R) \to \Up R)
+\end{alignat*}
+Here, $\msf{ObjTy}$ is the universe of object-level types, $\MTy$ is a
+meta-level universe, and $\Up R$ is (intuitively) the type of metaprograms which
+generate object expressions of type $R$.
+
+This is a continuation monad where \emph{eventually} we have to return an
+object-level value, so we can only ``run'' actions of type $\Gen\,(\Up A)$ to
+extract a result with type $\Up A$. However, while working in the monad, we are
+free to use both object-level and meta-level constructions, and introduce
+object-level let-binders. In general, for some monad transformer stack $M$, we
+obtain its staged version by putting a $\Gen$ at the bottom of the stack. For
+example, $\State\,(\Up\msf{Int})$ becomes $\StateT\,(\Up\msf{Int})\,\Gen$. In
+this monad in particular, we can modify an object expression in the state, and
+also generate object code via $\Gen$.
+
+Using our transformer library, we program in meta-monads, and insert conversions
+to and from object code at the points of dynamic dependencies
+(e.g.\ object-level function calls). Such conversions are defined in a
+compositional manner, by recursion on transformer stacks. Overall, this style of
+programming requires modest extra noise compared to Haskell, but it guarantees
+high-quality code output by staging.
+
+\subsubsection*{Staged Stream Fusion}
+
+\emph{Stream fusion} \cite{DBLP:phd/ethos/Coutts11} is another application that we developed in this
+setting. The idea here is to give a convenient list-like interface for
+programming with meta-level state machines. Such machines can be turned into
+efficient object-level code as blocks of mutually recursive functions, without
+storing intermediate results in runtime lists. We demonstrate very concise
+solutions to two well-known problems.
+
+\textbf{First}, we need to generate mutually recursive blocks. One part of the
+challenge is to have guaranteed well-scoping and well-typing, although the
+number (and types) of definitions in a mutual block is only known at staging
+time; see e.g.\ \cite{DBLP:conf/pepm/YallopK19}. We also want to avoid any runtime
+overheads. We represent a mutual block as a single recursive definition with a
+computational product type. The polarization guarantees that this can be
+compiled without downstream overheads to an actual mutual block.
+
+\textbf{Second}, fusion for arbitrary combinations of zipping and
+$\mit{concatMap}$ has been a long-standing challenge. Currently, the
+$\mit{strymonas}$ library \cite{DBLP:conf/pepm/0001K24} supports such fusion
+but its solution is much more complex than ours, and it also relies on mutable
+references in the object language. In contrast, we compile to pure object
+code, which also enables us to parameterize streams over arbitrary monads
+and embed monadic effects in stream definitions.
+
+Our streams are tuples containing a type for an internal state, an initial
+state and a representation of state transitions. Moreover, the internal state is
+required to be a finite sum-of-products of object-level value types. Now, if
+such sums-of-products are closed under $\Sigma$-types, $\concatMap$ is easily
+definable by using a $\Sigma$-type of the family of internal states that we get
+from an $A \to \msf{Stream}\,B$ function. We construct such $\Sigma$-types from
+an internal \emph{generativity axiom}, which expresses that certain metaprograms
+can't depend on object-level terms. This axiom does hold in the staging
+semantics and we can erase it during staging. From this, we construct
+\emph{transient} $\Sigma$-types which end up as non-dependent product types
+after staging.
+
+The ability to analyze object code has been often viewed as a desirable feature
+in metaprogramming. In contrast, we demonstrate a use-case for the explicit
+\emph{lack} of intensional analysis, through our generativity axiom. This might
+be compared to \emph{internal parametricity} statements in type theories.
+
+\bibliographystyle{plain}
+\bibliography{references}
+
+\end{document}

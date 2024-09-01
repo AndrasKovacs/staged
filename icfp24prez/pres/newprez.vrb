@@ -1,0 +1,16 @@
+\frametitle{Polarization \& Closure-Freedom}
+
+How to compile this?
+\vspace{1em}
+\begin{verbatim}
+                   f : Bool → Int → Int
+                   f b = case b of True  → λ x. x + 10
+                                   False → λ x. x * 10
+\end{verbatim}
+And this?
+\begin{verbatim}
+                   f : Int → Int
+                   f x :=
+                     let g y := x + y;
+                     g x + 10
+\end{verbatim}

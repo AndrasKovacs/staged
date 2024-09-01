@@ -1,0 +1,51 @@
+This is BibTeX, Version 0.99d (TeX Live 2022/dev/Debian)
+Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
+The top-level auxiliary file: abstract.aux
+The style file: plain.bst
+Database file #1: references.bib
+Repeated entry---line 5196 of file references.bib
+ : @phdthesis{DBLP:phd/ethos/Coutts11
+ :                                   ,
+I'm skipping whatever remains of this entry
+You've used 4 entries,
+            2118 wiz_defined-function locations,
+            530 strings with 4975 characters,
+and the built_in function-call counts, 1452 in all, are:
+= -- 149
+> -- 56
+< -- 2
++ -- 20
+- -- 16
+* -- 89
+:= -- 240
+add.period$ -- 14
+call.type$ -- 4
+change.case$ -- 17
+chr.to.int$ -- 0
+cite$ -- 4
+duplicate$ -- 62
+empty$ -- 120
+format.name$ -- 16
+if$ -- 316
+int.to.chr$ -- 0
+int.to.str$ -- 4
+missing$ -- 3
+newline$ -- 23
+num.names$ -- 12
+pop$ -- 19
+preamble$ -- 1
+purify$ -- 14
+quote$ -- 0
+skip$ -- 49
+stack$ -- 0
+substring$ -- 93
+swap$ -- 20
+text.length$ -- 2
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 16
+warning$ -- 0
+while$ -- 18
+width$ -- 5
+write$ -- 48
+(There was 1 error message)

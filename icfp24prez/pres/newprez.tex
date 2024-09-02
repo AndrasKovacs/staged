@@ -294,7 +294,7 @@
 \title{Closure-Free Functional Programming in a Two-Level Type Theory}
 \author{András Kovács}
 \institute{University of Gothenburg}
-\date{3 Sept 2024, ICFP 2024, Milan}
+\date{3rd Sept 2024, ICFP 2024, Milan}
 \begin{document}
 
 \frame{\titlepage}
@@ -423,8 +423,7 @@ compile to first-order monomorphic code.
 \begin{itemize}
 \item Looks similar to Haskell.
 \item Desugaring \& elaboration does slightly more work.
-\item Compiles to efficient code \emph{with a formal guarantee, without
-      general-purpose optimization}.
+\item Compilation to efficient code is formally guaranteed.
 \end{itemize}
 \end{column}
 \end{columns}
@@ -434,10 +433,10 @@ compile to first-order monomorphic code.
 \begin{block}{}
 \textbf{Setup}
 \begin{itemize}
-\item We use a \emph{two-level type theory (2LTT)}:
+\item \emph{Two-level type theory (2LTT)}:
   \begin{itemize}
-    \item Metalanguage (compile time): dependently typed, fancy features.
-    \item Object language (runtime): simpler \& lower-level.
+    \item Metalanguage (compile time): dependently typed.
+    \item Object language (runtime): simpler.
     \item The two are smoothly integrated.
   \end{itemize}
 \item Monadic programs are \emph{metaprograms} which generate efficient
@@ -450,20 +449,22 @@ compile to first-order monomorphic code.
 
 \begin{frame}[fragile]{Closure-freedom}
 
-How do we know that an abstraction feature is ``low-cost''?
+
+Many abstractions are usually implemented with closures:
+  \begin{itemize}
+    \item Higher-order functions
+    \item Type classes
+    \item ML functors
+  \end{itemize}
 \vspace{1em}
 
-It's a good indicator if the generated code is \textbf{free of closures}.
+A big part of GHC's \texttt{-O1} work is to get rid of closures.
 \vspace{1em}
-\begin{itemize}
-  \item Functional abstractions are usually implemented by closures:
-        higher-order functions, classes, ML functors.
-  \item A big part of GHC's \texttt{-O1} work is to get rid of closures.
-\end{itemize}
 
+Closure-freedom is a good indicator of \emph{low-cost} abstraction.
+\vspace{1em}
 
-
-
+Essential usage of closures is surprising rare in FP!
 
 
 \end{frame}
@@ -494,34 +495,35 @@ It's a good indicator if the generated code is \textbf{free of closures}.
 \begin{frame}[fragile]{The 2LTT}
 
 \begin{itemize}
-  \item \textbf{\ttt{MetaTy}}: universe of meta-level types. Supports $\Pi$, $\Sigma$, inductive families.
-  \item \textbf{\ttt{Ty}}: universe of object-level types. Only simple types. Polarized to \emph{computation} \& \emph{value} types.
+  \item \textbf{\ttt{\GRN{MetaTy}}}: universe of meta-level types. Supports $\Pi$, $\Sigma$, inductive families.
+  \item \textbf{\ttt{\GRN{Ty}}}: universe of object-level types. Only simple types. Polarized to computation and value types.
+    \alert{Closure-based and statically known functions are distinguished in types}.
 \end{itemize}
 \vspace{2em}
 
 \begin{columns}
 \begin{column}{0.4\textwidth}
 \textbf{A meta-level program}:
-\begin{verbatim}
-  id : {A : MetaTy} → A → A
-  id x = x
+\begin{Verbatim}[commandchars=\\\{\}]
+  \BLU{id} \RBL{:} {\textbraceleft}A \RBL{:} \GRN{MetaTy}{\textbraceright} \RBL{->} A \RBL{->} A
+  \BLU{id} x \RBL{=} x
 
 
 
 
-\end{verbatim}
+\end{Verbatim}
 \end{column}
 
 \begin{column}{0.6\textwidth}
 \textbf{An object-level program:}
-\begin{verbatim}
-  data List (A : ValTy) := Nil | Cons A List
+\begin{Verbatim}[commandchars=\\\{\}]
+  \RED{data} \GRN{List} (A \RBL{:} \GRN{ValTy}) \RBL{:=} \GRN{Nil} | \GRN{Cons} A (\GRN{List} A)
 
-  myMap : List Int → List Int
-  myMap ns := case xs of
-    Nil       → Nil
-    Cons n ns → Cons (n + 10) (myMap ns)
-\end{verbatim}
+  \BLU{myMap} \RBL{:} \GRN{List Int} \RBL{->} \GRN{List Int}
+  \BLU{myMap} ns \RBL{:=} \RED{case} xs \RED{of}
+    \GRN{Nil}       \RBL{->} \GRN{Nil}
+    \GRN{Cons} n ns \RBL{->} \GRN{Cons} (n + 10) (myMap ns)
+\end{Verbatim}
 \end{column}
 \end{columns}
 
@@ -531,54 +533,54 @@ It's a good indicator if the generated code is \textbf{free of closures}.
 \begin{frame}[fragile]{The 2LTT - interaction between stages}
 
 \begin{itemize}
-\item \textbf{Lifting}: for \ttt{A : Ty}, we have \ttt{⇑A : MetaTy}, as the type of
+\item \textbf{Lifting}: for \ttt{A \RBL{:} \GRN{Ty}}, we have \ttt{\RED{⇑}A \RBL{:} \GRN{MetaTy}}, as the type of
       metaprograms that produce \ttt{A}-typed object programs.
-\item \textbf{Quoting}: for \ttt{t : A} and \ttt{A : Ty}, we have \ttt{<t>} as the metaprogram
+\item \textbf{Quoting}: for \ttt{t \RBL{:} A} and \ttt{A \RBL{:} \GRN{Ty}}, we have \ttt{\RED{<}t\RED{>}} as the metaprogram
       which immediately returns \ttt{t}.
-\item \textbf{Splicing}: for \ttt{t : ⇑A}, we have \ttt{\char`~t : A} which runs the
+\item \textbf{Splicing}: for \ttt{t : \RED{⇑}A}, we have \ttt{\RED{\char`~}t \RBL{:} A} which runs the
        metaprogram \ttt{t} and inserts its output in some object-level code.
-\item Definitional equalities: \ttt{\char`~<t> ≡ t} and \ttt{<\char`~t> ≡ t}.
+\item Definitional equalities: \ttt{\RED{\char`~<}t\RED{>} ≡ t} and \ttt{\RED{<\char`~}t\RED{>} ≡ t}.
 \end{itemize}
 
 \end{frame}
 
 \begin{frame}[fragile]{Staged example}
 
-\begin{verbatim}
-    map : {A B : ValTy} → (⇑A → ⇑B) → ⇑(List A) → ⇑(List B)
-    map f as = <letrec go as := case as of
-                  Nil       → Nil
-                  Cons a as → Cons ~(f <a>) (go as)
-                in go ~as>
+\begin{Verbatim}[commandchars=\\\{\}]
+    \BLU{map} \RBL{:} {\textbraceleft}A B \RBL{:} \GRN{ValTy}{\textbraceright} \RBL{->} (\RED{⇑}A \RBL{->} \RED{⇑}B) \RBL{->} \RED{⇑}(\GRN{List} A) \RBL{->} \RED{⇑}(\GRN{List} B)
+    \BLU{map} f as \RBL{=} \RED{<letrec} go as \RBL{:=} \RED{case} as \RED{of}
+                  \GRN{Nil}       \RBL{->} \GRN{Nil}
+                  \GRN{Cons} a as \RBL{->} \GRN{Cons} \RED{~}(f \RED{<}a\RED{>}) (go as)
+                \RED{in} go \RED{~}as\RED{>}
 
-    myMap : List Int → List Int
-    myMap ns := ~(map (λ x. <~x + 10>) <ns>)
-\end{verbatim}
+    \BLU{myMap} \RBL{:} \GRN{List Int} \RBL{->} \GRN{List Int}
+    \BLU{myMap} ns \RBL{:=} \RED{~}(map (\RBL{\bsl}x\RBL{.} \RED{<~}x \RBL{+} 10\RED{>}) \RED{<}ns\RED{>})
+\end{Verbatim}
 
 \end{frame}
 
 \begin{frame}[fragile]{Staged example - with stage inference}
 
-\begin{verbatim}
-    map : {A B : ValTy} → (A → B) → List A → List B
-    map f = letrec go as := case as of
-                  Nil       → Nil
-                  Cons a as → Cons (f a) (go as)
-            in go
+\begin{Verbatim}[commandchars=\\\{\}]
+    \BLU{map} \RBL{:} {\textbraceleft}A B \RBL{:} \GRN{ValTy}{\textbraceright} \RBL{->} (A \RBL{->} B) \RBL{->} \GRN{List} A \RBL{->} \GRN{List} B
+    \BLU{map} f \RBL{=} \RED{letrec} go as \RBL{:=} \RED{case} as \RED{of}
+               \GRN{Nil}       \RBL{->} \GRN{Nil}
+               \GRN{Cons} a as \RBL{->} \GRN{Cons} (f a) (go as)
+            \RED{in} go
 
-    myMap : List Int → List Int
-    myMap := map (λ x. x + 10)
-\end{verbatim}
+    \BLU{myMap} \RBL{:} \GRN{List Int} \RBL{->} \GRN{List Int}
+    \BLU{myMap} \RBL{:=} map (\RBL{\bsl}x\RBL{.} x \RBL{+} 10)
+\end{Verbatim}
 \end{frame}
 
 \begin{frame}[fragile]{A monad for code generation}
 
 Type classes (and monads) only exist in the metalanguage.
-\begin{verbatim}
-    class Monad (m : MetaTy → MetaTy) where
-      return : a → m a
-      (>>=)  : m a → (a → m b) → m b
-\end{verbatim}
+\begin{Verbatim}[commandchars=\\\{\}]
+    \RED{class} \GRN{Monad} (m \RBL{:} \GRN{MetaTy} \RBL{->} \GRN{MetaTy}) \RED{where}
+      return \RBL{:} a \RBL{->} m a
+      (\RBL{>>=})  \RBL{:} m a \RBL{->} (a \RBL{->} m b) \RBL{->} m b
+\end{Verbatim}
 \pause
 \ttt{Gen} is a Monad whose effect is \textbf{generating object code}:
 \begin{verbatim}

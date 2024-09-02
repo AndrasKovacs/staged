@@ -1,9 +1,9 @@
 # Fdb version 3
-["xdvipdfmx"] 1725234732 "newprez.xdv" "newprez.pdf" "newprez" 1725234732
-  "newprez.xdv" 1725234731 146364 89d1a4c3c77dff031178996ae45bacfa "xelatex"
+["xdvipdfmx"] 1725280068 "newprez.xdv" "newprez.pdf" "newprez" 1725280068
+  "newprez.xdv" 1725280068 153420 e0c344f7fda270e4ce56d7ab68dcdc54 "xelatex"
   (generated)
   "newprez.pdf"
-["xelatex"] 1725234731 "newprez.tex" "newprez.xdv" "newprez" 1725234732
+["xelatex"] 1725280067 "newprez.tex" "newprez.xdv" "newprez" 1725280068
   "/etc/texmf/web2c/texmf.cnf" 1717363826 475 c0e671620eb5563b2130f56340a5fde8 ""
   "/home/andraskovacs/.texlive2021/texmf-var/web2c/xetex/xelatex.fmt" 1717365902 3606614 21e48317130ac9879e5e0d569814221e ""
   "/usr/share/texlive/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
@@ -247,11 +247,11 @@
   "/usr/share/texlive/texmf-dist/tex/latex/xcolor/xcolor.sty" 1635798903 56029 3f7889dab51d620aa43177c391b7b190 ""
   "/usr/share/texlive/texmf-dist/web2c/texmf.cnf" 1644012257 39432 7155514e09a3d69036fac785183a21c2 ""
   "/usr/share/texmf/web2c/texmf.cnf" 1644012257 39432 7155514e09a3d69036fac785183a21c2 ""
-  "newprez.aux" 1725234731 3949 2ec48ad4df97654a3051cb50521adce8 "xelatex"
-  "newprez.nav" 1725234731 1861 4e9a5d1ab326106c3a0f84f21d517bd2 "xelatex"
-  "newprez.out" 1725234731 0 d41d8cd98f00b204e9800998ecf8427e "xelatex"
-  "newprez.tex" 1725234729 20716 624b8184f63a637771daa0d444d8599f ""
-  "newprez.vrb" 1725234731 444 20fb5c0f3268abc6bc55f1b1cb622ffe "xelatex"
+  "newprez.aux" 1725280068 3949 2ec48ad4df97654a3051cb50521adce8 "xelatex"
+  "newprez.nav" 1725280068 1861 4e9a5d1ab326106c3a0f84f21d517bd2 "xelatex"
+  "newprez.out" 1725280068 0 d41d8cd98f00b204e9800998ecf8427e "xelatex"
+  "newprez.tex" 1725280067 21747 a75a534de74813fbc3040a8ce2d4b5dc ""
+  "newprez.vrb" 1725280068 444 20fb5c0f3268abc6bc55f1b1cb622ffe "xelatex"
   (generated)
   "newprez.aux"
   "newprez.log"

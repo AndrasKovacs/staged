@@ -288,6 +288,8 @@
 \newcommand{\RBL}[1]{{\color{RoyalBlue} #1}}
 \newcommand{\BLU}[1]{{\color{Blue} #1}}
 \newcommand{\bsl}{\textbackslash}
+\newcommand{\brl}{\textbraceleft}
+\newcommand{\brr}{\textbraceright}
 
 %% --------------------------------------------------------------------------------
 
@@ -303,7 +305,7 @@
 
 \begin{columns}
 \begin{column}{0.3\textwidth}
-\textbf{Input:}
+\textbf{Source:}
 \begin{Verbatim}[commandchars=\\\{\}]
 
     \BLU{f} \RBL{::} \GRN{Reader Bool Int}
@@ -321,7 +323,7 @@
 \end{column}
 \pause
 \begin{column}{0.5\textwidth}
-\textbf{\texttt{-O0} output:}
+\textbf{\texttt{-O0} Core output:}
 \begin{Verbatim}[commandchars=\\\{\}]
 
     \BLU{dict1} :: \GRN{Monad} (\GRN{Reader Int})
@@ -365,7 +367,7 @@
 \emph{Optimization is hard!}
 \vspace{1em}
 
-Example: \ttt{mapM} is third-order \& rank-2 polymorphic, but almost all use cases should
+Example: \ttt{\BLU{mapM}} is third-order \& rank-2 polymorphic, but almost all use cases should
 compile to first-order monomorphic code.
 \vspace{1em}
 \begin{Verbatim}[commandchars=\\\{\}]
@@ -409,7 +411,7 @@ compile to first-order monomorphic code.
 
 \begin{columns}
 \begin{column}{0.3\textwidth}
-\textbf{Input in WIP language:}
+\textbf{Source in WIP language:}
 \begin{Verbatim}[commandchars=\\\{\}]
     \BLU{f} : \GRN{Reader Bool Int}
     \BLU{f} \RBL{:=} \RED{do}
@@ -436,11 +438,9 @@ compile to first-order monomorphic code.
 \item \emph{Two-level type theory (2LTT)}:
   \begin{itemize}
     \item Metalanguage (compile time): dependently typed.
-    \item Object language (runtime): simpler.
+    \item Object language (runtime): simply typed.
     \item The two are smoothly integrated.
   \end{itemize}
-\item Monadic programs are \emph{metaprograms} which generate efficient
-  runtime code.
 \item Most optimizations are implemented in libraries instead of compiler internals.
 \end{itemize}
 \end{block}
@@ -464,40 +464,17 @@ A big part of GHC's \texttt{-O1} work is to get rid of closures.
 Closure-freedom is a good indicator of \emph{low-cost} abstraction.
 \vspace{1em}
 
-Essential usage of closures is surprising rare in FP!
+Essential usage of closures is surprisingly rare!
 
 
 \end{frame}
-
-%% \begin{frame}[fragile]{The 2LTT}
-
-%% Two type universes for the two levels.
-%% \vspace{1em}
-%% \begin{enumerate}
-%% \item \textbf{\ttt{MetaTy}}: universe (hierarchy) of meta-level types. Supports
-%%       $\Pi$, $\Sigma$, inductive families.
-%% \item \textbf{\ttt{Ty}}: universe of object-level types.
-%%   \begin{itemize}
-%%   \item \ttt{Ty} is itself an element of \ttt{MetaTy}.
-%%   \item No polymorphism or type dependency in \ttt{Ty}.
-%%   \item Two sub-universes:
-%%   \begin{itemize}
-%%   \item \ttt{CompTy} contains \emph{computation types}: functions, computational products.
-%%   \item \ttt{ValTy}  contains \emph{value types}: ADT-s and closure types.
-%%   \item ADT constructors only store values, functions only take value inputs.
-%%   \end{itemize}
-%%   \end{itemize}
-%% \end{enumerate}
-%% \vspace{0.5em}
-
-%% \end{frame}
 
 \begin{frame}[fragile]{The 2LTT}
 
 \begin{itemize}
   \item \textbf{\ttt{\GRN{MetaTy}}}: universe of meta-level types. Supports $\Pi$, $\Sigma$, inductive families.
-  \item \textbf{\ttt{\GRN{Ty}}}: universe of object-level types. Only simple types. Polarized to computation and value types.
-    \alert{Closure-based and statically known functions are distinguished in types}.
+  \item \textbf{\ttt{\GRN{Ty}}}: universe of object-level types. \alert{Polarization}:
+    \textbf{\ttt{\GRN{ValTy}}} and \textbf{\ttt{\GRN{CompTy}}} are sub-universes.
 \end{itemize}
 \vspace{2em}
 
@@ -577,25 +554,28 @@ Essential usage of closures is surprising rare in FP!
 
 Type classes (and monads) only exist in the metalanguage.
 \begin{Verbatim}[commandchars=\\\{\}]
-    \RED{class} \GRN{Monad} (m \RBL{:} \GRN{MetaTy} \RBL{->} \GRN{MetaTy}) \RED{where}
-      return \RBL{:} a \RBL{->} m a
-      (\RBL{>>=})  \RBL{:} m a \RBL{->} (a \RBL{->} m b) \RBL{->} m b
+    \RED{class} \GRN{Monad} (M \RBL{:} \GRN{MetaTy} \RBL{->} \GRN{MetaTy}) \RED{where}
+      return \RBL{:} A \RBL{->} M A
+      (\RBL{>>=})  \RBL{:} M A \RBL{->} (A \RBL{->} M B) \RBL{->} M B
 \end{Verbatim}
 \pause
-\ttt{Gen} is a Monad whose effect is \textbf{generating object code}:
-\begin{verbatim}
-    newtype Gen A = Gen {unGen : {R : Ty} → (A → ⇑R) → ⇑R}
-    instance Monad Gen where ...
+\vspace{0.5em}
+\ttt{\GRN{Gen}} is a Monad whose effect is \textbf{generating object code}:
+\vspace{0.5em}
+\begin{Verbatim}[commandchars=\\\{\}]
+    \RED{newtype} \GRN{Gen} A \RBL{=} \GRN{Gen} {\brl}unGen \RBL{:} {\brl}R \RBL{:} \GRN{Ty}\brr \RBL{->} (A \RBL{->} \RED{⇑}R) \RBL{->} \RED{⇑}R\brr
+    \RED{instance} \GRN{Monad} \GRN{Gen} \RED{where} ...
 
-    runGen : Gen (⇑A) → ⇑A
-    runGen (Gen f) = f id
-\end{verbatim}
+    \BLU{runGen} \RBL{:} \GRN{Gen} (\RED{⇑}A) \RBL{->} \RED{⇑}A
+    \BLU{runGen} (\GRN{Gen} f) \RBL{=} f id
+\end{Verbatim}
 \pause
+\vspace{0.3em}
 Generating an object-level \ttt{let}-definition:
-\begin{verbatim}
-    gen : {A : Ty} → ⇑A → Gen ⇑A
-    gen {A} a = Gen $ λ k. <let x : A := ~a in ~(k <x>)>
-\end{verbatim}
+\begin{Verbatim}[commandchars=\\\{\}]
+    \BLU{gen} \RBL{:} {\brl}A \RBL{:} \GRN{Ty}\brr \RBL{->} \RED{⇑}A \RBL{->} \GRN{Gen} (\RED{⇑}A)
+    \BLU{gen} {\brl}A\brr a \RBL{=} \GRN{Gen} \RBL{$} \RBL{{\bsl}}k\RBL{.} \RED{<let} x \RBL{:} A \RBL{:=} \RED{~}a \RED{in} \RED{~}(k \RED{<}x\RED{>})\RED{>}
+\end{Verbatim}
 
 \end{frame}
 
@@ -603,140 +583,153 @@ Generating an object-level \ttt{let}-definition:
 
 \begin{columns}
 \begin{column}{0.4\textwidth}
-\textbf{Staged input:}
-\begin{verbatim}
-    myAction : ⇑Int → Gen ⇑Int
-    myAction x = do
-      y ← gen <~x + ~x>
-      z ← gen <~y * ~y>
-      return <~y * ~z>
-
-    foo : Int
-    foo := ~(runGen $ myAction <10>)
-\end{verbatim}
+\textbf{Metaprogram:}
+\begin{Verbatim}[commandchars=\\\{\}]
+    \BLU{foo} \RBL{:} \GRN{Int}
+    \BLU{foo} \RBL{:=} \RED{~}(runGen \RBL{$} \RED{do}
+      x \RBL{<-} gen \RED{<}10 \RBL{+} 10\RED{>}
+      y \RBL{<-} gen \RED{<~}x \RBL{*} \RED{~}x\RED{>}
+      return \RED{<~}x \RBL{*} \RED{~}y\RED{>})
+\end{Verbatim}
 \end{column}
+
 \begin{column}{0.5\textwidth}
-\textbf{Output:}
-\begin{verbatim}
-    foo : Int
-    foo := let y := 10 + 10 in
-           let z := y * y in
-           y * z
+\textbf{$\hspace{1em}$Code output:}
+\begin{Verbatim}[commandchars=\\\{\}]
+     \BLU{foo} \RBL{:} \GRN{Int}
+     \BLU{foo} \RBL{:=} \RED{let} x \RBL{:=} 10 \RBL{+} 10 \RED{in}
+            \RED{let} y \RBL{:=} x \RBL{*} x \RED{in}
+            x \RBL{*} y
 
-
-
-
-\end{verbatim}
+\end{Verbatim}
 \end{column}
 \end{columns}
 
 \end{frame}
 
-\begin{frame}[fragile]{Staging monads}
+\begin{frame}[fragile]{Generating monadic code}
 
-We only program in meta-level monads, but also have back-and-forth
-translations between object-level types and metamonads.
-
-\begin{verbatim}
-    down : ReaderT (⇑R) Gen (⇑A) → ⇑(ReaderTₒ R Identityₒ A)
-    up   : ⇑(ReaderTₒ R Identityₒ A) → ReaderT (⇑R) Gen (⇑A)
-
-    f : ReaderTₒ Bool Identityₒ Int
-    f := ~(down $ do
-      b  ← ask
-      b' ← split b
-      case b' of
-        MetaTrue  → return <10>
-        MetaFalse → return <20>)
-\end{verbatim}
-
+We want to define efficient code generation for a monad \texttt{M}.
+{\center
 \begin{block}{}
-\textbf{In general:} up/down is defined by recursion on a transformer stack.
-\alert{\ttt{Identityₒ} is related to \ttt{Gen}.}
-\end{block}
-\end{frame}
+\center\emph{\texttt{M} extended with \texttt{\GRN{Gen}} at the bottom yields
+the corresponding code generator monad.}
+\end{block}}
 
-\begin{frame}[fragile]{Case splitting on object values}
-
-\begin{verbatim}
-                   split : MonadGen m => ⇑Bool → m MetaBool
-                   split b = liftGen $ Gen $ λ k. <case ~b of
-                     True  → ~(k MetaTrue)
-                     False → ~(k MetaFalse)>
-
-                   f : ReaderTₒ Bool Identityₒ Int
-                   f := ~(down $ do
-                     b  ← ask
-                     b' ← split b
-                     case b' of
-                       MetaTrue  → return <10>
-                       MetaFalse → return <20>)
-\end{verbatim}
-
-\end{frame}
-
-\begin{frame}[fragile]{Polarization \& Closure-Freedom}
-
-\emph{Computation} and \emph{value} types are tracked
-in the object language.
-\begin{verbatim}
-    _→_     : ValTy → Ty → CompTy
-    Closure : CompTy → ValTy
-    List    : ValTy → ValTy
-    ...
-\end{verbatim}
-
-Closures only appear at runtime if we use \texttt{Closure}!
 \vspace{1em}
 
-We have to use \ttt{Closure (A → B)} to store functions in ADTs
-or pass them as function arguments.
-\vspace{1em}
-
-(It's rare that closures are \emph{really needed} in programming!)
+For example:
+\begin{itemize}
+\item \texttt{\GRN{ReaderT} (\RED{⇑}R) \GRN{Gen} (\RED{⇑}A)} actions
+      are code generators for \texttt{R \RBL{->} A}.
+\item \texttt{\GRN{StateT} (\RED{⇑}S) \GRN{Gen} (\RED{⇑}A)} actions
+      are code generators for \texttt{S \RBL{->} (A, S)}.
+\end{itemize}
+\vspace{0.5em}
+In each case, we can convert back-and forth, e.g.\
+\begin{Verbatim}[commandchars=\\\{\}]
+    \BLU{up}   : \RED{⇑}(R \RBL{->} A) \RBL{->} \GRN{ReaderT} (\RED{⇑}R) \GRN{Gen} (\RED{⇑}A)
+    \BLU{down} : \GRN{ReaderT} (\RED{⇑}R) \GRN{Gen} (\RED{⇑}A) \RBL{->} \RED{⇑}(R \RBL{->} A)
+\end{Verbatim}
 
 \end{frame}
 
-\begin{frame}[fragile]{Polarization \& Closure-Freedom}
+\begin{frame}[fragile]{Generating monadic code}
 
-How to compile this?
-\vspace{1em}
-\begin{verbatim}
-                   f : Bool → Int → Int
-                   f b = case b of True  → λ x. x + 10
-                                   False → λ x. x * 10
-\end{verbatim}
-And this?
-\begin{verbatim}
-                   f : Int → Int
-                   f x :=
-                     let g y := x + y;
-                     g x + 10
-\end{verbatim}
+\begin{columns}
+\begin{column}{0.4\textwidth}
+\textbf{Metaprogram:}
+\begin{Verbatim}[commandchars=\\\{\}]
+    \BLU{action} \RBL{:} \GRN{Int} \RBL{->} \GRN{Int}
+    \BLU{action} \RBL{:=} \RED{~}(down \RBL{$} \RED{do}
+      x \RBL{<-} ask
+      x \RBL{<-} ask
+      return \RED{<~}x \RBL{+} \RED{~}x\RED{>})
+\end{Verbatim}
+\end{column}
+
+\begin{column}{0.5\textwidth}
+\textbf{$\hspace{1em}$Output:}
+\begin{Verbatim}[commandchars=\\\{\}]
+    \BLU{action} \RBL{:} \GRN{Int} \RBL{->} \GRN{Int}
+    \BLU{action} x \RBL{:=} x \RBL{+} x
+
+
+
+\end{Verbatim}
+\end{column}
+\end{columns}
+\vspace{2em}
+
+\emph{Meta-monads ``fuse'' at compile time.}
+
 \end{frame}
+
+\begin{frame}[fragile]{Pattern matching on object-level values}
+
+\emph{Generativity:} metaprograms cannot inspect the structure of object expressions.
+\vspace{1em}
+
+But we can generate object-level pattern matches in \texttt{\GRN{Gen}}:
+\vspace{0.5em}
+\begin{Verbatim}[commandchars=\\\{\}]
+    \BLU{split} \RBL{:} \RED{⇑}\GRN{Bool} \RBL{->} \GRN{Gen} \GRN{MetaBool}
+    \BLU{split} b \RBL{=} \GRN{Gen} \RBL{$} \RBL{\bsl}k\RBL{.} \RED{<case ~}b \RED{of}
+      \GRN{True } \RBL{->} \RED{~}(k \GRN{MetaTrue})
+      \GRN{False} \RBL{->} \RED{~}(k \GRN{MetaFalse})\RED{>}
+\end{Verbatim}
+
+\vspace{1em}
+\texttt{\BLU{split}} generalizes to all object ADT-s and all \texttt{\GRN{Gen}}-based monads.
+
+\end{frame}
+
+\begin{frame}[fragile]{Example}
+
+\begin{Verbatim}[commandchars=\\\{\}]
+      \BLU{f} : \GRN{Reader Bool Int}            \BLU{f} : \GRN{Reader Bool Int}
+      \BLU{f} \RBL{:=} \RED{do}                        \BLU{f} \RBL{:=} \RED{~}(down \RBL{$} \RED{do}
+        b \RBL{<-} ask              ==>      b \RBL{<-} ask
+        \RED{if} b \RED{then} return 10            split b \RBL{>>=} \RBL{\bsl}\RED{case}
+             \RED{else} return 20               \GRN{MetaTrue}  \RBL{->} return \RED{<}10\RED{>}
+                                          \GRN{MetaFalse} \RBL{->} return \RED{<}20\RED{>})
+
+
+                        \BLU{f} : \GRN{Reader Bool Int}
+                  ==>   \BLU{f} = Reader (\RBL{\bsl}b\RBL{.} \RED{case} b \RED{of}
+                           \GRN{True}  \RBL{->} 10
+                           \GRN{False} \RBL{->} 20)
+\end{Verbatim}
+
+
+\end{frame}
+
+
+
 
 \begin{frame}{More things}
 
+More in the paper and artifact:
 \begin{itemize}
-  \item Conditionally accepted at ICFP 24: \emph{Closure-Free Functional Programming in a Two-Level Type Theory}.
-  \item More things in paper: join points, stream fusion, semantics, more about polarized types.
-  \item Implementations:
-    \begin{itemize}
-      \item In Agda and typed Template Haskell with some limitations.
-      \item Standalone implementation early WIP.
-    \end{itemize}
+  \item Generic handling of join points in monads.
+  \item Powerful \& general stream fusion.
+  \item More metatheory.
+  \item Adaptation as Agda and Typed Template Haskell libraries.
 \end{itemize}
-\vspace{2em}
+\vspace{1em}
+
+Work in progress:
+\begin{itemize}
+\item Standalone prototype targeting LLVM.
+\item Deploying the Template Haskell library in the Agda source code,
+      to improve generics.
+\end{itemize}
 
 \begin{center}
 
   \Large{\textbf{Thank you!}}
 
 \end{center}
-
 \end{frame}
-
-
-
 
 \end{document}

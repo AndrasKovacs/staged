@@ -9,5 +9,8 @@ f = do
   if b then return 10
        else return 20
 
-
 data Mallac
+
+data Foo = Foo {mallac :: Int}
+
+newtype

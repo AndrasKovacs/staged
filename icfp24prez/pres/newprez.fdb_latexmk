@@ -1,11 +1,10 @@
 # Fdb version 3
-["xdvipdfmx"] 1725280068 "newprez.xdv" "newprez.pdf" "newprez" 1725280068
-  "newprez.xdv" 1725280068 153420 e0c344f7fda270e4ce56d7ab68dcdc54 "xelatex"
+["xdvipdfmx"] 1725300052 "newprez.xdv" "newprez.pdf" "newprez" 1725300053
+  "newprez.xdv" 1725300052 165208 7f7c68003496a59ff2c7a78faa0349aa "xelatex"
   (generated)
   "newprez.pdf"
-["xelatex"] 1725280067 "newprez.tex" "newprez.xdv" "newprez" 1725280068
-  "/etc/texmf/web2c/texmf.cnf" 1717363826 475 c0e671620eb5563b2130f56340a5fde8 ""
-  "/home/andraskovacs/.texlive2021/texmf-var/web2c/xetex/xelatex.fmt" 1717365902 3606614 21e48317130ac9879e5e0d569814221e ""
+["xelatex"] 1725300051 "newprez.tex" "newprez.xdv" "newprez" 1725300053
+  "/etc/texmf/web2c/texmf.cnf" 1699607946 475 c0e671620eb5563b2130f56340a5fde8 ""
   "/usr/share/texlive/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/adobe/zapfding/pzdr.tfm" 1136768653 1528 f853c4d1b4e0550255e02831fdc8496f ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmbsy5.tfm" 1246382020 1120 1e8878807317373affa7f7bba4cf2f6a ""
@@ -247,11 +246,12 @@
   "/usr/share/texlive/texmf-dist/tex/latex/xcolor/xcolor.sty" 1635798903 56029 3f7889dab51d620aa43177c391b7b190 ""
   "/usr/share/texlive/texmf-dist/web2c/texmf.cnf" 1644012257 39432 7155514e09a3d69036fac785183a21c2 ""
   "/usr/share/texmf/web2c/texmf.cnf" 1644012257 39432 7155514e09a3d69036fac785183a21c2 ""
-  "newprez.aux" 1725280068 3949 2ec48ad4df97654a3051cb50521adce8 "xelatex"
-  "newprez.nav" 1725280068 1861 4e9a5d1ab326106c3a0f84f21d517bd2 "xelatex"
-  "newprez.out" 1725280068 0 d41d8cd98f00b204e9800998ecf8427e "xelatex"
-  "newprez.tex" 1725280067 21747 a75a534de74813fbc3040a8ce2d4b5dc ""
-  "newprez.vrb" 1725280068 444 20fb5c0f3268abc6bc55f1b1cb622ffe "xelatex"
+  "/var/lib/texmf/web2c/xetex/xelatex.fmt" 1710580744 5133142 a8ad31412e9b54f3db666feaf54f0d56 ""
+  "newprez.aux" 1725300052 3949 2ec48ad4df97654a3051cb50521adce8 "xelatex"
+  "newprez.nav" 1725300052 1861 4e9a5d1ab326106c3a0f84f21d517bd2 "xelatex"
+  "newprez.out" 1725300052 0 d41d8cd98f00b204e9800998ecf8427e "xelatex"
+  "newprez.tex" 1725300050 22353 e71831971ed82beb63beb7e758ede3d3 ""
+  "newprez.vrb" 1725300052 843 90e6fb8079916dd9e54a0cf00facb02e "xelatex"
   (generated)
   "newprez.aux"
   "newprez.log"

@@ -1,4 +1,4 @@
-\frametitle{Example}
+\frametitle{Compiling monads - example}
 
 \begin{Verbatim}[commandchars=\\\{\}]
       \BLU{f} : \GRN{Reader Bool Int}            \BLU{f} : \GRN{Reader Bool Int}

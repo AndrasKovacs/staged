@@ -438,7 +438,7 @@ compile to first-order monomorphic code.
 \item \emph{Two-level type theory (2LTT)}:
   \begin{itemize}
     \item Metalanguage (compile time): dependently typed.
-    \item Object language (runtime): simply typed.
+    \item Object language (runtime): simply typed, \emph{polarized}.
     \item The two are smoothly integrated.
   \end{itemize}
 \item Most optimizations are implemented in libraries instead of compiler internals.
@@ -447,34 +447,12 @@ compile to first-order monomorphic code.
 
 \end{frame}
 
-\begin{frame}[fragile]{Closure-freedom}
-
-
-Many abstractions are usually implemented with closures:
-  \begin{itemize}
-    \item Higher-order functions
-    \item Type classes
-    \item ML functors
-  \end{itemize}
-\vspace{1em}
-
-A big part of GHC's \texttt{-O1} work is to get rid of closures.
-\vspace{1em}
-
-Closure-freedom is a good indicator of \emph{low-cost} abstraction.
-\vspace{1em}
-
-Essential usage of closures is surprisingly rare!
-
-
-\end{frame}
-
 \begin{frame}[fragile]{The 2LTT}
 
 \begin{itemize}
-  \item \textbf{\ttt{\GRN{MetaTy}}}: universe of meta-level types. Supports $\Pi$, $\Sigma$, inductive families.
+  \item \textbf{\ttt{\GRN{MetaTy}}}: universe of meta-level types.
   \item \textbf{\ttt{\GRN{Ty}}}: universe of object-level types. \alert{Polarization}:
-    \textbf{\ttt{\GRN{ValTy}}} and \textbf{\ttt{\GRN{CompTy}}} are sub-universes.
+    \textbf{\ttt{\GRN{ValTy}}} and \textbf{\ttt{\GRN{CompTy}}} are sub-universes of \textbf{\ttt{\GRN{Ty}}}.
 \end{itemize}
 \vspace{2em}
 
@@ -503,6 +481,22 @@ Essential usage of closures is surprisingly rare!
 \end{Verbatim}
 \end{column}
 \end{columns}
+\end{frame}
+
+\begin{frame}[fragile]{Closure-freedom}
+
+In the object language:
+\begin{itemize}
+  \item Closures are \textbf{values}.
+  \item Statically known functions are \textbf{computations}.
+  \item If we don't ask for closures, we don't get them!
+\end{itemize}
+\vspace{1em}
+
+Essential usage of closures is surprisingly rare!
+
+\vspace{1em}
+Closure-freedom is a good indicator of low-cost abstraction.
 
 
 \end{frame}
@@ -626,6 +620,8 @@ For example:
       are code generators for \texttt{S \RBL{->} (A, S)}.
 \end{itemize}
 \vspace{0.5em}
+
+\pause
 In each case, we can convert back-and forth, e.g.\
 \begin{Verbatim}[commandchars=\\\{\}]
     \BLU{up}   : \RED{⇑}(R \RBL{->} A) \RBL{->} \GRN{ReaderT} (\RED{⇑}R) \GRN{Gen} (\RED{⇑}A)
@@ -661,7 +657,7 @@ In each case, we can convert back-and forth, e.g.\
 \end{columns}
 \vspace{2em}
 
-\emph{Meta-monads ``fuse'' at compile time.}
+\emph{We get ``fusion'' for monadic code.}
 
 \end{frame}
 
@@ -684,7 +680,7 @@ But we can generate object-level pattern matches in \texttt{\GRN{Gen}}:
 
 \end{frame}
 
-\begin{frame}[fragile]{Example}
+\begin{frame}[fragile]{Compiling monads - example}
 
 \begin{Verbatim}[commandchars=\\\{\}]
       \BLU{f} : \GRN{Reader Bool Int}            \BLU{f} : \GRN{Reader Bool Int}
@@ -711,7 +707,8 @@ But we can generate object-level pattern matches in \texttt{\GRN{Gen}}:
 
 More in the paper and artifact:
 \begin{itemize}
-  \item Generic handling of join points in monads.
+  \item Handling join points in monads.
+  \item Handling mutually recursive blocks.
   \item Powerful \& general stream fusion.
   \item More metatheory.
   \item Adaptation as Agda and Typed Template Haskell libraries.
@@ -722,9 +719,10 @@ Work in progress:
 \begin{itemize}
 \item Standalone prototype targeting LLVM.
 \item Deploying the Template Haskell library in the Agda source code,
-      to improve generics.
+      in high-performance generics.
 \end{itemize}
 
+\pause
 \begin{center}
 
   \Large{\textbf{Thank you!}}

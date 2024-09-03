@@ -397,11 +397,9 @@ compile to first-order monomorphic code.
 	\arrow["{Conservative\,optimization}", from=1-7, to=1-7, loop, in=55, out=125, distance=10mm]
 	\arrow["Compilation"', from=1-7, to=1-10]
 \end{tikzcd}\]
-%% \begin{itemize}
-%%   \item Programmers and the elaborator need to work
-%%   \item Metaprograms are fast and robust
+\vspace{2em}
 
-%% \end{itemize}
+The paper explores \textbf{monad transformers} and stream fusion using this design.
 
 
 \end{frame}
@@ -617,17 +615,18 @@ the corresponding code generator monad.}
 For example:
 \begin{itemize}
 \item \texttt{\GRN{ReaderT} (\RED{⇑}R) \GRN{Gen} (\RED{⇑}A)} actions
-      are code generators for \texttt{R \RBL{->} A}.
+      are code generators for \texttt{\GRN{Reader} R A}.
 \item \texttt{\GRN{StateT} (\RED{⇑}S) \GRN{Gen} (\RED{⇑}A)} actions
-      are code generators for \texttt{S \RBL{->} (A, S)}.
+      are code generators for \texttt{\GRN{State} S A}.
 \end{itemize}
 \vspace{0.5em}
 
 \pause
 In each case, we can convert back-and forth, e.g.\
+\vspace{0.5em}
 \begin{Verbatim}[commandchars=\\\{\}]
-    \BLU{up}   : \RED{⇑}(R \RBL{->} A) \RBL{->} \GRN{ReaderT} (\RED{⇑}R) \GRN{Gen} (\RED{⇑}A)
-    \BLU{down} : \GRN{ReaderT} (\RED{⇑}R) \GRN{Gen} (\RED{⇑}A) \RBL{->} \RED{⇑}(R \RBL{->} A)
+    \BLU{up}   : \RED{⇑}(\GRN{Reader} R A) \RBL{->} \GRN{ReaderT} (\RED{⇑}R) \GRN{Gen} (\RED{⇑}A)
+    \BLU{down} : \GRN{ReaderT} (\RED{⇑}R) \GRN{Gen} (\RED{⇑}A) \RBL{->} \RED{⇑}(\GRN{Reader} R A)
 \end{Verbatim}
 
 \end{frame}

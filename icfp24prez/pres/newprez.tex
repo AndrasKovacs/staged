@@ -454,7 +454,7 @@ compile to first-order monomorphic code.
   \item \textbf{\ttt{\GRN{Ty}}}: universe of object-level types. \alert{Polarization}:
     \textbf{\ttt{\GRN{ValTy}}} and \textbf{\ttt{\GRN{CompTy}}} are sub-universes of \textbf{\ttt{\GRN{Ty}}}.
 \end{itemize}
-\vspace{2em}
+\vspace{1em}
 
 \begin{columns}
 \begin{column}{0.4\textwidth}
@@ -481,32 +481,34 @@ compile to first-order monomorphic code.
 \end{Verbatim}
 \end{column}
 \end{columns}
+\vspace{2em}
+\emph{Polarization lets us control closure creation through types.}
 \end{frame}
 
-\begin{frame}[fragile]{Closure-freedom}
+%% \begin{frame}[fragile]{Closure-freedom}
 
-In the object language:
-\begin{itemize}
-  \item Closures are \textbf{values}.
-  \item Statically known functions are \textbf{computations}.
-  \item If we don't ask for closures, we don't get them!
-\end{itemize}
-\vspace{1em}
+%% In the object language:
+%% \begin{itemize}
+%%   \item Closures are \textbf{values}.
+%%   \item Statically known functions are \textbf{computations}.
+%%   \item If we don't ask for closures, we don't get them!
+%% \end{itemize}
+%% \vspace{1em}
 
-Essential usage of closures is surprisingly rare!
+%% Essential usage of closures is surprisingly rare!
 
-\vspace{1em}
-Closure-freedom is a good indicator of low-cost abstraction.
+%% \vspace{1em}
+%% Closure-freedom is a good indicator of low-cost abstraction.
 
 
-\end{frame}
+%% \end{frame}
 
 \begin{frame}[fragile]{The 2LTT - interaction between stages}
 
 \begin{itemize}
 \item \textbf{Lifting}: for \ttt{A \RBL{:} \GRN{Ty}}, we have \ttt{\RED{⇑}A \RBL{:} \GRN{MetaTy}}, as the type of
       metaprograms that produce \ttt{A}-typed object programs.
-\item \textbf{Quoting}: for \ttt{t \RBL{:} A} and \ttt{A \RBL{:} \GRN{Ty}}, we have \ttt{\RED{<}t\RED{>}} as the metaprogram
+\item \textbf{Quoting}: for \ttt{t \RBL{:} A} and \ttt{A \RBL{:} \GRN{Ty}}, we have \ttt{\RED{<}t\RED{>} : \RED{⇑}A} as the metaprogram
       which immediately returns \ttt{t}.
 \item \textbf{Splicing}: for \ttt{t : \RED{⇑}A}, we have \ttt{\RED{\char`~}t \RBL{:} A} which runs the
        metaprogram \ttt{t} and inserts its output in some object-level code.
@@ -663,7 +665,10 @@ In each case, we can convert back-and forth, e.g.\
 
 \begin{frame}[fragile]{Pattern matching on object-level values}
 
-\emph{Generativity:} metaprograms cannot inspect the structure of object expressions.
+How do we inspect the structure of object-level values at compile time?
+\vspace{1em}
+
+We don't directly support looking inside expressions (it breaks things).
 \vspace{1em}
 
 But we can generate object-level pattern matches in \texttt{\GRN{Gen}}:

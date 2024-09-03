@@ -1,7 +1,7 @@
 \frametitle{Compiling monads - example}
 
 \begin{Verbatim}[commandchars=\\\{\}]
-      \BLU{f} : \GRN{Reader Bool Int}            \BLU{f} : \GRN{Reader Bool Int}
+      \BLU{f} \RBL{:} \GRN{Reader Bool Int}            \BLU{f} \RBL{:} \GRN{Reader Bool Int}
       \BLU{f} \RBL{:=} \RED{do}                        \BLU{f} \RBL{:=} \RED{~}(down \RBL{$} \RED{do}
         b \RBL{<-} ask              ==>      b \RBL{<-} ask
         \RED{if} b \RED{then} return 10            split b \RBL{>>=} \RBL{\bsl}\RED{case}
@@ -9,8 +9,8 @@
                                           \GRN{MetaFalse} \RBL{->} return \RED{<}20\RED{>})
 
 
-                        \BLU{f} : \GRN{Reader Bool Int}
-                  ==>   \BLU{f} = Reader (\RBL{\bsl}b\RBL{.} \RED{case} b \RED{of}
+                        \BLU{f} \RBL{:} \GRN{Reader Bool Int}
+                  ==>   \BLU{f} \RBL{:=} \GRN{Reader} (\RBL{\bsl}b\RBL{.} \RED{case} b \RED{of}
                            \GRN{True}  \RBL{->} 10
                            \GRN{False} \RBL{->} 20)
 \end{Verbatim}

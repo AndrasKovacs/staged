@@ -638,7 +638,7 @@ In each case, we can convert back-and forth, e.g.\
 \begin{column}{0.4\textwidth}
 \textbf{Metaprogram:}
 \begin{Verbatim}[commandchars=\\\{\}]
-    \BLU{action} \RBL{:} \GRN{Int} \RBL{->} \GRN{Int}
+    \BLU{action} \RBL{:} \GRN{Reader} \GRN{Int} \GRN{Int}
     \BLU{action} \RBL{:=} \RED{~}(down \RBL{$} \RED{do}
       x \RBL{<-} ask
       x \RBL{<-} ask
@@ -649,8 +649,8 @@ In each case, we can convert back-and forth, e.g.\
 \begin{column}{0.5\textwidth}
 \textbf{$\hspace{1em}$Output:}
 \begin{Verbatim}[commandchars=\\\{\}]
-    \BLU{action} \RBL{:} \GRN{Int} \RBL{->} \GRN{Int}
-    \BLU{action} x \RBL{:=} x \RBL{+} x
+    \BLU{action} \RBL{:} \GRN{Reader} \GRN{Int} \GRN{Int}
+    \BLU{action} \RBL{:=} \GRN{Reader} (\RBL{\bsl}x\RBL{.} x \RBL{+} x)
 
 
 
@@ -688,7 +688,7 @@ But we can generate object-level pattern matches in \texttt{\GRN{Gen}}:
 \begin{frame}[fragile]{Compiling monads - example}
 
 \begin{Verbatim}[commandchars=\\\{\}]
-      \BLU{f} : \GRN{Reader Bool Int}            \BLU{f} : \GRN{Reader Bool Int}
+      \BLU{f} \RBL{:} \GRN{Reader Bool Int}            \BLU{f} \RBL{:} \GRN{Reader Bool Int}
       \BLU{f} \RBL{:=} \RED{do}                        \BLU{f} \RBL{:=} \RED{~}(down \RBL{$} \RED{do}
         b \RBL{<-} ask              ==>      b \RBL{<-} ask
         \RED{if} b \RED{then} return 10            split b \RBL{>>=} \RBL{\bsl}\RED{case}
@@ -696,8 +696,8 @@ But we can generate object-level pattern matches in \texttt{\GRN{Gen}}:
                                           \GRN{MetaFalse} \RBL{->} return \RED{<}20\RED{>})
 
 
-                        \BLU{f} : \GRN{Reader Bool Int}
-                  ==>   \BLU{f} = Reader (\RBL{\bsl}b\RBL{.} \RED{case} b \RED{of}
+                        \BLU{f} \RBL{:} \GRN{Reader Bool Int}
+                  ==>   \BLU{f} \RBL{:=} \GRN{Reader} (\RBL{\bsl}b\RBL{.} \RED{case} b \RED{of}
                            \GRN{True}  \RBL{->} 10
                            \GRN{False} \RBL{->} 20)
 \end{Verbatim}
@@ -714,7 +714,7 @@ More in the paper and artifact:
 \begin{itemize}
   \item Handling join points in monads.
   \item Handling mutually recursive blocks.
-  \item Powerful \& general stream fusion.
+  \item Stream fusion.
   \item More metatheory.
   \item Adaptation as Agda and Typed Template Haskell libraries.
 \end{itemize}

@@ -1,0 +1,56 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.36.0.
+--
+-- see: https://github.com/sol/hpack
+
+name:           rtcg
+version:        0.1.0.0
+description:    Dependently typed language supporting runtime code generation
+category:       Language
+author:         András Kovács
+maintainer:     puttamalac@gmail.com
+copyright:      2024 András Kovács
+license:        BSD3
+build-type:     Simple
+
+executable rtcg
+  main-is: Main.hs
+  other-modules:
+      Common
+      Cxt
+      Cxt.Type
+      Elaboration
+      Errors
+      Evaluation
+      Metacontext
+      Parser
+      Presyntax
+      Pretty
+      Syntax
+      Value
+      Paths_rtcg
+  hs-source-dirs:
+      ./
+  default-extensions:
+      ConstraintKinds
+      DeriveAnyClass
+      DerivingVia
+      EmptyCase
+      FlexibleContexts
+      GeneralizedNewtypeDeriving
+      LambdaCase
+      OverloadedStrings
+      PatternSynonyms
+      ScopedTypeVariables
+      StandaloneDeriving
+      StandaloneKindSignatures
+      Strict
+      TupleSections
+      ViewPatterns
+  ghc-options: -Wall -Wno-name-shadowing -Wno-missing-signatures -Wno-unused-do-bind -Wno-unused-matches -O
+  build-depends:
+      base >=4.7 && <5
+    , containers
+    , megaparsec
+  default-language: Haskell2010

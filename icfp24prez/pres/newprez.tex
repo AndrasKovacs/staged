@@ -439,7 +439,6 @@ The paper explores \textbf{monad transformers} and stream fusion using this desi
     \item Object language (runtime): simply typed, \emph{polarized}.
     \item The two are smoothly integrated.
   \end{itemize}
-\item Most optimizations are implemented in libraries instead of compiler internals.
 \end{itemize}
 \end{block}
 
@@ -667,7 +666,7 @@ In each case, we can convert back-and forth, e.g.\
 How do we inspect the structure of object-level values at compile time?
 \vspace{1em}
 
-We don't directly support looking inside expressions (it breaks things).
+We don't directly support looking inside object expressions (it breaks some things).
 \vspace{1em}
 
 But we can generate object-level pattern matches in \texttt{\GRN{Gen}}:

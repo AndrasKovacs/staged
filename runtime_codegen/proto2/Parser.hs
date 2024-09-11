@@ -90,7 +90,7 @@ pPi = do
   dom <- some pPiBinder
   pArrow
   cod <- pTm
-  pure $ foldr (\(xs, a, i) t -> foldr (\x -> Pi x i a) t xs) cod dom
+  pure $! foldr (\(xs, a, i) t -> foldr (\x -> Pi x i a) t xs) cod dom
 
 pFunOrSpine :: Parser Tm
 pFunOrSpine = do

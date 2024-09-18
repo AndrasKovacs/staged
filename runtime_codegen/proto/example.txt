@@ -15,7 +15,7 @@ let iter : (A : U) → Nat → (A → A) → A → A
 let add : Nat → Nat → Nat
   = λ a b. iter Nat a suc b;
 
-let unfold : (A : U) → A → ◻ A = λ A x. <x>;
+let unfold : (A : U) → A → ◻ A = λ A x. <x>; -- lifting!
 
 -- code generator versions
 let Nat'    : U    = ◻ Nat;
@@ -87,7 +87,7 @@ let fiveTimesSucCode : ◻ (Nat → Nat)
   = <λ n. ~(compSuc five <n>)>;
 
 let fiveTimesSuc : Nat → Nat
-  = ~fiveTimesSucCode;
+  = ~<λ n. ~(compSuc five <n>)>; -- ~fiveTimesSucCode
 
 
 -- monadic let-insertion

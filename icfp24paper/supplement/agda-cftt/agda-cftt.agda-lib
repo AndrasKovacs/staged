@@ -1,4 +1,4 @@
 name: agda-cftt
 include: .
-depend: standard-library-2.0
+depend: standard-library-2.1
 flags:

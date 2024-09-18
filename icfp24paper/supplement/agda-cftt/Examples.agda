@@ -77,6 +77,20 @@ map∘ f as = LetRec
 -- Monads
 --------------------------------------------------------------------------------
 
+-- exM1 : Nat -> StateT Nat (MaybeT Identity) ()
+-- exM1 x = do
+--   case (x == 10) of
+--     True -> modify' (+10)
+--     False -> modify' (+20)
+--   case
+
+-- GHC's -O0 output:
+
+--    (>>=) dict (...) (\x -> ....
+--      (>>=) dict (...) (\x -> ...)
+--    return dict (...)
+
+
 -- Code size exponential in the number of caseM-s here, because
 -- everything gets inlined in case branches.
 exM1 : ↑C (ℕ∘ ⇒ StateT∘ ℕ∘ (MaybeT∘ Identity∘) ⊤∘)

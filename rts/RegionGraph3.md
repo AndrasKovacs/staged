@@ -204,11 +204,11 @@ location specification. Example:
 allocated in `l`.
 
 `Nil` has no location specification, which means that it's *unboxed*, i.e. we
-don't need any allocation to store an empty list; at runtime it could be just a
-null pointer.
+don't need any indirection to store an empty list; at runtime it could be just a
+null integer.
 
 For any type, all values of the type must have the same "flat" size in memory.
-In the case of lists, a `Nil` would be a null pointer and a `Cons` would be a
+In the case of lists, a `Nil` would be a null value and a `Cons` would be a
 pointer to a pair, so that checks out.
 
 We can also define Rust-style unboxed sums:
@@ -220,7 +220,7 @@ We can also define Rust-style unboxed sums:
 Since neither `Foo1` nor `Foo2` specify a location, they are both unboxed.  At
 runtime, we need a tag bit to distinguish the two constructors, and we also need
 to pad out `Foo1` to have the same size as `Foo2`. So, `Foo` requires 1+64+64
-bits to store. Depending on the contexts in which we use `Foo`, this data can be
+bits of storage. Depending on the contexts in which we use `Foo`, this data can be
 stored differently; see "bit-stealing" a bit later on. We assume word
 granularity for runtime objects, so a `Foo` value takes up three words at most.
 
@@ -238,7 +238,7 @@ we saw for lists already). Take lambda terms, using De Bruijn indices:
     data Tm = Var Int32 | Lam@Hp Tm | App@Hp Tm Tm
 ```
 
-This representation is dramatically more efficient than what we get in Haskell
+This representation is far more efficient than what we get in Haskell
 and OCaml.
 
 - `Var Int32` is a single word, containing two bits for the constructor tag and
@@ -268,7 +268,7 @@ do more layout compression. Let's take `List (Maybe Int)`:
 
     data Maybe A := Nothing | Just A
 ```
-List is on the heap while `Maybe` is an unboxed sum. Using uniform representation,
+`List` is on the heap while `Maybe` is an unboxed sum. Using uniform representation,
 we would have that `Maybe Int` takes two words (tag + payload), so a `Cons` cell
 would be three words on the heap.
 
@@ -290,13 +290,13 @@ the `Maybe` tag into `Cons`, we get **two words** on the heap for a `Cons`.
 
 ### Using regions
 
-The most important thing about regions is the following:
+The most important property about regions is the following:
 
 **Objects stored in a region are alive as long as the region itself is alive.**
 
-Regions are alive simply when there's a reachable value of type
-`Region`. Regions can be passed as arguments and stored in constructors in the
-object language.  Region-based mapping looks like this, fully explicitly:
+First I give some code examples, then explain how the region property is used to optimize GC.
+
+Location-polymorphic mapping looks like this, fully explicitly:
 
 ```
     data List (l : Loc) (A : ValTy) := Nil | Cons@l A (List l A)
@@ -309,7 +309,7 @@ object language.  Region-based mapping looks like this, fully explicitly:
         go ~as>
 ```
 
-We get a lot of inference though. We've seen stage inference before, and we also
+We can rely on a lot of inference though. We've seen stage inference before, and we can also
 make location annotations on constructors implicit when they are clear from the
 expected type of an expression.
 
@@ -344,9 +344,6 @@ parameters of the outer function. Hence, when we're in the middle of mapping,
 `r` and `r'` are both reachable on the stack (or in registers). Hence, no objects
 stored in `r` and `r'` can be freed by GC.
 
-Let's go back to "Objects stored in a region are alive as long as the region
-itself is alive."
-
 This enables a remarkable amount of GC optimization. Object types contain
 information about locations, and for each type we can implement a GC strategy
 which takes locations into account.
@@ -360,11 +357,12 @@ processes a `Region`, it does not look at its contents, it simply marks the
 region itself as alive.
 
 Consider `List r (List Hp Int)`. When a value of this type is reachable, we know
-that `r` must be also reachable, but we don't know which heap-based lists are
-stored. Hence, GC scans the outer list, in order to reach and relocate the
-heap-based inner lists. But GC does not relocate the region-based cons
+that `r` must be also reachable, but we don't know which heap-based inner lists are
+stored. Hence, GC scans the outer list, in order to reach and relocate the inner lists. But GC does not relocate the region-based cons
 cells. `Hp` may use copying GC, but regions are not copied and region pointers
 are stable.
+
+Consider `List Hp (List r Int)`. GC traverses and relocates the outer cons cells, but it doesn't look into the inner lists.
 
 ### Proxy regions
 

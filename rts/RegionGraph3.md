@@ -189,7 +189,7 @@ Let's add regions to the mix.
   (we'll see lists in regions shortly). We also have `{r : Region} → ...`.
 - The object language has existential regions, written as `(r : Region) × A`,
   which is a value type.
-- `region r; t` creates a new region and binds it to `r` in `t`.
+- `let r : Region; t` creates a new region and binds it to `r` in `t`.
 
 We also need a way to put things in regions. We extend ADT declarations with
 location specification. Example:
@@ -362,17 +362,18 @@ stored. Hence, GC scans the outer list, in order to reach and relocate the inner
 cells. `Hp` may use copying GC, but regions are not copied and region pointers
 are stable.
 
-Consider `List Hp (List r Int)`. GC traverses and relocates the outer cons cells, but it doesn't look into the inner lists.
+Consider `List Hp (List r Int)`. GC traverses and relocates the outer cons
+cells, but it doesn't look into the inner lists.
 
-### Proxy regions
+### Strict regions
 
 It's not too rare in practice (at least in compilers and elaborators that I've
 implemented) that we have some long-lived tree structure which may contain
 references to the general heap. Toy example:
 
 ```
-    data Box A := Pack@Hp A
-    data Tree (r : Region) := Leaf@r (Box Int) | Node@r Tree Tree
+    data HpVal := HpVal@Hp Int Int
+    data Tree (r : Region) := Leaf@r HpVal | Node@r Tree Tree
 ```
 
 I often use the pattern where I embed the *lazy value* of a top-level definition
@@ -390,11 +391,33 @@ pointing to an *array* of heap values.
 ```
 
 This is actually the more common style in PL implementations. With this, GC
-doesn't scan trees anymore, but now the programmer has the extra responsibility
-for correctly managing the arrays and the indices.
+doesn't scan trees anymore, but the programmer has the extra job of correctly
+managing the arrays and the indices.
 
+We extend the system with **strict regions**:
 
+- There's `StrictRegion : ValTy → MetaTy`, and a value of `StrictRegion A` can
+  be implicitly cast to `Loc`.
+- We can only allocate values of type `A` in an `r : StrictRegion A`.
+- When GC touches a strict region, *it scans all of its contents*.
+- `let r : StrictRegion A; t` creates a new strict region.
 
+The reason for only having values of a single type in a strict region: tag-free
+GC has to know about the type (hence layout) of the region in order to traverse
+it.
+
+The typical usage of strict regions is to put *pointers to heap values* inside
+them:
+
+```
+    data Box l A := Pack@l A
+
+	data Tree (r : Region)(r' : StrictRegion (BoxHpVal) := Leaf@l (Box l' Val
+
+    main : ()
+	main =
+	  let r : StrictRegion
+```
 
 
 

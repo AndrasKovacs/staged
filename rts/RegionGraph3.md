@@ -101,18 +101,18 @@ An example:
 ```
     data List (A : ValTy) := Nil | Cons A (List A)
 
-    map : Close (Int -> Int) -> List Int -> List Int
+    map : Close (Int → Int) → List Int → List Int
     map f xs := case xs of
-      Nil       -> Nil
-      Cons x xs -> Cons (open f x) (mapPlus f xs)
+      Nil       → Nil
+      Cons x xs → Cons (open f x) (mapPlus f xs)
 ```
 The function argument to `map` has to be wrapped in a closure;
-it's not possible to have `(Int -> Int) -> List Int -> List Int`
+it's not possible to have `(Int → Int) → List Int → List Int`
 because function domains must be value types.
 
-It's also not possible to have a polymorphic object-level `map`, because there's
-polymorphism in the object language. Fortunately, we can abstract over anything
-in the metalanguage. For that, we need *staging operations*:
+It's not possible to have a polymorphic object-level `map`, simply because
+there's no polymorphism in the object language. Fortunately, we can abstract
+over anything in the metalanguage. For that, we need *staging operations*:
 
 - For `A : Ty`, we have `↑A : MetaTy`, pronounced "lift `A`", as the type of
   metaprograms which produce `A`-typed programs.
@@ -130,8 +130,8 @@ in the metalanguage. For that, we need *staging operations*:
 A polymorphic `map` is now written as
 ```
     map : {A B : ValTy} → (↑A → ↑B) → ↑(List A) → ↑(List B)
-    map f as = <letrec go as := case as of Nil       -> Nil
-                                           Cons a as -> Cons ~(f <a>) (go as);
+    map f as = <letrec go as := case as of Nil       → Nil
+                                           Cons a as → Cons ~(f <a>) (go as);
                 go ~as>
 ```
 
@@ -145,7 +145,7 @@ A polymorphic `map` is now written as
 The previous monomorphic `map` can be reproduced:
 
 ```
-    monoMap : Close (Int -> Int) -> List Int -> List Int
+    monoMap : Close (Int → Int) → List Int → List Int
     monoMap f xs := ~(map (λ x. <open f ~x>) <xs>)
 ```
 At compile time, the splices are replaced with generated code, and we get the same
@@ -168,8 +168,8 @@ all quotes and splices, and also most lifts. The following works:
 
 ```
     map : {A B : ValTy} → (A → B) → List A → List B
-    map f as = letrec go as := case as of Nil       -> Nil
-                                          Cons a as -> Cons (f a) (go as);
+    map f as = letrec go as := case as of Nil       → Nil
+                                          Cons a as → Cons (f a) (go as);
                go as
 ```
 Note that we still have to write `=` and `:=` for definitions at the different
@@ -187,8 +187,7 @@ Let's add regions to the mix.
 - In the object language, polymorphic functions over `Region` are computation
   types.  For example `(r : Region) → List r Int → List r Int` is in `CompTy`
   (we'll see lists in regions shortly). We also have `{r : Region} → ...`.
-- The object language has existential regions, written as `(r : Region) × A`,
-  which is a value type.
+- ADT constructors may store existential regions.
 - `let r : Region; t` creates a new region and binds it to `r` in `t`.
 
 We also need a way to put things in regions. We extend ADT declarations with
@@ -362,93 +361,285 @@ stored. Hence, GC scans the outer list, in order to reach and relocate the inner
 cells. `Hp` may use copying GC, but regions are not copied and region pointers
 are stable.
 
-Consider `List Hp (List r Int)`. GC traverses and relocates the outer cons
-cells, but it doesn't look into the inner lists.
+Lastly, consider `List Hp (List r Int)`. GC traverses and relocates the outer
+cons cells, but it doesn't look into the inner lists.
 
 ### Strict regions
 
-It's not too rare in practice (at least in compilers and elaborators that I've
-implemented) that we have some long-lived tree structure which may contain
+It's not too rare in practice (at least in the compilers and elaborators that
+I've implemented) that we have some long-lived tree structure which may contain
 references to the general heap. Toy example:
 
 ```
-    data HpVal := HpVal@Hp Int Int
+    data HpVal := HpVal@Hp Int
     data Tree (r : Region) := Leaf@r HpVal | Node@r Tree Tree
 ```
 
-I often use the pattern where I embed the *lazy value* of a top-level definition
-into core terms, right next to a top-level variable, so that I can eliminate the
-cost of top-level lookups during evaluation, and also avoid passing a top-level
-store around. Core terms are persistent but lazy values are quite dynamic.
+In elaborators, I often embed the *lazy values* of top-level definitions into
+core terms, right next to top-level variable nodes, so that I can eliminate the
+cost of top-level lookups during evaluation, and also avoid passing around a
+top-level store. Core terms are persistent but lazy values are very much
+dynamic; before we finish elaboration, we don't know which top-level thunks need
+to be forced, and forcing may generate arbitrary amount of garbage.
 
-It's a bit awkward if GC has to deeply traverse trees because contain heap
+It's awkward if GC has to deeply traverse trees because they contain heap
 references. A common pattern is to replace heap pointers with integer indices
 pointing to an *array* of heap values.
 
 ```
-    type Index = Int
+    Index : ValTy
+	Index = Int
+
     data Tree (r : Region) := Leaf@r Index | Node@r Tree Tree
 ```
 
-This is actually the more common style in PL implementations. With this, GC
-doesn't scan trees anymore, but the programmer has the extra job of correctly
-managing the arrays and the indices.
+This style is actually more common in PL implementations than my own style of
+embedding values in terms. With this, GC doesn't scan trees anymore, but the
+programmer has the extra job of correctly managing the arrays and the indices.
 
 We extend the system with **strict regions**:
 
-- There's `StrictRegion : ValTy → MetaTy`, and a value of `StrictRegion A` can
-  be implicitly cast to `Loc`.
+- There's `StrictRegion : ValTy → MetaTy`. A value of `StrictRegion A` can be
+  implicitly cast to `Loc`.
 - We can only allocate values of type `A` in an `r : StrictRegion A`.
 - When GC touches a strict region, *it scans all of its contents*.
 - `let r : StrictRegion A; t` creates a new strict region.
 
-The reason for only having values of a single type in a strict region: tag-free
-GC has to know about the type (hence layout) of the region in order to traverse
-it.
+We need to track the types of values in strict regions, because tag-free GC
+needs the type info (or more precisely, memory layout) to do the eager scanning.
 
-The typical usage of strict regions is to put *pointers to heap values* inside
-them:
+Adding objects to strict regions has a bit of a spin: assuming `r : StrictRegion
+A` and `a : A`, we have `addToStrictRegion r a : Ptr r A`, where `Ptr` is
+defined as:
 
 ```
-    data Box l A := Pack@l A
+    data Ptr (l : Loc) A := Box@l A
+```
+Why can we only get pointers to objects in a strict region? If we try to use
+the same allocation API as with vanilla regions, we run into a problematic recursion
+in typing. What if I want to have lists in a strict region:
 
-	data Tree (r : Region)(r' : StrictRegion (BoxHpVal) := Leaf@l (Box l' Val
+```
+    data List (r : StrictRegion (List ?)) := ...
+```
+Lists depend on the region where they're stored, but the region is indexed with the type of
+stored values... There's a good chance that this recursion could be supported with some additional
+magic, but for now I'd like to stick to simpler type-theoretic features.
+
+In our current API, we add lists into a strict region like this:
+
+```
+    data List l A := Nil | Cons@l A (List l A)
 
     main : ()
-	main =
-	  let r : StrictRegion
+	main :=
+	  let r : StrictRegion (List Hp Int);
+	  let x := Cons 10 (Cons 20 Nil)
+	  let x' := addToStrictRegion r x;
+	  case x' of
+	    Box x → ...
 ```
 
+For lists, the "flat" size of a value is a single word (a pointer or `Nil`), and
+we copy that single word when we add a list to a strict region, and we get a pointer
+to the new copy. The tree example now:
+
+```
+    data HpVal := HpVal@Hp Int
+    data Tree (r : Region)(r' : StrictRegion HpVal) :=
+	  Leaf@r (Ptr r' HpVal) | Node@r Tree Tree
+```
+
+Now, GC doesn't scan values of `Tree r r'`, because the contents of `r'` are
+known to be scanned elsewhere.
+
+### Closures
+
+Let's look at the interplay of closures and regions. First, the location of a
+closure can be specified:
+
+```
+    Close : Loc → CompTy → ValTy
+```
+
+Although we can store closures in regions, they always have to be scanned by GC,
+because closures can capture any data, including heap pointers and regions
+themselves.
+
+Example for a closure capturing a region:
+
+```
+    index : {r : Region} → List r Int → Int → Int
+	index xs x := ...
+
+    indexClosure : {r : Region} → List r Int → Close (Int → Int)
+	indexClosure xs := close (λ x. index xs x)
+```
+
+The closure captures `xs`, but since the type of `xs` depends on `r`, it
+captures `r` too. The closure can be then stored in any ADT constructor as a
+value. So we have to be mindful that closures incur the same GC costs as heap
+values.
+
+As I mentioned before, free variables are implicit in vanilla 2LTTs, so we can't
+control what gets captured in a closures. A popular solution is to add a
+*modality*. In our case, we could add a modality for closed object-level
+terms. This has been used several times in 2LTTs, and its implementation is
+[fairly well
+understood](https://users-cs.au.dk/birke/papers/implementing-modal-dependent-type-theory-conf.pdf).
+It definitely bumps up the complexity of the system, and I don't plan to
+implement it any soon. I write a bit more about it in [Appendix: closed
+modality](TODO).
+
+Alternatively, we can often
+[*defunctionalize*](https://en.wikipedia.org/wiki/Defunctionalization) closures
+to ADT-s, in which cases we can specify locations of captured data.
+
+Defunctionalization isn't always good for performance though.[Threaded
+interpreters](https://en.wikipedia.org/wiki/Threaded_code) and
+[closure-generating
+interpreters](https://ndmitchell.com/downloads/slides-cheaply_writing_a_fast_interpreter-23_feb_2021.pdf)
+are all about replacing case switching with jumps and calls to dynamic
+addresses. We probably need the closed modality for GC elision here.
+
+### Existential regions
+
+ADT constructors may have fields of type `Region` and `StrictRegion A`, and
+types of fields to the right can depend on them. The following is a generic
+existential wrapper type.
+
+```
+    data Exists l (F : Region → ValTy) := SomeRegion @l (r : Region) (F r)
+```
+
+The eliminator:
+```
+	match : {l : Loc}{F : Region → ValTy}{B : Ty} → ↑(Exists F) → ((r : Region) → ↑(F r) → ↑B) → ↑B
+	match e f = <case ~e of SomeRegion r fr → ~(f r <fr>)>
+```
+
+It's not possible to project out only the region, because `Region : MetaTy` and
+the result of matching must be in `Ty`.
+
+"Pinned" arrays could be defined in terms of existential regions. Let's have
+`Array : Loc → ValTy → ValTy` as a primitive type. An `Array l A` is represented
+as an `l`-pointer to a length-prefixed array. A pinned array is an array packed
+together with its region:
+
+```
+    data PinnedArray A := MkPinnedArray (r : Region) (Array r A)
+```
+
+Pinned arrays can be used in pretty much the same way as heap arrays, the only
+difference is in memory costs. Pinned arrays are effective when we have
+relatively few relatively large arrays at runtime.
 
 
-### Existential regions and closures
+## Non-escaping regions
 
+Our region setup permits an optimization that should be easy to implement
+and often applicable.
 
+If the compiler can discern that a region never escapes the scope of its
+creation, it can insert code to eagerly free the region, without waiting for GC
+to run. For example:
 
+```
+    f : Int → Int
+	f x :=
+	  let r : Region;
+	  let xs := [x, x+1, x+2] in r;
+	  sum xs;
+```
 
+`r` does not escape, so the compiler can generate:
 
+```
+    f : Int → Int
+	f x :=
+	  let r : Region;
+	  let xs := [x, x+1, x+2] in r;
+	  let res := sum xs;
+	  free r;
+	  res;
+```
 
+It's important that `free r` by itself does not keep `r` alive. It can happen
+that `r` becomes dead and is collected well before `free r` is executed, in
+which case `free r` does nothing. So we can only make freeing strictly more
+timely.
 
+How often do we have non-escaping regions? Very often, I conjecture. The only
+way for regions to escape are:
 
+- Returning a closure or an existential.
+- Throwing an exception containing a closure or an existential.
+- Making a mutable write that contains a closure or an existential.
 
+My experience so far with the polarized 2LTT is that *closures of any kind* are
+already rarely used in practice. And closure-free programs should be especially
+easy to escape-analyze because they only contain statically known function calls.
 
+## Appendix: closed modality
 
+Let's have `■ A : MetaType` for `A : MetaType`. Adding the `■` ensures that only
+closed object-level terms can be produced. For example, `■ (↑A)` is the type of
+metaprograms which generate closed `A`-typed object terms. If we have `■ A` for
+a purely meta-level type `A`, like meta-level natural numbers, the modality
+doesn't have any effect.
 
+For the details of `■`, you can look at [this
+paper](https://users-cs.au.dk/birke/papers/implementing-modal-dependent-type-theory-conf.pdf).
 
+The simplest use case is to support raw *machine code addresses* as values.
+This is the special case of closures where there is no captured environment.
 
+```
+    CompPtr : CompTy → ValTy
+	close   : {A : CompTy} → ■ (↑A) → ↑(CompPtr A)
+	open    : {A : CompTy} → ↑(CompPtr A) → ■ (↑A)
+```
 
+`■ (↑A)` ensures that no object-level free variables appear in the generated
+code.
 
+We can use this to implement transparent closures, where the capture is visible
+in the type:
 
+```
+    TransparentClosure : ValTy → CompTy → ValTy
+	TransparentClosure A B = (A, CompPtr (A → B))
+```
 
+It takes more work to implement closures where we only specify the storage
+locations of the capture, and the capture is otherwise abstract.
 
+The current setup doesn't let us talk about value types with specified storage
+locations. We'd need something like indexing `ValTy` with a set of
+locations. This would add a lot of noise, and in fact I find it to be a great
+convenience feature that we *don't* have to thread locations through
+metaprograms all the time.
 
+Perhaps we could add typeclass-like constraints for location tracking.
 
+- We have `Locations : MetaTy` as a primitive type, whose values are *sets* of
+  locations. We need at least the empty set and the union operation. It's also
+  good to have some built-in definitional equality magic for location sets.
+- We have `HasStorage A ss : Constraint`, where `A : ValTy` and `ls : Locations`
+  and `Constraint : MetaTy` is similar to Haskell's constraint kind.
 
+Location-restricted closures could have this API:
 
+```
+    Closure : Locations → ValTy → ValTy
+	close   : HasStorage A ls => ↑A → ■ (↑(A → B)) → ↑(Closure ls B)
+	open    : ↑(Closure ls B) → ↑B
+```
 
+Of course, `HasStorage` needs to have built-in behavior for pretty much every
+object type. For example, `HasStorage A ls` should imply `HasStorage (List l A)
+(l ∪ ls)`.
 
-
-
-
-
---------------------------------------------------------------------------------
+This is definitely extra bureaucracy, but note that a similar location tracking
+already needs to happen in the compilation pipeline, just to generate code and
+GC routines.

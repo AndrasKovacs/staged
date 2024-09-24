@@ -12,6 +12,8 @@
   * [Existential regions](#existential-regions)
   * [Non-escaping regions](#non-escaping-regions)
 * [Implementation](#implementation)
+  * [Tag-free GC](#tag-free-gc)
+  * [Region implementation](#region-implementation)
 * [Appendix: closed modality for closure control](#appendix-closed-modality-for-closure-control)
 
 
@@ -56,17 +58,17 @@ without regard for their free variables, and we only need to care about typing.
 If the object language is sub-structural, this doesn't work anymore. If a linear
 variable is consumed in some subterm, it can't be used in another subterm. So if
 we're writing metaprograms, aiming to generate substructural programs, we have
-to keep track of free variable occurrences in expressions. This is anything but
-lightweight if we want to maintain full type safety.
+to keep track of free variable occurrences in expressions. That's not all that
+lightweight anymore.
 
 **Summary of my proposal**:
 
 - We can use *regions* to reduce GC workload, by skipping copying and scanning
   of structures that are stored in regions. The more we know about the
   allocation patterns in our program, the more GC work we can remove.
-- Regions are quite liberal: they can be stored in existentials and closures,
-  they may contain pointers to the GC-d heap and other regions, and there's no
-  sub-structural typing.
+- Regions are lightweight and quite liberal: they can be stored in existentials
+  and closures, they may contain pointers to the GC-d heap and other regions,
+  and there's no sub-structural typing.
 - Objects stored in a region are alive as long as the region itself is alive.
 - We use *tag-free garbage collection*, aggressive unboxing and bit-stealing to
   improve locality and to shrink runtime objects.
@@ -324,9 +326,9 @@ Location-polymorphic mapping looks like this, fully explicitly:
         go ~as>
 ```
 
-We can rely on a lot of inference though. We've seen stage inference before, and we can also
-make location annotations on constructors implicit when they are clear from the
-expected type of an expression.
+We can rely on a lot of inference though. We've seen stage inference before, and
+we can also make location annotations on constructors implicit when they are
+clear from the expected type of an expression.
 
 ```
     data List l A := Nil | Cons@l A (List l A)
@@ -367,15 +369,15 @@ Consider `List r Int` for `r : Region`. Whenever a value of this type is
 reachable, the region `r` must be reachable as well (it must be in scope, or
 otherwise the type is not even well-formed). Therefore, *doing nothing* is a
 valid GC strategy for this type! When `r` becomes dead, the whole region gets
-freed, and with it all the `List r Int` values are freed too. When GC
-processes a `Region`, it does not look at its contents, it simply marks the
-region itself as alive.
+freed, and with it all the `List r Int` values are freed too. When GC processes
+a `Region`, it does not look at its contents, it simply marks the region itself
+as alive.
 
 Consider `List r (List Hp Int)`. When a value of this type is reachable, we know
-that `r` must be also reachable, but we don't know which heap-based inner lists are
-stored. Hence, GC scans the outer list, in order to reach and relocate the inner lists. But GC does not relocate the region-based cons
-cells. `Hp` may use copying GC, but regions are not copied and region pointers
-are stable.
+that `r` must be also reachable, but we don't know which heap-based inner lists
+are stored. Hence, GC scans the outer list, in order to reach and relocate the
+inner lists. But GC does not relocate the region-based cons cells. `Hp` may use
+copying GC, but regions are not copied and region pointers are stable.
 
 Lastly, consider `List Hp (List r Int)`. GC traverses and relocates the outer
 cons cells, but it doesn't look into the inner lists.
@@ -438,9 +440,11 @@ in typing. What if I want to have lists in a strict region:
 ```
     data List (r : StrictRegion (List ?)) := ...
 ```
-Lists depend on the region where they're stored, but the region is indexed with the type of
-stored values... There's a good chance that this recursion could be supported with some additional
-magic, but for now I'd like to stick to simpler type-theoretic features.
+
+Lists depend on the region where they're stored, but the region is indexed with
+the type of stored values... There's a good chance that this recursion could be
+supported with some additional magic, but for now I'd like to stick to simpler
+type-theoretic features.
 
 In our current API, we add lists into a strict region like this:
 
@@ -504,8 +508,8 @@ terms. This has been used several times in 2LTTs, and its implementation is
 [fairly well
 understood](https://users-cs.au.dk/birke/papers/implementing-modal-dependent-type-theory-conf.pdf).
 It definitely bumps up the complexity of the system, and I don't plan to
-implement it any soon. I write a bit more about it in [Appendix: closed
-modality](TODO).
+implement it in the short to medium term. I write a bit more about it in the
+[appendix](#appendix-closed-modality-for-closure-control).
 
 Alternatively, we can often
 [*defunctionalize*](https://en.wikipedia.org/wiki/Defunctionalization) closures
@@ -516,12 +520,14 @@ interpreters](https://en.wikipedia.org/wiki/Threaded_code) and
 [closure-generating
 interpreters](https://ndmitchell.com/downloads/slides-cheaply_writing_a_fast_interpreter-23_feb_2021.pdf)
 are all about replacing case switching with jumps and calls to dynamic
-addresses. We probably need the closed modality for GC elision here.
+addresses. I include an example for closure-generating interpretation in the
+[appendix](#appendix-closed-modality-for-closure-control).
+
 
 ### Existential regions
 
 ADT constructors may have fields of type `Region` and `StrictRegion A`, and
-types of fields to the right can depend on them. The following is a generic
+types of subsequent fields can depend on them. The following is a generic
 existential wrapper type.
 
 ```
@@ -530,7 +536,8 @@ existential wrapper type.
 
 The eliminator:
 ```
-    match : {l : Loc}{F : Region → ValTy}{B : Ty} → ↑(Exists F) → ((r : Region) → ↑(F r) → ↑B) → ↑B
+    match : {l : Loc}{F : Region → ValTy}{B : Ty}
+	        → ↑(Exists F) → ((r : Region) → ↑(F r) → ↑B) → ↑B
     match e f = <case ~e of SomeRegion r fr → ~(f r <fr>)>
 ```
 
@@ -598,7 +605,136 @@ easy to escape-analyze because they only contain statically known function calls
 
 ## Implementation
 
-FOOOO
+Let's do an overview of the implementation. I'll keep the level of detail
+moderate. I plan to implement everything in LLVM. There are many LLVM-specific
+details that I won't touch on.
+
+### Tag-free GC
+
+The object language only supports region polymorphism but no type polymorphism.
+This makes the language well suited for tag-free GC.
+
+In tagged GC-s, heap objects are tagged with enough information so that GC can
+copy objects and find heap pointers inside objects. Obviously, this increases
+the total size of the heap.
+
+In tag-free GC, only the types of the GC roots need to be known at
+runtime. Starting from the roots, we can deduce the types of all live objects.
+
+In a polymorphic language, two complications arise:
+
+- We need to [pass type
+  representations](https://www.cs.tufts.edu/~nr/cs257/archive/andrew-tolmach/tag-free-gc-as-published.pdf)
+  as actual runtime arguments to polymorphic functions, to have sufficient
+  information for GC.
+- Polymorphism is at odds with memory layout control. If we allow [polymorphism
+  over types with different flat
+  sizes](https://dash.harvard.edu/bitstream/handle/1/2794950/Morrisett_PolymorphismTypeAnalysis.pdf?sequence=2&isAllowed=y)
+  in memory, that's a significant complication throughout the compilation
+  pipeline. So it's rarely allowed. Instead, the usual setup is that abstracted
+  types must have the same flat memory layout.
+
+A big motivation for not having type polymorphism is to avoid these problems.
+
+We use per-datatype **GC routines**. This means that for each concrete type that
+occurs in the program, we generate code that performs GC traversal on values of
+the type. Per-datatype GC behavior is required by the region-based GC
+optimizations in any case, so we might as well generate specialized code.
+
+Any function that uses heap allocation receives the *heap pointer* and the *heap
+end pointer* as extra arguments and also returns them in a State-monad-like
+fashion.
+
+Allocation on the heap can fail and trigger GC. For simplicity, we'll use
+*semispace* GC at first, and potentially upgrade it later, although I think that
+semispace GC together with regions can be viable for many applications.
+
+When we start a GC run, we scan the current stack. For each stack frame, we can
+access the GC routine that scans the frame. How the GC routine pointer is stored
+may vary; it may be simply embedded in the frame, or it may be stored in a side
+table that's indexed by return addresses.
+
+We copy objects over to the new heap recursively in *depth-first* order. This is
+the most natural thing to do in tag-free GC. Compared to Cheney's breadth-first
+algorithm:
+
+- It has lower space overhead: Cheney requires a tag on every object,
+  while depth-first copying only needs temporary stack space proportional
+  to the maximum depth of object pointers.
+- It has much better locality. For example, if we have some number of linked
+  lists as roots, without structure sharing, Cheney *interleaves* all of them in
+  memory, while depth-first copying places each list contiguously.
+
+In principle, we could allow programmers to specify GC traversal order for
+ADT-s. If in-memory order matches the most commonly used runtime traversal
+order, that can be a performance benefit.
+
+Depth-first copying could also enable [*value
+speculation*](https://gist.github.com/pervognsen/b58108d134824e61caedffcc01004e03)
+in program code and in the GC routines. This mostly works on list-like
+structures. The idea is to test if a list is contiguous in memory while we're
+traversing it. If the list is contiguous, we eliminate a cache latency
+bottleneck in the traversal. If we do little work for each cons cell, this
+allow us to pipeline multiple cons cells' work in the CPU.
+
+**Forwarding.** After an object is copied, we write a forwarding pointer into
+it. This implies that every object must have space for the forwarding pointer.
+Additionally, we need one bit to signal that the object has been copied.
+
+The extra bit could be stored in a separate bitarray, one bit for every word of
+the old heap. However, currently I'm liking it better to store the extra bit in
+objects, to maximize locality in copying.
+
+The plan:
+
+- Every pointer (`Hp`, `Region` or `StrictRegion`) reserves 1 tag bit that can
+  be used for the forwarding bit if the need arises.
+- For scanned boxed constructors which contain at least one pointer,
+  we can store the forwarding pointer *and* the forwarding bit there.
+- For scanned boxed constructors which only contain unboxed data, we
+  add the extra bit, which may or may not require adding an extra word
+  to the constructor.
+
+The worst case is when we have a boxed constructor containing a single
+unboxed word:
+
+```
+    data Foo := Foo@Hp Int
+```
+
+Here we need two words for `Foo`, one for the payload, one for the forwarding
+bit.
+
+But it's rather stupid to use `Foo` in the first place; there's no point putting
+a single immutable word behind a pointer. So a realistic worst case is `data Foo
+:= Foo@Hp Int Int`, where we need three words for `Foo`.  But even here, it's
+unclear if this datatype makes sense. We get some possibility of sharing, but
+not much.
+
+In larger unboxed constructors, where we get more sharing from indirection, the
+extra word for the forwarding bit is proportionally less impactful on space
+usage. Also, if there are any "gaps" in unboxed data, we can plug the forwarding
+bit there without adding an extra word.
+
+### Region implementation
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ## Appendix: closed modality for closure control

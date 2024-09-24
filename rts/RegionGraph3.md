@@ -1,6 +1,22 @@
 
 # Lightweight region memory management in a two-stage language
 
+* [Intro](#intro)
+* [Basics](#basics)
+  * [Stage inference](#stage-inference)
+* [Regions](#regions)
+  * [Bit-stealing](#bit-stealing)
+  * [Using regions](#using-regions)
+  * [Strict regions](#strict-regions)
+  * [Closures](#closures)
+  * [Existential regions](#existential-regions)
+  * [Non-escaping regions](#non-escaping-regions)
+* [Implementation](#implementation)
+* [Appendix: closed modality for closure control](#appendix-closed-modality-for-closure-control)
+
+
+## Intro
+
 A big part of my recent work is about PL theory and design, trying to get good
 combinations of predictable high performance and high-level abstractions.
 Staged compilation is an important part of it:
@@ -388,7 +404,7 @@ pointing to an *array* of heap values.
 
 ```
     Index : ValTy
-	Index = Int
+    Index = Int
 
     data Tree (r : Region) := Leaf@r Index | Node@r Tree Tree
 ```
@@ -432,12 +448,12 @@ In our current API, we add lists into a strict region like this:
     data List l A := Nil | Cons@l A (List l A)
 
     main : ()
-	main :=
-	  let r : StrictRegion (List Hp Int);
-	  let x := Cons 10 (Cons 20 Nil)
-	  let x' := addToStrictRegion r x;
-	  case x' of
-	    Box x → ...
+    main :=
+      let r : StrictRegion (List Hp Int);
+      let x := Cons 10 (Cons 20 Nil)
+      let x' := addToStrictRegion r x;
+      case x' of
+        Box x → ...
 ```
 
 For lists, the "flat" size of a value is a single word (a pointer or `Nil`), and
@@ -447,7 +463,7 @@ to the new copy. The tree example now:
 ```
     data HpVal := HpVal@Hp Int
     data Tree (r : Region)(r' : StrictRegion HpVal) :=
-	  Leaf@r (Ptr r' HpVal) | Node@r Tree Tree
+      Leaf@r (Ptr r' HpVal) | Node@r Tree Tree
 ```
 
 Now, GC doesn't scan values of `Tree r r'`, because the contents of `r'` are
@@ -470,10 +486,10 @@ Example for a closure capturing a region:
 
 ```
     index : {r : Region} → List r Int → Int → Int
-	index xs x := ...
+    index xs x := ...
 
     indexClosure : {r : Region} → List r Int → Close (Int → Int)
-	indexClosure xs := close (λ x. index xs x)
+    indexClosure xs := close (λ x. index xs x)
 ```
 
 The closure captures `xs`, but since the type of `xs` depends on `r`, it
@@ -514,8 +530,8 @@ existential wrapper type.
 
 The eliminator:
 ```
-	match : {l : Loc}{F : Region → ValTy}{B : Ty} → ↑(Exists F) → ((r : Region) → ↑(F r) → ↑B) → ↑B
-	match e f = <case ~e of SomeRegion r fr → ~(f r <fr>)>
+    match : {l : Loc}{F : Region → ValTy}{B : Ty} → ↑(Exists F) → ((r : Region) → ↑(F r) → ↑B) → ↑B
+    match e f = <case ~e of SomeRegion r fr → ~(f r <fr>)>
 ```
 
 It's not possible to project out only the region, because `Region : MetaTy` and
@@ -535,7 +551,7 @@ difference is in memory costs. Pinned arrays are effective when we have
 relatively few relatively large arrays at runtime.
 
 
-## Non-escaping regions
+### Non-escaping regions
 
 Our region setup permits an optimization that should be easy to implement
 and often applicable.
@@ -546,22 +562,22 @@ to run. For example:
 
 ```
     f : Int → Int
-	f x :=
-	  let r : Region;
-	  let xs := [x, x+1, x+2] in r;
-	  sum xs;
+    f x :=
+      let r : Region;
+      let xs := [x, x+1, x+2] in r;
+      sum xs;
 ```
 
 `r` does not escape, so the compiler can generate:
 
 ```
     f : Int → Int
-	f x :=
-	  let r : Region;
-	  let xs := [x, x+1, x+2] in r;
-	  let res := sum xs;
-	  free r;
-	  res;
+    f x :=
+      let r : Region;
+      let xs := [x, x+1, x+2] in r;
+      let res := sum xs;
+      free r;
+      res;
 ```
 
 It's important that `free r` by itself does not keep `r` alive. It can happen
@@ -580,7 +596,12 @@ My experience so far with the polarized 2LTT is that *closures of any kind* are
 already rarely used in practice. And closure-free programs should be especially
 easy to escape-analyze because they only contain statically known function calls.
 
-## Appendix: controlling closure captures with a modality
+## Implementation
+
+FOOOO
+
+
+## Appendix: closed modality for closure control
 
 Let's have `■ A : MetaType` for `A : MetaType`. Adding the `■` ensures that only
 closed object-level terms can be produced. For example, `■ (↑A)` is the type of
@@ -596,8 +617,8 @@ This is the special case of closures where there is no captured environment.
 
 ```
     CompPtr : CompTy → ValTy
-	close   : {A : CompTy} → ■ (↑A) → ↑(CompPtr A)
-	open    : {A : CompTy} → ↑(CompPtr A) → ■ (↑A)
+    close   : {A : CompTy} → ■ (↑A) → ↑(CompPtr A)
+    open    : {A : CompTy} → ↑(CompPtr A) → ■ (↑A)
 ```
 
 `■ (↑A)` ensures that no object-level free variables will appear in the generated
@@ -608,7 +629,7 @@ in the type:
 
 ```
     TransparentClosure : ValTy → CompTy → ValTy
-	TransparentClosure A B = (A, CompPtr (A → B))
+    TransparentClosure A B = (A, CompPtr (A → B))
 ```
 
 It takes more work to implement closures where we only specify the storage
@@ -632,8 +653,8 @@ Location-restricted closures could have this API:
 
 ```
     Closure : Loc → Locations → CompTy → ValTy
-	close   : HasStorage A ls => ↑A → ■ (↑(A → B)) → ↑(Closure l ls B)
-	open    : ↑(Closure l ls B) → ↑B
+    close   : HasStorage A ls => ↑A → ■ (↑(A → B)) → ↑(Closure l ls B)
+    open    : ↑(Closure l ls B) → ↑B
 ```
 
 The first `Loc` parameter is where the closure environment itself is allocated,
@@ -658,12 +679,12 @@ I'm using all the fancy stage inference.
     data Exp l := Lit@l Int | Add@l (Exp l) (Exp l) | Mul@l (Exp l) (Exp l)
 
     compile : {l l' : Loc} → Exp l → Closure l' [l'] (() → Int)
-	compile {l}{l'} = go where
-	  go : Exp l → Closure l' [l'] (() → Int)
-	  go = \case
-	    Lit x   → close x (lock (λ x _. x))
-		Add l r → close (go l, go r) (lock (λ (f, g) _. open f () + open g ()))
-		Mul l r → close (go l, go r) (lock (λ (f, g) _. open f () * open g ()))
+    compile {l}{l'} = go where
+      go : Exp l → Closure l' [l'] (() → Int)
+      go = \case
+        Lit x   → close x (lock (λ x _. x))
+        Add l r → close (go l, go r) (lock (λ (f, g) _. open f () + open g ()))
+        Mul l r → close (go l, go r) (lock (λ (f, g) _. open f () * open g ()))
 ```
 
 - `lock` is the term locking operation from "Implementing a Modal Dependent TT".
@@ -683,9 +704,9 @@ region-based expressions:
 
 ```
     eval : {r : Region} → Exp r → Int
-	eval {r} e :=
-	  let r' : Region;
-	  open (compile {r}{r'} e) ();
+    eval {r} e :=
+      let r' : Region;
+      open (compile {r}{r'} e) ();
 ```
 
 We allocated the closures in `r'`. If we have the escape analysis, it will free

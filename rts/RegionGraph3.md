@@ -580,7 +580,7 @@ My experience so far with the polarized 2LTT is that *closures of any kind* are
 already rarely used in practice. And closure-free programs should be especially
 easy to escape-analyze because they only contain statically known function calls.
 
-## Appendix: closed modality
+## Appendix: controlling closure captures with a modality
 
 Let's have `■ A : MetaType` for `A : MetaType`. Adding the `■` ensures that only
 closed object-level terms can be produced. For example, `■ (↑A)` is the type of
@@ -600,8 +600,8 @@ This is the special case of closures where there is no captured environment.
 	open    : {A : CompTy} → ↑(CompPtr A) → ■ (↑A)
 ```
 
-`■ (↑A)` ensures that no object-level free variables appear in the generated
-code.
+`■ (↑A)` ensures that no object-level free variables will appear in the generated
+code for the computation.
 
 We can use this to implement transparent closures, where the capture is visible
 in the type:
@@ -615,31 +615,79 @@ It takes more work to implement closures where we only specify the storage
 locations of the capture, and the capture is otherwise abstract.
 
 The current setup doesn't let us talk about value types with specified storage
-locations. We'd need something like indexing `ValTy` with a set of
-locations. This would add a lot of noise, and in fact I find it to be a great
-convenience feature that we *don't* have to thread locations through
-metaprograms all the time.
+locations. One option would be to index `ValTy` with a set of locations, but
+this would add a lot of unavoidable noise.
 
-Perhaps we could add typeclass-like constraints for location tracking.
+Instead, we add typeclass-like constraints for location tracking. This lets us
+ignore locations in metaprograms which are location-agnostic.
 
 - We have `Locations : MetaTy` as a primitive type, whose values are *sets* of
-  locations. We need at least the empty set and the union operation. It's also
-  good to have some built-in definitional equality magic for location sets.
+  locations. We need at least the empty set, singleton sets and the union
+  operation. It's also good to have some built-in definitional equality magic
+  for location sets, e.g. make commutativity of union definitional.
 - We have `HasStorage A ss : Constraint`, where `A : ValTy` and `ls : Locations`
   and `Constraint : MetaTy` is similar to Haskell's constraint kind.
 
 Location-restricted closures could have this API:
 
 ```
-    Closure : Locations → ValTy → ValTy
-	close   : HasStorage A ls => ↑A → ■ (↑(A → B)) → ↑(Closure ls B)
-	open    : ↑(Closure ls B) → ↑B
+    Closure : Loc → Locations → CompTy → ValTy
+	close   : HasStorage A ls => ↑A → ■ (↑(A → B)) → ↑(Closure l ls B)
+	open    : ↑(Closure l ls B) → ↑B
 ```
+
+The first `Loc` parameter is where the closure environment itself is allocated,
+while the `Locations` are the reachable locations from the captured values.
 
 Of course, `HasStorage` needs to have built-in behavior for pretty much every
 object type. For example, `HasStorage A ls` should imply `HasStorage (List l A)
-(l ∪ ls)`.
+(l ∪ ls)`. Also, we have `HasStorage (Closure l ls B) (l ∪ ls)`.
+
+Moreover, if we have `ls ⊆ ls'`, we should be able to cast `Closure l ls` to
+`Closure l ls'`. This could be done implicitly or explicitly in the surface
+language.
 
 This is definitely extra bureaucracy, but note that a similar location tracking
 already needs to happen in the compilation pipeline, just to generate code and
 GC routines.
+
+Let's look at a closure-generating interpreter for a tiny expression language.
+I'm using all the fancy stage inference.
+
+```
+    data Exp l := Lit@l Int | Add@l (Exp l) (Exp l) | Mul@l (Exp l) (Exp l)
+
+    compile : {l l' : Loc} → Exp l → Closure l' [l'] (() → Int)
+	compile {l}{l'} = go where
+	  go : Exp l → Closure l' [l'] (() → Int)
+	  go = \case
+	    Lit x   → close x (lock (λ x _. x))
+		Add l r → close (go l, go r) (lock (λ (f, g) _. open f () + open g ()))
+		Mul l r → close (go l, go r) (lock (λ (f, g) _. open f () * open g ()))
+```
+
+- `lock` is the term locking operation from "Implementing a Modal Dependent TT".
+- `[l']` is the notation for the singleton set containing `l'`.
+- In `close x (lock (λ x _. x))`, we capture `x : Int`. Since `Int` is unboxed,
+  we don't capture any location, so the capture set could be empty, but we're
+  checking the expression with `Closure l' [l'] (() → Int)` so the expression
+  is implicitly cast to that type.
+- In `close (go l, go r) ...`, we capture the pair of the two closures that we get
+  from the recursive calls. Then, we do a pattern matching lambda on them in
+  `λ (f, g). ...`.
+
+`compile` is a metafunction because it's polymorphic over locations. We can
+instantiate it concrete locations, generating separate object code for the
+different instantiations. For example, we can compile and immediately evaluate
+region-based expressions:
+
+```
+    eval : {r : Region} → Exp r → Int
+	eval {r} e :=
+	  let r' : Region;
+	  open (compile {r}{r'} e) ();
+```
+
+We allocated the closures in `r'`. If we have the escape analysis, it will free
+`r'` promptly before `eval` returns. Neither `eval` nor `compile` involves GC or
+heap allocation.

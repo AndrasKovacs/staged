@@ -16,7 +16,6 @@
   * [Region implementation](#region-implementation)
 * [Appendix: closed modality for closure control](#appendix-closed-modality-for-closure-control)
 
-
 ## Intro
 
 A big part of my recent work is about PL theory and design, trying to get good
@@ -654,6 +653,16 @@ access the GC routine that scans the frame. How the GC routine pointer is stored
 may vary; it may be simply embedded in the frame, or it may be stored in a side
 table that's indexed by return addresses.
 
+A heap allocation in the LLVM backend consists of a heap check which jumps to a
+"GC basic block" in case of failure. The GC block calls the GC routine for each
+GC root in scope, possibly relocating them, and then jumps back to normal
+execution. This scheme doesn't require GC roots to be spilled to the stack at
+the points of heap checking.
+
+(However, just like OCaml and GHC Haskell, we don't support callee-save
+registers, which means that GC roots are necessarily spilled at every function
+call).
+
 We copy objects over to the new heap recursively in *depth-first* order. This is
 the most natural thing to do in tag-free GC. Compared to Cheney's breadth-first
 algorithm:
@@ -718,23 +727,27 @@ bit there without adding an extra word.
 
 ### Region implementation
 
+The simplest way to handle regions is to use mark-sweep GC.
 
+- There's a way to iterate through all regions in memory. This could be
+  implemented by pushing new regions to a list or array, or arranging
+  regions themselves into a linked list.
+- A single region is a doubly linked lists of chunks. We store links and
+  some metadata at the end of each chunk.
+- A `Region` that's passed to functions is an unboxed pair of pointers, one to
+  the next free word and one to the end of the current chunk (where we store
+  chunk metadata).
+- When we run out of space in chunk, we malloc a new one, perhaps also
+  growing the chunk size.
+- A function which allocates to an input region also produces an *output*
+  region, in the LLVM backend. We have this so that we can thread regions in
+  registers.
+- A function which reads objects in a region, but does not allocate into
+  the region, actually only needs to keep the region around for GC's sake.
+  Hence, read-only regions should be passed in an unobtrusive way; I plan
+  to pass them in SIMD registers instead of general-purpose registers.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+What about **reference counting** for regions?
 
 
 ## Appendix: closed modality for closure control

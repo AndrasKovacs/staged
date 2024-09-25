@@ -18,9 +18,9 @@
 
 ## Intro
 
-A big part of my recent work is about PL theory and design, trying to get good
-combinations of predictable high performance and high-level abstractions.
-Staged compilation is an important part of it:
+A big part of my recent work is about getting good combinations of predictable
+high performance and high-level abstraction, via PL design and theory. Staged
+compilation is an important part of it:
 
 - [Staged Compilation With Two-Level Type Theory](https://andraskovacs.github.io/pdfs/2ltt.pdf)
 - [Closure-Free Functional Programming in a Two-Level Type Theory](https://dl.acm.org/doi/10.1145/3674648)
@@ -41,14 +41,13 @@ are some trade-offs and tensions.
 
 First, *type safety* is non-negotiable for me, both at runtime and compile
 time. By the latter I mean that well-typed code-generating programs must yield
-well-typed code. So every design choice has to accommodate type safety.
+well-typed code. Every design choice has to accommodate type safety.
 
-Second, two-level type theory (2LTT) is extremely expressive and convenient for
+Second, two-level type theory (2LTT) is very expressive and convenient for
 two-stage compilation. But: systems that are memory-safe and GC-free tend to be
 [*sub-structural*](https://en.wikipedia.org/wiki/Substructural_type_system). This
 means that there are restrictions on the usage of variables. Sub-structural
-object languages haven't been researched for 2LTT-s, and I don't think that they
-work very well there.
+object languages haven't been researched for 2LTT-s.
 
 The nicest thing about 2LTT is that we never have to care about *scoping* for
 the object language. At compile time, we can freely combine object expressions
@@ -73,6 +72,14 @@ lightweight anymore.
   improve locality and to shrink runtime objects.
 - We use per-datatype GC routines that exploit static information about regions.
 
+In a nutshell: regions are used purely to improve memory management performance,
+without any hard guarantees about lifetimes. This makes it possible to smoothly
+integrate regions into a 2LTT.
+
+Compare Rust: lifetimes provide hard static guarantee, and they can be used to
+enforce resource safety more generally, not just for memory allocation. But the
+sub-structural nature of Rust makes it difficult to do type-safe metaprogramming.
+
 I expand on the design in the following.
 
 ## Basics
@@ -89,7 +96,7 @@ metaprograms in it that generate object programs. The object language is easy to
 compile and optimize, but it's often tedious to directly program in.
 
 Concretely, the system looks like a dependently typed language with some
-universes and "staging" operations.
+universes and *staging operations*.
 
 - `MetaTy : MetaTy` is the universe of compile-time types (or: metatypes). It
   has itself as type; this is a logically inconsistent feature that you may know
@@ -104,9 +111,9 @@ universes and "staging" operations.
   of computations. At runtime, a computation is represented by an address
   pointing to a chunk of machine code in the executable.
 
-The polarization to `ValTy` and `CompTy` is used to control *closures*. There is
-a separate type former for closures, and we *only* get runtime closures if we
-use it.
+The polarization to `ValTy` and `CompTy` is used to control closures. There is a
+separate type former for closures, and we *only* get runtime closures if we use
+it.
 
 - Function domain types must be value types.
 - ADT constructor fields must be value types.
@@ -121,7 +128,7 @@ An example:
     map : Close (Int → Int) → List Int → List Int
     map f xs := case xs of
       Nil       → Nil
-      Cons x xs → Cons (open f x) (mapPlus f xs)
+      Cons x xs → Cons (open f x) (map f xs)
 ```
 The function argument to `map` has to be wrapped in a closure;
 it's not possible to have `(Int → Int) → List Int → List Int`
@@ -168,9 +175,9 @@ The previous monomorphic `map` can be reproduced:
 At compile time, the splices are replaced with generated code, and we get the same
 code that we defined before.
 
-However, it's not the best idea to have a `map` which takes a closure as
-argument. We might as well inline the function arguments to skip the runtime
-closure:
+But it's not the best idea to have a `map` which takes a closure as argument. We
+might as well inline the function argument to skip the runtime closure, for each
+concrete mapping function:
 
 ```
     monoMapPlus : List Int → List Int
@@ -189,9 +196,11 @@ all quotes and splices, and also most lifts. The following works:
                                           Cons a as → Cons (f a) (go as);
                go as
 ```
+
 Note that we still have to write `=` and `:=` for definitions at the different
-stages. I have found that as soon as we pin down the stages of let-definitions,
-almost everything else becomes unambiguously inferable.
+stages. My experience in prototype implementations is that as soon as we pin
+down the stages of let-definitions, almost everything else becomes unambiguously
+inferable.
 
 ## Regions
 
@@ -220,7 +229,7 @@ location specification. Example:
 allocated in `l`.
 
 `Nil` has no location specification, which means that it's *unboxed*, i.e. we
-don't need any indirection to store an empty list; at runtime it could be just a
+don't need any indirection to store an empty list. At runtime it could be just a
 null integer.
 
 For any type, all values of the type must have the same "flat" size in memory.
@@ -236,9 +245,10 @@ We can also define Rust-style unboxed sums:
 Since neither `Foo1` nor `Foo2` specify a location, they are both unboxed.  At
 runtime, we need a tag bit to distinguish the two constructors, and we also need
 to pad out `Foo1` to have the same size as `Foo2`. So, `Foo` requires 1+64+64
-bits of storage. Depending on the contexts in which we use `Foo`, this data can be
-stored differently; see "bit-stealing" a bit later on. We assume word
-granularity for runtime objects, so a `Foo` value takes up three words at most.
+bits of storage. Depending on the contexts in which we use `Foo`, this data can
+be stored differently; see [bit-stealing](#bit-stealing) a bit later on. We
+assume word granularity for runtime objects, so a `Foo` value can take up three
+words at most.
 
 Recursive fields can only be placed under a pointer. The following is rejected
 by the compiler:
@@ -254,16 +264,15 @@ we saw for lists already). Take lambda terms, using De Bruijn indices:
     data Tm = Var Int32 | Lam@Hp Tm | App@Hp Tm Tm
 ```
 
-This representation is far more efficient than what we get in Haskell
-and OCaml.
+This representation is far more efficient than what we get in Haskell and OCaml.
 
 - `Var Int32` is a single word, containing two bits for the constructor tag and
   32 bits for the integer.
 - `Lam@Hp Tm` is a pointer tagged with two bits, pointing to a `Tm` on the heap.
 - `App@Hp Tm Tm` is a pointer tagged with two bits, pointing to two `Tm`-s on the heap.
 
-There's also one bit reserved for GC in every pointer; I'll write more about
-GC implementation later.
+There's also one bit reserved for GC in every pointer; I write more about [GC
+implementation](#tag-free-gc) later.
 
 Consider `App (Var 0) (Var 1)`. In Haskell and OCaml, `App` has three words, one
 header and two pointer for the fields, and `Var 0` and `Var 1` each contain two
@@ -298,11 +307,12 @@ scheme. At least, we have 2 lower bits available because of pointer alignment
 available.
 
 If plenty high bits are available, we might choose to only exploit high bits and
-leave low bits alone; this can make tag operations use fewer machine
+leave low bits alone. This can make tag operations use fewer machine
 instructions.
 
 In any case, we can certainly use bit-stealing for `List (Maybe Int)`. Moving
-the `Maybe` tag into `Cons`, we get **two words** on the heap for a `Cons`.
+the `Maybe` tag into the `Cons` pointer, we get **two words** on the heap for a
+`Cons`.
 
 ### Using regions
 
@@ -340,8 +350,8 @@ clear from the expected type of an expression.
        go as
 ```
 
-Concrete instantiations of `map` are object functions where the function
-argument is inlined, working on lists stored at given locations.
+As before, concrete instantiations of `map` are object functions where the
+function argument is inlined.
 
 We can recover a region-polymorphic object function as follows:
 
@@ -355,31 +365,30 @@ With inference:
     myMap : {r r'} → List r Int → List r' Int
     myMap xs := map (λ x. x + 10) xs
 ```
+
 We get an inner recursive `go` function which refers to the `r` and `r'`
 parameters of the outer function. Hence, when we're in the middle of mapping,
-`r` and `r'` are both reachable on the stack (or in registers). Hence, no objects
-stored in `r` and `r'` can be freed by GC.
+`r` and `r'` are both reachable on the stack (or in registers). Hence, no
+objects stored in `r` and `r'` can be freed by GC.
 
 This enables a remarkable amount of GC optimization. Object types contain
 information about locations, and for each type we can implement a GC strategy
 which takes locations into account.
 
-Consider `List r Int` for `r : Region`. Whenever a value of this type is
-reachable, the region `r` must be reachable as well (it must be in scope, or
-otherwise the type is not even well-formed). Therefore, *doing nothing* is a
-valid GC strategy for this type! When `r` becomes dead, the whole region gets
-freed, and with it all the `List r Int` values are freed too. When GC processes
-a `Region`, it does not look at its contents, it simply marks the region itself
-as alive.
-
-Consider `List r (List Hp Int)`. When a value of this type is reachable, we know
-that `r` must be also reachable, but we don't know which heap-based inner lists
-are stored. Hence, GC scans the outer list, in order to reach and relocate the
-inner lists. But GC does not relocate the region-based cons cells. `Hp` may use
-copying GC, but regions are not copied and region pointers are stable.
-
-Lastly, consider `List Hp (List r Int)`. GC traverses and relocates the outer
-cons cells, but it doesn't look into the inner lists.
+- Consider `List r Int` for `r : Region`. Whenever a value of this type is
+  reachable, the region `r` must be reachable as well (it must be in scope, or
+  otherwise the type is not even well-formed). Therefore, *doing nothing* is a
+  valid GC strategy for this type! When `r` becomes dead, the whole region gets
+  freed, and with it all the `List r Int` values are freed too. When GC processes
+  a `Region`, it does not look at its contents, it simply marks the region itself
+  as alive.
+- Consider `List r (List Hp Int)`. When a value of this type is reachable, we know
+  that `r` must be also reachable, but we don't know which heap-based inner lists
+  are stored. Hence, GC scans the outer list, in order to reach and relocate the
+  inner lists. But GC does not relocate the region-based cons cells. `Hp` may use
+  copying GC, but regions are not copied and region pointers are stable.
+- Lastly, consider `List Hp (List r Int)`. GC traverses and relocates the outer
+  cons cells, but it doesn't look into the inner lists.
 
 ### Strict regions
 
@@ -404,10 +413,10 @@ references. A common pattern is to replace heap pointers with integer indices
 pointing to an *array* of heap values.
 
 ```
-    Index : ValTy
-    Index = Int
+    HpValIndex : ValTy
+    HpValIndex = Int
 
-    data Tree (r : Region) := Leaf@r Index | Node@r Tree Tree
+    data Tree (r : Region) := Leaf@r HpValIndex | Node@r Tree Tree
 ```
 
 This style is actually more common in PL implementations than my own style of
@@ -419,7 +428,7 @@ We extend the system with **strict regions**:
 - There's `StrictRegion : ValTy → MetaTy`. A value of `StrictRegion A` can be
   implicitly cast to `Loc`.
 - We can only allocate values of type `A` in an `r : StrictRegion A`.
-- When GC touches a strict region, *it scans all of its contents*.
+- When GC touches a strict region, *it eagerly scans all of its contents*.
 - `let r : StrictRegion A; t` creates a new strict region.
 
 We need to track the types of values in strict regions, because tag-free GC
@@ -432,8 +441,9 @@ defined as:
 ```
     data Ptr (l : Loc) A := Box@l A
 ```
-Why can we only get pointers to objects in a strict region? If we try to use
-the same allocation API as with vanilla regions, we run into a problematic recursion
+
+Why can we only get pointers as results from allocation? If we try to use the
+same allocation API as with vanilla regions, we run into a problematic recursion
 in typing. What if I want to have lists in a strict region:
 
 ```
@@ -514,7 +524,7 @@ Alternatively, we can often
 [*defunctionalize*](https://en.wikipedia.org/wiki/Defunctionalization) closures
 to ADT-s, in which cases we can specify locations of captured data.
 
-Defunctionalization isn't always good for performance though.[Threaded
+Defunctionalization isn't always good for performance though. [Threaded
 interpreters](https://en.wikipedia.org/wiki/Threaded_code) and
 [closure-generating
 interpreters](https://ndmitchell.com/downloads/slides-cheaply_writing_a_fast_interpreter-23_feb_2021.pdf)
@@ -559,8 +569,8 @@ relatively few relatively large arrays at runtime.
 
 ### Non-escaping regions
 
-Our region setup permits an optimization that should be easy to implement
-and often applicable.
+Our region setup permits an optimization that should be easy to implement and
+often applicable.
 
 If the compiler can discern that a region never escapes the scope of its
 creation, it can insert code to eagerly free the region, without waiting for GC
@@ -570,7 +580,7 @@ to run. For example:
     f : Int → Int
     f x :=
       let r : Region;
-      let xs := [x, x+1, x+2] in r;
+      let xs : List r Int := [x, x+1, x+2];
       sum xs;
 ```
 
@@ -580,7 +590,7 @@ to run. For example:
     f : Int → Int
     f x :=
       let r : Region;
-      let xs := [x, x+1, x+2] in r;
+      let xs : List r Int := [x, x+1, x+2];
       let res := sum xs;
       free r;
       res;
@@ -588,8 +598,8 @@ to run. For example:
 
 It's important that `free r` by itself does not keep `r` alive. It can happen
 that `r` becomes dead and is collected well before `free r` is executed, in
-which case `free r` does nothing. So we can only make freeing strictly more
-timely.
+which case `free r` does nothing. So the inclusion of `free r` can only make
+freeing strictly more timely.
 
 How often do we have non-escaping regions? Very often, I conjecture. The only
 way for regions to escape are:
@@ -631,7 +641,7 @@ In a polymorphic language, two complications arise:
   sizes](https://dash.harvard.edu/bitstream/handle/1/2794950/Morrisett_PolymorphismTypeAnalysis.pdf?sequence=2&isAllowed=y)
   in memory, that's a significant complication throughout the compilation
   pipeline. So it's rarely allowed. Instead, the usual setup is that abstracted
-  types must have the same flat memory layout.
+  types must have the same flat size in memory, or even the same memory layout.
 
 A big motivation for not having type polymorphism is to avoid these problems.
 
@@ -654,8 +664,8 @@ may vary; it may be simply embedded in the frame, or it may be stored in a side
 table that's indexed by return addresses.
 
 A heap allocation in the LLVM backend consists of a heap check which jumps to a
-"GC basic block" in case of failure. The GC block calls the GC routine for each
-GC root in scope, possibly relocating them, and then jumps back to normal
+"handler block" in case of failure. The handler block the GC routine for each GC
+root in scope, possibly relocating them, and then jumps back to normal
 execution. This scheme doesn't require GC roots to be spilled to the stack at
 the points of heap checking.
 
@@ -669,10 +679,10 @@ algorithm:
 
 - It has lower space overhead: Cheney requires a tag on every object,
   while depth-first copying only needs temporary stack space proportional
-  to the maximum depth of object pointers.
+  to the maximum indirection depth of objects.
 - It has much better locality. For example, if we have some number of linked
-  lists as roots, without structure sharing, Cheney *interleaves* all of them in
-  memory, while depth-first copying places each list contiguously.
+  lists as GC roots, without structure sharing, Cheney *interleaves* all of them
+  in memory, while depth-first copying places each list contiguously.
 
 In principle, we could allow programmers to specify GC traversal order for
 ADT-s. If in-memory order matches the most commonly used runtime traversal
@@ -686,18 +696,20 @@ traversing it. If the list is contiguous, we eliminate a cache latency
 bottleneck in the traversal. If we do little work for each cons cell, this
 allow us to pipeline multiple cons cells' work in the CPU.
 
-**Forwarding.** After an object is copied, we write a forwarding pointer into
-it. This implies that every object must have space for the forwarding pointer.
-Additionally, we need one bit to signal that the object has been copied.
+**Forwarding**
+
+After an object is copied, we write a forwarding pointer into it. This implies
+that every object must have space for the forwarding pointer. Additionally, we
+need one bit to signal that the object has been copied.
 
 The extra bit could be stored in a separate bitarray, one bit for every word of
-the old heap. However, currently I'm liking it better to store the extra bit in
+the old heap. However, currently I like it better to store the extra bit in
 objects, to maximize locality in copying.
 
 The plan:
 
-- Every pointer (`Hp`, `Region` or `StrictRegion`) reserves 1 tag bit that can
-  be used for the forwarding bit if the need arises.
+- Every pointer (to `Hp`, `Region` or `StrictRegion`) reserves 1 tag bit that
+  can be used for the forwarding bit when the need arises.
 - For scanned boxed constructors which contain at least one pointer,
   we can store the forwarding pointer *and* the forwarding bit there.
 - For scanned boxed constructors which only contain unboxed data, we
@@ -725,6 +737,33 @@ extra word for the forwarding bit is proportionally less impactful on space
 usage. Also, if there are any "gaps" in unboxed data, we can plug the forwarding
 bit there without adding an extra word.
 
+**More on allocations**
+
+When should we perform GC? Clearly, both region and heap allocations should
+contribute to triggering GC. In one extreme case, we can emulate the heap by
+using a new existential region for every allocation, so region allocations must
+trigger GC too. Considerations:
+
+- We'd like to not waste a lot of space, and do that regardless of the
+  runtime balance of region and heap allocations.
+- We'd like to minimize the runtime overhead of allocation.
+
+This is mostly just armchair speculation, but here're my plans:
+
+- All allocation (region, stack, heap) happens in chunks, and uses two pointers
+  (free pointer, end pointer).
+- All allocation consists of a simple comparison of the two pointers, and if that
+  fails we jump to a "handler" block.
+- Heap and region allocations both contribute to triggering GC.
+- For stack allocation, the handler block tries to allocate a new stack segment,
+  and jumps back to normal execution. Stack allocation *doesn't* trigger GC; if
+  we don't have enough memory for the new segment, we crash. We do this to
+  minimize the code size overhead of stack checking.
+- For heap and region allocation, the handler block may or may not trigger GC;
+  in more common cases we just allocate a new segment and don't run GC. The
+  handler block looks up the total region+heap allocations (which is tracked
+  with segment granularity) to decide whether to run GC.
+
 ### Region implementation
 
 The simplest way to handle regions is to use mark-sweep GC.
@@ -747,22 +786,29 @@ The simplest way to handle regions is to use mark-sweep GC.
   Hence, read-only regions should be passed in an unobtrusive way; I plan
   to pass them in SIMD registers instead of general-purpose registers.
 
-What about using **reference counting** for regions? I think it could be good,
-and possibly preferable to mark-sweeping. It would certainly improve on
-timeliness and potentially on latency. If all regions die
+What about **reference counting** for regions?
 
+I think that reference couting could provide a nice improvement for latency and
+timeliness, but I don't plan on using it at first.
 
-
+- We'd need cycle detection. We can get cycles easily if we have mutable
+  references (which I want to support).
+- We'd have more runtime overhead than with mark-sweeping. To reduce the
+  overhead, we'd benefit from [borrow
+  inference](https://arxiv.org/pdf/1908.05647), but that's another extra thing
+  to implement.
+- I'm hoping that escape analysis for regions would get us most of the benefits
+  of reference counting.
 
 ## Appendix: closed modality for closure control
 
-Let's have `■ A : MetaType` for `A : MetaType`. Adding the `■` ensures that only
-closed object-level terms can be produced. For example, `■ (↑A)` is the type of
-metaprograms which generate closed `A`-typed object terms. If we have `■ A` for
+Let's have `□ A : MetaType` for `A : MetaType`. Adding the `□` ensures that only
+closed object-level terms can be produced. For example, `□ (↑A)` is the type of
+metaprograms which generate closed `A`-typed object terms. If we have `□ A` for
 a purely meta-level type `A`, like meta-level natural numbers, the modality
 doesn't have any effect.
 
-For the details of `■`, you can look at [this
+For the details of `□`, you can look at [this
 paper](https://users-cs.au.dk/birke/papers/implementing-modal-dependent-type-theory-conf.pdf).
 
 The simplest use case is to support raw *machine code addresses* as values.
@@ -770,11 +816,11 @@ This is the special case of closures where there is no captured environment.
 
 ```
     CompPtr : CompTy → ValTy
-    close   : {A : CompTy} → ■ (↑A) → ↑(CompPtr A)
-    open    : {A : CompTy} → ↑(CompPtr A) → ■ (↑A)
+    close   : {A : CompTy} → □ (↑A) → ↑(CompPtr A)
+    open    : {A : CompTy} → ↑(CompPtr A) → □ (↑A)
 ```
 
-`■ (↑A)` ensures that no object-level free variables will appear in the generated
+`□ (↑A)` ensures that no object-level free variables will appear in the generated
 code for the computation.
 
 We can use this to implement transparent closures, where the capture is visible
@@ -806,7 +852,7 @@ Location-restricted closures could have this API:
 
 ```
     Closure : Loc → Locations → CompTy → ValTy
-    close   : HasStorage A ls => ↑A → ■ (↑(A → B)) → ↑(Closure l ls B)
+    close   : HasStorage A ls => ↑A → □ (↑(A → B)) → ↑(Closure l ls B)
     open    : ↑(Closure l ls B) → ↑B
 ```
 

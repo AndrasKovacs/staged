@@ -57,7 +57,7 @@ data ANF
 anfComp :: [Lvl] -> Arity -> Tm -> [Lvl] -> SComp
 anfComp e ar t args = case ar of
   0  -> SBody (anf e t (reverse args) SRet)
-  ar -> SLam \v -> anfComp (v:e) (ar - 1) t (v:args)
+  ar -> SLam \v -> anfComp e (ar - 1) t (v:args)
 
 anf :: [Lvl] -> Tm -> [Lvl] -> (Lvl -> SANF) -> SANF
 anf e t args k = case t of

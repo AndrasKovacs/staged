@@ -747,7 +747,11 @@ The simplest way to handle regions is to use mark-sweep GC.
   Hence, read-only regions should be passed in an unobtrusive way; I plan
   to pass them in SIMD registers instead of general-purpose registers.
 
-What about **reference counting** for regions?
+What about using **reference counting** for regions? I think it could be good,
+and possibly preferable to mark-sweeping. It would certainly improve on
+timeliness and potentially on latency. If all regions die
+
+
 
 
 ## Appendix: closed modality for closure control

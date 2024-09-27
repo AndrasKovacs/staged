@@ -7,7 +7,7 @@
 * [Regions](#regions)
   * [Bit-stealing](#bit-stealing)
   * [Using regions](#using-regions)
-  * [Strict regions](#strict-regions)
+  * [Eager regions](#eager-regions)
   * [Closures](#closures)
   * [Existential regions](#existential-regions)
   * [Non-escaping regions](#non-escaping-regions)
@@ -390,7 +390,7 @@ which takes locations into account.
 - Lastly, consider `List Hp (List r Int)`. GC traverses and relocates the outer
   cons cells, but it doesn't look into the inner lists.
 
-### Strict regions
+### Eager regions
 
 It's not too rare in practice (at least in the compilers and elaborators that
 I've implemented) that we have some long-lived tree structure which may contain
@@ -423,19 +423,19 @@ This style is actually more common in PL implementations than my own style of
 embedding values in terms. With this, GC doesn't scan trees anymore, but the
 programmer has the extra job of correctly managing the arrays and the indices.
 
-We extend the system with **strict regions**:
+We extend the system with **eager regions**:
 
-- There's `StrictRegion : ValTy → MetaTy`. A value of `StrictRegion A` can be
+- There's `EagerRegion : ValTy → MetaTy`. A value of `EagerRegion A` can be
   implicitly cast to `Loc`.
-- We can only allocate values of type `A` in an `r : StrictRegion A`.
-- When GC touches a strict region, *it eagerly scans all of its contents*.
-- `let r : StrictRegion A; t` creates a new strict region.
+- We can only allocate values of type `A` in an `r : EagerRegion A`.
+- When GC touches an eager region, *it eagerly scans all of its contents*.
+- `let r : EagerRegion A; t` creates a new region.
 
-We need to track the types of values in strict regions, because tag-free GC
+We need to track the types of values in eager regions, because tag-free GC
 needs the type info (or more precisely, memory layout) to do the eager scanning.
 
-Adding objects to strict regions has a bit of a spin: assuming `r : StrictRegion
-A` and `a : A`, we have `addToStrictRegion r a : Ptr r A`, where `Ptr` is
+Adding objects to eager regions has a bit of a spin: assuming `r : EagerRegion
+A` and `a : A`, we have `addToEagerRegion r a : Ptr r A`, where `Ptr` is
 defined as:
 
 ```
@@ -444,10 +444,10 @@ defined as:
 
 Why can we only get pointers as results from allocation? If we try to use the
 same allocation API as with vanilla regions, we run into a problematic recursion
-in typing. What if I want to have lists in a strict region:
+in typing. What if I want to have lists in an eager region:
 
 ```
-    data List (r : StrictRegion (List ?)) := ...
+    data List (r : EagerRegion (List ?)) := ...
 ```
 
 Lists depend on the region where they're stored, but the region is indexed with
@@ -455,27 +455,27 @@ the type of stored values... There's a good chance that this recursion could be
 supported with some additional magic, but for now I'd like to stick to simpler
 type-theoretic features.
 
-In our current API, we add lists into a strict region like this:
+In our current API, we add lists into an eager region like this:
 
 ```
     data List l A := Nil | Cons@l A (List l A)
 
     main : ()
     main :=
-      let r : StrictRegion (List Hp Int);
+      let r : EagerRegion (List Hp Int);
       let x := Cons 10 (Cons 20 Nil)
-      let x' := addToStrictRegion r x;
+      let x' := addToEagerRegion r x;
       case x' of
         Box x → ...
 ```
 
 For lists, the "flat" size of a value is a single word (a pointer or `Nil`), and
-we copy that single word when we add a list to a strict region, and we get a pointer
+we copy that single word when we add a list to an eager region, and we get a pointer
 to the new copy. The tree example now:
 
 ```
     data HpVal := HpVal@Hp Int
-    data Tree (r : Region)(r' : StrictRegion HpVal) :=
+    data Tree (r : Region)(r' : EagerRegion HpVal) :=
       Leaf@r (Ptr r' HpVal) | Node@r Tree Tree
 ```
 
@@ -535,7 +535,7 @@ addresses. I include an example for closure-generating interpretation in the
 
 ### Existential regions
 
-ADT constructors may have fields of type `Region` and `StrictRegion A`, and
+ADT constructors may have fields of type `Region` and `EagerRegion A`, and
 types of subsequent fields can depend on them. The following is a generic
 existential wrapper type.
 
@@ -708,7 +708,7 @@ objects, to maximize locality in copying.
 
 The plan:
 
-- Every pointer (to `Hp`, `Region` or `StrictRegion`) reserves 1 tag bit that
+- Every pointer (to `Hp`, `Region` or `EagerRegion`) reserves 1 tag bit that
   can be used for the forwarding bit when the need arises.
 - For scanned boxed constructors which contain at least one pointer,
   we can store the forwarding pointer *and* the forwarding bit there.

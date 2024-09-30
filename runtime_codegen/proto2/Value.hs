@@ -22,7 +22,7 @@ data Val
   | VQuote Val
 
   | VEff Val
-  | VReturn ~VTy Val
+  | VReturn Val
   | VBind Name Val {-# unpack #-} Closure
 
   | VUnit

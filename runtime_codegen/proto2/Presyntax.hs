@@ -13,12 +13,12 @@ data Tm
   | Let Name Tm Tm Tm                         -- let x : A = t; u
   | SrcPos SourcePos Tm                       -- source position for error reporting
 
-  | Box                                       -- □
+  | Box Tm                                    -- □
   | Quote Tm                                  -- <t>
   | Splice Tm                                 -- ~t
 
-  | Eff                                       -- Eff
-  | Return                                    -- return
+  | Eff Tm                                    -- Eff
+  | Return Tm                                 -- return
   | Bind Name Tm Tm                           -- do x <- t; u
   | ConstBind Tm Tm                           -- do t; u
 
@@ -39,11 +39,11 @@ stripPos = \case
   Let x a t u   -> Let x (stripPos a) (stripPos t) (stripPos u)
   SrcPos _ t    -> stripPos t
   Hole          -> Hole
-  Box           -> Box
+  Box t         -> Box (stripPos t)
   Quote t       -> Quote (stripPos t)
   Splice t      -> Splice (stripPos t)
-  Eff           -> Eff
-  Return        -> Return
+  Eff t         -> Eff (stripPos t)
+  Return t      -> Return (stripPos t)
   Bind x t u    -> Bind x (stripPos t) (stripPos u)
   ConstBind t u -> ConstBind (stripPos t) (stripPos u)
   Unit          -> Unit

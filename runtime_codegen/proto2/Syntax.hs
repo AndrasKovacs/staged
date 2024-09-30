@@ -63,8 +63,8 @@ data Tm
   | Unit
   | Tt
 
-  | Eff
-  | Return
+  | Eff Tm
+  | Return Tm
   | Bind Name Tm Tm
   deriving Show
 

@@ -62,6 +62,9 @@ vSplice = \case
   VFlex x sp  -> VFlex x (SSplice sp)
   _           -> impossible
 
+vBind :: Name -> Val -> Closure -> Val
+vBind x t u = VBind x t u               -- TODO: definitional monad laws with functional closures
+
 eval :: Dbg => Env -> Tm -> Val
 eval env = \case
   Var x            -> vVar env x
@@ -78,7 +81,9 @@ eval env = \case
   Splice t         -> vSplice (eval env t)
   Unit             -> VUnit
   Tt               -> VTt
-  Eff              -> _
+  Eff t            -> VEff (eval env t)
+  Return t         -> VReturn (eval env t)
+  Bind x t u       -> vBind x (eval env t) (Closure env u)
 
 force :: Val -> Val
 force = \case
@@ -101,6 +106,13 @@ quote l t = case force t of
   VLam x i t  -> Lam x i (quote (l + 1) (t $$ VVar l))
   VPi x i a b -> Pi x i (quote l a) (quote (l + 1) (b $$ VVar l))
   VU          -> U
+  VBox t      -> Box (quote l t)
+  VQuote t    -> Quote (quote l t)
+  VEff t      -> Eff (quote l t)
+  VReturn t   -> Return (quote l t)
+  VBind x t u -> Bind x (quote l t) (quote (l + 1) (u $$ VVar l))
+  VUnit       -> Unit
+  VTt         -> Tt
 
 nf :: Env -> Tm -> Tm
 nf env t = quote (Lvl (length env)) (eval env t)

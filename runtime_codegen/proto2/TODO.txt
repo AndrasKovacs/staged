@@ -1,0 +1,2 @@
+
+- Definitional monad laws? (Requires functional closure for easy impl)

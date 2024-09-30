@@ -911,3 +911,8 @@ region-based expressions:
 We allocated the closures in `r'`. If we have the escape analysis, it will free
 `r'` promptly before `eval` returns. Neither `eval` nor `compile` involves GC or
 heap allocation.
+
+```
+data Closure (A : CompTy) := Close (B : ValTy)
+
+```

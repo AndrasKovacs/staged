@@ -22,14 +22,14 @@ showTm :: Cxt -> Tm -> String
 showTm cxt t = prettyTm 0 (names cxt) t []
 
 emptyCxt :: SourcePos -> Cxt
-emptyCxt = Cxt [] 0 Here [] mempty
+emptyCxt = Cxt [] 0 LHere [] mempty
 
 -- | Extend Cxt with a bound variable.
 bind :: Cxt -> Name -> VTy -> Cxt
 bind (Cxt env l ls pr ns pos) x ~a =
   Cxt (env :> VVar l)
       (l + 1)
-      (Bind ls x (quote l a))
+      (LBind ls x (quote l a))
       (pr :> Just Expl)
       (M.insert x (l, a) ns)
       pos
@@ -40,7 +40,7 @@ newBinder :: Cxt -> Name -> VTy -> Cxt
 newBinder (Cxt env l ls pr ns pos) x ~a =
   Cxt (env :> VVar l)
       (l + 1)
-      (Bind ls x (quote l a))
+      (LBind ls x (quote l a))
       (pr :> Just Expl)
       ns                        -- Unchanged! An inserted binder cannot be accessed from
       pos                       -- source syntax
@@ -52,7 +52,7 @@ define :: Cxt -> Name -> Tm -> Val -> Ty -> VTy -> Cxt
 define (Cxt env l ls pr ns pos) x ~t ~vt ~a ~va  =
   Cxt (env :> vt)
       (l + 1)
-      (Define ls x a t)
+      (LDefine ls x a t)
       (pr :> Nothing)
       (M.insert x (l, va) ns)
       pos

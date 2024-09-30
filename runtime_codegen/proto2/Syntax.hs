@@ -22,9 +22,9 @@ revPruning = RevPruning . reverse
 -- | Information about the local binders, used for efficiently creating types for
 --   fresh metas.
 data Locals
-  = Here
-  | Define Locals Name ~Ty ~Tm
-  | Bind Locals Name ~Ty
+  = LHere
+  | LDefine Locals Name ~Ty ~Tm
+  | LBind Locals Name ~Ty
   deriving Show
 
 -- | Convert type in context to a closed iterated Pi type.  Note: we need `Tm`
@@ -33,28 +33,39 @@ data Locals
 --   anything.
 closeTy :: Locals -> Ty -> Ty
 closeTy mcl b = case mcl of
-  Here             -> b
-  Bind mcl x a     -> closeTy mcl (Pi x Expl a b)
-  Define mcl x a t -> closeTy mcl (Let x a t b)
+  LHere             -> b
+  LBind mcl x a     -> closeTy mcl (Pi x Expl a b)
+  LDefine mcl x a t -> closeTy mcl (Let x a t b)
 
 -- | Convert a term in context to a closed term by wrapping it in lambdas and
 --   let-definitions. The type of the result is given by `closeTy`.
 closeTm :: Locals -> Tm -> Tm
 closeTm mcl t = case mcl of
-  Here             -> t
-  Bind mcl x a     -> closeTm mcl (Lam x Expl t)
-  Define mcl x a u -> closeTm mcl (Let x a u t)
+  LHere             -> t
+  LBind mcl x a     -> closeTm mcl (Lam x Expl t)
+  LDefine mcl x a u -> closeTm mcl (Let x a u t)
 
 data Tm
   = Var Ix
   | Lam Name Icit Tm
   | App Tm Tm Icit
-  | AppPruning Tm Pruning  -- ^ Used for applying an inserted or pruned meta to a mask of the scope.
+  | AppPruning Tm Pruning
   | U
   | Pi Name Icit Ty Ty
   | Let Name Ty Tm Tm
   | Meta MetaVar
   | PostponedCheck CheckVar
+
+  | Box Tm
+  | Quote Tm
+  | Splice Tm
+
+  | Unit
+  | Tt
+
+  | Eff
+  | Return
+  | Bind Name Tm Tm
   deriving Show
 
 -- | Unfold `AppPruning` to an iterated application to vars. This applies a term to all de Bruijn indices

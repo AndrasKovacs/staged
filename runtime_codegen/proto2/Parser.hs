@@ -1,6 +1,7 @@
 
 module Parser (parseString, parseStdin) where
 
+import Prelude hiding (pi)
 import Control.Applicative hiding (many, some)
 import Control.Monad
 import Data.Char
@@ -23,103 +24,142 @@ ws :: Parser ()
 ws = L.space C.space1 (L.skipLineComment "--") (L.skipBlockComment "{-" "-}")
 
 withPos :: Parser Tm -> Parser Tm
-withPos p = SrcPos <$> getSourcePos <*> p
+withPos p = do
+  pos <- getSourcePos
+  a <- p
+  case a of
+    SrcPos{} -> pure a
+    _        -> pure $ SrcPos pos a
 
 lexeme     = L.lexeme ws
 symbol s   = lexeme (C.string s)
 char c     = lexeme (C.char c)
 parens p   = char '(' *> p <* char ')'
 braces p   = char '{' *> p <* char '}'
-pArrow     = symbol "→" <|> symbol "->"
-pBind      = pIdent <|> symbol "_"
+arrow      = symbol "→" <|> symbol "->"
+bind       = ident <|> symbol "_"
 
-keyword :: String -> Bool
-keyword x = x == "let" || x == "λ" || x == "U"
+isKeyword :: String -> Bool
+isKeyword x =
+     x == "let" || x == "λ" || x == "U"
+  || x == "return" || x == "do" || x == "Box"
+  || x == "Eff" || x == "Top" || x == "tt"
 
-pIdent :: Parser Name
-pIdent = try $ do
+ident :: Parser Name
+ident = try $ do
   x <- takeWhile1P Nothing isAlphaNum
-  guard (not (keyword x))
+  guard (not (isKeyword x))
   x <$ ws
 
-pKeyword :: String -> Parser ()
-pKeyword kw = do
+keyword :: String -> Parser ()
+keyword kw = do
   C.string kw
   (takeWhile1P Nothing isAlphaNum *> empty) <|> ws
 
-pAtom :: Parser Tm
-pAtom  =
-      withPos (    (Var <$> pIdent)
-               <|> (U <$ char 'U')
-               <|> (Hole <$ char '_'))
-  <|> parens pTm
+atom :: Parser Tm
+atom =
+      withPos (    (Var    <$> ident)
+               <|> (U      <$  char 'U')
+               <|> (Box    <$  char '□')
+               <|> (Box    <$  keyword "Box")
+               <|> (Eff    <$  keyword "Eff")
+               <|> (Return <$  keyword "return")
+               <|> (Unit   <$  char '⊤')
+               <|> (Unit   <$  keyword "Top")
+               <|> (Tt     <$  keyword "tt")
+               <|> (Quote  <$> (char '<' *> tm <* char '>'))
+               <|> (Hole   <$  char '_'))
+  <|> parens tm
 
-pArg :: Parser (Either Name Icit, Tm)
-pArg =  (try $ braces $ do {x <- pIdent; char '='; t <- pTm; pure (Left x, t)})
-    <|> ((Right Impl,) <$> (char '{' *> pTm <* char '}'))
-    <|> ((Right Expl,) <$> pAtom)
+splice :: Parser Tm
+splice = (Splice <$> (char '~' *> splice)) <|> atom
 
-pSpine :: Parser Tm
-pSpine = do
-  h <- pAtom
-  args <- many pArg
+arg :: Parser (Either Name Icit, Tm)
+arg =   (try $ braces $ do {x <- ident; char '='; t <- tm; pure (Left x, t)})
+    <|> ((Right Impl,) <$> (char '{' *> tm <* char '}'))
+    <|> ((Right Expl,) <$> splice)
+
+spine :: Parser Tm
+spine = do
+  h <- atom
+  args <- many arg
   pure $ foldl' (\t (i, u) -> App t u i) h args
 
-pLamBinder :: Parser (Name, Either Name Icit, Maybe Tm)
-pLamBinder =
-      parens ((,Right Expl,) <$> pBind <*> optional (char ':' *> pTm))
-  <|> try (braces ((,Right Impl,) <$> pBind <*> optional (char ':' *> pTm)))
-  <|> braces (do {x <- pIdent; char '='; y <- pBind; pure (y, Left x, Nothing)})
-  <|> ((,Right Expl,Nothing) <$> pBind)
+lamBinder :: Parser (Name, Either Name Icit, Maybe Tm)
+lamBinder =
+      parens ((,Right Expl,) <$> bind <*> optional (char ':' *> tm))
+  <|> try (braces ((,Right Impl,) <$> bind <*> optional (char ':' *> tm)))
+  <|> braces (do {x <- ident; char '='; y <- bind; pure (y, Left x, Nothing)})
+  <|> ((,Right Expl,Nothing) <$> bind)
 
-pLam :: Parser Tm
-pLam = do
+lam :: Parser Tm
+lam = do
   char 'λ' <|> char '\\'
-  xs <- some pLamBinder
+  xs <- some lamBinder
   char '.'
-  t <- pTm
+  t <- tm
   pure $ foldr' (\(x, i, ma) -> Lam x i ma) t xs
 
-pPiBinder :: Parser ([Name], Tm, Icit)
-pPiBinder =
-      braces ((,,Impl) <$> some pBind
-                       <*> ((char ':' *> pTm) <|> pure Hole))
-  <|> parens ((,,Expl) <$> some pBind
-                       <*> (char ':' *> pTm))
-pPi :: Parser Tm
-pPi = do
-  dom <- some pPiBinder
-  pArrow
-  cod <- pTm
+piBinder :: Parser ([Name], Tm, Icit)
+piBinder =
+      braces ((,,Impl) <$> some bind
+                       <*> ((char ':' *> tm) <|> pure Hole))
+  <|> parens ((,,Expl) <$> some bind
+                       <*> (char ':' *> tm))
+pi :: Parser Tm
+pi = do
+  dom <- some piBinder
+  arrow
+  cod <- tm
   pure $! foldr' (\(xs, a, i) t -> foldr' (\x -> Pi x i a) t xs) cod dom
 
-pFunOrSpine :: Parser Tm
-pFunOrSpine = do
-  sp <- pSpine
-  optional pArrow >>= \case
+funOrSpine :: Parser Tm
+funOrSpine = do
+  sp <- spine
+  optional arrow >>= \case
     Nothing -> pure sp
-    Just _  -> Pi "_" Expl sp <$> pTm
+    Just _  -> Pi "_" Expl sp <$> tm
 
 pLet :: Parser Tm
 pLet = do
-  pKeyword "let"
-  x <- pIdent
-  ann <- optional (char ':' *> pTm)
+  keyword "let"
+  x <- ident
+  ann <- optional (char ':' *> tm)
   char '='
-  t <- pTm
-  symbol ";"
-  u <- pTm
+  t <- tm
+  char ';'
+  u <- tm
   pure $ Let x (maybe Hole id ann) t u
 
-pTm :: Parser Tm
-pTm = withPos (pLam <|> pLet <|> try pPi <|> pFunOrSpine)
+pDo :: Parser Tm
+pDo = do
+  keyword "do"
+  optional (try (ident <* symbol "<-")) >>= \case
+    Nothing -> do
+      t <- tm
+      char ';'
+      u <- tm
+      pure $ ConstBind t u
+    Just x  -> do
+      t <- tm
+      char ';'
+      u <- tm
+      pure $ Bind x t u
 
-pSrc :: Parser Tm
-pSrc = ws *> pTm <* eof
+tm :: Parser Tm
+tm = withPos (
+      lam
+  <|> pLet
+  <|> pDo
+  <|> try pi
+  <|> funOrSpine)
+
+src :: Parser Tm
+src = ws *> tm <* eof
 
 parseString :: String -> IO Tm
-parseString src =
-  case parse pSrc "(stdin)" src of
+parseString str =
+  case parse src "(stdin)" str of
     Left e -> do
       putStrLn $ errorBundlePretty e
       exitFailure
@@ -128,6 +168,6 @@ parseString src =
 
 parseStdin :: IO (Tm, String)
 parseStdin = do
-  src <- getContents
-  t <- parseString src
-  pure (t, src)
+  str <- getContents
+  t <- parseString str
+  pure (t, str)

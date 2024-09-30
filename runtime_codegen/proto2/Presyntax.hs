@@ -12,17 +12,39 @@ data Tm
   | Pi Name Icit Tm Tm                        -- (x : A) -> B | {x : A} -> B
   | Let Name Tm Tm Tm                         -- let x : A = t; u
   | SrcPos SourcePos Tm                       -- source position for error reporting
+
+  | Box                                       -- □
+  | Quote Tm                                  -- <t>
+  | Splice Tm                                 -- ~t
+
+  | Eff                                       -- Eff
+  | Return                                    -- return
+  | Bind Name Tm Tm                           -- do x <- t; u
+  | ConstBind Tm Tm                           -- do t; u
+
+  | Unit                                      -- ⊤, Top
+  | Tt                                        -- tt
+
   | Hole                                      -- _
   deriving Show
 
 -- | Get rid of source positions, for better debug printing.
 stripPos :: Tm -> Tm
 stripPos = \case
-  Var x        -> Var x
-  Lam x i ma t -> Lam x i (stripPos <$> ma) (stripPos t)
-  App t u i    -> App (stripPos t) (stripPos u) i
-  U            -> U
-  Pi x i a b   -> Pi x i (stripPos a) (stripPos b)
-  Let x a t u  -> Let x (stripPos a) (stripPos t) (stripPos u)
-  SrcPos _ t   -> stripPos t
-  Hole         -> Hole
+  Var x         -> Var x
+  Lam x i ma t  -> Lam x i (stripPos <$> ma) (stripPos t)
+  App t u i     -> App (stripPos t) (stripPos u) i
+  U             -> U
+  Pi x i a b    -> Pi x i (stripPos a) (stripPos b)
+  Let x a t u   -> Let x (stripPos a) (stripPos t) (stripPos u)
+  SrcPos _ t    -> stripPos t
+  Hole          -> Hole
+  Box           -> Box
+  Quote t       -> Quote (stripPos t)
+  Splice t      -> Splice (stripPos t)
+  Eff           -> Eff
+  Return        -> Return
+  Bind x t u    -> Bind x (stripPos t) (stripPos u)
+  ConstBind t u -> ConstBind (stripPos t) (stripPos u)
+  Unit          -> Unit
+  Tt            -> Tt

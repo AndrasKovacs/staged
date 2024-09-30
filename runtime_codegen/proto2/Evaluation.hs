@@ -14,14 +14,15 @@ infixl 8 $$
 vApp :: Val -> Val -> Icit -> Val
 vApp t ~u i = case t of
   VLam _ _ t  -> t $$ u
-  VFlex  m sp -> VFlex m  (sp :> (u, i))
-  VRigid x sp -> VRigid x (sp :> (u, i))
+  VFlex  m sp -> VFlex m  (SApp sp u i)
+  VRigid x sp -> VRigid x (SApp sp u i)
   t           -> impossible
 
 vAppSp :: Val -> Spine -> Val
 vAppSp t = \case
-  []           -> t
-  sp :> (u, i) -> vApp (vAppSp t sp) u i
+  SId          -> t
+  SApp sp u i  -> vApp (vAppSp t sp) u i
+  SSplice sp   -> vSplice (vAppSp t sp)
 
 vMeta :: MetaVar -> Val
 vMeta m = case lookupMeta m of
@@ -48,6 +49,19 @@ vVar env x | unIx x < length env = env !! unIx x
 vVar env x = error $ "index out of env: "
                   ++ show ("env len"::String, length env, "ix"::String, x)
 
+vQuote :: Val -> Val
+vQuote = \case
+  VRigid x (SSplice sp) -> VRigid x sp
+  VFlex  x (SSplice sp) -> VFlex x sp
+  v                     -> VQuote v
+
+vSplice :: Val -> Val
+vSplice = \case
+  VQuote v    -> v
+  VRigid x sp -> VRigid x (SSplice sp)
+  VFlex x sp  -> VFlex x (SSplice sp)
+  _           -> impossible
+
 eval :: Dbg => Env -> Tm -> Val
 eval env = \case
   Var x            -> vVar env x
@@ -59,6 +73,12 @@ eval env = \case
   Meta m           -> vMeta m
   AppPruning t pr  -> vAppPruning env (eval env t) pr
   PostponedCheck c -> vCheck env c
+  Box t            -> VBox (eval env t)
+  Quote t          -> vQuote (eval env t)
+  Splice t         -> vSplice (eval env t)
+  Unit             -> VUnit
+  Tt               -> VTt
+  Eff              -> _
 
 force :: Val -> Val
 force = \case
@@ -70,8 +90,9 @@ lvl2Ix (Lvl l) (Lvl x) = Ix (l - x - 1)
 
 quoteSp :: Lvl -> Tm -> Spine -> Tm
 quoteSp l t = \case
-  []           -> t
-  sp :> (u, i) -> App (quoteSp l t sp) (quote l u) i
+  SId          -> t
+  SApp sp u i  -> App (quoteSp l t sp) (quote l u) i
+  SSplice sp   -> Splice (quoteSp l t sp)
 
 quote :: Dbg => Lvl -> Val -> Tm
 quote l t = case force t of

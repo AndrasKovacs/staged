@@ -18,9 +18,9 @@ data Cxt = Cxt {                       -- Used for:
 
 names :: Cxt -> [Name]
 names = go . locals where
-  go Here              = []
-  go (Define ls x _ _) = go ls :> x
-  go (Bind ls x _)     = go ls :> x
+  go LHere              = []
+  go (LDefine ls x _ _) = go ls :> x
+  go (LBind ls x _)     = go ls :> x
 
 instance Show Cxt where
   show = show . names

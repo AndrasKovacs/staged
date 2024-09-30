@@ -4,8 +4,10 @@ module Value where
 import Common
 import Syntax
 
+data Spine = SId | SApp Spine Val Icit | SSplice Spine
+  deriving Show
+
 type Env     = [Val]
-type Spine   = [(Val, Icit)]
 data Closure = Closure Env Tm deriving Show
 type VTy     = Val
 
@@ -15,10 +17,20 @@ data Val
   | VLam Name Icit {-# unpack #-} Closure
   | VPi Name Icit ~VTy {-# unpack #-} Closure
   | VU
+
+  | VBox Val
+  | VQuote Val
+
+  | VEff Val
+  | VReturn ~VTy Val
+  | VBind Name Val {-# unpack #-} Closure
+
+  | VUnit
+  | VTt
   deriving Show
 
 pattern VVar :: Lvl -> Val
-pattern VVar x = VRigid x []
+pattern VVar x = VRigid x SId
 
 pattern VMeta :: MetaVar -> Val
-pattern VMeta m = VFlex m []
+pattern VMeta m = VFlex m SId

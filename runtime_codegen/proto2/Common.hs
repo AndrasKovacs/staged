@@ -34,8 +34,6 @@ type Dbg = ()
 
 --------------------------------------------------------------------------------
 
-
-
 impossible :: Dbg => a
 impossible = error "impossible"
 

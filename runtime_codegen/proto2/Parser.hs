@@ -5,6 +5,7 @@ import Control.Applicative hiding (many, some)
 import Control.Monad
 import Data.Char
 import Data.Void
+import Data.Foldable
 import System.Exit
 import Text.Megaparsec
 
@@ -62,7 +63,7 @@ pSpine :: Parser Tm
 pSpine = do
   h <- pAtom
   args <- many pArg
-  pure $ foldl (\t (i, u) -> App t u i) h args
+  pure $ foldl' (\t (i, u) -> App t u i) h args
 
 pLamBinder :: Parser (Name, Either Name Icit, Maybe Tm)
 pLamBinder =
@@ -77,7 +78,7 @@ pLam = do
   xs <- some pLamBinder
   char '.'
   t <- pTm
-  pure $ foldr (\(x, i, ma) -> Lam x i ma) t xs
+  pure $ foldr' (\(x, i, ma) -> Lam x i ma) t xs
 
 pPiBinder :: Parser ([Name], Tm, Icit)
 pPiBinder =
@@ -90,7 +91,7 @@ pPi = do
   dom <- some pPiBinder
   pArrow
   cod <- pTm
-  pure $! foldr (\(xs, a, i) t -> foldr (\x -> Pi x i a) t xs) cod dom
+  pure $! foldr' (\(xs, a, i) t -> foldr' (\x -> Pi x i a) t xs) cod dom
 
 pFunOrSpine :: Parser Tm
 pFunOrSpine = do

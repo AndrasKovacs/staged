@@ -30,6 +30,7 @@ data Val
 
   -- runtime types and code
   | VEff Val
+  | VTopVar Lvl
   | VUnit
   | VBox Val
   | VU
@@ -42,6 +43,7 @@ data Val
   | VNew Val
   | VWrite Val Val
   | VRead Val
+  | VApp Val Val Icit
 
 
 lookupIx :: Env -> Ix -> Val
@@ -51,20 +53,29 @@ lookupIx e x = case (e, x) of
   _            -> impossible
 
 cRun :: Val -> IO Val
-cRun (VEffect eff) = eff
-cRun _             = impossible
+cRun = \case
+  VEffect eff -> eff
+  _           -> impossible
 
 cApp :: Val -> Val -> Val
-cApp (VLam _ _ t _) u = t u
-cApp _ _ = impossible
+cApp t u = case t of
+  VLam _ _ t _ -> t u
+  _            -> impossible
 
 cRead :: Val -> IO Val
-cRead (VRefVal r) = readIORef r
-cRead _           = impossible
+cRead = \case
+  VRefVal r -> readIORef r
+  _         -> impossible
 
 cWrite :: Val -> Val -> IO Val
-cWrite (VRefVal r) t = VTt <$ writeIORef r t
-cWrite _ _ = impossible
+cWrite t u = case t of
+  VRefVal r -> VTt <$ writeIORef r u
+  _         -> impossible
+
+cSplice :: Val -> Val
+cSplice = \case
+  VQuote t -> undefined
+  _        -> impossible
 
 -- pure closed evaluation
 ceval :: Env -> Tm -> Val
@@ -72,13 +83,13 @@ ceval e = \case
   Var x         -> lookupIx e x
   TopVar x      -> lookupIx e (lvl2Ix (envLen e) x)
   App t u _     -> cApp (ceval e t) (ceval e u)
-  Lam x i t     -> VLam x i (\u -> ceval (Def e u) t) undefined
+  Lam x i t     -> VLam x i (\u -> ceval (Def e u) t) (\l u -> oeval (Def e u) l 0 t)
   U             -> VU
   Pi x i a b    -> VPi x i (ceval e a) \l u -> oeval (Def e u) l 0 b
   Let x a t u   -> ceval (Def e (ceval e t)) u
   Box t         -> VBox (ceval e t)
-  Quote t       -> undefined -- switch to open eval
-  Splice t      -> undefined -- generate code
+  Quote t       -> VQuote (oeval e 0 0 t)
+  Splice t      -> undefined
   Unit          -> VUnit
   Tt            -> VTt
   Eff t         -> VEff (ceval e t)
@@ -106,20 +117,25 @@ cexec e = \case
   New t       -> VRefVal <$!> (newIORef $! ceval e t)
   Read t      -> cRead (ceval e t)
   Write t u   -> cWrite (ceval e t) (ceval e u)
-  Splice t    -> case ceval e t of
-                   VQuote t -> undefined -- generate code from "t" (NOTE: can be open code referring to top vars!)
-                   _        -> impossible
+  Splice t    -> cRun (cSplice (ceval e t))
   _           -> impossible
 
-
 oApp :: Lvl -> Val -> Val -> Icit -> Val
-oApp l (VLam _ _ _ t) u i = t l u
-oApp l (VNe x sp)     u i = VNe x (SApp sp u i)
-oApp _ _              _ i = impossible
-
+oApp l t u i = case t of
+  VLam _ _ _ t -> t l u
+  VNe x sp     -> VNe x (SApp sp u i)
+  _            -> impossible
 
 oQuote :: Val -> Val
-oQuote = undefined
+oQuote = \case
+  VNe x (SSplice sp) -> VNe x sp
+  t                  -> VQuote t
+
+oSplice :: Val -> Val
+oSplice = \case
+  VQuote t -> t
+  VNe x sp -> VNe x (SSplice sp)
+  _        -> impossible
 
 oeval :: Env -> Lvl -> Stage -> Tm -> Val
 oeval e l 0 = \case
@@ -127,8 +143,7 @@ oeval e l 0 = \case
   TopVar x  -> lookupIx e (lvl2Ix (envLen e) x)
 
   -- open lambdas can never become closed!
-  Lam x i t   -> VLam x i (\u -> impossible) (\l u -> oeval (Def e u) l 0 t)
-
+  Lam x i t     -> VLam x i (\u -> impossible) (\l u -> oeval (Def e u) l 0 t)
   App t u i     -> oApp l (oeval e l 0 t) (oeval e l 0 u) i
   U             -> VU
   Pi x i a b    -> VPi x i (oeval e l 0 a) \l u -> oeval (Def e u) l 0 b
@@ -154,19 +169,16 @@ oeval e l 0 = \case
   PostponedCheck{} -> impossible
 
 oeval e l s = \case
-  Var x     -> lookupIx e x
-  TopVar x  -> undefined
-
-  -- open lambdas can never become closed!
-  Lam x i t   -> VLam x i (\u -> impossible) (\l u -> oeval (Def e u) l s t)
-
-  App t u i     -> undefined
+  Var x         -> lookupIx e x
+  TopVar x      -> VTopVar x
+  Lam x i t     -> VLam x i (\u -> impossible) (\l u -> oeval (Def e u) l s t)
+  App t u i     -> VApp (oeval e l s t) (oeval e l s u) i
   U             -> VU
   Pi x i a b    -> VPi x i (oeval e l s a) \l u -> oeval (Def e u) l s b
-  Let x a t u   -> oeval (Def e (oeval e l s t)) l s u
+  Let x a t u   -> VLet x (oeval e l s a) (oeval e l s t) \l t -> oeval (Def e t) l s u
   Box t         -> VBox (oeval e l s t)
   Quote t       -> VQuote (oeval e l 1 t)
-  Splice t      -> undefined -- generate code
+  Splice t      -> oSplice (oeval e l s t)
   Unit          -> VUnit
   Tt            -> VTt
   Eff t         -> VEff (oeval e l s t)

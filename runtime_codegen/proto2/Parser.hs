@@ -47,14 +47,14 @@ isKeyword x =
 
 ident :: Parser Name
 ident = try $ do
-  x <- takeWhile1P Nothing isAlphaNum
+  x <- (:) <$> C.letterChar <*> takeWhileP Nothing (\c -> c == '\'' || isAlphaNum c)
   guard (not (isKeyword x))
   x <$ ws
 
 keyword :: String -> Parser ()
 keyword kw = do
   C.string kw
-  (takeWhile1P Nothing isAlphaNum *> empty) <|> ws
+  (satisfy (\c -> c == '\'' || isAlphaNum c) *> empty) <|> ws
 
 atom :: Parser Tm
 atom =

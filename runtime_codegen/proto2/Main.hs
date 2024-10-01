@@ -49,6 +49,7 @@ mainWith getOpt getRaw = do
     ["elab"] -> do
       (t, a) <- elab
       displayMetas
+      putStrLn (replicate 80 '-' ++ "\n")
       putStrLn $ showTm0 t
     _ -> putStrLn helpMsg
 

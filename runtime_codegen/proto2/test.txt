@@ -1,4 +1,36 @@
 
+-- do x ← return tt;
+-- do y ← return tt;
+-- do z ← return tt;
 
+-- let id : {A} → A → A = λ x. x;
+-- let id' : {A} → A → A = id;
+
+-- let majom : Eff ⊤ =
+--   do x ← return tt;
+--   let béka = U;
+--   do y ← return tt;
+--   do return tt;
+--   return x;
+
+do bunga ← return (λ (x : ⊤). x);
+
+do unga ← return (λ (x : ⊤). x);
+
+let majom0 : Eff ⊤ =
+  do x ← return tt;
+  let kek =
+    let bar = tt;
+    bar;
+  do x ← return tt;
+  return x;
+
+let majom : Eff ⊤ =
+  do x ← return tt;
+  let kek =
+    let bar = tt;
+    bar;
+  do x ← return tt;
+  return x;
 
 return tt

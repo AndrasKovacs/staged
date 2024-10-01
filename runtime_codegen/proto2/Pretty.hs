@@ -31,25 +31,29 @@ letp  = 0  :: Int -- let, lambda
 par :: Int -> Int -> ShowS -> ShowS
 par p p' = showParen (p' < p)
 
-prettyTm :: Int -> [Name] -> Tm -> ShowS
-prettyTm prec = go prec where
+-- Newline then indent the current indentation level
+newl :: Int -> ShowS
+newl i acc = '\n' : replicate i ' ' ++ acc
+
+prettyTm :: Int -> Int -> [Name] -> Tm -> ShowS
+prettyTm prec i = goTop prec i where
 
   bracket :: ShowS -> ShowS
   bracket ss = ('{':).ss.('}':)
 
-  piBind ns x Expl a = showParen True ((x++) . (" : "++) . go letp ns a)
-  piBind ns x Impl a = bracket        ((x++) . (" : "++) . go letp ns a)
+  piBind ns i x Expl a = showParen True ((x++) . (" : "++) . go letp i ns a)
+  piBind ns i x Impl a = bracket        ((x++) . (" : "++) . go letp i ns a)
 
   lamBind x Impl = bracket (x++)
   lamBind x Expl = (x++)
 
-  goPr :: Int -> [Name] -> [Name] -> Tm -> Pruning -> ShowS
-  goPr p topNs ns t pr = goPr' p ns pr (0 :: Int) where
-    goPr' p ns pr x = case (ns, pr) of
-      ([]      , []           ) -> go p topNs t
-      (ns :> n , pr :> Just i ) -> par p appp $ goPr' appp ns pr (x + 1) . (' ':)
-                                   . icit i bracket id (case n of "_" -> (("@"++show x)++); n -> (n++))
-      (ns :> n , pr :> Nothing) -> goPr' appp ns pr (x + 1)
+  goPr :: Int -> Int -> [Name] -> [Name] -> Tm -> Pruning -> ShowS
+  goPr p i topNs ns t pr = goPr' p i ns pr (0 :: Int) where
+    goPr' p i ns pr x = case (ns, pr) of
+      ([]      , []           )  -> go p i topNs t
+      (ns :> n , pr :> Just ic ) -> par p appp $ goPr' appp i ns pr (x + 1) . (' ':)
+                                   . icit ic bracket id (case n of "_" -> (("@"++show x)++); n -> (n++))
+      (ns :> n , pr :> Nothing) -> goPr' appp i ns pr (x + 1)
       _                         -> impossible
 
   goIx :: [Name] -> Ix -> ShowS
@@ -59,53 +63,71 @@ prettyTm prec = go prec where
     go (n:ns)   0 = (n++)
     go (n:ns)   x = go ns (x - 1)
 
-  goCheck :: Int -> [Name] -> CheckVar -> ShowS
-  goCheck p ns c = case lookupCheck c of
-    Unchecked cxt t a m -> go p ns (appPruning (Meta m) (pruning cxt))
-    Checked t           -> go p ns t
+  goCheck :: Int -> Int -> [Name] -> CheckVar -> ShowS
+  goCheck p i ns c = case lookupCheck c of
+    Unchecked cxt t a m -> go p i ns (appPruning (Meta m) (pruning cxt))
+    Checked t           -> go p i ns t
 
-  go :: Int -> [Name] -> Tm -> ShowS
-  go p ns = \case
+  go :: Int -> Int -> [Name] -> Tm -> ShowS
+  go p i ns = \case
     Var x                     -> goIx ns x
     TopVar x                  -> goIx ns (lvl2Ix (Lvl (length ns)) x)
 
-    App t u Expl              -> par p appp $ go appp ns t . (' ':) . go atomp ns u
-    App t u Impl              -> par p appp $ go appp ns t . (' ':) . bracket (go letp ns u)
+    App t u Expl              -> par p appp $ go appp i ns t . (' ':) . go atomp i ns u
+    App t u Impl              -> par p appp $ go appp i ns t . (' ':) . bracket (go letp i ns u)
 
-    Lam (fresh ns -> x) i t   -> par p letp $ ("λ "++) . lamBind x i . goLam (ns:>x) t where
+    Lam (fresh ns -> x) ic t  -> par p letp $ ("λ "++) . lamBind x ic . goLam (ns:>x) t where
                                    goLam ns (Lam (fresh ns -> x) i t) =
-                                     (' ':) . lamBind x i . goLam (ns:>x) t
+                                     (' ':) . lamBind x ic . goLam (ns:>x) t
                                    goLam ns t =
-                                     (". "++) . go letp ns t
+                                     (". "++) . go letp i ns t
 
     U                         -> ("U"++)
 
-    Pi "_" Expl a b           -> par p pip $ go appp ns a . (" → "++) . go pip (ns:>"_") b
+    Pi "_" Expl a b           -> par p pip $ go appp i ns a . (" → "++) . go pip i (ns:>"_") b
 
-    Pi (fresh ns -> x) i a b  -> par p pip $ piBind ns x i a . goPi (ns:>x) b where
-                                   goPi ns (Pi (fresh ns -> x) i a b)
-                                     | x /= "_" = piBind ns x i a . goPi (ns:>x) b
-                                   goPi ns b = (" → "++) . go pip ns b
+    Pi (fresh ns -> x) ic a b -> par p pip $ piBind ns i x ic a . goPi (ns:>x) b where
+                                   goPi ns (Pi (fresh ns -> x) ic a b)
+                                     | x /= "_" = piBind ns i x ic a . goPi (ns:>x) b
+                                   goPi ns b = (" → "++) . go pip i ns b
 
-    Let (fresh ns -> x) a t u -> par p letp $ ("let "++) . (x++) . (" : "++) . go letp ns a
-                                 . ("\n  = "++) . go letp ns t . (";\n\n"++) . go letp (ns:>x) u
+    Let (fresh ns -> x) a t u -> let i' = i + 2 in
+                                 par p letp $ ("let "++) . (x++) . (" : "++) . go letp i' ns a
+                                 . (" = "++). newl i' . go letp i' ns t . (";"++) . newl i . go letp i (ns:>x) u
 
     Meta m                    -> (("?"++show m)++)
-    AppPruning t pr           -> goPr p ns ns t pr
-    PostponedCheck c          -> goCheck p ns c
+    AppPruning t pr           -> goPr p i ns ns t pr
+    PostponedCheck c          -> goCheck p i ns c
 
-    Box t                     -> par p appp $ ('□':) . (' ':) . go atomp ns t
-    Quote t                   -> ('<':) . go letp ns t . ('>':)
-    Splice t                  -> ('~':) . go atomp ns t
+    Box t                     -> par p appp $ ('□':) . (' ':) . go atomp i ns t
+    Quote t                   -> ('<':) . go letp i ns t . ('>':)
+    Splice t                  -> ('~':) . go atomp i ns t
     Unit                      -> ('⊤':)
-    Tt                        -> ("Tt"++)
-    Eff t                     -> par p appp $ ("Eff "++) . go atomp ns t
-    Return t                  -> par p appp $ ("return "++) . go atomp ns t
-    Bind (fresh ns -> x) t u  -> par p letp $ ("do " ++) . (x++) . (" ← "++) . go letp ns t
-                                 . (";\n"++) . go letp (ns:>x) u
+    Tt                        -> ("tt"++)
+    Eff t                     -> par p appp $ ("Eff "++) . go atomp i ns t
+    Return t                  -> par p appp $ ("return "++) . go atomp i ns t
+    Bind "_" t u              -> let i' = i + 2 in
+                                 par p letp $ ("do " ++) .  go letp i' ns t
+                                 . (";"++) . newl i . go letp i (ns:>"_") u
+    Bind (fresh ns -> x) t u  -> let i' = i + 2 in
+                                 par p letp $ ("do " ++) . (x++) . (" ← "++) . go letp i' ns t
+                                 . (";"++) . newl i . go letp i (ns:>x) u
+
+  goTop :: Int -> Int -> [Name] -> Tm -> ShowS
+  goTop p i ns = \case
+    Bind "_" t u              -> let i' = i + 2 in
+                                 par p letp $ ("do " ++) .  go letp i' ns t
+                                 . (";\n\n"++) . goTop letp i (ns:>"_") u
+    Bind (fresh ns -> x) t u  -> let i' = i + 2 in
+                                 par p letp $ ("do " ++) . (x++) . (" ← "++) . go letp i' ns t
+                                 . (";\n\n"++) . goTop letp i (ns:>x) u
+    Let (fresh ns -> x) a t u -> let i' = i + 2 in
+                                 par p letp $ ("let "++) . (x++) . (" : "++) . go letp i ns a
+                                 . (" =\n  "++) . go letp i' ns t . (";\n\n"++) . goTop letp i (ns:>x) u
+    t                         -> go p i ns t
 
 showTm0 :: Tm -> String
-showTm0 t = prettyTm 0 [] t []
+showTm0 t = prettyTm 0 0 [] t []
 -- showTm0 = show
 
 displayMetas :: IO ()

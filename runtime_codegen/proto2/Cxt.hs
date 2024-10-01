@@ -22,26 +22,39 @@ showTm :: Cxt -> Tm -> String
 showTm cxt t = prettyTm 0 (names cxt) t []
 
 emptyCxt :: SourcePos -> Cxt
-emptyCxt = Cxt [] 0 LHere [] mempty
+emptyCxt = Cxt [] 0 LHere [] mempty mempty
 
 -- | Extend Cxt with a bound variable.
 bind :: Cxt -> Name -> VTy -> Cxt
-bind (Cxt env l ls pr ns pos) x ~a =
+bind (Cxt env l ls pr topns ns pos) x ~a =
   Cxt (env :> VVar l)
       (l + 1)
       (LBind ls x (quote l a))
       (pr :> Just Expl)
+      topns
       (M.insert x (l, a) ns)
+      pos
+
+-- | Extend Cxt with a bound variable.
+bindTop :: Cxt -> Name -> VTy -> Cxt
+bindTop (Cxt env l ls pr topns ns pos) x ~a =
+  Cxt (env :> VVar l)
+      (l + 1)
+      (LBind ls x (quote l a))
+      (pr :> Just Expl)
+      (M.insert x (l, a) topns)
+      ns
       pos
 
 -- | Insert a new binding. This is used when we insert a new implicit lambda in
 --   checking.
 newBinder :: Cxt -> Name -> VTy -> Cxt
-newBinder (Cxt env l ls pr ns pos) x ~a =
+newBinder (Cxt env l ls pr topns ns pos) x ~a =
   Cxt (env :> VVar l)
       (l + 1)
       (LBind ls x (quote l a))
       (pr :> Just Expl)
+      topns
       ns                        -- Unchanged! An inserted binder cannot be accessed from
       pos                       -- source syntax
 
@@ -49,14 +62,25 @@ newBinder (Cxt env l ls pr ns pos) x ~a =
 --   because when we elaborate let-definitions, we usually already have terms
 --   for the definition and its type.
 define :: Cxt -> Name -> Tm -> Val -> Ty -> VTy -> Cxt
-define (Cxt env l ls pr ns pos) x ~t ~vt ~a ~va  =
+define (Cxt env l ls pr topns ns pos) x ~t ~vt ~a ~va  =
   Cxt (env :> vt)
       (l + 1)
       (LDefine ls x a t)
       (pr :> Nothing)
+      topns
       (M.insert x (l, va) ns)
       pos
 
 -- | valToClosure : (Γ : Con) → Val (Γ, x : A) B → Closure Γ A B
 valToClosure :: Cxt -> Val -> Closure
 valToClosure cxt t = Closure (env cxt) (quote (lvl cxt + 1) t)
+
+defineTop :: Cxt -> Name -> Tm -> Val -> Ty -> VTy -> Cxt
+defineTop (Cxt env l ls pr topns ns pos) x ~t ~vt ~a ~va  =
+  Cxt (env :> vt)
+      (l + 1)
+      (LDefine ls x a t)
+      (pr :> Nothing)
+      (M.insert x (l, va) topns)
+      ns
+      pos

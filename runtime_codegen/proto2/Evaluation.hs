@@ -63,11 +63,12 @@ vSplice = \case
   _           -> impossible
 
 vBind :: Name -> Val -> Closure -> Val
-vBind x t u = VBind x t u               -- TODO: definitional monad laws with functional closures
+vBind = VBind               -- TODO: definitional monad laws with functional closures
 
 eval :: Dbg => Env -> Tm -> Val
 eval env = \case
   Var x            -> vVar env x
+  TopVar x         -> vVar env (lvl2Ix (Lvl (length env)) x)
   App t u i        -> vApp (eval env t) (eval env u) i
   Lam x i t        -> VLam x i (Closure env t)
   Pi x i a b       -> VPi x i (eval env a) (Closure env b)

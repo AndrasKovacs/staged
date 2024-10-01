@@ -1,6 +1,0 @@
-
-let id : {A} → A → A = λ x. x;
-
-let majom = id (λ (x : U). x);
-
-id

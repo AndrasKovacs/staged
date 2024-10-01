@@ -1,5 +1,5 @@
 
-module Elaboration (check, infer, checkEverything) where
+module Elaboration (check, infer, checkEverything, inferTop) where
 
 import Control.Exception
 import Control.Monad
@@ -447,11 +447,11 @@ check cxt t a = do
 
       Lam x i' <$> check (bind cxt x a') t (b' $$ VVar (lvl cxt))
 
-    -- If we're checking a variable with unknown type, with an implicit function,
+    -- If we're checking a local variable with unknown type, with an implicit function,
     -- we immediately unify types. This is a modest but useful approximation of
     -- polymorphic argument inference.
     (P.Var x, topA@(VPi _ Impl _ _))
-      | Just (x, force -> a@(VFlex _ _)) <- M.lookup x (srcNames cxt) -> do
+      | Just (x, force -> a@(VFlex _ _)) <- M.lookup x (localNames cxt) -> do
       unify (lvl cxt) a topA
       pure (Var (lvl2Ix (lvl cxt) x))
 
@@ -512,9 +512,11 @@ infer cxt t = do
   res <- case t of
 
     P.Var x -> do
-      case M.lookup x (srcNames cxt) of
+      case M.lookup x (localNames cxt) of
         Just (x', a) -> pure (Var (lvl2Ix (lvl cxt) x'), a)
-        Nothing      -> throwIO $ Error cxt $ NameNotInScope x
+        Nothing      -> case M.lookup x (topNames cxt) of
+          Just (x', a) -> pure (TopVar x', a)
+          Nothing      -> throwIO $ Error cxt $ NameNotInScope x
 
     P.Lam x (Right i) ma t -> do
       a  <- eval (env cxt) <$> case ma of
@@ -625,3 +627,37 @@ infer cxt t = do
 
   debug ["inferred", showTm cxt (fst res), showVal cxt (snd res)]
   pure res
+
+inferTop :: Cxt -> P.Tm -> IO (Tm, VTy)
+inferTop cxt = \case
+  P.SrcPos p t ->
+    inferTop (cxt {pos = p}) t
+  P.Let x a t u -> do
+    a <- check cxt a VU
+    let va = eval (env cxt) a
+    t <- check cxt t va
+    let ~vt = eval (env cxt) t
+    (u, uty) <- inferTop (defineTop cxt x t vt a va) u
+    pure (Let x a t u, uty)
+  P.Bind x t u -> do
+    (t, a) <- do
+      (t, tty) <- infer cxt t
+      a <- ensureEff cxt tty
+      pure (t, a)
+    (u, uty) <- inferTop (bindTop cxt x a) u
+    b <- ensureEff cxt uty
+    pure (Bind x t u, VEff b)
+  P.ConstBind t u -> do
+    (t, a) <- do
+      (t, tty) <- infer cxt t
+      a <- ensureEff cxt tty
+      pure (t, a)
+    (u, uty) <- inferTop cxt u
+    b <- ensureEff cxt uty
+    pure (Bind "_" t u, VEff b)
+  t -> do
+    (t, tty) <- infer cxt t
+    a <- ensureEff cxt tty
+    pure (t, VEff a)
+
+--------------------------------------------------------------------------------

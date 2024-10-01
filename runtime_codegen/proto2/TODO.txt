@@ -1,2 +1,3 @@
 
 - Definitional monad laws? (Requires functional closure for easy impl)
+- Support quote/splice in unif

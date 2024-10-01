@@ -95,9 +95,6 @@ force = \case
   VFlex m sp | Solved t _ <- lookupMeta m -> force (vAppSp t sp)
   t -> t
 
-lvl2Ix :: Lvl -> Lvl -> Ix
-lvl2Ix (Lvl l) (Lvl x) = Ix (l - x - 1)
-
 quoteSp :: Lvl -> Tm -> Spine -> Tm
 quoteSp l t = \case
   SId          -> t

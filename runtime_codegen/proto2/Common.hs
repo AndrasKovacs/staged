@@ -7,8 +7,10 @@ module Common (
   , unPos
   , module Debug.Trace
   , module Data.Coerce
+  , module Control.Monad
   , initialPos) where
 
+import Control.Monad
 import Data.Coerce
 import Data.Kind
 import Data.List
@@ -66,6 +68,9 @@ newtype MetaVar = MetaVar {unMetaVar :: Int} deriving (Eq, Show, Num) via Int
 
 -- | Identifier of a delayed checking problem.
 newtype CheckVar = CheckVar {unCheckVar :: Int} deriving (Eq, Show, Num, Ord) via Int
+
+lvl2Ix :: Lvl -> Lvl -> Ix
+lvl2Ix (Lvl l) (Lvl x) = Ix (l - x - 1)
 
 
 -- Snoc lists

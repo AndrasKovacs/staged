@@ -12,9 +12,12 @@ let nil : {A} → List A =
 let cons : {A} → A → List A → List A =
   λ a as L c n. c a (as L c n);
 
-do x ← new (nil {⊤});
+do ref ← new (nil {⊤});
 
-do write x (cons tt nil);
+do write ref (cons tt nil);
+
+let id : {A} → □ A → □ A =
+  λ x. x;
 
 -- let majom0 : Eff ⊤ =
 --   do x ← return tt;

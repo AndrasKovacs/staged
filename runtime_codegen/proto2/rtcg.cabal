@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.37.0.
+-- This file has been generated from package.yaml by hpack version 0.36.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -23,17 +23,20 @@ executable rtcg
       Elaboration
       Errors
       Evaluation
+      Interpreter
       Metacontext
       Parser
       Presyntax
       Pretty
       Syntax
       Value
+      Zonk
       Paths_rtcg
   hs-source-dirs:
       ./
   default-extensions:
       BangPatterns
+      BlockArguments
       ConstraintKinds
       DeriveAnyClass
       DerivingVia

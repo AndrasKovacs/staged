@@ -85,6 +85,7 @@ eval env = \case
   Eff t            -> VEff (eval env t)
   Return t         -> VReturn (eval env t)
   Bind x t u       -> vBind x (eval env t) (Closure env u)
+  ConstBind t u    -> VConstBind (eval env t) (eval env u)
   Ref t            -> VRef (eval env t)
   New t            -> VNew (eval env t)
   Read t           -> VRead (eval env t)
@@ -103,22 +104,23 @@ quoteSp l t = \case
 
 quote :: Dbg => Lvl -> Val -> Tm
 quote l t = case force t of
-  VFlex m sp  -> quoteSp l (Meta m) sp
-  VRigid x sp -> quoteSp l (Var (lvl2Ix l x)) sp
-  VLam x i t  -> Lam x i (quote (l + 1) (t $$ VVar l))
-  VPi x i a b -> Pi x i (quote l a) (quote (l + 1) (b $$ VVar l))
-  VU          -> U
-  VBox t      -> Box (quote l t)
-  VQuote t    -> Quote (quote l t)
-  VEff t      -> Eff (quote l t)
-  VReturn t   -> Return (quote l t)
-  VBind x t u -> Bind x (quote l t) (quote (l + 1) (u $$ VVar l))
-  VUnit       -> Unit
-  VTt         -> Tt
-  VRef t      -> Ref (quote l t)
-  VNew t      -> New (quote l t)
-  VRead t     -> Read (quote l t)
-  VWrite t u  -> Write (quote l t) (quote l u)
+  VFlex m sp     -> quoteSp l (Meta m) sp
+  VRigid x sp    -> quoteSp l (Var (lvl2Ix l x)) sp
+  VLam x i t     -> Lam x i (quote (l + 1) (t $$ VVar l))
+  VPi x i a b    -> Pi x i (quote l a) (quote (l + 1) (b $$ VVar l))
+  VU             -> U
+  VBox t         -> Box (quote l t)
+  VQuote t       -> Quote (quote l t)
+  VEff t         -> Eff (quote l t)
+  VReturn t      -> Return (quote l t)
+  VBind x t u    -> Bind x (quote l t) (quote (l + 1) (u $$ VVar l))
+  VConstBind t u -> ConstBind (quote l t) (quote l u)
+  VUnit          -> Unit
+  VTt            -> Tt
+  VRef t         -> Ref (quote l t)
+  VNew t         -> New (quote l t)
+  VRead t        -> Read (quote l t)
+  VWrite t u     -> Write (quote l t) (quote l u)
 
 nf :: Env -> Tm -> Tm
 nf env t = quote (Lvl (length env)) (eval env t)

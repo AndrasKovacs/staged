@@ -114,7 +114,7 @@ prettyTm prec i = goTop prec i where
     Tt                        -> ("tt"++)
     Eff t                     -> par p appp $ ("Eff "++) . go atomp i ns t
     Return t                  -> par p appp $ ("return "++) . go atomp i ns t
-    Bind "_" t u              -> let i' = i + 2 in
+    ConstBind t u             -> let i' = i + 2 in
                                  par p letp $ ("do " ++) .  go letp i' ns t
                                  . (";"++) . newl i . go letp i ns u
     Bind (fresh ns -> x) t u  -> let i' = i + 2 in
@@ -128,7 +128,7 @@ prettyTm prec i = goTop prec i where
 
   goTop :: Int -> Int -> [Name] -> Tm -> ShowS
   goTop p i ns = \case
-    Bind "_" t u              -> let i' = i + 2 in
+    ConstBind t u             -> let i' = i + 2 in
                                  par p letp $ ("do " ++) .  go letp i' ns t
                                  . (";\n\n"++) . goTop letp i ns u
     Bind (fresh ns -> x) t u  -> let i' = i + 2 in

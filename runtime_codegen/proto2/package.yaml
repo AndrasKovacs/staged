@@ -12,6 +12,7 @@ description:         "Dependently typed language supporting runtime code generat
 
 default-extensions:
 - BangPatterns
+- BlockArguments
 - ConstraintKinds
 - DeriveAnyClass
 - DerivingVia

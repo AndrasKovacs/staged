@@ -67,6 +67,7 @@ data Tm
   | Eff Tm
   | Return Tm
   | Bind Name Tm Tm
+  | ConstBind Tm Tm
 
   | Ref Tm
   | New Tm

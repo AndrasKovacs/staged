@@ -24,6 +24,7 @@ data Val
   | VEff Val
   | VReturn Val
   | VBind Name Val {-# unpack #-} Closure
+  | VConstBind Val Val
 
   | VUnit
   | VTt

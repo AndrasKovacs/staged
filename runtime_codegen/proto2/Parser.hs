@@ -44,6 +44,7 @@ isKeyword x =
      x == "let" || x == "λ" || x == "U"
   || x == "return" || x == "do" || x == "Code"
   || x == "Eff" || x == "Top" || x == "tt"
+  || x == "Ref" || x == "new" || x == "read" || x == "write"
 
 ident :: Parser Name
 ident = try $ do
@@ -84,6 +85,14 @@ spine =
   (Eff <$> (keyword "Eff" *> splice))
   <|>
   (Return <$> (keyword "return" *> splice))
+  <|>
+  (Ref <$> (keyword "Ref" *> splice))
+  <|>
+  (New <$> (keyword "new" *> splice))
+  <|>
+  (Write <$> (keyword "write" *> splice) <*> splice)
+  <|>
+  (Read <$> (keyword "read" *> splice))
   <|>
   do h <- atom
      args <- many arg

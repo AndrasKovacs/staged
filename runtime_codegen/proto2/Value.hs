@@ -27,6 +27,11 @@ data Val
 
   | VUnit
   | VTt
+
+  | VRef Val
+  | VNew Val
+  | VWrite Val Val
+  | VRead Val
   deriving Show
 
 -- | Count number of applications in spine

@@ -85,6 +85,10 @@ eval env = \case
   Eff t            -> VEff (eval env t)
   Return t         -> VReturn (eval env t)
   Bind x t u       -> vBind x (eval env t) (Closure env u)
+  Ref t            -> VRef (eval env t)
+  New t            -> VNew (eval env t)
+  Read t           -> VRead (eval env t)
+  Write t u        -> VWrite (eval env t) (eval env u)
 
 force :: Val -> Val
 force = \case
@@ -114,6 +118,10 @@ quote l t = case force t of
   VBind x t u -> Bind x (quote l t) (quote (l + 1) (u $$ VVar l))
   VUnit       -> Unit
   VTt         -> Tt
+  VRef t      -> Ref (quote l t)
+  VNew t      -> New (quote l t)
+  VRead t     -> Read (quote l t)
+  VWrite t u  -> Write (quote l t) (quote l u)
 
 nf :: Env -> Tm -> Tm
 nf env t = quote (Lvl (length env)) (eval env t)

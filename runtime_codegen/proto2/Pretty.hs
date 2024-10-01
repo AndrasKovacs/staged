@@ -35,6 +35,12 @@ par p p' = showParen (p' < p)
 newl :: Int -> ShowS
 newl i acc = '\n' : replicate i ' ' ++ acc
 
+isBindLet :: Tm -> Bool
+isBindLet = \case
+  Bind{} -> True
+  Let{}  -> True
+  _      -> False
+
 prettyTm :: Int -> Int -> [Name] -> Tm -> ShowS
 prettyTm prec i = goTop prec i where
 
@@ -77,8 +83,10 @@ prettyTm prec i = goTop prec i where
     App t u Impl              -> par p appp $ go appp i ns t . (' ':) . bracket (go letp i ns u)
 
     Lam (fresh ns -> x) ic t  -> par p letp $ ("λ "++) . lamBind x ic . goLam (ns:>x) t where
-                                   goLam ns (Lam (fresh ns -> x) i t) =
+                                   goLam ns (Lam (fresh ns -> x) ic t) =
                                      (' ':) . lamBind x ic . goLam (ns:>x) t
+                                   goLam ns t | isBindLet t =
+                                     (". "++) . newl (i + 2) . go letp (i + 2) ns t
                                    goLam ns t =
                                      (". "++) . go letp i ns t
 
@@ -108,16 +116,21 @@ prettyTm prec i = goTop prec i where
     Return t                  -> par p appp $ ("return "++) . go atomp i ns t
     Bind "_" t u              -> let i' = i + 2 in
                                  par p letp $ ("do " ++) .  go letp i' ns t
-                                 . (";"++) . newl i . go letp i (ns:>"_") u
+                                 . (";"++) . newl i . go letp i ns u
     Bind (fresh ns -> x) t u  -> let i' = i + 2 in
                                  par p letp $ ("do " ++) . (x++) . (" ← "++) . go letp i' ns t
                                  . (";"++) . newl i . go letp i (ns:>x) u
+
+    Ref t                     -> par p appp $ ("Ref "++) . go atomp i ns t
+    New t                     -> par p appp $ ("new "++) . go atomp i ns t
+    Read t                    -> par p appp $ ("read "++) . go atomp i ns t
+    Write t u                 -> par p appp $ ("write "++) . go atomp i ns t . (' ':) . go atomp i ns u
 
   goTop :: Int -> Int -> [Name] -> Tm -> ShowS
   goTop p i ns = \case
     Bind "_" t u              -> let i' = i + 2 in
                                  par p letp $ ("do " ++) .  go letp i' ns t
-                                 . (";\n\n"++) . goTop letp i (ns:>"_") u
+                                 . (";\n\n"++) . goTop letp i ns u
     Bind (fresh ns -> x) t u  -> let i' = i + 2 in
                                  par p letp $ ("do " ++) . (x++) . (" ← "++) . go letp i' ns t
                                  . (";\n\n"++) . goTop letp i (ns:>x) u

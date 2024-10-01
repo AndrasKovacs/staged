@@ -5,6 +5,7 @@ module Common (
   , SourcePos(..)
   , Pos
   , unPos
+  , module Debug.Trace
   , module Data.Coerce
   , initialPos) where
 

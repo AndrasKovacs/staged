@@ -1,36 +1,36 @@
 
--- do x ← return tt;
--- do y ← return tt;
--- do z ← return tt;
+let modify : {A} → Ref A → (A → A) → Eff ⊤ =
+  λ r f. do a ← read r;
+         write r (f a);
 
--- let id : {A} → A → A = λ x. x;
--- let id' : {A} → A → A = id;
+let List : U → U =
+  λ A. (L : U) → (A → L → L) → L → L;
+
+let nil : {A} → List A =
+  λ L c n. n;
+
+let cons : {A} → A → List A → List A =
+  λ a as L c n. c a (as L c n);
+
+do x ← new (nil {⊤});
+
+do write x (cons tt nil);
+
+-- let majom0 : Eff ⊤ =
+--   do x ← return tt;
+--   let kek =
+--     let bar =
+--       tt;
+--     bar;
+--   do x' ← return tt;
+--   return x';
 
 -- let majom : Eff ⊤ =
 --   do x ← return tt;
---   let béka = U;
---   do y ← return tt;
---   do return tt;
---   return x;
+--   let kek =
+--     let bar =
+--       tt;
+--     bar;
+--   return kek;
 
-do bunga ← return (λ (x : ⊤). x);
-
-do unga ← return (λ (x : ⊤). x);
-
-let majom0 : Eff ⊤ =
-  do x ← return tt;
-  let kek =
-    let bar = tt;
-    bar;
-  do x ← return tt;
-  return x;
-
-let majom : Eff ⊤ =
-  do x ← return tt;
-  let kek =
-    let bar = tt;
-    bar;
-  do x ← return tt;
-  return x;
-
-return tt
+return (cons tt (cons tt (cons tt nil)))

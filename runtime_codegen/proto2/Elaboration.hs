@@ -242,6 +242,11 @@ psubst psub t = case force t of
   VUnit       -> pure Unit
   VTt         -> pure Tt
 
+  VRef t      -> Ref <$> psubst psub t
+  VNew t      -> New <$> psubst psub t
+  VWrite t u  -> Write <$> psubst psub t <*> psubst psub u
+  VRead t     -> Read <$> psubst psub t
+
 -- | Wrap a term in Lvl number of lambdas. We get the domain info from the
 --   VTy argument.
 lams :: Dbg => Lvl -> VTy -> Tm -> Tm
@@ -347,6 +352,11 @@ unify l t u = do
     (VQuote t   , VQuote t'      ) -> unify l t t'
     (VReturn t  , VReturn t'     ) -> unify l t t'
     (VBind _ t u, VBind _ t' u'  ) -> unify l t t' >> unify (l + 1) (u $$ VVar l) (u' $$ VVar l)
+    (VRef t     , VRef t'        ) -> unify l t t'
+    (VRead t    , VRead t'       ) -> unify l t t'
+    (VWrite t u , VWrite t' u'   ) -> unify l t t' >> unify l u u'
+    (VNew t     , VNew t'        ) -> unify l t t'
+
     (VRigid x sp, VRigid x' sp'  ) | x == x' -> unifySp l sp sp'
     (VFlex m sp , VFlex m' sp'   ) | m == m' -> intersect l m sp sp'
     (VFlex m sp , VFlex m' sp'   )           -> flexFlex l m sp m' sp'
@@ -426,6 +436,15 @@ ensureBox cxt a = case force a of
     unifyCatch cxt (VBox res) a ExpectedInferred
     pure res
 
+ensureRef :: Cxt -> VTy -> IO VTy
+ensureRef cxt a = case force a of
+  VRef a ->
+    pure a
+  a -> do
+    res <- eval (env cxt) <$> freshMeta cxt VU
+    unifyCatch cxt (VRef res) a ExpectedInferred
+    pure res
+
 check :: Dbg => Cxt -> P.Tm -> VTy -> IO Tm
 check cxt (P.SrcPos pos t) a =
   -- we handle the SrcPos case here, because we do not want to
@@ -490,6 +509,9 @@ check cxt t a = do
 
     (P.Quote t, VBox a) -> do
       Quote <$> check cxt t a
+
+    (P.New t, VEff (force -> VRef a)) ->
+      New <$> check cxt t a
 
     (P.Hole, a) ->
       freshMeta cxt a
@@ -624,6 +646,25 @@ infer cxt t = do
 
     P.Tt -> do
       pure (Tt, VUnit)
+
+    P.Ref t -> do
+      t <- check cxt t VU
+      pure (Ref t, VU)
+
+    P.New t -> do
+      (t, tty) <- infer cxt t
+      pure (New t, VEff (VRef tty))
+
+    P.Write t u -> do
+      (t, tty) <- infer cxt t
+      a <- ensureRef cxt tty
+      u <- check cxt u a
+      pure (Write t u, VEff VUnit)
+
+    P.Read t -> do
+      (t, tty) <- infer cxt t
+      a <- ensureRef cxt tty
+      pure (Read t, VEff a)
 
   debug ["inferred", showTm cxt (fst res), showVal cxt (snd res)]
   pure res

@@ -25,6 +25,11 @@ data Tm
   | Unit                                      -- ⊤, Top
   | Tt                                        -- tt
 
+  | Ref Tm                                    -- Ref t
+  | New Tm                                    -- new t
+  | Write Tm Tm                               -- write t u
+  | Read Tm                                   -- read t
+
   | Hole                                      -- _
   deriving Show
 
@@ -48,3 +53,7 @@ stripPos = \case
   ConstBind t u -> ConstBind (stripPos t) (stripPos u)
   Unit          -> Unit
   Tt            -> Tt
+  Ref t         -> Ref (stripPos t)
+  New t         -> New (stripPos t)
+  Write t u     -> Write (stripPos t) (stripPos u)
+  Read  t       -> Read (stripPos t)

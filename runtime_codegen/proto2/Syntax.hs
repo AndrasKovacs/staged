@@ -67,6 +67,11 @@ data Tm
   | Eff Tm
   | Return Tm
   | Bind Name Tm Tm
+
+  | Ref Tm
+  | New Tm
+  | Write Tm Tm
+  | Read Tm
   deriving Show
 
 -- | Unfold `AppPruning` to an iterated application to vars. This applies a term to all de Bruijn indices

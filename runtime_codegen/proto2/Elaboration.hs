@@ -4,6 +4,7 @@ module Elaboration (check, infer, checkEverything) where
 import Control.Exception
 import Control.Monad
 import Data.IORef
+import Data.Maybe
 
 import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
@@ -19,6 +20,10 @@ import Syntax
 import Value
 
 import qualified Presyntax as P
+
+{-
+TODO: handle quote/splice in unification & inversion
+-}
 
 -- Postponed checking
 --------------------------------------------------------------------------------
@@ -85,34 +90,67 @@ checkEverything = go 0 where
 --------------------------------------------------------------------------------
 
 -- | A partial renaming from Γ to Δ.
-data PartialRenaming = PRen {
+data PartialSub = PSub {
     occ :: Maybe MetaVar   -- ^ Optional occurs check.
   , dom :: Lvl             -- ^ Size of Γ.
   , cod :: Lvl             -- ^ Size of Δ.
-  , ren :: IM.IntMap Lvl}  -- ^ Mapping from Δ vars to Γ vars.
+  , sub :: IM.IntMap Val}  -- ^ Mapping from Δ vars to Γ vars.
 
--- | @lift : (σ : PRen Γ Δ) → PRen (Γ, x : A[σ]) (Δ, x : A)@
-lift :: PartialRenaming -> PartialRenaming
-lift (PRen occ dom cod ren) = PRen occ (dom + 1) (cod + 1) (IM.insert (unLvl cod) dom ren)
+-- | @lift : (σ : PSub Γ Δ) → PSub (Γ, x : A[σ]) (Δ, x : A)@
+lift :: PartialSub -> PartialSub
+lift (PSub occ dom cod sub) = PSub occ (dom + 1) (cod + 1) (IM.insert (unLvl cod) (VVar dom) sub)
 
--- | @skip : PRen Γ Δ → PRen Γ (Δ, x : A)@
-skip :: PartialRenaming -> PartialRenaming
-skip (PRen occ dom cod ren) = PRen occ dom (cod + 1) ren
+-- | @skip : PSub Γ Δ → PSub Γ (Δ, x : A)@
+skip :: PartialSub -> PartialSub
+skip (PSub occ dom cod sub) = PSub occ dom (cod + 1) sub
 
--- | @invert : (Γ : Cxt) → (spine : Sub Δ Γ) → PRen Γ Δ@
+-- | Eta expand an unsolved meta, return the solution value. This removes
+--   splices from spines of the meta.
+etaExpandMeta :: MetaVar -> IO Val
+etaExpandMeta m = do
+  (!_, !a) <- readUnsolved m
+
+  let go :: Cxt -> VTy -> IO Tm
+      go cxt a = case force a of
+        VPi x i a b -> Lam x i <$> go (bind cxt x a) (b $$ VVar (lvl cxt))
+        VBox a      -> Quote <$> go cxt a
+        a           -> freshMeta cxt a
+
+  t <- go (emptyCxt (initialPos "")) a
+  let val = eval [] t
+  modifyIORef' mcxt $ IM.insert (coerce m) (Solved val a)
+  pure val
+
+-- | Eta-expand splices in the spine, if possible.
+expandVFlex :: MetaVar -> Spine -> IO (MetaVar, Spine)
+expandVFlex m sp = do
+
+  let hasSplice SId           = False
+      hasSplice (SApp sp _ _) = hasSplice sp
+      hasSplice SSplice{}     = True
+
+  if hasSplice sp then do
+    m          <- etaExpandMeta m
+    VFlex m sp <- pure $! vAppSp m sp
+    pure (m, sp)
+  else do
+    pure (m, sp)
+
+-- | @invert : (Γ : Cxt) → (spine : Sub Δ Γ) → PSub Γ Δ@
 --   Optionally returns a pruning of nonlinear spine entries, if there's any.
-invert :: Lvl -> Spine -> IO (PartialRenaming, Maybe Pruning)
+invert :: Lvl -> Spine -> IO (PartialSub, Maybe Pruning)
 invert gamma sp = do
-  let go :: Spine -> IO (Lvl, IM.IntMap Lvl, IS.IntSet, [(Lvl, Icit)])
-      go []                                 = pure (0, mempty, mempty, [])
-      go (sp :> (force -> VVar (Lvl x), i)) = do
-        (dom, ren, nlvars, fsp) <- go sp
-        case IM.member x ren || IS.member x nlvars of
-          True  -> pure (dom + 1, IM.delete x ren,     IS.insert x nlvars, fsp :> (Lvl x, i))
-          False -> pure (dom + 1, IM.insert x dom ren, nlvars,             fsp :> (Lvl x, i))
-      go _                                  = throwIO UnifyException
+  let go :: Spine -> IO (Lvl, IM.IntMap Val, IS.IntSet, [(Lvl, Icit)])
+      go SId                                = pure (0, mempty, mempty, [])
+      go (SApp sp (force -> VVar (Lvl x)) i) = do
+        (!dom, !sub, !nlvars, !fsp) <- go sp
+        case IM.member x sub || IS.member x nlvars of
+          True  -> pure $! (,,,) $$! (dom + 1) $$! (IM.delete x sub)            $$! (IS.insert x nlvars) $$! (fsp :> (Lvl x, i))
+          False -> pure $! (,,,) $$! (dom + 1) $$! (IM.insert x (VVar dom) sub) $$! nlvars               $$! (fsp :> (Lvl x, i))
+      go SApp{}    = throwIO UnifyException
+      go SSplice{} = impossible
 
-  (dom, ren, nlvars, fsp) <- go sp
+  (!dom, !sub, !nlvars, !fsp) <- go sp
 
   let mask :: [(Lvl, Icit)] -> Pruning
       mask []                  = []
@@ -120,85 +158,89 @@ invert gamma sp = do
         | IS.member x nlvars   = Nothing : mask fsp
         | otherwise            = Just i  : mask fsp
 
-  pure (PRen Nothing dom gamma ren, mask fsp <$ guard (not $ IS.null nlvars))
+  pure (PSub Nothing dom gamma sub, mask fsp <$ guard (not $ IS.null nlvars))
 
 -- | Remove some arguments from a closed iterated Pi type.
 pruneTy :: Dbg => RevPruning -> VTy -> IO Ty
-pruneTy (RevPruning pr) a = go pr (PRen Nothing 0 0 mempty) a where
-  go pr pren a = case (pr, force a) of
-    ([]          , a          ) -> rename pren a
-    (Just{}  : pr, VPi x i a b) -> Pi x i <$> rename pren a
-                                          <*> go pr (lift pren) (b $$ VVar (cod pren))
-    (Nothing : pr, VPi x i a b) -> go pr (skip pren) (b $$ VVar (cod pren))
+pruneTy (RevPruning pr) a = go pr (PSub Nothing 0 0 mempty) a where
+  go pr psub a = case (pr, force a) of
+    ([]          , a          ) -> psubst psub a
+    (Just{}  : pr, VPi x i a b) -> Pi x i <$> psubst psub a
+                                          <*> go pr (lift psub) (b $$ VVar (cod psub))
+    (Nothing : pr, VPi x i a b) -> go pr (skip psub) (b $$ VVar (cod psub))
     _                           -> impossible
 
--- | Prune arguments from a meta, return new meta + pruned type.
-pruneMeta :: Dbg => Pruning -> MetaVar -> IO MetaVar
+-- | Prune arguments from a meta, return pruned value.
+pruneMeta :: Dbg => Pruning -> MetaVar -> IO Val
 pruneMeta pruning m = do
-
-  (bs, mty) <- readUnsolved m
-
+  (!bs, !mty) <- readUnsolved m
   prunedty <- eval [] <$> pruneTy (revPruning pruning) mty
   m' <- newRawMeta bs prunedty
   let solution = eval [] $ lams (Lvl $ length pruning) mty $ AppPruning (Meta m') pruning
   writeMeta m (Solved solution mty)
-  pure m'
+  pure solution
 
-data SpinePruneStatus
-  = OKRenaming    -- ^ Valid spine which is a renaming
-  | OKNonRenaming -- ^ Valid spine but not a renaming (has a non-var entry)
-  | NeedsPruning  -- ^ A spine which is a renaming and has out-of-scope var entries
+-- | Eta-expand and then prune spine, both to the extent that it's possible.
+pruneVFlex :: PartialSub -> MetaVar -> Spine -> IO (MetaVar, Spine)
+pruneVFlex psub m sp = do
 
--- | Prune illegal var occurrences from a meta + spine.
---   Returns: renamed + pruned term.
-pruneVFlex :: Dbg => PartialRenaming -> MetaVar -> Spine -> IO Tm
-pruneVFlex pren m sp = do
+  -- eta-expand splices if possible
+  (!m, !sp) <- expandVFlex m sp
 
-  (sp :: [(Maybe Tm, Icit)], status :: SpinePruneStatus) <- let
-    go []             = pure ([], OKRenaming)
-    go (sp :> (t, i)) = do
-      (sp, status) <- go sp
-      case force t of
-        VVar x -> case (IM.lookup (coerce x) (ren pren), status) of
-                    -- in-scope variable
-                    (Just x , _            ) -> pure ((Just (Var (lvl2Ix (dom pren) x)), i):sp, status)
-                    -- out-of-scope variable
-                    (Nothing, OKNonRenaming) -> throwIO UnifyException -- we can only prune renamings
-                    (Nothing, _            ) -> pure ((Nothing, i):sp, NeedsPruning) -- mark var as to-be-pruned
-        t      -> case status of
-                    -- we can only prune renamings
-                    NeedsPruning -> throwIO UnifyException
-                    -- rename spine entry as usual
-                    _            -> do {t <- rename pren t; pure ((Just t, i):sp, OKNonRenaming)}
-    in go sp
+  let pruning :: Spine -> Maybe Pruning
+      pruning SId           = Just []
+      pruning (SApp sp t i) = do
+        pr <- pruning sp
 
-  m' <- case status of
-    OKRenaming    -> do {readUnsolved m; pure m}
-    OKNonRenaming -> do {readUnsolved m; pure m}
-    NeedsPruning  -> pruneMeta (map (\(mt, i) -> i <$ mt) sp) m
+        let varCase x = case IM.lookup (coerce x) (sub psub) of
+              Just{}   -> pure (pr :> Just i )
+              Nothing  -> pure (pr :> Nothing)
 
-  let t = foldr (\(mu, i) t -> maybe t (\u -> App t u i) mu) (Meta m') sp
-  pure t
+        case force t of
+          VVar x                 -> varCase x
+          VRigid x (SSplice SId) -> varCase x
+          VQuote (VVar x)        -> varCase x
+          _                      -> Nothing
 
-renameSp :: Dbg => PartialRenaming -> Tm -> Spine -> IO Tm
-renameSp pren t = \case
-  []             -> pure t
-  (sp :> (u, i)) -> App <$> renameSp pren t sp <*> rename pren u <*> pure i
+      pruning SSplice{} = impossible
 
-rename :: Dbg => PartialRenaming -> Val -> IO Tm
-rename pren t = case force t of
+  case pruning sp of
+    Just pr | any isNothing pr -> do
+      m          <- pruneMeta pr m
+      VFlex m sp <- pure $! vAppSp m sp
+      pure (m, sp)
+    _ ->
+      pure (m, sp)
 
-  VFlex m' sp -> case occ pren of
+psubstSp :: Dbg => PartialSub -> Tm -> Spine -> IO Tm
+psubstSp pren t = \case
+  SId            -> pure t
+  SApp sp u i    -> App <$> psubstSp pren t sp <*> psubst pren u <*> pure i
+  SSplice sp     -> Splice <$> psubstSp pren t sp
+
+psubst :: Dbg => PartialSub -> Val -> IO Tm
+psubst psub t = case force t of
+
+  VFlex m' sp -> case occ psub of
     Just m | m == m' -> throwIO UnifyException -- occurs check
-    _                -> pruneVFlex pren m' sp
+    _                -> do (!m', !sp) <- pruneVFlex psub m' sp
+                           psubstSp psub (Meta m') sp
 
-  VRigid (Lvl x) sp -> case IM.lookup x (ren pren) of
+  VRigid (Lvl x) sp -> case IM.lookup x (sub psub) of
     Nothing -> throwIO UnifyException  -- scope error ("escaping variable" error)
-    Just x' -> renameSp pren (Var $ lvl2Ix (dom pren) x') sp
+    Just v  -> psubstSp psub (quote (dom psub) v) sp
 
-  VLam x i t  -> Lam x i <$> rename (lift pren) (t $$ VVar (cod pren))
-  VPi x i a b -> Pi x i <$> rename pren a <*> rename (lift pren) (b $$ VVar (cod pren))
+  VLam x i t  -> Lam x i <$> psubst (lift psub) (t $$ VVar (cod psub))
+  VPi x i a b -> Pi x i <$> psubst psub a <*> psubst (lift psub) (b $$ VVar (cod psub))
   VU          -> pure U
+
+  VBox t      -> Box <$> psubst psub t
+  VQuote t    -> Quote <$> psubst psub t
+  VEff t      -> Eff <$> psubst psub t
+  VReturn t   -> Return <$> psubst psub t
+  VBind x t u -> Bind x <$> psubst psub t <*> psubst (lift psub) (u $$ VVar (cod psub))
+  VUnit       -> pure Unit
+  VTt         -> pure Tt
 
 -- | Wrap a term in Lvl number of lambdas. We get the domain info from the
 --   VTy argument.
@@ -213,12 +255,13 @@ lams l a t = go a (0 :: Lvl) where
 -- | Solve (Γ ⊢ m spine =? rhs)
 solve :: Dbg => Lvl -> MetaVar -> Spine -> Val -> IO ()
 solve gamma m sp rhs = do
-  pren <- invert gamma sp
-  solveWithPRen gamma m pren rhs
+  (!m, !sp) <- expandVFlex m sp
+  psub <- invert gamma sp
+  solveWithPSub gamma m psub rhs
 
 -- | Solve m given the result of inversion on a spine.
-solveWithPRen :: Dbg => Lvl -> MetaVar -> (PartialRenaming, Maybe Pruning) -> Val -> IO ()
-solveWithPRen gamma m (pren, pruneNonlinear) rhs = do
+solveWithPSub :: Dbg => Lvl -> MetaVar -> (PartialSub, Maybe Pruning) -> Val -> IO ()
+solveWithPSub gamma m (psub, pruneNonlinear) rhs = do
 
   debug ["solve", show m, showTm0 (quote gamma rhs)]
 
@@ -231,8 +274,8 @@ solveWithPRen gamma m (pren, pruneNonlinear) rhs = do
     Nothing -> pure ()
     Just pr -> () <$ pruneTy (revPruning pr) mty
 
-  rhs <- rename (pren {occ = Just m}) rhs
-  let solution = eval [] $ lams (dom pren) mty rhs
+  rhs <- psubst (psub {occ = Just m}) rhs
+  let solution = eval [] $ lams (dom psub) mty rhs
   writeMeta m (Solved solution mty)
 
   -- retry all blocked problems
@@ -241,11 +284,13 @@ solveWithPRen gamma m (pren, pruneNonlinear) rhs = do
 
 unifySp :: Dbg => Lvl -> Spine -> Spine -> IO ()
 unifySp l sp sp' = case (sp, sp') of
-  ([]          , []            ) -> pure ()
+  (SId         , SId           ) -> pure ()
 
   -- Note: we don't have to compare Icit-s, since we know from the recursive
   -- call that sp and sp' have the same type.
-  (sp :> (t, _), sp' :> (t', _)) -> unifySp l sp sp' >> unify l t t'
+  (SApp sp t _ , SApp sp' t' _ ) -> unifySp l sp sp' >> unify l t t'
+  (SSplice sp  , SSplice sp'   ) -> unifySp l sp sp'
+
   _                              -> throwIO UnifyException -- rigid mismatch error
 
 
@@ -257,12 +302,12 @@ flexFlex gamma m sp m' sp' = let
   go :: Dbg => MetaVar -> Spine -> MetaVar -> Spine -> IO ()
   go m sp m' sp' = try (invert gamma sp) >>= \case
     Left UnifyException -> solve gamma m' sp' (VFlex m sp)
-    Right pren          -> solveWithPRen gamma m pren (VFlex m' sp')
+    Right psub          -> solveWithPSub gamma m psub (VFlex m' sp')
 
   -- usually, a longer spine indicates that the meta is in an inner scope. If we solve
   -- inner metas with outer metas, that means that we have to do less pruning.
-  in if length sp < length sp' then go m' sp' m sp
-                               else go m sp m' sp'
+  in if spineApps sp < spineApps sp' then go m' sp' m sp
+                                     else go m sp m' sp'
 
 -- | Try to solve the problem (Γ ⊢ m spine =? m spine') by intersection.
 --   If spine and spine' are both renamings, but different, then
@@ -272,8 +317,12 @@ flexFlex gamma m sp m' sp' = let
 intersect :: Dbg => Lvl -> MetaVar -> Spine -> Spine -> IO ()
 intersect l m sp sp' = do
 
-  let go [] [] = Just []
-      go (sp :> (t, i)) (sp' :> (t', _)) =
+  (m', sp)    <- expandVFlex m sp             -- expand m
+  VFlex _ sp' <- pure $! force (VFlex m sp')  -- force sp' with old m
+  m           <- pure m'                      -- we don't care about old m anymore
+
+  let go SId SId = Just []
+      go (SApp sp t i) (SApp sp' t' _) =
         case (force t, force t') of
           (VVar x, VVar x') -> ((i <$ guard (x == x')):) <$> go sp sp'
           _                 -> Nothing
@@ -291,6 +340,13 @@ unify l t u = do
   case (force t, force u) of
     (VU         , VU             ) -> pure ()
     (VPi x i a b, VPi x' i' a' b') | i == i' -> unify l a a' >> unify (l + 1) (b $$ VVar l) (b' $$ VVar l)
+    (VUnit      , VUnit          ) -> pure ()
+    (VTt        , VTt            ) -> pure ()
+    (VEff t     , VEff t'        ) -> unify l t t'
+    (VBox t     , VBox t'        ) -> unify l t t'
+    (VQuote t   , VQuote t'      ) -> unify l t t'
+    (VReturn t  , VReturn t'     ) -> unify l t t'
+    (VBind _ t u, VBind _ t' u'  ) -> unify l t t' >> unify (l + 1) (u $$ VVar l) (u' $$ VVar l)
     (VRigid x sp, VRigid x' sp'  ) | x == x' -> unifySp l sp sp'
     (VFlex m sp , VFlex m' sp'   ) | m == m' -> intersect l m sp sp'
     (VFlex m sp , VFlex m' sp'   )           -> flexFlex l m sp m' sp'
@@ -352,6 +408,24 @@ insertUntilName cxt name act = go =<< act where
     _ ->
       throwIO $ Error cxt $ NoNamedImplicitArg name
 
+ensureEff :: Cxt -> VTy -> IO VTy
+ensureEff cxt a = case force a of
+  VEff a ->
+    pure a
+  a -> do
+    res <- eval (env cxt) <$> freshMeta cxt VU
+    unifyCatch cxt (VEff res) a ExpectedInferred
+    pure res
+
+ensureBox :: Cxt -> VTy -> IO VTy
+ensureBox cxt a = case force a of
+  VBox a ->
+    pure a
+  a -> do
+    res <- eval (env cxt) <$> freshMeta cxt VU
+    unifyCatch cxt (VBox res) a ExpectedInferred
+    pure res
+
 check :: Dbg => Cxt -> P.Tm -> VTy -> IO Tm
 check cxt (P.SrcPos pos t) a =
   -- we handle the SrcPos case here, because we do not want to
@@ -402,6 +476,20 @@ check cxt t a = do
       let ~vt = eval (env cxt) t
       u <- check (define cxt x t vt a va) u a'
       pure (Let x a t u)
+
+    (P.Return t, VEff a) ->
+      Return <$> check cxt t a
+
+    (P.Bind x t u, VEff b) -> do
+      (t, a) <- do
+        (t, tty) <- infer cxt t
+        a <- ensureEff cxt tty
+        pure (t, a)
+      u <- check (bind cxt x a) u (VEff b)
+      pure (Bind x t u)
+
+    (P.Quote t, VBox a) -> do
+      Quote <$> check cxt t a
 
     (P.Hole, a) ->
       freshMeta cxt a
@@ -489,6 +577,51 @@ infer cxt t = do
       a <- eval (env cxt) <$> freshMeta cxt VU
       t <- freshMeta cxt a
       pure (t, a)
+
+    P.Box t -> do
+      t <- check cxt t VU
+      pure (Box t, VU)
+
+    P.Quote t -> do
+      (t, tty) <- infer cxt t
+      pure (Quote t, VBox tty)
+
+    P.Splice t -> do
+      (t, tty) <- infer cxt t
+      a <- ensureBox cxt tty
+      pure (Splice t, a)
+
+    P.Eff t -> do
+      t <- check cxt t VU
+      pure (Eff t, VU)
+
+    P.Return t -> do
+      (t, tty) <- infer cxt t
+      pure (Return t, VEff tty)
+
+    P.Bind x t u -> do
+      (t, a) <- do
+        (t, tty) <- infer cxt t
+        a <- ensureEff cxt tty
+        pure (t, a)
+      (u, uty) <- infer (bind cxt x a) u
+      b <- ensureEff cxt uty
+      pure (Bind x t u, VEff b)
+
+    P.ConstBind t u -> do
+      (t, a) <- do
+        (t, tty) <- infer cxt t
+        a <- ensureEff cxt tty
+        pure (t, a)
+      (u, uty) <- infer cxt u
+      b <- ensureEff cxt uty
+      pure (Bind "_" t u, VEff b)
+
+    P.Unit -> do
+      pure (Unit, VU)
+
+    P.Tt -> do
+      pure (Tt, VUnit)
 
   debug ["inferred", showTm cxt (fst res), showVal cxt (snd res)]
   pure res

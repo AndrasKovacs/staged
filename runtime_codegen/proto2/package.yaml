@@ -11,6 +11,7 @@ category:            Language
 description:         "Dependently typed language supporting runtime code generation"
 
 default-extensions:
+- BangPatterns
 - ConstraintKinds
 - DeriveAnyClass
 - DerivingVia

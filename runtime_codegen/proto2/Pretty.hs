@@ -93,6 +93,16 @@ prettyTm prec = go prec where
     AppPruning t pr           -> goPr p ns ns t pr
     PostponedCheck c          -> goCheck p ns c
 
+    Box t                     -> par p appp $ ('□':) . (' ':) . go atomp ns t
+    Quote t                   -> ('<':) . go letp ns t . ('>':)
+    Splice t                  -> ('~':) . go atomp ns t
+    Unit                      -> ('⊤':)
+    Tt                        -> ("Tt"++)
+    Eff t                     -> par p appp $ ("Eff "++) . go atomp ns t
+    Return t                  -> par p appp $ ("return "++) . go atomp ns t
+    Bind (fresh ns -> x) t u  -> par p letp $ ("do " ++) . (x++) . (" ← "++) . go letp ns t
+                                 . (";\n"++) . go letp (ns:>x) u
+
 showTm0 :: Tm -> String
 showTm0 t = prettyTm 0 [] t []
 -- showTm0 = show

@@ -34,6 +34,11 @@ type Dbg = ()
 
 --------------------------------------------------------------------------------
 
+($$!) :: (a -> b) -> a -> b
+($$!) f a = f a
+{-# inline ($$!) #-}
+infixl 8 $$!
+
 impossible :: Dbg => a
 impossible = error "impossible"
 

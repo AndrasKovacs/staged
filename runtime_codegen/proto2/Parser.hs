@@ -42,7 +42,7 @@ bind       = ident <|> symbol "_"
 isKeyword :: String -> Bool
 isKeyword x =
      x == "let" || x == "λ" || x == "U"
-  || x == "return" || x == "do" || x == "Box"
+  || x == "return" || x == "do" || x == "Code"
   || x == "Eff" || x == "Top" || x == "tt"
 
 ident :: Parser Name
@@ -60,10 +60,6 @@ atom :: Parser Tm
 atom =
       withPos (    (Var    <$> ident)
                <|> (U      <$  char 'U')
-               <|> (Box    <$  char '□')
-               <|> (Box    <$  keyword "Box")
-               <|> (Eff    <$  keyword "Eff")
-               <|> (Return <$  keyword "return")
                <|> (Unit   <$  char '⊤')
                <|> (Unit   <$  keyword "Top")
                <|> (Tt     <$  keyword "tt")
@@ -80,10 +76,18 @@ arg =   (try $ braces $ do {x <- ident; char '='; t <- tm; pure (Left x, t)})
     <|> ((Right Expl,) <$> splice)
 
 spine :: Parser Tm
-spine = do
-  h <- atom
-  args <- many arg
-  pure $ foldl' (\t (i, u) -> App t u i) h args
+spine =
+  (Box <$> (char '□' *> splice))
+  <|>
+  (Box <$> (keyword "Code" *> splice))
+  <|>
+  (Eff <$> (keyword "Eff" *> splice))
+  <|>
+  (Return <$> (keyword "return" *> splice))
+  <|>
+  do h <- atom
+     args <- many arg
+     pure $ foldl' (\t (i, u) -> App t u i) h args
 
 lamBinder :: Parser (Name, Either Name Icit, Maybe Tm)
 lamBinder =
@@ -134,7 +138,7 @@ pLet = do
 pDo :: Parser Tm
 pDo = do
   keyword "do"
-  optional (try (ident <* symbol "<-")) >>= \case
+  optional (try (ident <* (symbol "<-" <|> symbol "←"))) >>= \case
     Nothing -> do
       t <- tm
       char ';'

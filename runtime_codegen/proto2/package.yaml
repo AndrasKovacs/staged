@@ -18,10 +18,13 @@ default-extensions:
 - DerivingVia
 - EmptyCase
 - FlexibleContexts
+- GADTs
 - GeneralizedNewtypeDeriving
+- ImplicitParams
 - LambdaCase
 - OverloadedStrings
 - PatternSynonyms
+- RankNTypes
 - ScopedTypeVariables
 - StandaloneDeriving
 - StandaloneKindSignatures

@@ -4,263 +4,188 @@ module Interpreter where
 
 import Common hiding (Lvl)
 import qualified Common as C
-import qualified Zonk as Z
+import qualified Syntax as S
 
 import Data.IORef
 
-{-
-IDEA:
+--------------------------------------------------------------------------------
 
-Values are:
-  runtime: canonical or neutral
-  code   :
+data Tm
+  = Var Ix
+  | Let Name Tm Tm
+  | Lam Name Tm
+  | App Tm Tm
+  | Erased
+  | Quote Tm
+  | Splice Tm
+  | Return Tm
+  | Bind Name Tm Tm
+  | New Tm
+  | Write Tm Tm
+  | Read Tm
+  | CSP Closed
 
-Values are:
-  - canonical    (from closed and open 0 evaluation)
-  - neutral      (from open 0 evaluation)
-  - code         (from open 1 evaluation)
+type Lvl   = (?lvl   :: C.Lvl)
+type Env a = (?env   :: [a])
+type Stage = (?stage :: Int)
+type CEnv  = Env Closed
+type OEnv  = Env Open
 
-Terms can contain embedded canonicals
+data Closed
+  = CLam Name (Closed -> Closed) (Open -> Open)
+  | CAction (IO Closed)
+  | CRef (IORef Closed)
+  | CQuote Open
+  | CErased
 
+data Open
+  = OVar C.Lvl
+  | OLet Name Open (Lvl => Open)
+  | OLam Name (Open -> Open)
+  | OApp Open Open
+  | OErased
+  | OQuote Open
+  | OSplice Open
+  | OReturn Open
+  | OBind Name Open (Lvl => Open)
+  | ONew Open
+  | OWrite Open Open
+  | ORead Open
+  | OClosed Closed
 
-
--}
-
-
--- data Spine = SId | SApp Spine Val | SSplice Spine
-
--- type Lvl   = (?lvl :: C.Lvl)
--- type Env   = (?env :: [Val])
--- type Top   = (?top :: [Val])
--- type Stage = (?stage :: Int)
-
--- def :: Val -> (Env => a) -> (Env => a)
--- def t act = let ?env = t: ?env in act
-
--- stage :: Int -> (Stage => a) -> a
--- stage s act = let ?stage = s in act
-
--- lvl :: C.Lvl -> (Lvl => a) -> a
--- lvl l act = let ?lvl = l in act
-
--- env :: [Val] -> (Env => a) -> a
--- env e act = let ?env = e in act
-
--- top :: [Val] -> (Top => a) -> a
--- top e act = let ?top = e in act
-
--- data Val
---   -- canonicals
---   = Lam Name (Val -> Val) (Lvl => Val -> Val) -- closed eval, open eval
---   | Quote Val
---   | Effect (IO Val) ~Val                      -- closed exec, open eval
---   | Ref (IORef Val)
-
---   -- code and neutrals
---   | Var C.Lvl
---   | TopVar C.Lvl
---   | Let Name Val (Lvl => Val)
---   | App Val Val
---   | Erased
---   | Splice Val
---   | Return Val
---   | Bind Name Val (Lvl => Val)
---   | New Val
---   | Write Val Val
---   | Read Val
-
--- lookupLocal :: Env => Ix -> Val
--- lookupLocal x = ?env !! coerce x
-
--- lookupTop :: Top => C.Lvl -> Val
--- lookupTop x = ?top !! (length ?top - coerce x - 1)
-
--- cApp :: Val -> Val -> Val
--- cApp t u = case t of
---   Lam x f g -> f u
---   t         -> impossible
-
--- cRun :: Val -> IO Val
--- cRun = \case
---   Effect f g -> f
---   _          -> impossible
-
--- cSplice :: Top => Val -> Val
--- cSplice = \case
---   Quote t -> env [] $ lvl 0 $ ceval $ gen t
---   _       -> impossible
-
--- cRead :: Val -> IO Val
--- cRead = \case
---   Ref r -> readIORef r
---   _     -> impossible
-
--- cWrite :: Val -> Val -> IO Val
--- cWrite t u = case t of
---   Ref r -> Erased <$ writeIORef r u
---   _     -> impossible
-
--- -- pure closed evaluation
--- ceval :: Top => Env => Z.Tm -> Val
--- ceval = \case
---   Z.Var x      -> lookupLocal x
---   Z.TopVar x   -> lookupTop x
---   Z.App t u    -> cApp (ceval t) (ceval u)
---   Z.Let _ t u  -> def (ceval t) (ceval u)
---   Z.Lam x t    -> Lam x (\v -> def v $ ceval t) (\v -> def v $ stage 0 $ oeval t)
---   Z.Erased     -> Erased
---   Z.Quote t    -> Quote (stage 1 $ lvl 0 $ oeval t)
---   Z.Splice t   -> cSplice (ceval t)
---   t@Z.Return{} -> Effect (exec t) (stage 0 $ lvl 0 $ oeval t)
---   t@Z.Bind{}   -> Effect (exec t) (stage 0 $ lvl 0 $ oeval t)
---   t@Z.New{}    -> Effect (exec t) (stage 0 $ lvl 0 $ oeval t)
---   t@Z.Write{}  -> Effect (exec t) (stage 0 $ lvl 0 $ oeval t)
---   t@Z.Read{}   -> Effect (exec t) (stage 0 $ lvl 0 $ oeval t)
-
--- -- pure open evaluation
--- oeval :: Top => Env => Lvl => Stage => Z.Tm -> Val
--- oeval = undefined
-
--- -- closed effectful evaluation
--- exec :: Top => Env => Z.Tm -> IO Val
--- exec = \case
---   Z.Var x      -> cRun $ lookupLocal x
---   Z.TopVar x   -> cRun $ lookupTop x
---   Z.Let _ t u  -> def (ceval t) (exec u)
---   Z.Return t   -> return $! ceval t
---   Z.Bind _ t u -> do {t <- exec t; def t $ exec u}
---   Z.App t u    -> cRun (cApp (ceval t) (ceval u))
---   Z.New t      -> do {r <- newIORef $! ceval t; pure $ Ref r}
---   Z.Read t     -> cRead (ceval t)
---   Z.Write t u  -> cWrite (ceval t) (ceval u)
---   Z.Splice t   -> cRun (cSplice (ceval t))
---   _            -> impossible
-
--- fresh :: (Lvl => Val -> a) -> (Lvl => a)
--- fresh act = let v = Var ?lvl in let ?lvl = ?lvl + 1 in act v
-
--- gen :: Lvl => Val -> Z.Tm
--- gen = \case
---   Lam x f g  -> Z.Lam x $ fresh \v -> gen (g v)
---   Quote t    -> Z.Quote (gen t)
---   Effect f g -> gen g
---   Ref t      -> Z.Ref (gen t)
+-- Zonking and erasure
+--------------------------------------------------------------------------------
 
 
 
 
--- -- Eff closed evaluation
--- cexec :: Env -> Tm -> IO Val
--- cexec e = \case
---   Var x       -> cRun (lookupIx e x)
---   TopVar x    -> cRun (lookupIx e (lvl2Ix (envLen e) x))
---   Return t    -> pure $! ceval e t
---   Bind x t u  -> do {t <- cexec e t; cexec (Def e t) u}
---   Let x a t u -> cexec (Def e (ceval e t)) u
---   App t u _   -> cRun (cApp (ceval e t) (ceval e u))
---   New t       -> VRefVal <$!> (newIORef $! ceval e t)
---   Read t      -> cRead (ceval e t)
---   Write t u   -> cWrite (ceval e t) (ceval e u)
---   Splice t    -> cRun (cSplice (ceval e t))
---   _           -> impossible
+-- Reference interpretation
+--------------------------------------------------------------------------------
 
--- oApp :: Lvl -> Val -> Val -> Icit -> Val
--- oApp l t u i = case t of
---   VLam _ _ _ t -> t l u
---   VNe x sp     -> VNe x (SApp sp u i)
---   _            -> impossible
+def :: v -> (Env v => a) -> (Env v => a)
+def t act = let ?env = t: ?env in act
 
--- oQuote :: Val -> Val
--- oQuote = \case
---   VNe x (SSplice sp) -> VNe x sp
---   t                  -> VQuote t
+stage :: Int -> (Stage => a) -> a
+stage s act = let ?stage = s in act
 
--- oSplice :: Val -> Val
--- oSplice = \case
---   VQuote t -> t
---   VNe x sp -> VNe x (SSplice sp)
---   _        -> impossible
+lvl :: C.Lvl -> (Lvl => a) -> a
+lvl l act = let ?lvl = l in act
 
--- oeval :: Env -> Lvl -> Stage -> Tm -> Val
--- oeval e l 0 = \case
---   Var x     -> lookupIx e x
---   TopVar x  -> lookupIx e (lvl2Ix (envLen e) x)
+env :: [v] -> (Env v => a) -> a
+env e act = let ?env = e in act
 
---   -- open lambdas can never become closed!
---   Lam x i t     -> VLam x i (\u -> impossible) (\l u -> oeval (Def e u) l 0 t)
---   App t u i     -> oApp l (oeval e l 0 t) (oeval e l 0 u) i
---   U             -> VU
---   Pi x i a b    -> VPi x i (oeval e l 0 a) \l u -> oeval (Def e u) l 0 b
---   Let x a t u   -> oeval (Def e (oeval e l 0 t)) l 0 u
---   Box t         -> VBox (oeval e l 0 t)
---   Quote t       -> oQuote (oeval e l 1 t)
+fresh :: (Lvl => Open -> a) -> Lvl => a
+fresh act = let v = OVar ?lvl in let ?lvl = ?lvl + 1 in act v
 
---   Splice t      -> undefined
+closeEnv :: (OEnv => a) -> CEnv => a
+closeEnv act = let ?env = map OClosed ?env in act
 
---   Unit          -> VUnit
---   Tt            -> VTt
---   Eff t         -> VEff (oeval e l 0 t)
---   Return t      -> VReturn (oeval e l 0 t)
---   Bind x t u    -> VBind x (oeval e l 0 t) \l t -> oeval (Def e t) l 0 u
---   ConstBind t u -> VConstBind (oeval e l 0 t) (oeval e l 0 u)
---   Ref t         -> VRef (oeval e l 0 t)
---   New t         -> VNew (oeval e l 0 t)
---   Write t u     -> VWrite (oeval e l 0 t) (oeval e l 0 u)
---   Read t        -> VRead (oeval e l 0 t)
+idEnv :: C.Lvl -> [Open]
+idEnv l = map OVar [l-1,l-2..0]
 
---   Meta{}           -> impossible
---   AppPruning{}     -> impossible
---   PostponedCheck{} -> impossible
+--------------------------------------------------------------------------------
 
--- oeval e l s = \case
---   Var x         -> lookupIx e x
---   TopVar x      -> VTopVar x
---   Lam x i t     -> VLam x i (\u -> impossible) (\l u -> oeval (Def e u) l s t)
---   App t u i     -> VApp (oeval e l s t) (oeval e l s u) i
---   U             -> VU
---   Pi x i a b    -> VPi x i (oeval e l s a) \l u -> oeval (Def e u) l s b
---   Let x a t u   -> VLet x (oeval e l s a) (oeval e l s t) \l t -> oeval (Def e t) l s u
---   Box t         -> VBox (oeval e l s t)
---   Quote t       -> VQuote (oeval e l 1 t)
---   Splice t      -> oSplice (oeval e l s t)
---   Unit          -> VUnit
---   Tt            -> VTt
---   Eff t         -> VEff (oeval e l s t)
---   Return t      -> VReturn (oeval e l s t)
---   Bind x t u    -> VBind x (oeval e l s t) \l t -> oeval (Def e t) l s u
---   ConstBind t u -> VConstBind (oeval e l s t) (oeval e l s u)
---   Ref t         -> VRef (oeval e l s t)
---   New t         -> VNew (oeval e l s t)
---   Write t u     -> VWrite (oeval e l s t) (oeval e l s u)
---   Read t        -> VRead (oeval e l s t)
+eRun :: Closed -> IO Closed
+eRun = \case
+  CAction t -> t
+  _         -> impossible
 
---   Meta{}           -> impossible
---   AppPruning{}     -> impossible
---   PostponedCheck{} -> impossible
+eRead :: Closed -> IO Closed
+eRead = \case
+  CRef r -> readIORef r
+  _      -> impossible
 
-{-
+eWrite :: Closed -> Closed -> IO Closed
+eWrite t u = case t of
+  CRef r -> CErased <$ writeIORef r u
+  _      -> impossible
 
-  r <- new 10;
-  let foo = <x <- read r; return (x + 200)>;
-  kek <- ~foo;
-  ...
+cApp :: Closed -> Closed -> Closed
+cApp t u = case t of
+  CLam x f g -> f u
+  t          -> impossible
 
+oApp :: Open -> Open -> Open
+oApp t u = case (t, u) of
+  (OClosed (CLam _ f _), OClosed u) -> OClosed (f u)
+  (OClosed (CLam _ _ f), u        ) -> f u
+  (OLam _ f            , u        ) -> f u
+  (t                   , u        ) -> OApp t u
 
-  let f : Nat -> Nat = \x. x;
-  let foo = <f>;
+--------------------------------------------------------------------------------
 
-  foo (r : Ref Int) : Code (Eff Int) =
-    <read r>
+exec :: CEnv => Tm -> IO Closed
+exec = \case
+  Var x      -> eRun (?env !! coerce x)
+  Let x t u  -> def (ceval t) (exec u)
+  Lam x t    -> impossible
+  App t u    -> eRun (cApp (ceval t) (ceval u))
+  Erased     -> impossible
+  Quote t    -> impossible
+  Splice t   -> eRun undefined
+  Return t   -> pure $! ceval t
+  Bind x t u -> do {t <- exec t; def t $ exec u}
+  New t      -> CRef <$!> (newIORef $! ceval t)
+  Write t u  -> eWrite (ceval t) (ceval u)
+  Read t     -> eRead (ceval t)
+  CSP t      -> eRun t
 
-  foo (n : Nat) : Code Nat = <n>
+ceval :: CEnv => Tm -> Closed
+ceval = \case
+  Var x      -> ?env !! coerce x
+  Let _ t u  -> def (ceval t) (ceval u)
+  Lam x t    -> CLam x (\v -> def v $ ceval t)
+                       (\v -> closeEnv $ def v $ lvl 0 $ stage 0 $ oeval t)
+  App t u    -> cApp (ceval t) (ceval u)
+  Erased     -> CErased
+  Quote t    -> CQuote (closeEnv $ lvl 0 $ stage 1 $ oeval t)
+  Splice t   -> case ceval t of CQuote t -> env [] $ ceval $ lvl 0 $ gen t
+                                _        -> impossible
+  t@Return{} -> CAction (exec t)
+  t@Bind{}   -> CAction (exec t)
+  t@New{}    -> CAction (exec t)
+  t@Write{}  -> CAction (exec t)
+  t@Read{}   -> CAction (exec t)
+  CSP t      -> t
 
-------------------------------------------------------------
-  let x  = suc (suc (suc zero));
-  let c = <zero + zero>;
-  <x + ~c>
+oeval :: OEnv => Lvl => Stage => Tm -> Open
+oeval = \case
+  Var x      -> ?env !! coerce x
+  Lam x t    -> OLam x \v -> def v $ oeval t
+  Erased     -> OErased
+  Quote t    -> OQuote $ stage (?stage + 1) $ oeval t
+  Return t   -> OReturn (oeval t)
+  Bind x t u -> OBind x (oeval t) (oeval u)
+  New t      -> ONew (oeval t)
+  Write t u  -> OWrite (oeval t) (oeval u)
+  Read t     -> ORead (oeval t)
+  CSP t      -> OClosed t
+  t -> case ?stage of
+    0 -> case t of
+      Let x t u  -> def (oeval t) (oeval u)
+      App t u    -> oApp (oeval t) (oeval u)
+      Splice t   -> case oeval t of
+                      OQuote t -> env (idEnv ?lvl) $ oeval $ gen t
+                      t        -> OSplice t
+    _ -> case t of
+      Let x t u  -> OLet x (oeval t) (oeval u)
+      App t u    -> OApp (oeval t) (oeval u)
+      Splice t   -> case stage (?stage - 1) $ oeval t of
+                      OQuote t -> t
+                      t        -> OSplice t
 
-  result is <suc (suc (suc zero)) + (zero + zero)>
-
-
-
--}
+gen :: Lvl => Open -> Tm
+gen = \case
+  OVar x      -> Var (coerce (?lvl - x - 1))
+  OLet x t u  -> Let x (gen t) $ fresh \_ -> gen u
+  OLam x t    -> Lam x $ fresh \v -> gen (t v)
+  OApp t u    -> App (gen t) (gen u)
+  OErased     -> Erased
+  OQuote t    -> Quote (gen t)
+  OSplice t   -> Splice (gen t)
+  OReturn t   -> Return (gen t)
+  OBind x t u -> Bind x (gen t) $ fresh \_ -> gen u
+  ONew t      -> New (gen t)
+  OWrite t u  -> Write (gen t) (gen u)
+  ORead t     -> Read (gen t)
+  OClosed t   -> CSP t

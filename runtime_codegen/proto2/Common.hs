@@ -58,10 +58,10 @@ instance Show Icit where
   show Expl = "explicit"
 
 -- | De Bruijn index.
-newtype Ix  = Ix {unIx :: Int} deriving (Eq, Show, Num) via Int
+newtype Ix  = Ix {unIx :: Int} deriving (Eq, Show, Num, Enum) via Int
 
 -- | De Bruijn level.
-newtype Lvl = Lvl {unLvl :: Int} deriving (Eq, Ord, Show, Num) via Int
+newtype Lvl = Lvl {unLvl :: Int} deriving (Eq, Ord, Show, Num, Enum) via Int
 
 -- | Metavariable.
 newtype MetaVar = MetaVar {unMetaVar :: Int} deriving (Eq, Show, Num) via Int

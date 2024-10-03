@@ -30,7 +30,6 @@ executable rtcg
       Pretty
       Syntax
       Value
-      Zonk
       Paths_rtcg
   hs-source-dirs:
       ./
@@ -41,6 +40,7 @@ executable rtcg
       DeriveAnyClass
       DerivingVia
       EmptyCase
+      EmptyDataDeriving
       FlexibleContexts
       GADTs
       GeneralizedNewtypeDeriving

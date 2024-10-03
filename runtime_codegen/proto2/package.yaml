@@ -17,6 +17,7 @@ default-extensions:
 - DeriveAnyClass
 - DerivingVia
 - EmptyCase
+- EmptyDataDeriving
 - FlexibleContexts
 - GADTs
 - GeneralizedNewtypeDeriving

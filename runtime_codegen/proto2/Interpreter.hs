@@ -11,139 +11,143 @@ import Data.IORef
 {-
 IDEA:
 
-1. Type erasure + zonking (in Zonk)
+Values are:
+  runtime: canonical or neutral
+  code   :
 
-2. Reference interpretation
-   - All objects are mashed together in the same data type, whether code or semantic value
-   - That type will serve as the javascript model
-   - all binders are HOAS; if we squint we can see staged HOAS interpretation
-     as compilation to javascript
-   - separate top and local env
+Values are:
+  - canonical    (from closed and open 0 evaluation)
+  - neutral      (from open 0 evaluation)
+  - code         (from open 1 evaluation)
 
-Q
-- should we have a single neutral node, or just do dumb Var/App/Splice?
-- let's do the dumb thing
+Terms can contain embedded canonicals
+
+
 
 -}
 
-data Spine = SId | SApp Spine Val | SSplice Spine
 
-type Lvl   = (?lvl :: C.Lvl)
-type Env   = (?env :: [Val])
-type Top   = (?top :: [Val])
-type Stage = (?stage :: Int)
+-- data Spine = SId | SApp Spine Val | SSplice Spine
 
-def :: Val -> (Env => a) -> (Env => a)
-def t act = let ?env = t: ?env in act
+-- type Lvl   = (?lvl :: C.Lvl)
+-- type Env   = (?env :: [Val])
+-- type Top   = (?top :: [Val])
+-- type Stage = (?stage :: Int)
 
-stage :: Int -> (Stage => a) -> a
-stage s act = let ?stage = s in act
+-- def :: Val -> (Env => a) -> (Env => a)
+-- def t act = let ?env = t: ?env in act
 
-lvl :: C.Lvl -> (Lvl => a) -> a
-lvl l act = let ?lvl = l in act
+-- stage :: Int -> (Stage => a) -> a
+-- stage s act = let ?stage = s in act
 
-env :: [Val] -> (Env => a) -> a
-env e act = let ?env = e in act
+-- lvl :: C.Lvl -> (Lvl => a) -> a
+-- lvl l act = let ?lvl = l in act
 
-top :: [Val] -> (Top => a) -> a
-top e act = let ?top = e in act
+-- env :: [Val] -> (Env => a) -> a
+-- env e act = let ?env = e in act
 
-data Val
-  -- canonicals
-  = Lam Name (Val -> Val) (Lvl => Val -> Val) -- closed eval, open eval
-  | Quote Val
-  | Effect (IO Val) ~Val                      -- closed exec, open eval
-  | Ref (IORef Val)
+-- top :: [Val] -> (Top => a) -> a
+-- top e act = let ?top = e in act
 
-  -- code and neutrals
-  | Var C.Lvl
-  | TopVar C.Lvl
-  | Let Name Val (Lvl => Val)
-  | App Val Val
-  | Erased
-  | Splice Val
-  | Return Val
-  | Bind Name Val (Lvl => Val)
-  | New Val
-  | Write Val Val
-  | Read Val
+-- data Val
+--   -- canonicals
+--   = Lam Name (Val -> Val) (Lvl => Val -> Val) -- closed eval, open eval
+--   | Quote Val
+--   | Effect (IO Val) ~Val                      -- closed exec, open eval
+--   | Ref (IORef Val)
 
-lookupLocal :: Env => Ix -> Val
-lookupLocal x = ?env !! coerce x
+--   -- code and neutrals
+--   | Var C.Lvl
+--   | TopVar C.Lvl
+--   | Let Name Val (Lvl => Val)
+--   | App Val Val
+--   | Erased
+--   | Splice Val
+--   | Return Val
+--   | Bind Name Val (Lvl => Val)
+--   | New Val
+--   | Write Val Val
+--   | Read Val
 
-lookupTop :: Top => C.Lvl -> Val
-lookupTop x = ?top !! (length ?top - coerce x - 1)
+-- lookupLocal :: Env => Ix -> Val
+-- lookupLocal x = ?env !! coerce x
 
-cApp :: Val -> Val -> Val
-cApp t u = case t of
-  Lam x f g -> f u
-  t         -> impossible
+-- lookupTop :: Top => C.Lvl -> Val
+-- lookupTop x = ?top !! (length ?top - coerce x - 1)
 
-cRun :: Val -> IO Val
-cRun = \case
-  Effect f g -> f
-  _          -> impossible
+-- cApp :: Val -> Val -> Val
+-- cApp t u = case t of
+--   Lam x f g -> f u
+--   t         -> impossible
 
-cSplice :: Top => Val -> Val
-cSplice = \case
-  Quote t -> env [] $ lvl 0 $ ceval $ gen t
-  _       -> impossible
+-- cRun :: Val -> IO Val
+-- cRun = \case
+--   Effect f g -> f
+--   _          -> impossible
 
-cRead :: Val -> IO Val
-cRead = \case
-  Ref r -> readIORef r
-  _     -> impossible
+-- cSplice :: Top => Val -> Val
+-- cSplice = \case
+--   Quote t -> env [] $ lvl 0 $ ceval $ gen t
+--   _       -> impossible
 
-cWrite :: Val -> Val -> IO Val
-cWrite t u = case t of
-  Ref r -> Erased <$ writeIORef r u
-  _     -> impossible
+-- cRead :: Val -> IO Val
+-- cRead = \case
+--   Ref r -> readIORef r
+--   _     -> impossible
 
--- pure closed evaluation
-ceval :: Top => Env => Z.Tm -> Val
-ceval = \case
-  Z.Var x      -> lookupLocal x
-  Z.TopVar x   -> lookupTop x
-  Z.App t u    -> cApp (ceval t) (ceval u)
-  Z.Let _ t u  -> def (ceval t) (ceval u)
-  Z.Lam x t    -> Lam x (\v -> def v $ ceval t) (\v -> def v $ stage 0 $ oeval t)
-  Z.Erased     -> Erased
-  Z.Quote t    -> Quote (stage 1 $ lvl 0 $ oeval t)
-  Z.Splice t   -> cSplice (ceval t)
-  t@Z.Return{} -> Effect (exec t) (stage 0 $ lvl 0 $ oeval t)
-  t@Z.Bind{}   -> Effect (exec t) (stage 0 $ lvl 0 $ oeval t)
-  t@Z.New{}    -> Effect (exec t) (stage 0 $ lvl 0 $ oeval t)
-  t@Z.Write{}  -> Effect (exec t) (stage 0 $ lvl 0 $ oeval t)
-  t@Z.Read{}   -> Effect (exec t) (stage 0 $ lvl 0 $ oeval t)
+-- cWrite :: Val -> Val -> IO Val
+-- cWrite t u = case t of
+--   Ref r -> Erased <$ writeIORef r u
+--   _     -> impossible
 
--- pure open evaluation
-oeval :: Top => Env => Lvl => Stage => Z.Tm -> Val
-oeval = undefined
+-- -- pure closed evaluation
+-- ceval :: Top => Env => Z.Tm -> Val
+-- ceval = \case
+--   Z.Var x      -> lookupLocal x
+--   Z.TopVar x   -> lookupTop x
+--   Z.App t u    -> cApp (ceval t) (ceval u)
+--   Z.Let _ t u  -> def (ceval t) (ceval u)
+--   Z.Lam x t    -> Lam x (\v -> def v $ ceval t) (\v -> def v $ stage 0 $ oeval t)
+--   Z.Erased     -> Erased
+--   Z.Quote t    -> Quote (stage 1 $ lvl 0 $ oeval t)
+--   Z.Splice t   -> cSplice (ceval t)
+--   t@Z.Return{} -> Effect (exec t) (stage 0 $ lvl 0 $ oeval t)
+--   t@Z.Bind{}   -> Effect (exec t) (stage 0 $ lvl 0 $ oeval t)
+--   t@Z.New{}    -> Effect (exec t) (stage 0 $ lvl 0 $ oeval t)
+--   t@Z.Write{}  -> Effect (exec t) (stage 0 $ lvl 0 $ oeval t)
+--   t@Z.Read{}   -> Effect (exec t) (stage 0 $ lvl 0 $ oeval t)
 
--- closed effectful evaluation
-exec :: Top => Env => Z.Tm -> IO Val
-exec = \case
-  Z.Var x      -> cRun $ lookupLocal x
-  Z.TopVar x   -> cRun $ lookupTop x
-  Z.Let _ t u  -> def (ceval t) (exec u)
-  Z.Return t   -> return $! ceval t
-  Z.Bind _ t u -> do {t <- exec t; def t $ exec u}
-  Z.App t u    -> cRun (cApp (ceval t) (ceval u))
-  Z.New t      -> do {r <- newIORef $! ceval t; pure $ Ref r}
-  Z.Read t     -> cRead (ceval t)
-  Z.Write t u  -> cWrite (ceval t) (ceval u)
-  Z.Splice t   -> cRun (cSplice (ceval t))
-  _            -> impossible
+-- -- pure open evaluation
+-- oeval :: Top => Env => Lvl => Stage => Z.Tm -> Val
+-- oeval = undefined
 
-fresh :: (Lvl => Val -> a) -> (Lvl => a)
-fresh act = let v = Var ?lvl in let ?lvl = ?lvl + 1 in act v
+-- -- closed effectful evaluation
+-- exec :: Top => Env => Z.Tm -> IO Val
+-- exec = \case
+--   Z.Var x      -> cRun $ lookupLocal x
+--   Z.TopVar x   -> cRun $ lookupTop x
+--   Z.Let _ t u  -> def (ceval t) (exec u)
+--   Z.Return t   -> return $! ceval t
+--   Z.Bind _ t u -> do {t <- exec t; def t $ exec u}
+--   Z.App t u    -> cRun (cApp (ceval t) (ceval u))
+--   Z.New t      -> do {r <- newIORef $! ceval t; pure $ Ref r}
+--   Z.Read t     -> cRead (ceval t)
+--   Z.Write t u  -> cWrite (ceval t) (ceval u)
+--   Z.Splice t   -> cRun (cSplice (ceval t))
+--   _            -> impossible
 
-gen :: Lvl => Val -> Z.Tm
-gen = \case
-  Lam x f g  -> Z.Lam x $ fresh \v -> gen (g v)
-  Quote t    -> Z.Quote (gen t)
-  Effect f g -> gen g
-  Ref t      -> Z.Ref (gen t)
+-- fresh :: (Lvl => Val -> a) -> (Lvl => a)
+-- fresh act = let v = Var ?lvl in let ?lvl = ?lvl + 1 in act v
+
+-- gen :: Lvl => Val -> Z.Tm
+-- gen = \case
+--   Lam x f g  -> Z.Lam x $ fresh \v -> gen (g v)
+--   Quote t    -> Z.Quote (gen t)
+--   Effect f g -> gen g
+--   Ref t      -> Z.Ref (gen t)
+
+
+
 
 -- -- Eff closed evaluation
 -- cexec :: Env -> Tm -> IO Val

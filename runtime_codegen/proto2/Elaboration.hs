@@ -1,5 +1,5 @@
 
-module Elaboration (check, infer, checkEverything, inferTop) where
+module Elaboration (check, infer, checkEverything) where
 
 import Control.Exception
 import Control.Monad
@@ -535,9 +535,7 @@ infer cxt t = do
     P.Var x -> do
       case M.lookup x (localNames cxt) of
         Just (x', a) -> pure (Var (lvl2Ix (lvl cxt) x'), a)
-        Nothing      -> case M.lookup x (topNames cxt) of
-          Just (x', a) -> pure (TopVar x', a)
-          Nothing      -> throwIO $ Error cxt $ NameNotInScope x
+        Nothing      -> throwIO $ Error cxt $ NameNotInScope x
 
     P.Lam x (Right i) ma t -> do
       a  <- eval (env cxt) <$> case ma of
@@ -667,37 +665,5 @@ infer cxt t = do
 
   debug ["inferred", showTm cxt (fst res), showVal cxt (snd res)]
   pure res
-
-inferTop :: Cxt -> P.Tm -> IO (Tm, VTy)
-inferTop cxt = \case
-  P.SrcPos p t ->
-    inferTop (cxt {pos = p}) t
-  P.Let x a t u -> do
-    a <- check cxt a VU
-    let va = eval (env cxt) a
-    t <- check cxt t va
-    let ~vt = eval (env cxt) t
-    (u, uty) <- inferTop (defineTop cxt x t vt a va) u
-    pure (Let x a t u, uty)
-  P.Bind x t u -> do
-    (t, a) <- do
-      (t, tty) <- infer cxt t
-      a <- ensureEff cxt tty
-      pure (t, a)
-    (u, uty) <- inferTop (bindTop cxt x a) u
-    b <- ensureEff cxt uty
-    pure (Bind x t u, VEff b)
-  P.ConstBind t u -> do
-    (t, a) <- do
-      (t, tty) <- infer cxt t
-      a <- ensureEff cxt tty
-      pure (t, a)
-    (u, uty) <- inferTop cxt u
-    b <- ensureEff cxt uty
-    pure (ConstBind t u, VEff b)
-  t -> do
-    (t, tty) <- infer cxt t
-    a <- ensureEff cxt tty
-    pure (t, VEff a)
 
 --------------------------------------------------------------------------------

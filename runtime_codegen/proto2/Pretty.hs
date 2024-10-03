@@ -77,7 +77,6 @@ prettyTm prec i = goTop prec i where
   go :: Int -> Int -> [Name] -> Tm -> ShowS
   go p i ns = \case
     Var x                     -> goIx ns x
-    TopVar x                  -> goIx ns (lvl2Ix (Lvl (length ns)) x)
 
     App t u Expl              -> par p appp $ go appp i ns t . (' ':) . go atomp i ns u
     App t u Impl              -> par p appp $ go appp i ns t . (' ':) . bracket (go letp i ns u)

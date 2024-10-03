@@ -30,7 +30,7 @@ mainWith getOpt getRaw = do
 
   let elab = do
         (t, file) <- getRaw
-        res <- (inferTop (emptyCxt (initialPos file)) t <* checkEverything)
+        res <- (infer (emptyCxt (initialPos file)) t <* checkEverything)
                `catch` \e -> displayError file e >> exitSuccess
         putStrLn ("\n" ++ replicate 80 '-' ++ "\n")
         pure res

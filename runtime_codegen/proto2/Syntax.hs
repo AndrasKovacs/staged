@@ -47,7 +47,6 @@ closeTm mcl t = case mcl of
 
 data Tm
   = Var Ix
-  | TopVar Lvl
   | Lam Name Icit Tm
   | App Tm Tm Icit
   | AppPruning Tm Pruning

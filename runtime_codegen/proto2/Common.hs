@@ -72,6 +72,10 @@ newtype CheckVar = CheckVar {unCheckVar :: Int} deriving (Eq, Show, Num, Ord) vi
 lvl2Ix :: Lvl -> Lvl -> Ix
 lvl2Ix (Lvl l) (Lvl x) = Ix (l - x - 1)
 
+newtype NoShow a = NoShow a
+
+instance Show (NoShow a) where
+  showsPrec _ x acc = acc
 
 -- Snoc lists
 --------------------------------------------------------------------------------

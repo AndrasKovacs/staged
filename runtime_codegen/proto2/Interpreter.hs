@@ -1,96 +1,17 @@
 
-module Interpreter where
-
-import Control.Exception
-import Data.IORef
+module Interpreter (execTop) where
 
 import Common hiding (Lvl)
-import Errors
-import Metacontext
+import Zonk   hiding (Tm)
 
+import qualified Zonk   as Z
 import qualified Common as C
-import qualified Syntax as S
-import qualified Evaluation as E
-import qualified Value as V
+
+import Data.IORef
 
 --------------------------------------------------------------------------------
 
-data Tm
-  = Var Ix
-  | Let Name Tm Tm
-  | Lam Name Tm
-  | App Tm Tm
-  | Erased
-  | Quote Tm
-  | Splice Tm
-  | Return Tm
-  | Bind Name Tm Tm
-  | Seq Tm Tm
-  | New Tm
-  | Write Tm Tm
-  | Read Tm
-  | CSP Closed
-
--- Zonking and erasure
---------------------------------------------------------------------------------
-
-zonk :: C.Lvl -> V.Env -> S.Tm -> Tm
-zonk l e = go where
-
-  goSp :: S.Tm -> Tm
-  goSp t = either (go . E.quote l) id (goSp' t) where
-
-    goSp' :: S.Tm -> Either V.Val Tm
-    goSp' = \case
-      S.Meta x    -> case lookupMeta x of
-                       Solved v _ -> Left v
-                       Unsolved{} -> throw $ UnsolvedMetaInZonk x
-      S.App t u i -> case goSp' t of
-                       Left v  -> Left $! E.vApp v (E.eval e u) i
-                       Right t -> Right $! App t (go u)
-      S.Splice t  -> case goSp' t of
-                       Left v  -> Left $! E.vSplice v
-                       Right t -> Right $! Splice t
-      t           -> Right (go t)
-
-  goBind :: S.Tm -> Tm
-  goBind t = zonk (l + 1) (V.VVar l : e) t
-
-  unAppPruning :: S.Tm -> S.Pruning -> S.Tm
-  unAppPruning t = go 0 where
-    go x []              = t
-    go x (pr :> Nothing) = go (x + 1) pr
-    go x (pr :> Just i ) = S.App (go (x + 1) pr) (S.Var x) i
-
-  go :: S.Tm -> Tm
-  go = \case
-    S.Var x            -> Var x
-    S.Lam x i t        -> Lam x (goBind t)
-    t@S.App{}          -> goSp t
-    S.Let x a t u      -> Let x (go t) (goBind u)
-    S.AppPruning t pr  -> go (unAppPruning t pr)
-    S.U                -> Erased
-    S.Pi{}             -> Erased
-    t@S.Meta{}         -> goSp t
-    S.PostponedCheck{} -> impossible
-    S.Box{}            -> Erased
-    S.Quote t          -> Quote (go t)
-    t@S.Splice{}       -> goSp t
-    S.Unit             -> Erased
-    S.Tt               -> Erased
-    S.Eff{}            -> Erased
-    S.Return t         -> Return (go t)
-    S.Bind x t u       -> Bind x (go t) (goBind u)
-    S.Seq t u          -> Seq (go t) (go u)
-    S.Ref{}            -> Erased
-    S.New t            -> New (go t)
-    S.Write t u        -> Write (go t) (go u)
-    S.Read t           -> Read (go t)
-
-
--- Reference Interpreter
---------------------------------------------------------------------------------
-
+type Tm    = Z.Tm Closed
 type Lvl   = (?lvl   :: C.Lvl)
 type Env a = (?env   :: [a])
 type Stage = (?stage :: Int)
@@ -246,3 +167,6 @@ gen = \case
   OWrite t u  -> Write (gen t) (gen u)
   ORead t     -> Read (gen t)
   OClosed t   -> CSP t
+
+execTop :: Tm -> IO Closed
+execTop t = env [] $ exec t

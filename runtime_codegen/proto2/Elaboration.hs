@@ -230,21 +230,21 @@ psubst psub t = case force t of
     Nothing -> throwIO UnifyException  -- scope error ("escaping variable" error)
     Just v  -> psubstSp psub (quote (dom psub) v) sp
 
-  VLam x i t     -> Lam x i <$> psubst (lift psub) (t $$ VVar (cod psub))
-  VPi x i a b    -> Pi x i <$> psubst psub a <*> psubst (lift psub) (b $$ VVar (cod psub))
-  VU             -> pure U
-  VBox t         -> Box <$> psubst psub t
-  VQuote t       -> Quote <$> psubst psub t
-  VEff t         -> Eff <$> psubst psub t
-  VReturn t      -> Return <$> psubst psub t
-  VBind x t u    -> Bind x <$> psubst psub t <*> psubst (lift psub) (u $$ VVar (cod psub))
-  VConstBind t u -> ConstBind <$> psubst psub t <*> psubst psub u
-  VUnit          -> pure Unit
-  VTt            -> pure Tt
-  VRef t         -> Ref <$> psubst psub t
-  VNew t         -> New <$> psubst psub t
-  VWrite t u     -> Write <$> psubst psub t <*> psubst psub u
-  VRead t        -> Read <$> psubst psub t
+  VLam x i t  -> Lam x i <$> psubst (lift psub) (t $$ VVar (cod psub))
+  VPi x i a b -> Pi x i <$> psubst psub a <*> psubst (lift psub) (b $$ VVar (cod psub))
+  VU          -> pure U
+  VBox t      -> Box <$> psubst psub t
+  VQuote t    -> Quote <$> psubst psub t
+  VEff t      -> Eff <$> psubst psub t
+  VReturn t   -> Return <$> psubst psub t
+  VBind x t u -> Bind x <$> psubst psub t <*> psubst (lift psub) (u $$ VVar (cod psub))
+  VSeq t u    -> Seq <$> psubst psub t <*> psubst psub u
+  VUnit       -> pure Unit
+  VTt         -> pure Tt
+  VRef t      -> Ref <$> psubst psub t
+  VNew t      -> New <$> psubst psub t
+  VWrite t u  -> Write <$> psubst psub t <*> psubst psub u
+  VRead t     -> Read <$> psubst psub t
 
 -- | Wrap a term in Lvl number of lambdas. We get the domain info from the
 --   VTy argument.
@@ -629,14 +629,14 @@ infer cxt t = do
       b <- ensureEff cxt uty
       pure (Bind x t u, VEff b)
 
-    P.ConstBind t u -> do
+    P.Seq t u -> do
       (t, a) <- do
         (t, tty) <- infer cxt t
         a <- ensureEff cxt tty
         pure (t, a)
       (u, uty) <- infer cxt u
       b <- ensureEff cxt uty
-      pure (ConstBind t u, VEff b)
+      pure (Seq t u, VEff b)
 
     P.Unit -> do
       pure (Unit, VU)

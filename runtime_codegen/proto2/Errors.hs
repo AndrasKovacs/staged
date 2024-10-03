@@ -25,6 +25,7 @@ data ElabError
   | InferNamedLam
   | NoNamedImplicitArg Name
   | IcitMismatch Icit Icit
+  | UnsolvedMetaInZonk MetaVar
   deriving (Show, Exception)
 
 data Error = Error Cxt ElabError
@@ -58,9 +59,11 @@ displayError file (Error cxt e) = do
           "Cannot infer type for lambda with named argument"
         NoNamedImplicitArg name ->
           "No named implicit argument with name " ++ name
-        IcitMismatch i i' -> printf (
-          "Function icitness mismatch: expected %s, got %s.")
+        IcitMismatch i i' -> printf
+          ("Function icitness mismatch: expected %s, got %s.")
           (show i) (show i')
+        UnsolvedMetaInZonk x ->
+          "Unsolved metavariable in compilation: " ++ show x
 
   printf "%s:%d:%d:\n" path linum colnum
   printf "%s |\n"    lpad

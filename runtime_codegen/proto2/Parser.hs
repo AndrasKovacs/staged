@@ -152,7 +152,7 @@ pDo = do
       t <- tm
       char ';'
       u <- tm
-      pure $ ConstBind t u
+      pure $ Seq t u
     Just x  -> do
       t <- tm
       char ';'

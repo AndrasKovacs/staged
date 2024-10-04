@@ -13,6 +13,7 @@ import Metacontext
 import Parser
 import Pretty
 import Elaboration
+import Zonk
 
 import qualified Presyntax as P
 
@@ -20,10 +21,11 @@ import qualified Presyntax as P
 
 helpMsg = unlines [
   "usage: rtcg [--help|nf|type]",
-  "  --help : display this message",
-  "  elab   : read & elaborate expression from stdin",
-  "  nf     : read & typecheck expression from stdin, print its normal form and type",
-  "  type   : read & typecheck expression from stdin, print its type"]
+  "  --help    : display this message",
+  "  elab      : read & elaborate expression from stdin",
+  "  elab zonk : read & elaborate expression from stdin, zonk output",
+  "  nf        : read & typecheck expression from stdin, print its normal form and type",
+  "  type      : read & typecheck expression from stdin, print its type"]
 
 mainWith :: IO [String] -> IO (P.Tm, String) -> IO ()
 mainWith getOpt getRaw = do
@@ -50,6 +52,10 @@ mainWith getOpt getRaw = do
       (t, a) <- elab
       displayMetas
       putStrLn (replicate 80 '-' ++ "\n")
+      putStrLn $ showTm0 t
+    ["elab", "zonk"] -> do
+      (t, a) <- elab
+      t <- pure $ unzonk $ zonk0 t
       putStrLn $ showTm0 t
     _ -> putStrLn helpMsg
 

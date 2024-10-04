@@ -1,5 +1,5 @@
 
-module Zonk (Tm(..), zonk, castTm) where
+module Zonk (Tm(..), zonk, zonk0, castTm, unzonk) where
 
 import Common hiding (Lvl)
 import Errors
@@ -88,3 +88,23 @@ zonk l e = go where
     S.New t            -> New (go t)
     S.Write t u        -> Write (go t) (go u)
     S.Read t           -> Read (go t)
+    S.Erased           -> Erased
+
+zonk0 :: S.Tm -> Tm Void
+zonk0 = zonk 0 []
+
+unzonk :: Tm Void -> S.Tm
+unzonk = \case
+  Var x      -> S.Var x
+  Let x t u  -> S.Let x S.Erased (unzonk t) (unzonk u)
+  Lam x t    -> S.Lam x Expl (unzonk t)
+  App t u    -> S.App (unzonk t) (unzonk u) Expl
+  Erased     -> S.Erased
+  Quote t    -> S.Quote (unzonk t)
+  Splice t   -> S.Splice (unzonk t)
+  Return t   -> S.Return (unzonk t)
+  Bind x t u -> S.Bind x (unzonk t) (unzonk u)
+  Seq t u    -> S.Seq (unzonk t) (unzonk u)
+  New t      -> S.New (unzonk t)
+  Write t u  -> S.Write (unzonk t) (unzonk u)
+  Read t     -> S.Read (unzonk t)

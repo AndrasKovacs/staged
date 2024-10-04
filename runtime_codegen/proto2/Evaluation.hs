@@ -89,6 +89,7 @@ eval env = \case
   New t            -> VNew (eval env t)
   Read t           -> VRead (eval env t)
   Write t u        -> VWrite (eval env t) (eval env u)
+  Erased           -> impossible
 
 force :: Val -> Val
 force = \case

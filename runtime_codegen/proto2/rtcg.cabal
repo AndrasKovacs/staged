@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.36.0.
+-- This file has been generated from package.yaml by hpack version 0.37.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -18,6 +18,7 @@ executable rtcg
   main-is: Main.hs
   other-modules:
       Common
+      Compiler
       Cxt
       Cxt.Type
       Elaboration
@@ -30,6 +31,7 @@ executable rtcg
       Pretty
       Syntax
       Value
+      Zonk
       Paths_rtcg
   hs-source-dirs:
       ./

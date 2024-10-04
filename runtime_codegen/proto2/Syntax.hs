@@ -72,6 +72,7 @@ data Tm
   | New Tm
   | Write Tm Tm
   | Read Tm
+  | Erased
   deriving Show
 
 -- | Unfold `AppPruning` to an iterated application to vars. This applies a term to all de Bruijn indices

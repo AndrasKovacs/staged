@@ -124,6 +124,7 @@ prettyTm prec i = goTop prec i where
     New t                     -> par p appp $ ("new "++) . go atomp i ns t
     Read t                    -> par p appp $ ("read "++) . go atomp i ns t
     Write t u                 -> par p appp $ ("write "++) . go atomp i ns t . (' ':) . go atomp i ns u
+    Erased                    -> ('Ø':)
 
   goTop :: Int -> Int -> [Name] -> Tm -> ShowS
   goTop p i ns = \case

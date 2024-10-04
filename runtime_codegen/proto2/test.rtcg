@@ -1,31 +1,31 @@
 
 
--- let modify : {A} → Ref A → (A → A) → Eff ⊤ =
---   λ r f. do a ← read r;
---          write r (f a);
+let modify : {A} → Ref A → (A → A) → Eff ⊤ =
+  λ r f. do a ← read r;
+         write r (f a);
 
--- let List : U → U =
---   λ A. (L : U) → (A → L → L) → L → L;
+let List : U → U =
+  λ A. (L : U) → (A → L → L) → L → L;
 
--- let nil : {A} → List A =
---   λ L c n. n;
+let nil : {A} → List A =
+  λ L c n. n;
 
--- let cons : {A} → A → List A → List A =
---   λ a as L c n. c a (as L c n);
+let cons : {A} → A → List A → List A =
+  λ a as L c n. c a (as L c n);
 
--- do ref ← new (nil {⊤});
+do ref ← new (nil {⊤});
 
--- do write ref (cons tt nil);
+do write ref (cons tt nil);
 
--- let id : {A} → □ A → □ A =
---   λ x. x;
+let id : {A} → □ A → □ A =
+  λ x. x;
 
--- let majom : Eff ⊤ =
---   do x ← return tt;
---   let kek =
---     let bar =
---       tt;
---     bar;
---   return kek;
+let majom : Eff ⊤ =
+  do x ← return tt;
+  let kek =
+    let bar =
+      tt;
+    bar;
+  return kek;
 
--- return (cons tt (cons tt (cons tt nil)))
+return (cons tt (cons tt (cons tt nil)))

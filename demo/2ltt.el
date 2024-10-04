@@ -1,4 +1,4 @@
-;;; 2ltt.el --- Mode for the cctt programming language -*- lexical-binding: t -*-
+;;; 2ltt.el --- Mode for the 2ltt programming language -*- lexical-binding: t -*-
 ;; URL: https://github.com/AndrasKovacs/cctt
 ;; Package-version: 1.0
 ;; Package-Requires: ((emacs "24.1") (cl-lib "0.5"))
@@ -6,7 +6,7 @@
 
 ;;; Commentary:
 ;; This package provides a major mode for editing proofs or programs
-;; in 2ltt, an implementation of a cartesian cubical type theory.
+;; in 2ltt, an implementation of a two-level type theory
 
 (require 'comint)
 (require 'cl-lib)

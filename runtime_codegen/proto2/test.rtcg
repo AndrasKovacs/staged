@@ -1,7 +1,4 @@
 
-let kek : ⊤ = _;
-
-return kek
 
 -- let modify : {A} → Ref A → (A → A) → Eff ⊤ =
 --   λ r f. do a ← read r;

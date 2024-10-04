@@ -1,3 +1,5 @@
 
-- Definitional monad laws? (Requires functional closure for easy impl)
-- Support quote/splice in unif
+Extras:
+  - definitional monad laws
+  - more Code unification
+  - more erasure in Zonk: pass/compute type, immediately erase things with U/Unit type

@@ -5,8 +5,6 @@ import Control.Exception
 import System.Environment
 import System.Exit
 
-import Common
-import Cxt
 import Errors
 import Evaluation
 import Metacontext
@@ -34,8 +32,7 @@ mainWith getOpt getRaw = do
 
   let elab = do
         (t, file) <- getRaw
-        res <- handleErr file (infer (emptyCxt (initialPos file)) t <* checkEverything)
-        putStrLn ("\n" ++ replicate 80 '-' ++ "\n")
+        res <- handleErr file (inferTop file t)
         pure (res, file)
 
   reset

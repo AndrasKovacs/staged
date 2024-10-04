@@ -128,11 +128,12 @@ let D5 = revapp argST runST;
 --   k h lst;
 --   -- fails again because of mismatched implicit/explicit arguments
 
-let E2 =
-  λ (h : Nat → {A} → A → A)(k : {A} → A → List A → A)(lst : List ({A} → Nat → A → A)).
-  k (λ x. h x) lst;
+-- unsolved meta
+-- let E2 =
+--   λ (h : Nat → {A} → A → A)(k : {A} → A → List A → A)(lst : List ({A} → Nat → A → A)).
+--   k (λ x. h x) lst;
 
 let E3 =
   λ (r : ({A} → A → {B} → B → B) → Nat). r (λ x y. y);
 
-U
+return tt

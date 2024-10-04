@@ -1,10 +1,11 @@
 
-module Elaboration (check, infer, checkEverything) where
+module Elaboration (check, infer, checkEverything, inferTop) where
 
 import Control.Exception
 import Control.Monad
 import Data.IORef
 import Data.Maybe
+import System.Exit
 
 import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
@@ -667,5 +668,16 @@ infer cxt t = do
 
   debug ["inferred", showTm cxt (fst res), showVal cxt (snd res)]
   pure res
+
+inferTop :: FilePath -> P.Tm -> IO (Tm, VTy)
+inferTop path t = do
+  let cxt = emptyCxt (initialPos path)
+  (t, a) <- infer cxt t
+  checkEverything
+  case force a of
+    VEff a -> pure (t, VEff a)
+    a      -> do
+      putStrLn $ "Error: expected Eff type for the input, inferred: " ++ showVal cxt a
+      exitSuccess
 
 --------------------------------------------------------------------------------

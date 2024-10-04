@@ -7,28 +7,33 @@ import System.Exit
 
 import Errors
 import Evaluation
-import Metacontext
+import ElabState
 import Parser
 import Pretty
 import Elaboration
 import Zonk
+import Interpreter
 
 import qualified Presyntax as P
 
 --------------------------------------------------------------------------------
 
 helpMsg = unlines [
-  "usage: rtcg [--help|nf|type]",
+  "all input is read from stdin",
+  "usage: rtcg [--help|elab|zonk|interp|compile|run|nf|type]",
   "  --help    : display this message",
-  "  elab      : read & elaborate expression from stdin",
-  "  zonk      : read & elaborate expression from stdin, zonk output",
-  "  nf        : read & typecheck expression from stdin, print its normal form and type",
-  "  type      : read & typecheck expression from stdin, print its type"]
+  "  elab      : print elaboration output",
+  "  zonk      : print zonking & erasure output",
+  "  interp    : run program in interpreter",
+  "  compile   : print compiled javascript output",
+  "  run       : compile to javascript and run",
+  "  nf        : print beta-normal form and beta-normal type",
+  "  type      : print type of program"]
 
 mainWith :: IO [String] -> IO (P.Tm, String) -> IO ()
 mainWith getOpt getRaw = do
 
-  let handleErr file act = act `catch` \e -> displayError file e >> exitSuccess
+  let handleErr file act = act `catch` \e -> displayError e >> exitSuccess
 
   let elab = do
         (t, file) <- getRaw
@@ -55,6 +60,17 @@ mainWith getOpt getRaw = do
       ((t, a), file) <- elab
       t <- unzonk <$> handleErr file (zonk0 t)
       putStrLn $ showTm0 t
+    ["compile"] -> do
+      undefined
+    ["interp"] -> do
+      ((t, a), file) <- elab
+      t <- handleErr file (zonk0 t)
+      res <- execTop (castTm t)
+      res <- pure $ unzonk $ readBackClosed res
+      putStrLn "RESULT:"
+      putStrLn $ showTm0 res
+    ["run"] -> do
+      undefined
     _ -> putStrLn helpMsg
 
 main :: IO ()
@@ -63,3 +79,12 @@ main = mainWith getArgs parseStdin
 -- | Run main with inputs as function arguments.
 main' :: String -> String -> IO ()
 main' mode src = mainWith (pure [mode]) ((,src) <$> parseString src)
+
+test :: String ->  IO ()
+test cmd= do
+  src <- readFile "test2.rtcg"
+  main' cmd src
+  -- main' "elab" src
+
+
+------------------------------------------------------------

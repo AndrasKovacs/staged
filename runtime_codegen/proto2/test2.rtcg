@@ -1,3 +1,51 @@
-let kek = tt;
 
-return tt
+let ℕ = (N : U) → (N → N) → N → N;
+
+let zero : ℕ = λ _ s z. z;
+let suc : ℕ → ℕ = λ n N s z. s (n N s z);
+let add : ℕ → ℕ → ℕ = λ a b N s z. a N s (b N s z);
+let mul : ℕ → ℕ → ℕ = λ a b N s z. a N (b N s) z;
+
+let n0   = zero;
+let n1   = suc zero;
+let n2   = suc (suc zero);
+let n3   = suc (suc (suc zero));
+let n5   = suc (suc (suc (suc (suc zero))));
+let n10  = add n5 n5;
+let n100 = mul n10 n10;
+let n1k  = mul n100 n10;
+let n10k = mul n100 n100;
+
+--------------------------------------------------------------------------------
+
+let Bool = (B : U) → B → B → B;
+let true  : Bool = λ B t f. t;
+let false : Bool = λ B t f. f;
+let case  : Bool → {B : U} → B → B → B = λ b {B}. b B;
+let not   : Bool → Bool = λ b B t f. b B f t;
+let not'  : Bool → Bool = λ b. b _ false true;
+
+--------------------------------------------------------------------------------
+
+let List  : U → U = λ A. (L : U) → (A → L → L) → L → L;
+let nil   : {A} → List A = λ L c n. n;
+let cons  : {A} → A → List A → List A = λ a as L c n. c a (as L c n);
+let foldr : {A B} → (A → B → B) → B → List A → B = λ c n as. as _ c n;
+
+let mkMap : {A B} → (□ A → □ B) → □ (List A → List B) =
+  λ f. <foldr (λ a bs. cons ~(f <a>) bs) nil>;
+
+let mapSuc : List ℕ → List ℕ = ~(mkMap (λ x. <suc ~x>));
+
+--------------------------------------------------------------------------------
+
+let serialize-Π : {A : U}{B : A → U} → ((a : A) → B a) → □ ((a : A) → B a) =
+  λ f. <λ a. ~(let x = f a; <x>)>;
+
+let serialize-ℕ : ℕ → □ ℕ =
+  λ n. <λ N s z. ~(let x = n N s z; <x>)>;
+
+let ex1 : □ (Bool → Bool) = <λ b. ~(let x = not  b; <x>)>;
+let ex  : □ (Bool → Bool) = <λ b. ~(let x = not' b; <x>)>;
+
+return ex1

@@ -4,7 +4,7 @@ module Zonk (Tm(..), zonk, zonk0, castTm, unzonk) where
 import Cxt
 import Common hiding (Lvl)
 import Errors
-import Metacontext
+import ElabState
 
 import qualified Common as C
 import qualified Evaluation as E
@@ -22,9 +22,9 @@ data Tm a
   | Let Name (Tm a) (Tm a)
   | Lam Name (Tm a)
   | App (Tm a) (Tm a)
-  | Erased
+  | Erased String
   | Quote (Tm a)
-  | Splice (Tm a)
+  | Splice (Tm a) (Maybe SourcePos)
   | Return (Tm a)
   | Bind Name (Tm a) (Tm a)
   | Seq (Tm a) (Tm a)
@@ -54,9 +54,9 @@ zonk l e = go where
       S.App t u i        -> goSp' t >>= \case
                               Left v  -> pure $! Left $! E.vApp v (E.eval e u) i
                               Right t -> Right . App t <$!> go u
-      S.Splice t         -> goSp' t >>= \case
+      S.Splice t pos     -> goSp' t >>= \case
                               Left v  -> pure $! Left $! E.vSplice v
-                              Right t -> pure $ Right $ Splice t
+                              Right t -> pure $ Right $ Splice t pos
       t                  -> Right <$!> go t
 
   goBind :: S.Tm -> IO (Tm Void)
@@ -75,40 +75,41 @@ zonk l e = go where
     t@S.App{}            -> goSp t
     S.Let x a t u        -> Let x <$!> go t <*!> goBind u
     S.AppPruning t pr    -> go (unAppPruning t pr)
-    S.U                  -> pure Erased
-    S.Pi{}               -> pure Erased
+    S.U                  -> pure $ Erased "U"
+    S.Pi{}               -> pure $ Erased "Pi"
     t@S.Meta{}           -> goSp t
     t@S.PostponedCheck{} -> goSp t
-    S.Box{}              -> pure Erased
+    S.Box{}              -> pure $ Erased "Code"
     S.Quote t            -> Quote <$!> go t
     t@S.Splice{}         -> goSp t
-    S.Unit               -> pure Erased
-    S.Tt                 -> pure Erased
-    S.Eff{}              -> pure Erased
+    S.Unit               -> pure $ Erased "Unit"
+    S.Tt                 -> pure $ Erased "tt"
+    S.Eff{}              -> pure $ Erased "Eff"
     S.Return t           -> Return <$!> go t
     S.Bind x t u         -> Bind x <$!> go t <*!> goBind u
     S.Seq t u            -> Seq <$!> go t <*!> go u
-    S.Ref{}              -> pure Erased
+    S.Ref{}              -> pure $ Erased "Ref"
     S.New t              -> New <$!> go t
     S.Write t u          -> Write <$!> go t <*!> go u
     S.Read t             -> Read <$!> go t
-    S.Erased             -> pure Erased
+    S.Erased _           -> pure $ Erased "Erased"
 
 zonk0 :: S.Tm -> IO (Tm Void)
 zonk0 = zonk 0 []
 
-unzonk :: Tm Void -> S.Tm
+unzonk :: Tm a -> S.Tm
 unzonk = \case
-  Var x      -> S.Var x
-  Let x t u  -> S.Let x S.Erased (unzonk t) (unzonk u)
-  Lam x t    -> S.Lam x Expl (unzonk t)
-  App t u    -> S.App (unzonk t) (unzonk u) Expl
-  Erased     -> S.Erased
-  Quote t    -> S.Quote (unzonk t)
-  Splice t   -> S.Splice (unzonk t)
-  Return t   -> S.Return (unzonk t)
-  Bind x t u -> S.Bind x (unzonk t) (unzonk u)
-  Seq t u    -> S.Seq (unzonk t) (unzonk u)
-  New t      -> S.New (unzonk t)
-  Write t u  -> S.Write (unzonk t) (unzonk u)
-  Read t     -> S.Read (unzonk t)
+  Var x        -> S.Var x
+  Let x t u    -> S.Let x (S.Erased "") (unzonk t) (unzonk u)
+  Lam x t      -> S.Lam x Expl (unzonk t)
+  App t u      -> S.App (unzonk t) (unzonk u) Expl
+  Erased s     -> S.Erased s
+  Quote t      -> S.Quote (unzonk t)
+  Splice t pos -> S.Splice (unzonk t) pos
+  Return t     -> S.Return (unzonk t)
+  Bind x t u   -> S.Bind x (unzonk t) (unzonk u)
+  Seq t u      -> S.Seq (unzonk t) (unzonk u)
+  New t        -> S.New (unzonk t)
+  Write t u    -> S.Write (unzonk t) (unzonk u)
+  Read t       -> S.Read (unzonk t)
+  CSP _        -> S.Erased "CSP"

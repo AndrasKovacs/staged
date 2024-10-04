@@ -86,7 +86,7 @@ lvl2Ix (Lvl l) (Lvl x) = Ix (l - x - 1)
 newtype NoShow a = NoShow a
 
 instance Show (NoShow a) where
-  showsPrec _ x acc = acc
+  showsPrec _ x acc = '_' : acc
 
 -- Snoc lists
 --------------------------------------------------------------------------------

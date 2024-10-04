@@ -15,7 +15,7 @@ import Common
 import Cxt
 import Errors
 import Evaluation
-import Metacontext
+import ElabState
 import Pretty
 import Syntax
 import Value
@@ -217,7 +217,7 @@ psubstSp :: Dbg => PartialSub -> Tm -> Spine -> IO Tm
 psubstSp pren t = \case
   SId            -> pure t
   SApp sp u i    -> App <$> psubstSp pren t sp <*> psubst pren u <*> pure i
-  SSplice sp     -> Splice <$> psubstSp pren t sp
+  SSplice sp     -> Splice <$> psubstSp pren t sp <*> pure Nothing
 
 psubst :: Dbg => PartialSub -> Val -> IO Tm
 psubst psub t = case force t of
@@ -488,7 +488,14 @@ check cxt t a = do
 
       pure $ PostponedCheck c
 
-    (P.Let x a t u, a') -> do
+    (P.Let x Nothing t u, a') -> do
+      (t, a) <- infer cxt t
+      let ~vt = eval (env cxt) t
+      let qa = quote (lvl cxt) a
+      u <- check (define cxt x t vt qa a) u a'
+      pure (Let x qa t u)
+
+    (P.Let x (Just a) t u, a') -> do
       a <- check cxt a VU
       let ~va = eval (env cxt) a
       t <- check cxt t va
@@ -587,13 +594,20 @@ infer cxt t = do
       b <- check (bind cxt x (eval (env cxt) a)) b VU
       pure (Pi x i a b, VU)
 
-    P.Let x a t u -> do
+    P.Let x (Just a) t u -> do
       a <- check cxt a VU
       let ~va = eval (env cxt) a
       t <- check cxt t va
       let ~vt = eval (env cxt) t
       (u, b) <- infer (define cxt x t vt a va) u
       pure (Let x a t u, b)
+
+    P.Let x Nothing t u -> do
+      (t, a) <- infer cxt t
+      let ~vt = eval (env cxt) t
+      let qa = quote (lvl cxt) a
+      (u, b) <- infer (define cxt x t vt qa a) u
+      pure (Let x qa t u, b)
 
     P.Hole -> do
       a <- eval (env cxt) <$> freshMeta cxt VU
@@ -608,10 +622,10 @@ infer cxt t = do
       (t, tty) <- infer cxt t
       pure (Quote t, VBox tty)
 
-    P.Splice t -> do
+    P.Splice t pos -> do
       (t, tty) <- infer cxt t
       a <- ensureBox cxt tty
-      pure (Splice t, a)
+      pure (Splice t (Just pos), a)
 
     P.Eff t -> do
       t <- check cxt t VU

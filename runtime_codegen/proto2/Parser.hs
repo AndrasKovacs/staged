@@ -9,12 +9,14 @@ import Data.Void
 import Data.Foldable
 import System.Exit
 import Text.Megaparsec
+import Data.IORef
 
 import qualified Text.Megaparsec.Char       as C
 import qualified Text.Megaparsec.Char.Lexer as L
 
 import Common
 import Presyntax
+import ElabState
 
 --------------------------------------------------------------------------------
 
@@ -46,16 +48,19 @@ isKeyword x =
   || x == "Eff" || x == "Top" || x == "tt"
   || x == "Ref" || x == "new" || x == "read" || x == "write"
 
+isIdentRestChar :: Char -> Bool
+isIdentRestChar c = c == '\'' || c == '-' || isAlphaNum c
+
 ident :: Parser Name
 ident = try $ do
-  x <- (:) <$> C.letterChar <*> takeWhileP Nothing (\c -> c == '\'' || isAlphaNum c)
+  x <- (:) <$> C.letterChar <*> takeWhileP Nothing isIdentRestChar
   guard (not (isKeyword x))
   x <$ ws
 
 keyword :: String -> Parser ()
 keyword kw = do
   C.string kw
-  (satisfy (\c -> c == '\'' || isAlphaNum c) *> empty) <|> ws
+  (satisfy isIdentRestChar *> empty) <|> ws
 
 atom :: Parser Tm
 atom =
@@ -69,7 +74,10 @@ atom =
   <|> parens tm
 
 splice :: Parser Tm
-splice = (Splice <$> (char '~' *> splice)) <|> atom
+splice =
+      (do p <- getSourcePos
+          Splice <$> (char '~' *> splice) <*> pure p)
+  <|> atom
 
 arg :: Parser (Either Name Icit, Tm)
 arg =   (try $ braces $ do {x <- ident; char '='; t <- tm; pure (Left x, t)})
@@ -94,7 +102,7 @@ spine =
   <|>
   (Read <$> (keyword "read" *> splice))
   <|>
-  do h <- atom
+  do h <- splice
      args <- many arg
      pure $ foldl' (\t (i, u) -> App t u i) h args
 
@@ -111,7 +119,7 @@ lam = do
   xs <- some lamBinder
   char '.'
   t <- tm
-  pure $ foldr' (\(x, i, ma) -> Lam x i ma) t xs
+  pure $ foldr' (\(!x, !i, !ma) -> Lam x i ma) t xs
 
 piBinder :: Parser ([Name], Tm, Icit)
 piBinder =
@@ -124,7 +132,7 @@ pi = do
   dom <- some piBinder
   arrow
   cod <- tm
-  pure $! foldr' (\(xs, a, i) t -> foldr' (\x -> Pi x i a) t xs) cod dom
+  pure $! foldr' (\(!xs, !a, !i) t -> foldr' (\x -> Pi x i a) t xs) cod dom
 
 funOrSpine :: Parser Tm
 funOrSpine = do
@@ -142,7 +150,7 @@ pLet = do
   t <- tm
   char ';'
   u <- tm
-  pure $ Let x (maybe Hole id ann) t u
+  pure $ Let x ann t u
 
 pDo :: Parser Tm
 pDo = do
@@ -176,7 +184,8 @@ parseString str =
     Left e -> do
       putStrLn $ errorBundlePretty e
       exitFailure
-    Right t ->
+    Right t -> do
+      writeIORef sourceCode str
       pure t
 
 parseStdin :: IO (Tm, String)

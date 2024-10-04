@@ -2,7 +2,7 @@
 module Evaluation (($$), quote, eval, nf, force, lvl2Ix, vApp, vAppSp, vAppPruning, vSplice) where
 
 import Common
-import Metacontext
+import ElabState
 import Syntax
 import Value
 import Cxt.Type
@@ -78,7 +78,7 @@ eval env = \case
   PostponedCheck c -> vCheck env c
   Box t            -> VBox (eval env t)
   Quote t          -> vQuote (eval env t)
-  Splice t         -> vSplice (eval env t)
+  Splice t _       -> vSplice (eval env t)
   Unit             -> VUnit
   Tt               -> VTt
   Eff t            -> VEff (eval env t)
@@ -89,7 +89,7 @@ eval env = \case
   New t            -> VNew (eval env t)
   Read t           -> VRead (eval env t)
   Write t u        -> VWrite (eval env t) (eval env u)
-  Erased           -> impossible
+  Erased _         -> impossible
 
 force :: Val -> Val
 force = \case
@@ -100,7 +100,7 @@ quoteSp :: Lvl -> Tm -> Spine -> Tm
 quoteSp l t = \case
   SId          -> t
   SApp sp u i  -> App (quoteSp l t sp) (quote l u) i
-  SSplice sp   -> Splice (quoteSp l t sp)
+  SSplice sp   -> Splice (quoteSp l t sp) Nothing
 
 quote :: Dbg => Lvl -> Val -> Tm
 quote l t = case force t of

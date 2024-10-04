@@ -9,7 +9,7 @@ import qualified Data.IntMap.Strict as IM
 
 import Common
 import Evaluation
-import Metacontext
+import ElabState
 import Syntax
 import Cxt.Type
 
@@ -35,11 +35,12 @@ par p p' = showParen (p' < p)
 newl :: Int -> ShowS
 newl i acc = '\n' : replicate i ' ' ++ acc
 
-isBindLet :: Tm -> Bool
-isBindLet = \case
-  Bind{} -> True
-  Let{}  -> True
-  _      -> False
+lamNewl :: Tm -> Bool
+lamNewl = \case
+  Bind{}  -> True
+  Let{}   -> True
+  Quote{} -> True
+  _       -> False
 
 prettyTm :: Int -> Int -> [Name] -> Tm -> ShowS
 prettyTm prec i = goTop prec i where
@@ -84,7 +85,7 @@ prettyTm prec i = goTop prec i where
     Lam (fresh ns -> x) ic t  -> par p letp $ ("λ "++) . lamBind x ic . goLam (ns:>x) t where
                                    goLam ns (Lam (fresh ns -> x) ic t) =
                                      (' ':) . lamBind x ic . goLam (ns:>x) t
-                                   goLam ns t | isBindLet t =
+                                   goLam ns t | lamNewl t =
                                      (". "++) . newl (i + 2) . go letp (i + 2) ns t
                                    goLam ns t =
                                      (". "++) . go letp i ns t
@@ -108,7 +109,7 @@ prettyTm prec i = goTop prec i where
 
     Box t                     -> par p appp $ ('□':) . (' ':) . go atomp i ns t
     Quote t                   -> ('<':) . go letp i ns t . ('>':)
-    Splice t                  -> ('~':) . go atomp i ns t
+    Splice t _                -> ('~':) . go atomp i ns t
     Unit                      -> ('⊤':)
     Tt                        -> ("tt"++)
     Eff t                     -> par p appp $ ("Eff "++) . go atomp i ns t
@@ -124,7 +125,7 @@ prettyTm prec i = goTop prec i where
     New t                     -> par p appp $ ("new "++) . go atomp i ns t
     Read t                    -> par p appp $ ("read "++) . go atomp i ns t
     Write t u                 -> par p appp $ ("write "++) . go atomp i ns t . (' ':) . go atomp i ns u
-    Erased                    -> ('Ø':)
+    Erased msg                -> (("*"++msg++"*")++)
 
   goTop :: Int -> Int -> [Name] -> Tm -> ShowS
   goTop p i ns = \case

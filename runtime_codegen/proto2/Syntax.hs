@@ -58,7 +58,7 @@ data Tm
 
   | Box Tm
   | Quote Tm
-  | Splice Tm
+  | Splice Tm (Maybe SourcePos)
 
   | Unit
   | Tt
@@ -72,7 +72,7 @@ data Tm
   | New Tm
   | Write Tm Tm
   | Read Tm
-  | Erased
+  | Erased String
   deriving Show
 
 -- | Unfold `AppPruning` to an iterated application to vars. This applies a term to all de Bruijn indices

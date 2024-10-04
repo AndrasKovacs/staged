@@ -1,5 +1,5 @@
 
-module Metacontext where
+module ElabState where
 
 import Data.IORef
 import System.IO.Unsafe
@@ -126,6 +126,12 @@ lookupMeta = unsafeDupablePerformIO . readMeta
 
 --------------------------------------------------------------------------------
 
+sourceCode :: IORef String
+sourceCode = unsafeDupablePerformIO $ newIORef ""
+{-# noinline sourceCode #-}
+
+--------------------------------------------------------------------------------
+
 -- | Reset all mutable refs to initial state.
 reset :: IO ()
 reset = do
@@ -133,3 +139,4 @@ reset = do
   writeIORef mcxt mempty
   writeIORef nextCheckVar 0
   writeIORef checkCxt mempty
+  writeIORef sourceCode ""

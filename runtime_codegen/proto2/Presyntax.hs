@@ -10,12 +10,12 @@ data Tm
   | App Tm Tm (Either Name Icit)              -- t u  | t {u} | t {x = u}
   | U                                         -- U
   | Pi Name Icit Tm Tm                        -- (x : A) -> B | {x : A} -> B
-  | Let Name Tm Tm Tm                         -- let x : A = t; u
+  | Let Name (Maybe Tm) Tm Tm                 -- let x : A = t; u
   | SrcPos SourcePos Tm                       -- source position for error reporting
 
   | Box Tm                                    -- □
   | Quote Tm                                  -- <t>
-  | Splice Tm                                 -- ~t
+  | Splice Tm SourcePos                       -- ~t
 
   | Eff Tm                                    -- Eff
   | Return Tm                                 -- return
@@ -41,12 +41,12 @@ stripPos = \case
   App t u i    -> App (stripPos t) (stripPos u) i
   U            -> U
   Pi x i a b   -> Pi x i (stripPos a) (stripPos b)
-  Let x a t u  -> Let x (stripPos a) (stripPos t) (stripPos u)
+  Let x a t u  -> Let x (stripPos <$> a) (stripPos t) (stripPos u)
   SrcPos _ t   -> stripPos t
   Hole         -> Hole
   Box t        -> Box (stripPos t)
   Quote t      -> Quote (stripPos t)
-  Splice t     -> Splice (stripPos t)
+  Splice t p   -> Splice (stripPos t) p
   Eff t        -> Eff (stripPos t)
   Return t     -> Return (stripPos t)
   Bind x t u   -> Bind x (stripPos t) (stripPos u)

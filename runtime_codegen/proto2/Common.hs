@@ -26,14 +26,17 @@ import Text.Printf
 -- debug :: (Applicative f) => [String] -> f ()
 -- debug strs = traceM (intercalate " | " strs ++ " END")
 
--- type Dbg :: Constraint
--- type Dbg = HasCallStack
+type Dbg :: Constraint
+type Dbg = HasCallStack
 
 debug :: (Applicative f) => [String] -> f ()
 debug strs = pure ()
 
-type Dbg :: Constraint
-type Dbg = ()
+-- type Dbg :: Constraint
+-- type Dbg = ()
+
+debug2 :: (Applicative f) => [String] -> f ()
+debug2 strs = traceM (intercalate " | " strs ++ " END")
 
 --------------------------------------------------------------------------------
 
@@ -41,6 +44,14 @@ type Dbg = ()
 ($$!) f a = f a
 {-# inline ($$!) #-}
 infixl 8 $$!
+
+(<*!>) :: Monad m => m (a -> b) -> m a -> m b
+(<*!>) f a = do
+  f <- f
+  a <- a
+  pure $! f a
+{-# inline (<*!>) #-}
+infixl 4 <*!>
 
 impossible :: Dbg => a
 impossible = error "impossible"

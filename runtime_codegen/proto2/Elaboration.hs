@@ -34,7 +34,7 @@ unifyPlaceholder cxt t m = case lookupMeta m of
 
   -- If the placeholder meta is unsolved, we can solve it efficiently here,
   -- without any possibility of failure.
-  Unsolved bs a -> do
+  Unsolved bs a _ -> do
     debug ["solve unconstrained placeholder", show m, showTm0 (closeTm (locals cxt) t)]
 
     -- we can simply close the checked term, to get the solution
@@ -108,7 +108,7 @@ skip (PSub occ dom cod sub) = PSub occ dom (cod + 1) sub
 --   splices from spines of the meta.
 etaExpandMeta :: MetaVar -> IO Val
 etaExpandMeta m = do
-  (!_, !a) <- readUnsolved m
+  (!_, !a, !pos) <- readUnsolved m
 
   let go :: Cxt -> VTy -> IO Tm
       go cxt a = case force a of
@@ -173,9 +173,9 @@ pruneTy (RevPruning pr) a = go pr (PSub Nothing 0 0 mempty) a where
 -- | Prune arguments from a meta, return pruned value.
 pruneMeta :: Dbg => Pruning -> MetaVar -> IO Val
 pruneMeta pruning m = do
-  (!bs, !mty) <- readUnsolved m
+  (!bs, !mty, !pos) <- readUnsolved m
   prunedty <- eval [] <$> pruneTy (revPruning pruning) mty
-  m' <- newRawMeta bs prunedty
+  m' <- newRawMeta bs prunedty pos
   let solution = eval [] $ lams (Lvl $ length pruning) mty $ AppPruning (Meta m') pruning
   writeMeta m (Solved solution mty)
   pure solution
@@ -269,7 +269,7 @@ solveWithPSub gamma m (psub, pruneNonlinear) rhs = do
 
   debug ["solve", show m, showTm0 (quote gamma rhs)]
 
-  (blocked, mty) <- readUnsolved m
+  (blocked, mty, pos) <- readUnsolved m
 
   -- if the spine was non-linear, we check that the non-linear arguments
   -- can be pruned from the meta type (i.e. that the pruned solution will
@@ -375,7 +375,7 @@ closeVTy cxt a = eval [] $ closeTy (locals cxt) (quote (lvl cxt) a)
 
 freshMeta :: Dbg => Cxt -> VTy -> IO Tm
 freshMeta cxt a = do
-  m <- newRawMeta mempty (closeVTy cxt a)
+  m <- newRawMeta mempty (closeVTy cxt a) (pos cxt)
   debug ["freshMeta", show m, showVal cxt a]
   pure $ AppPruning (Meta m) (pruning cxt)
 
@@ -479,7 +479,7 @@ check cxt t a = do
 
     -- If the checking type is unknown, we postpone checking.
     (t, topA@(VFlex m sp)) -> do
-      placeholder <- newRawMeta mempty (closeVTy cxt topA)
+      placeholder <- newRawMeta mempty (closeVTy cxt topA) (pos cxt)
       c <- newCheck cxt t topA placeholder
       addBlocking c m
 
@@ -650,11 +650,13 @@ infer cxt t = do
 
     P.New t -> do
       (t, tty) <- infer cxt t
+      -- debug2 ["HALLO", showTm cxt t, showVal cxt tty]
       pure (New t, VEff (VRef tty))
 
     P.Write t u -> do
       (t, tty) <- infer cxt t
       a <- ensureRef cxt tty
+      -- debug2 ["BÉKA", showTm cxt t, showVal cxt a]
       u <- check cxt u a
       pure (Write t u, VEff VUnit)
 

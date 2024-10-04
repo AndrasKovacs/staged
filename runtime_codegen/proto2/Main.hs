@@ -23,39 +23,40 @@ helpMsg = unlines [
   "usage: rtcg [--help|nf|type]",
   "  --help    : display this message",
   "  elab      : read & elaborate expression from stdin",
-  "  elab zonk : read & elaborate expression from stdin, zonk output",
+  "  zonk      : read & elaborate expression from stdin, zonk output",
   "  nf        : read & typecheck expression from stdin, print its normal form and type",
   "  type      : read & typecheck expression from stdin, print its type"]
 
 mainWith :: IO [String] -> IO (P.Tm, String) -> IO ()
 mainWith getOpt getRaw = do
 
+  let handleErr file act = act `catch` \e -> displayError file e >> exitSuccess
+
   let elab = do
         (t, file) <- getRaw
-        res <- (infer (emptyCxt (initialPos file)) t <* checkEverything)
-               `catch` \e -> displayError file e >> exitSuccess
+        res <- handleErr file (infer (emptyCxt (initialPos file)) t <* checkEverything)
         putStrLn ("\n" ++ replicate 80 '-' ++ "\n")
-        pure res
+        pure (res, file)
 
   reset
   getOpt >>= \case
     ["--help"] -> putStrLn helpMsg
     ["nf"]   -> do
-      (t, a) <- elab
+      ((t, a), file) <- elab
       putStrLn $ showTm0 $ nf [] t
       putStrLn "  :"
       putStrLn $ showTm0 $ quote 0 a
     ["type"] -> do
-      (t, a) <- elab
+      ((t, a), file) <- elab
       putStrLn $ showTm0 $ quote 0 a
     ["elab"] -> do
-      (t, a) <- elab
+      ((t, a), file) <- elab
       displayMetas
       putStrLn (replicate 80 '-' ++ "\n")
       putStrLn $ showTm0 t
-    ["elab", "zonk"] -> do
-      (t, a) <- elab
-      t <- pure $ unzonk $ zonk0 t
+    ["zonk"] -> do
+      ((t, a), file) <- elab
+      t <- unzonk <$> handleErr file (zonk0 t)
       putStrLn $ showTm0 t
     _ -> putStrLn helpMsg
 

@@ -31,7 +31,7 @@ data Tm a
   | New (Tm a)
   | Write (Tm a) (Tm a)
   | Read (Tm a)
-  | CSP a
+  | CSP (Maybe Name) a
   deriving Show
 
 castTm :: Tm Void -> Tm a
@@ -75,24 +75,24 @@ zonk l e = go where
     t@S.App{}            -> goSp t
     S.Let x a t u        -> Let x <$!> go t <*!> goBind u
     S.AppPruning t pr    -> go (unAppPruning t pr)
-    S.U                  -> pure $ Erased "U"
-    S.Pi{}               -> pure $ Erased "Pi"
+    S.U                  -> pure $ Erased "⊘"
+    S.Pi{}               -> pure $ Erased "⊘"
     t@S.Meta{}           -> goSp t
     t@S.PostponedCheck{} -> goSp t
-    S.Box{}              -> pure $ Erased "Code"
+    S.Box{}              -> pure $ Erased "⊘"
     S.Quote t            -> Quote <$!> go t
     t@S.Splice{}         -> goSp t
-    S.Unit               -> pure $ Erased "Unit"
-    S.Tt                 -> pure $ Erased "tt"
-    S.Eff{}              -> pure $ Erased "Eff"
+    S.Unit               -> pure $ Erased "⊘"
+    S.Tt                 -> pure $ Erased "⊘"
+    S.Eff{}              -> pure $ Erased "⊘"
     S.Return t           -> Return <$!> go t
     S.Bind x t u         -> Bind x <$!> go t <*!> goBind u
     S.Seq t u            -> Seq <$!> go t <*!> go u
-    S.Ref{}              -> pure $ Erased "Ref"
+    S.Ref{}              -> pure $ Erased "⊘"
     S.New t              -> New <$!> go t
     S.Write t u          -> Write <$!> go t <*!> go u
     S.Read t             -> Read <$!> go t
-    S.Erased _           -> pure $ Erased "Erased"
+    S.Erased _           -> pure $ Erased "⊘"
 
 zonk0 :: S.Tm -> IO (Tm Void)
 zonk0 = zonk 0 []
@@ -112,4 +112,4 @@ unzonk = \case
   New t        -> S.New (unzonk t)
   Write t u    -> S.Write (unzonk t) (unzonk u)
   Read t       -> S.Read (unzonk t)
-  CSP _        -> S.Erased "CSP"
+  CSP x _      -> S.Erased $ maybe "*CSP*" (\x -> "*"++x++"*") x

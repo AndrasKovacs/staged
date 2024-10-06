@@ -17,7 +17,7 @@ import System.IO.Unsafe
 
 type Tm    = Z.Tm Closed
 type Lvl   = (?lvl   :: C.Lvl)
-type Env a = (?env   :: [a])
+type Env a = (?env   :: [(Name, a)])
 type Stage = (?stage :: Int)
 type CEnv  = Env Closed
 type OEnv  = Env Open
@@ -44,11 +44,11 @@ data Open
   | ONew Open
   | OWrite Open Open
   | ORead Open
-  | OClosed Closed
+  | OClosed (Maybe Name) Closed
   deriving Show
 
-def :: v -> (Env v => a) -> (Env v => a)
-def t act = let ?env = t: ?env in act
+def :: Name -> v -> (Env v => a) -> (Env v => a)
+def x t act = let ?env = (x, t): ?env in act
 
 stage :: Int -> (Stage => a) -> a
 stage s act = let ?stage = s in act
@@ -56,17 +56,17 @@ stage s act = let ?stage = s in act
 lvl :: C.Lvl -> (Lvl => a) -> a
 lvl l act = let ?lvl = l in act
 
-env :: [v] -> (Env v => a) -> a
+env :: [(Name, v)] -> (Env v => a) -> a
 env e act = let ?env = e in act
 
 fresh :: (Lvl => Open -> a) -> Lvl => a
 fresh act = let v = OVar ?lvl in let ?lvl = ?lvl + 1 in act v
 
 closeEnv :: (OEnv => a) -> CEnv => a
-closeEnv act = let ?env = map OClosed ?env in act
+closeEnv act = let ?env = map (\(x, v) -> (x, OClosed (Just x) v)) ?env in act
 
-idEnv :: C.Lvl -> [Open]
-idEnv l = map OVar [l-1,l-2..0]
+idEnv :: C.Lvl -> [(Name, Open)]
+idEnv l = map (\x -> ("lvl"++show x, OVar x)) [l-1,l-2..0]
 
 --------------------------------------------------------------------------------
 
@@ -87,31 +87,31 @@ cSplice t pos = case t of
 
 exec :: CEnv => Tm -> IO Closed
 exec = \case
-  Var x      -> eRun (?env !! coerce x)
-  Let x t u  -> def (ceval t) (exec u)
-  Lam x t    -> impossible
-  App t u    -> eRun $ cApp (ceval t) (ceval u)
-  Erased{}   -> impossible
-  Quote t    -> impossible
+  Var x        -> eRun (snd (?env !! coerce x))
+  Let x t u    -> def x (ceval t) (exec u)
+  Lam x t      -> impossible
+  App t u      -> eRun $ cApp (ceval t) (ceval u)
+  Erased{}     -> impossible
+  Quote t      -> impossible
   Splice t pos -> eRun $ cSplice (ceval t) pos
-  Return t   -> pure $! ceval t
-  Bind x t u -> do {t <- exec t; def t $ exec u}
-  Seq t u    -> exec t >> exec u
-  New t      -> CRef <$!> (coerce (newIORef $! ceval (coerce t)))
-  Write t u  -> case ceval t of
-                  CRef r -> CErased "tt" <$ (writeIORef (coerce r) $! ceval u)
-                  _      -> impossible
-  Read t     -> case ceval t of
-                  CRef r -> readIORef (coerce r)
-                  _      -> impossible
-  CSP t      -> eRun t
+  Return t     -> pure $! ceval t
+  Bind x t u   -> do {t <- exec t; def x t $ exec u}
+  Seq t u      -> exec t >> exec u
+  New t        -> CRef <$!> (coerce (newIORef $! ceval (coerce t)))
+  Write t u    -> case ceval t of
+                    CRef r -> CErased "tt" <$ (writeIORef (coerce r) $! ceval u)
+                    _      -> impossible
+  Read t       -> case ceval t of
+                    CRef r -> readIORef (coerce r)
+                    _      -> impossible
+  CSP x t      -> eRun t
 
 ceval :: CEnv => Tm -> Closed
 ceval = \case
-  Var x        -> ?env !! coerce x
-  Let _ t u    -> def (ceval t) (ceval u)
-  Lam x t      -> CLam x (coerce (\v -> def v $ ceval t))
-                         (coerce (\v -> closeEnv $ def v $ lvl 0 $ stage 0 $ oeval t))
+  Var x        -> snd (?env !! coerce x)
+  Let x t u    -> def x (ceval t) (ceval u)
+  Lam x t      -> CLam x (coerce (\v -> def x v $ ceval t))
+                         (coerce (\v -> closeEnv $ def x v $ lvl 0 $ stage 0 $ oeval t))
   App t u      -> cApp (ceval t) (ceval u)
   Erased s     -> CErased s
   Quote t      -> CQuote (closeEnv $ lvl 0 $ stage 1 $ oeval t)
@@ -122,12 +122,12 @@ ceval = \case
   t@New{}      -> CAction (coerce (exec t))
   t@Write{}    -> CAction (coerce (exec t))
   t@Read{}     -> CAction (coerce (exec t))
-  CSP t        -> t
+  CSP _ t      -> t
 
 oeval :: OEnv => Lvl => Stage => Tm -> Open
 oeval = \case
-  Var x      -> ?env !! coerce x
-  Lam x t    -> OLam x (coerce \v -> def v $ oeval t)
+  Var x      -> snd (?env !! coerce x)
+  Lam x t    -> OLam x (coerce \v -> def x v $ oeval t)
   Erased s   -> OErased s
   Quote t    -> OQuote $ stage (?stage + 1) $ oeval t
   Return t   -> OReturn (oeval t)
@@ -136,15 +136,15 @@ oeval = \case
   New t      -> ONew (oeval t)
   Write t u  -> OWrite (oeval t) (oeval u)
   Read t     -> ORead (oeval t)
-  CSP t      -> OClosed t
+  CSP x t    -> OClosed x t
   t -> case ?stage of
     0 -> case t of
-      Let x t u    -> def (oeval t) (oeval u)
+      Let x t u    -> def x (oeval t) (oeval u)
       App t u      -> case (oeval t, oeval u) of
-                        (OClosed (CLam _ f _), OClosed u) -> OClosed (coerce f u)
-                        (OClosed (CLam _ _ f), u        ) -> coerce f u
-                        (OLam _ f            , u        ) -> coerce f u
-                        (t                   , u        ) -> OApp t u
+                        (OClosed x (CLam _ f _), OClosed x' u) -> OClosed Nothing (coerce f u)
+                        (OClosed x (CLam _ _ f), u           ) -> coerce f u
+                        (OLam _ f              , u           ) -> coerce f u
+                        (t                     , u           ) -> OApp t u
       Splice t pos -> case oeval t of
                         OQuote t -> env (idEnv ?lvl) $ oeval $ traceGen t pos
                         t        -> OSplice t
@@ -182,7 +182,7 @@ gen = \case
   ONew t      -> New (gen t)
   OWrite t u  -> Write (gen t) (gen u)
   ORead t     -> Read (gen t)
-  OClosed t   -> CSP t
+  OClosed x t -> CSP x t
 
 -- Only for pretty printing purposes
 readBackClosed :: Closed -> Tm

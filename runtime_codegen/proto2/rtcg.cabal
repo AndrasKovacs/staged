@@ -22,10 +22,10 @@ executable rtcg
       Cxt
       Cxt.Type
       Elaboration
+      ElabState
       Errors
       Evaluation
       Interpreter
-      Metacontext
       Parser
       Presyntax
       Pretty

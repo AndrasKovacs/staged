@@ -27,7 +27,7 @@ data ElabError
   | InferNamedLam
   | NoNamedImplicitArg Name
   | IcitMismatch Icit Icit
-  | UnsolvedMetaInZonk MetaVar
+  | UnsolvedMetaInZonk MetaVar Tm
   deriving (Show, Exception)
 
 data Error = Error Cxt ElabError
@@ -74,8 +74,10 @@ displayError (Error cxt e) = do
         IcitMismatch i i' -> printf
           ("Function icitness mismatch: expected %s, got %s.")
           (show i) (show i')
-        UnsolvedMetaInZonk x ->
-          "Unsolved metavariable in compilation. Identifier: " ++ show x
+        UnsolvedMetaInZonk x a ->
+          "Unsolved metavariable in compilation.\n" ++
+          "Type: " ++ showTm (emptyCxt (initialPos "")) a
+
 
   let locMsg = displayLocation (pos cxt) file
 

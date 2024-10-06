@@ -79,10 +79,13 @@ splice =
           Splice <$> (char '~' *> splice) <*> pure p)
   <|> atom
 
+explArg :: Parser Tm
+explArg = splice <|> lam
+
 arg :: Parser (Either Name Icit, Tm)
 arg =   (try $ braces $ do {x <- ident; char '='; t <- tm; pure (Left x, t)})
     <|> ((Right Impl,) <$> (char '{' *> tm <* char '}'))
-    <|> ((Right Expl,) <$> splice)
+    <|> ((Right Expl,) <$> explArg)
 
 spine :: Parser Tm
 spine =
@@ -92,15 +95,15 @@ spine =
   <|>
   (Eff <$> (keyword "Eff" *> splice))
   <|>
-  (Return <$> (keyword "return" *> splice))
+  (Return <$> (keyword "return" *> explArg))
   <|>
   (Ref <$> (keyword "Ref" *> splice))
   <|>
-  (New <$> (keyword "new" *> splice))
+  (New <$> (keyword "new" *> explArg))
   <|>
-  (Write <$> (keyword "write" *> splice) <*> splice)
+  (Write <$> (keyword "write" *> splice) <*> explArg)
   <|>
-  (Read <$> (keyword "read" *> splice))
+  (Read <$> (keyword "read" *> explArg))
   <|>
   do h <- splice
      args <- many arg
@@ -175,8 +178,38 @@ tm = withPos (
   <|> try pi
   <|> funOrSpine)
 
+topLet :: Parser Tm
+topLet = do
+  (x, ann) <- try do
+    x <- ident
+    ann <- optional (char ':' *> tm)
+    char '='
+    pure (x, ann)
+  t <- tm
+  char ';'
+  u <- top
+  pure $ Let x ann t u
+
+topDo :: Parser Tm
+topDo = do
+  keyword "do"
+  optional (try (ident <* (symbol "<-" <|> symbol "←"))) >>= \case
+    Nothing -> do
+      t <- tm
+      char ';'
+      u <- top
+      pure $ Seq t u
+    Just x  -> do
+      t <- tm
+      char ';'
+      u <- top
+      pure $ Bind x t u
+
+top :: Parser Tm
+top = withPos (topLet <|> topDo <|> tm)
+
 src :: Parser Tm
-src = ws *> tm <* eof
+src = ws *> top <* eof
 
 parseString :: String -> IO Tm
 parseString str =

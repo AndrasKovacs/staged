@@ -47,7 +47,7 @@ zonk l e = go where
     goSp' = \case
       S.Meta x           -> case lookupMeta x of
                               Solved v _     -> pure $ Left v
-                              Unsolved _ _ p -> throwIO $ Error (emptyCxt p) $ UnsolvedMetaInZonk x
+                              Unsolved _ a p -> throwIO $ Error (emptyCxt p) $ UnsolvedMetaInZonk x (E.quote 0 a)
       S.PostponedCheck x -> case lookupCheck x of
                               Checked t   -> Right <$!> go t
                               Unchecked{} -> impossible

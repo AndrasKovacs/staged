@@ -23,7 +23,7 @@ type CEnv  = Env Closed
 type OEnv  = Env Open
 
 data Closed
-  = CLam Name (NoShow (Closed -> Closed)) (NoShow (Open -> Open))
+  = CLam Name (NoShow (Closed -> Closed)) (NoShow (C.Lvl -> Open -> Open))
   | CAction (NoShow (IO Closed))
   | CRef (NoShow (IORef Closed))
   | CQuote Open
@@ -33,7 +33,7 @@ data Closed
 data Open
   = OVar C.Lvl
   | OLet Name Open (NoShow (C.Lvl -> Open))
-  | OLam Name (NoShow (Open -> Open))
+  | OLam Name (NoShow (C.Lvl -> Open -> Open))
   | OApp Open Open
   | OErased String
   | OQuote Open
@@ -111,7 +111,7 @@ ceval = \case
   Var x        -> snd (?env !! coerce x)
   Let x t u    -> def x (ceval t) (ceval u)
   Lam x t      -> CLam x (coerce (\v -> def x v $ ceval t))
-                         (coerce (\v -> closeEnv $ def x v $ lvl 0 $ stage 0 $ oeval t))
+                         (coerce (\l v -> closeEnv $ def x v $ lvl l $ stage 0 $ oeval t))
   App t u      -> cApp (ceval t) (ceval u)
   Erased s     -> CErased s
   Quote t      -> CQuote (closeEnv $ lvl 0 $ stage 1 $ oeval t)
@@ -127,7 +127,7 @@ ceval = \case
 oeval :: OEnv => Lvl => Stage => Tm -> Open
 oeval = \case
   Var x      -> snd (?env !! coerce x)
-  Lam x t    -> OLam x (coerce \v -> def x v $ oeval t)
+  Lam x t    -> OLam x (coerce \l v -> def x v $ lvl l $ oeval t)
   Erased s   -> OErased s
   Quote t    -> OQuote $ stage (?stage + 1) $ oeval t
   Return t   -> OReturn (oeval t)
@@ -142,8 +142,8 @@ oeval = \case
       Let x t u    -> def x (oeval t) (oeval u)
       App t u      -> case (oeval t, oeval u) of
                         (OClosed x (CLam _ f _), OClosed x' u) -> OClosed Nothing (coerce f u)
-                        (OClosed x (CLam _ _ f), u           ) -> coerce f u
-                        (OLam _ f              , u           ) -> coerce f u
+                        (OClosed x (CLam _ _ f), u           ) -> coerce f ?lvl u
+                        (OLam _ f              , u           ) -> coerce f ?lvl u
                         (t                     , u           ) -> OApp t u
       Splice t pos -> case oeval t of
                         OQuote t -> env (idEnv ?lvl) $ oeval $ traceGen t pos
@@ -159,8 +159,8 @@ traceGen :: Lvl => Open -> Maybe SourcePos -> Tm
 traceGen t pos =
   let t' = gen t
       freevars = map (\l -> "x" ++ show l) [0.. ?lvl - 1]
-      displayCode  = prettyTm 0 0 freevars (Z.unzonk t') "" in
-  case pos of
+      displayCode  = prettyTm 0 0 freevars (Z.unzonk t') ""
+  in case pos of
     Nothing ->
       trace ("CODE GENERATED: \n\n" ++ displayCode ++ "\n") t'
     Just pos ->
@@ -171,7 +171,7 @@ gen :: Lvl => Open -> Tm
 gen = \case
   OVar x      -> Var (coerce (?lvl - x - 1))
   OLet x t u  -> Let x (gen t) $ fresh \_ -> gen (coerce u ?lvl)
-  OLam x t    -> Lam x $ fresh \v -> gen (coerce t v)
+  OLam x t    -> Lam x $ fresh \v -> gen (coerce t ?lvl v)
   OApp t u    -> App (gen t) (gen u)
   OErased s   -> Erased s
   OQuote t    -> Quote (gen t)
@@ -187,7 +187,7 @@ gen = \case
 -- Only for pretty printing purposes
 readBackClosed :: Closed -> Tm
 readBackClosed t = let ?lvl = 0 in case t of
-  CLam x _ t -> Lam x $ fresh \v -> gen (coerce t v)
+  CLam x _ t -> Lam x $ fresh \v -> gen (coerce t ?lvl v)
   CAction _  -> Erased "Action"
   CRef _     -> Erased "Ref"
   CQuote t   -> Quote (gen t)

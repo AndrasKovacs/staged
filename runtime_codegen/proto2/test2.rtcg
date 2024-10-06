@@ -2,6 +2,9 @@
 -- Prelude
 --------------------------------------------------------------------------------
 
+the : (A : U) → A → A
+  = λ _ x. x;
+
 id : {A} → A → A
   = λ x. x;
 
@@ -10,6 +13,20 @@ const : {A B} → A → B → A
 
 comp : {A B C} → (B → C) → (A → B) → A → C
   = λ f g x. f (g x);
+
+--------------------------------------------------------------------------------
+
+Gen : U → U
+   = λ A. {R : U} → (A → □ R) → □ R;
+
+ret : {A} → A → Gen A
+  = λ a k. k a;
+
+bind : {A B} → Gen A → (A → Gen B) → Gen B
+  = λ ga f k. ga λ a. (f a) k;
+
+runGen : {A} → Gen (□ A) → □ A
+  = λ ga. ga (λ x. x);
 
 --------------------------------------------------------------------------------
 
@@ -35,9 +52,9 @@ mul : ℕ → ℕ → ℕ
 
 n0   = zero;
 n1   = suc zero;
-n2   = suc (suc zero);
-n3   = suc (suc (suc zero));
-n5   = suc (suc (suc (suc (suc zero))));
+n2   = suc $ suc zero;
+n3   = suc $ suc $ suc zero;
+n5   = suc $ suc $ suc $ suc $ suc zero;
 n10  = add n5 n5;
 n100 = mul n10 n10;
 n1k  = mul n100 n10;
@@ -68,6 +85,9 @@ and : Bool → Bool → Bool
 or : Bool → Bool → Bool
   = λ x y B t f. x B t (y B t f);
 
+splitBool : {A} → □ Bool → Gen A → Gen A → Gen A
+  = λ b t f k. <~b _ ~(t k) ~(f k)>;
+
 --------------------------------------------------------------------------------
 
 List  : U → U
@@ -78,12 +98,6 @@ cons : {A} → A → List A → List A = λ a as L c n. c a (as L c n);
 
 foldr : {A B} → (A → B → B) → B → List A → B
   = λ c n as. as _ c n;
-
-mkMap : {A B} → (□ A → □ B) → □ (List A → List B)
-  = λ f. <λ as. foldr (λ a bs. cons ~(f <a>) bs) nil as>;
-
--- mapSuc : List ℕ → List ℕ
---    = ~(mkMap (λ x. <suc ~x>));
 
 --------------------------------------------------------------------------------
 
@@ -99,19 +113,32 @@ fst : {A B} → Pair A B → A
 snd : {A B} → Pair A B → B
   = λ ab. ab _ (λ a b. b);
 
+
+-- Foldr fusion
 --------------------------------------------------------------------------------
 
-Gen : U → U
-   = λ A. {R : U} → (A → □ R) → □ R;
+Push : U → U
+  = λ A. (L : U) → (A → □ L → □ L) → □ L → □ L;
 
-ret : {A} → A → Gen A
-  = λ a k. k a;
+map : {A B} → (A → B) → Push A → Push B
+  = λ f as L c n. as L (λ a b. c (f a) b) n;
 
-bind : {A B} → Gen A → (A → Gen B) → Gen B
-  = λ ga f k. ga λ a. (f a) k;
+filter : {A} → (A → Gen Bool) → Push A → Push A
+  = λ f as L c n. as L (λ a l. runGen $ bind (f a) λ b. b _ (ret (c a l)) (ret l)) n;
 
-runGen : {A} → Gen (□ A) → □ A
-  = λ ga. ga (λ x. x);
+pushList : {A} → □ (List A) → Push (□ A)
+  = λ as L c n. <foldr (λ a l. ~(c <a> <l>)) ~n ~as>;
+
+unpushList : {A} → Push (□ A) → □ (List A)
+  = λ as. as _ (λ a as. <cons ~a ~as>) <nil>;
+
+example : List ℕ → List ℕ
+  = ~<λ ns. ~(unpushList $
+         map    (λ n. <add n10 ~n>) $
+         map    (λ n. <add n10 ~n>) $
+         filter (λ n. ret true)     $
+         map    (λ n. <add n10 ~n>) $
+         pushList <ns>)>;
 
 --------------------------------------------------------------------------------
 

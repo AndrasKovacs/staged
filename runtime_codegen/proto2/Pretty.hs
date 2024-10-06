@@ -136,7 +136,7 @@ prettyTm prec i = goTop prec i where
                                  par p letp $ ("do " ++) . (x++) . (" ← "++) . go letp i' ns t
                                  . (";\n\n"++) . goTop letp i (ns:>x) u
     Let (fresh ns -> x) a t u -> let i' = i + 2 in
-                                 par p letp $ ("let "++) . (x++) . (" : "++) . go letp i ns a
+                                 (x++) . (" : "++) . go letp i ns a
                                  . (" =\n  "++) . go letp i' ns t . (";\n\n"++) . goTop letp i (ns:>x) u
     t                         -> go p i ns t
 
@@ -148,6 +148,6 @@ displayMetas :: IO ()
 displayMetas = do
   ms <- readIORef mcxt
   forM_ (IM.toList ms) $ \(m, e) -> case e of
-    Unsolved _ a _ -> printf "let ?%s : %s = ?;\n"  (show m) (showTm0 $ quote 0 a)
-    Solved v a     -> printf "let ?%s : %s = %s;\n" (show m) (showTm0 $ quote 0 a) (showTm0 $ quote 0 v)
+    Unsolved _ a _ -> printf "?%s = UNSOLVED;\n"  (show m)
+    Solved v a     -> printf "?%s = %s;\n" (show m) (showTm0 $ quote 0 v)
   putStrLn ""

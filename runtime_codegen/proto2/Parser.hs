@@ -137,9 +137,14 @@ pi = do
   cod <- tm
   pure $! foldr' (\(!xs, !a, !i) t -> foldr' (\x -> Pi x i a) t xs) cod dom
 
-funOrSpine :: Parser Tm
-funOrSpine = do
-  sp <- spine
+apps :: Parser Tm
+apps = do
+  t <- spine
+  (char '$' *> (App t <$> apps <*> pure (Right Expl))) <|> pure t
+
+funOrApps :: Parser Tm
+funOrApps = do
+  sp <- apps
   optional arrow >>= \case
     Nothing -> pure sp
     Just _  -> Pi "_" Expl sp <$> tm
@@ -176,7 +181,7 @@ tm = withPos (
   <|> pLet
   <|> pDo
   <|> try pi
-  <|> funOrSpine)
+  <|> funOrApps)
 
 topLet :: Parser Tm
 topLet = do

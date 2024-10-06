@@ -75,7 +75,7 @@ displayError (Error cxt e) = do
           ("Function icitness mismatch: expected %s, got %s.")
           (show i) (show i')
         UnsolvedMetaInZonk x a ->
-          "Unsolved metavariable in compilation.\n" ++
+          "Unsolved metavariable.\n" ++
           "Type: " ++ showTm (emptyCxt (initialPos "")) a
 
 

@@ -14,6 +14,9 @@ const : {A B} → A → B → A
 comp : {A B C} → (B → C) → (A → B) → A → C
   = λ f g x. f (g x);
 
+modify : {A} → Ref A → (A → A) → Eff ⊤
+  = λ r f. do a ← read r; write r (f a);
+
 --------------------------------------------------------------------------------
 
 Gen : U → U
@@ -27,11 +30,6 @@ bind : {A B} → Gen A → (A → Gen B) → Gen B
 
 runGen : {A} → Gen (□ A) → □ A
   = λ ga. ga (λ x. x);
-
---------------------------------------------------------------------------------
-
-modify : {A} → Ref A → (A → A) → Eff ⊤
-  = λ r f. do a ← read r; write r (f a);
 
 --------------------------------------------------------------------------------
 
@@ -63,7 +61,7 @@ n10k = mul n100 n100;
 mkExp : ℕ → □ (ℕ → ℕ)
   = λ x. <λ y. ~(x _ (λ f. <mul ~f y>) <n1>)>;
 
--- exp5 = ~(mkExp n5);
+exp5 = ~(mkExp n5);
 
 --------------------------------------------------------------------------------
 
@@ -136,7 +134,7 @@ example : List ℕ → List ℕ
   = ~<λ ns. ~(unpushList $
          map    (λ n. <add n10 ~n>) $
          map    (λ n. <add n10 ~n>) $
-         filter (λ n. ret true)     $
+         filter (λ _. ret true)     $
          map    (λ n. <add n10 ~n>) $
          pushList <ns>)>;
 

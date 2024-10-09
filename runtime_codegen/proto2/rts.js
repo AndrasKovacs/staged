@@ -3,7 +3,7 @@
 
 // closed value representation
 //   CLam is a pair {_1: Closed -> Closed, _2: Lvl -> Open -> Open}
-//   CAction is immediately a function () -> Closed
+//   CAction is immediately a function with type () -> Closed
 //   CRef is an object {_1 : Closed}
 //   CQuote is immediately an Open value
 //   CErased is undefined
@@ -39,12 +39,3 @@ const New_    = (t)       => {return {tag: _New, _1: t}}
 const Write_  = (t, u)    => {return {tag: _Write, _1: t, _2: u}}
 const Read_   = (t)       => {return {tag: _Read, _1: t}}
 const Closed_ = (t)       => {return {tag: _Closed, _1: t}}
-
-//code generation: Open -> String
-//  while also recording all CSP'd closed values in an array
-
-// codegen reproduces everything from the Haskell compiler, but taking
-// open values as input instead of Tm, and producing a string.
-//    - exec:  Open -> String
-//    - ceval: Open -> String
-//    - oeval: Open -> Lvl -> Stage -> String

@@ -1,7 +1,7 @@
 {-# language OverloadedStrings #-}
 {-# options_ghc -Wno-unused-imports #-}
 
-module Compiler where
+module Compiler (genTop) where
 
 {-
 1. Closure conversion
@@ -40,10 +40,13 @@ newtype Out = Out (Int -> Build)
 str :: String -> Out
 str = fromString
 
+strLit :: String -> Out
+strLit s = "'" <> str s <> "'"
+
 instance IsString Out where fromString s = Out (\_ -> Chunk s)
 
-indent :: Out -> Out
-indent (Out f) = Out (\i -> f $! i + 4)
+-- indent :: Out -> Out
+-- indent (Out f) = Out (\i -> f $! i + 4)
 
 newl :: Out
 newl = Out Newline
@@ -168,8 +171,11 @@ cconvTop t =
   let ?env  = []
       ?mode = Nothing in
   let (t', s) = runState (cconv t) (S mempty 0 []) in
-  (s^.top, t')
+  (reverse (s^.top), t')
 
+
+
+-- Code generation
 --------------------------------------------------------------------------------
 
 type Stage = (?stage :: Int)
@@ -205,325 +211,183 @@ jReturn t = case ?cxt of
 jLam :: Cxt => [Name] -> (Cxt => Out) -> Out
 jLam xs t = jReturn $ jTuple (map str xs) <> " => {" <> tail t <> "}"
 
-jClApp :: (Cxt => Out) -> (Cxt => Out) -> (Cxt => Out)
-jClApp t u = jReturn $ t <> "._1(" <> u <> ")"
+cApp :: (Cxt => Out) -> (Cxt => Out) -> (Cxt => Out)
+cApp t u = jReturn $ parens t <> "._1(" <> u <> ")"
+
+parens :: Out -> Out
+parens t = "(" <> t <> ")"
 
 jApp :: (Cxt => Out) -> (Cxt => [Out]) -> (Cxt => Out)
 jApp t args = jReturn $ t <> jTuple args
 
-jRun :: (Cxt => Out) -> (Cxt => Out)
-jRun t = jReturn $ t <> "()"
+cRun :: (Cxt => Out) -> (Cxt => Out)
+cRun t = jReturn $ t <> "()"
 
-jUndefined :: Cxt => Out
-jUndefined = case ?cxt of
-  Tail -> "return undefined"
-  _    -> "undefined"
+jLamEnv :: [Name] -> (Cxt => Out) -> (Cxt => Out)
+jLamEnv []  t = t
+jLamEnv env t = jLam env t
 
---------------------------------------------------------------------------------
+jAppEnv :: (Cxt => Out) -> (Cxt => [Out]) -> (Cxt => Out)
+jAppEnv t args = jReturn $ case args of
+  []   -> t
+  args -> t <> jTuple args
 
-cevalTop :: (TopClosures, Tm) -> Out
-cevalTop (topcls, body) = tail $ go topcls where
+closeVar :: Name -> Name
+closeVar x = x ++ "c"
+
+openVar :: Name -> Name
+openVar x = x ++ "o"
+
+execTop :: (TopClosures, Tm) -> Out
+execTop (topcls, body) = tail $ go topcls where
 
   go :: Cxt => TopClosures -> Out
-  go []                        = cexec body
+  go [] =
+    exec body
   go ((n, env, arg, t):topcls) =
-    jLet (n ++ "closed") (jLam env $ jLam [arg] $ ceval t) $
-    jLet (n ++ "open")   (jLam env $ jLam [arg] $ stage 0 $ oeval t) $
+    jLet (closeVar n) (jLamEnv env $ jLam [arg] $ ceval t) $
+    jLet (openVar n)  (jLamEnv env $ jLam [arg] $ stage 0 $ oeval t) $
     go topcls
 
-cexec :: Cxt => Tm -> Out
-cexec = \case
-  Var x           -> jRun (str x)
-  CSP {}          -> impossible
-  Let x t u       -> jLet x (ceval t) (cexec u)
-  LiftedLam{}     -> impossible
-  Lam{}           -> impossible
-  App t u         -> jRun (ceval t `jClApp` ceval u)
-  Erased{}        -> impossible
-  Quote{}         -> impossible
-  Splice t _      -> jApp "cexec_" [ceval t]
-  Return t        -> jReturn $ ceval t
-  Bind x t u      -> jLet x (cexec t) (cexec u)
-  Seq t u         -> jLet "_" (cexec t) (cexec u)
-  New t           -> jReturn $ "{_1 : " <> ceval t <> "}"
-  Write t u       -> nonTail (ceval t) <> "._1 = " <> nonTail (ceval u)
-  Read t          -> jReturn $ ceval t <> "._1"
+exec :: Cxt => Tm -> Out
+exec = \case
+  Var x       -> cRun (str x)
+  CSP {}      -> impossible
+  Let x t u   -> jLet x (ceval t) (exec u)
+  LiftedLam{} -> impossible
+  Lam{}       -> impossible
+  App t u     -> cRun (ceval t `cApp` ceval u)
+  Erased{}    -> impossible
+  Quote{}     -> impossible
+  Splice t _  -> jApp "closedExec_" [ceval t]
+  Return t    -> jReturn $ ceval t
+  Bind x t u  -> jLet x (exec t) (exec u)
+  Seq t u     -> jLet "_" (exec t) (exec u)
+  New t       -> jReturn $ "{_1 : " <> ceval t <> "}"
+  Write t u   -> nonTail $ ceval t <> "._1 = " <> ceval u
+  Read t      -> jReturn $ ceval t <> "._1"
 
 ceval :: Cxt => Tm -> Out
 ceval = \case
   Var x           -> jReturn (str x)
   CSP{}           -> impossible
   Let x t u       -> jLet x (ceval t) (ceval u)
-  LiftedLam x env -> jReturn $ "{ _1 : " <> jApp (str (x ++ "closed")) (map str env) <>
-                               ", _2 : " <> jApp (str (x ++ "open"))   (map str env) <> "}"
+  LiftedLam x env -> jReturn $ "{ _1 : " <> jAppEnv (str (closeVar x)) (map str env) <>
+                               ", _2 : " <> jAppEnv (str (openVar x))  (map str env) <> "}"
   Lam{}           -> impossible
-  App t u         -> jClApp (ceval t) (ceval u)
-  Erased s        -> jUndefined
+  App t u         -> cApp (ceval t) (ceval u)
+  Erased s        -> jReturn "undefined"
   Quote t         -> stage 1 $ oeval t
-  Splice t _      -> jApp "ceval_" [ceval t]
-  t@Return{}      -> jLam [] $ cexec t
-  t@Bind{}        -> jLam [] $ cexec t
-  t@Seq{}         -> jLam [] $ cexec t
-  t@Write{}       -> jLam [] $ cexec t
-  t@Read{}        -> jLam [] $ cexec t
-  t@New{}         -> jLam [] $ cexec t
-
-oClosed :: (Cxt => Out) -> (Cxt => Out)
-oClosed t = jReturn $ "Closed_" <> jTuple [t]
-
-oLet :: Cxt => Stage => Name -> (Cxt => Out) -> (Cxt => Out) -> Out
-oLet x t u = case ?stage of
-  0 -> jLet x t u
-  _ -> jApp "Let_" [str x, t, u]
-
-oApp :: Cxt => Stage => (Cxt => Out) -> (Cxt => Out) -> Out
-oApp t u = case ?stage of
-  0 -> jApp "openApp_" [t, u]
-  _ -> _
+  Splice t _      -> jApp "closedEval_" [ceval t]
+  t@Return{}      -> jLam [] $ exec t
+  t@Bind{}        -> jLam [] $ exec t
+  t@Seq{}         -> jLam [] $ exec t
+  t@Write{}       -> jLam [] $ exec t
+  t@Read{}        -> jLam [] $ exec t
+  t@New{}         -> jLam [] $ exec t
 
 oeval :: Cxt => Stage => Tm -> Out
 oeval = \case
-  Var x       -> jReturn (str x)
-  CSP x       -> oClosed (str x)
-  Let x t u   -> oLet x (oeval t) (oeval u)
-  LiftedLam{} -> impossible
-  Lam x t     -> jLam [x] (oeval t)
-  App t u     -> oApp (oeval t) (oeval u)
+  Var x           -> jReturn (str x)
+  CSP x           -> jApp "Closed_" [str x]
+  Let x t u       -> case ?stage of
+                       0 -> jLet x (oeval t) (oeval u)
+                       _ -> jApp "Let_" [strLit x, oeval t, jLam [x] (oeval u)]
+  LiftedLam x env -> jAppEnv (str (openVar x)) (map str env)
+  Lam x t         -> jLam [x] (oeval t)
+  App t u         -> case ?stage of
+                       0 -> jApp "openApp_" [oeval t, oeval u]
+                       _ -> jApp "App_" [oeval t, oeval u]
+  Erased s        -> case ?stage of
+                       0 -> jReturn "Erased_"
+                       _ -> jReturn "undefined"
+  Quote t         -> jApp "Quote_" [stage (?stage + 1) (oeval t)]
+  Splice t _      -> case ?stage of
+                       0 -> jApp "openSplice0_" [oeval t]
+                       _ -> jApp "openSplice_" [oeval t]
+  Return t        -> jApp "Return_" [oeval t]
+  Bind x t u      -> jApp "Bind_" [strLit x, oeval t, jLam [x] (oeval u)]
+  Seq t u         -> jApp "Seq_" [oeval t, oeval u]
+  New t           -> jApp "New_" [oeval t]
+  Write t u       -> jApp "Write_" [oeval t, oeval u]
+  Read t          -> jApp "Read_" [oeval t]
 
--- appCl :: Out -> Out -> Out
--- appCl t u = t <> "._1(" <> u <> ")"
+rts :: String
+rts = unlines [
+   ""
+  ,"'use strict';"
+  ,""
+  ,"function impossible(){"
+  ,"    throw new Error('Impossible')"
+  ,"}"
+  ,""
+  ,"const _Var    = 0"
+  ,"const _Let    = 1"
+  ,"const _Lam    = 2"
+  ,"const _App    = 3"
+  ,"const _Erased = 4"
+  ,"const _Quote  = 5"
+  ,"const _Splice = 6"
+  ,"const _Return = 7"
+  ,"const _Bind   = 8"
+  ,"const _Seq    = 9"
+  ,"const _New    = 10"
+  ,"const _Write  = 11"
+  ,"const _Read   = 12"
+  ,"const _Closed = 13"
+  ,""
+  ,"function Var_    (x)       {return {tag: _Var, _1: x}}"
+  ,"function Let_    (x, t, u) {return {tag: _Let, _1: x, _2: t, _3: u}}"
+  ,"function Lam_    (x, t)    {return {tag: _Lam, _1: x, _2: t}}"
+  ,"function App_    (t, u)    {return {tag: _App, _1: t, _2: t}}"
+  ,"const    Erased_ =         {tag: _Erased}"
+  ,"function Quote_  (t)       {return {tag: _Quote, _1: t}}"
+  ,"function Splice_ (t)       {return {tag: _Splice, _1: t}}"
+  ,"function Return_ (t)       {return {tag: _Return, _1: t}}"
+  ,"function Bind_   (x, t, u) {return {tag: _Bind, _1: x, _2: t, _3: u}}"
+  ,"function Seq_    (t, u)    {return {tag: _Seq, _1: t, _2: u}}"
+  ,"function New_    (t)       {return {tag: _New, _1: t}}"
+  ,"function Write_  (t, u)    {return {tag: _Write, _1: t, _2: u}}"
+  ,"function Read_   (t)       {return {tag: _Read, _1: t}}"
+  ,"function Closed_ (t)       {return {tag: _Closed, _1: t}}"
+  ,""
+  ,"function openApp_(t, u) {"
+  ,"    if (t.tag == _Closed) {"
+  ,"        if (u.tag == _Closed) {"
+  ,"            return Closed_(t._1._1(u._1))"
+  ,"        } else {"
+  ,"            return t._1._2(u)"
+  ,"        }"
+  ,"    } else if (t.tag == _Lam) {"
+  ,"        return t._1(u)"
+  ,"    } else {"
+  ,"        impossible()"
+  ,"    }"
+  ,"}"
+  ,""
+  ,"function openSplice0_(t) {"
+  ,"    throw new Error('code generation not implemented')"
+  ,"}"
+  ,""
+  ,"function openSplice_(t) {"
+  ,"    if (t.tag == _Quote){"
+  ,"        return t._1"
+  ,"    } else {"
+  ,"        return Splice_(t)"
+  ,"    }"
+  ,"}"
+  ,""
+  ,"function closedExec_(t){"
+  ,"    throw new Error('code generation not implemented')"
+  ,"}"
+  ,""
+  ,"function closedEval_(t){"
+  ,"    throw new Error('code generation not implemented')"
+  ,"}"
+  ]
 
--- app :: Out -> Out -> Out
--- app t u = t <> "(" <> u <> ")"
-
--- runAction :: Out -> Out
--- runAction t = t <> "()"
-
-
-
--- ret :: Out -> Out
--- ret t = "return " <> tc
-
--- cexec :: Tm -> Out
--- cexec = \case
---   Var x           -> runAction (str x)
---   Let x t u       -> const x (ceval t) (cexec u)
---   LiftedLam{}     -> impossible
---   Lam{}           -> impossible
---   App t u         -> ret $ runAction (ceval t `appCl` ceval u)
---   Erased{}        -> impossible
---   Quote{}         -> impossible
---   Splice t _      -> ret $ runAction ("_ceval" `app` ceval t)
---   -- Return t        -> _
---   -- Return t        ->
---   -- Var x      -> eRun $ ix x
---   -- Let _ t u  -> "const " <> top <> " = " <> ceval t <> ";" <> newl <> bind (exec u)
---   -- Lam{}      -> impossible
---   -- App t u    -> eRun (cApp (ceval t) (ceval u))
---   -- Erased _   -> impossible
---   -- Quote{}    -> impossible
---   -- Splice t _ -> eRun $ "_ceval(" <> ceval t <> ")"
---   -- Return t   -> "return " <> ceval t <> ";"
---   -- Bind _ t u -> "const " <> top <> " = " <> exec t <> ";" <> newl <> bind (exec u)
---   -- Seq t u    -> exec t <> ";" <> newl <> exec u
---   -- New t      -> "{_1 : " <> ceval t <> "}"
---   -- Write t u  -> ceval t <> "._1 = " <> ceval u
---   -- Read t     -> ceval t <> "._1"
-
-
--- ceval :: Tm -> Out
--- ceval = undefined
-
--- oeval :: Stage => Tm -> Out
--- oeval = undefined
-
-
--- -- ix :: Lvl => Ix -> Out
--- -- ix x = str ('x' : show (coerce ?lvl - x - 1))
-
--- -- top :: Lvl => Out
--- -- top = str ('x' : show ?lvl)
-
--- -- eRun :: Out -> Out
--- -- eRun t = t <> "()"
-
--- -- cApp :: Out -> Out -> Out
--- -- cApp t u = t <> "(" <> u <> ")"
-
--- -- exec :: Lvl => Tm -> Out
--- -- exec = \case
--- --  Var x      -> eRun $ ix x
--- --  Let _ t u  -> "const " <> top <> " = " <> ceval t <> ";" <> newl <> bind (exec u)
--- --  Lam{}      -> impossible
--- --  App t u    -> eRun (cApp (ceval t) (ceval u))
--- --  Erased _   -> impossible
--- --  Quote{}    -> impossible
--- --  Splice t _ -> eRun $ "_ceval(" <> ceval t <> ")"
--- --  Return t   -> "return " <> ceval t <> ";"
--- --  Bind _ t u -> "const " <> top <> " = " <> exec t <> ";" <> newl <> bind (exec u)
--- --  Seq t u    -> exec t <> ";" <> newl <> exec u
--- --  New t      -> "{_1 : " <> ceval t <> "}"
--- --  Write t u  -> ceval t <> "._1 = " <> ceval u
--- --  Read t     -> ceval t <> "._1"
-
--- -- lam :: Lvl => Out -> Out
--- -- lam t = "(" <> top <> ") => {" <> t <> "}"
-
--- -- ceval :: Lvl => Tm -> Out
--- -- ceval = \case
--- --   Var x     -> ix x
--- --   Let _ t u -> "const " <> top <> " = " <> ceval t <> ";" <> newl <> bind (ceval u)
-
--- --   -- TODO: get rid of code duplication!!
--- --   Lam _ t   -> "{_1: " <> lam (bind (ceval t)) <> ", _2: " <> lam (bind $ stage 0 $ oeval t) <> "}"
-
--- --   App t u   -> cApp (ceval t) (ceval u)
--- --   Erased{}  -> "undefined"
--- --   Quote t   -> stage 1 $ oeval t  -- TODO: close environment!!!
-
--- -- oeval :: Lvl => Stage => Tm -> Out
--- -- oeval = \case
-
-
--- -- -- oeval :: OEnv => Lvl => Stage => Tm -> Open
--- -- -- oeval = \case
--- -- --   Var x      -> snd (?env !! coerce x)
--- -- --   Lam x t    -> OLam x (coerce \l v -> def x v $ lvl l $ oeval t)
--- -- --   Erased s   -> OErased s
--- -- --   Quote t    -> OQuote $ stage (?stage + 1) $ oeval t
--- -- --   Return t   -> OReturn (oeval t)
--- -- --   Bind x t u -> OBind x (oeval t) (NoShow \l -> lvl l $ oeval u)
--- -- --   Seq t u    -> OSeq (oeval t) (oeval u)
--- -- --   New t      -> ONew (oeval t)
--- -- --   Write t u  -> OWrite (oeval t) (oeval u)
--- -- --   Read t     -> ORead (oeval t)
--- -- --   CSP x t    -> OClosed x t
--- -- --   t -> case ?stage of
--- -- --     0 -> case t of
--- -- --       Let x t u    -> def x (oeval t) (oeval u)
--- -- --       App t u      -> case (oeval t, oeval u) of
--- -- --                         (OClosed x (CLam _ f _), OClosed x' u) -> OClosed Nothing (coerce f u)
--- -- --                         (OClosed x (CLam _ _ f), u           ) -> coerce f ?lvl u
--- -- --                         (OLam _ f              , u           ) -> coerce f ?lvl u
--- -- --                         (t                     , u           ) -> OApp t u
--- -- --       Splice t pos -> case oeval t of
--- -- --                         OQuote t -> env (idEnv ?lvl) $ oeval $ traceGen t pos
--- -- --                         t        -> OSplice t
--- -- --     _ -> case t of
--- -- --       Let x t u    -> OLet x (oeval t) (NoShow \l -> lvl l $ oeval u)
--- -- --       App t u      -> OApp (oeval t) (oeval u)
--- -- --       Splice t pos -> case stage (?stage - 1) $ oeval t of
--- -- --                         OQuote t -> t
--- -- --                         t        -> OSplice t
-
-
-
-
-
-
-
-
--- -- -- exec :: CEnv => Tm -> IO Closed
--- -- -- exec = \case
--- -- --   Var x        -> eRun (snd (?env !! coerce x))
--- -- --   Let x t u    -> def x (ceval t) (exec u)
--- -- --   Lam x t      -> impossible
--- -- --   App t u      -> eRun $ cApp (ceval t) (ceval u)
--- -- --   Erased{}     -> impossible
--- -- --   Quote t      -> impossible
--- -- --   Splice t pos -> eRun $ cSplice (ceval t) pos
--- -- --   Return t     -> pure $! ceval t
--- -- --   Bind x t u   -> do {t <- exec t; def x t $ exec u}
--- -- --   Seq t u      -> exec t >> exec u
--- -- --   New t        -> CRef <$!> (coerce (newIORef $! ceval (coerce t)))
--- -- --   Write t u    -> case ceval t of
--- -- --                     CRef r -> CErased "tt" <$ (writeIORef (coerce r) $! ceval u)
--- -- --                     _      -> impossible
--- -- --   Read t       -> case ceval t of
--- -- --                     CRef r -> readIORef (coerce r)
--- -- --                     _      -> impossible
--- -- --   CSP x t      -> eRun t
-
-
-
-
-
-
-
-
-
-
-
--- -- -- --------------------------------------------------------------------------------
-
--- -- -- type Tm    = Z.Tm Void
--- -- -- type Env   = (?env   :: [(Name, JS)])
--- -- -- type Lvl   = (?lvl   :: C.Lvl)
--- -- -- type Stage = (?stage :: Int)
-
--- -- -- data JS
--- -- --   = Var Name
--- -- --   | Lam Name (JS -> JS)
--- -- --   | App JS [JS]
--- -- --   | Obj [(Name, JS)]
--- -- --   | Field JS Name
--- -- --   | Arr [JS]
--- -- --   | Index JS JS
--- -- --   | Str String
--- -- --   | ConsoleLog [JS]
--- -- --   | Let Name JS (JS -> JS)
--- -- --   | Undefined
-
--- -- --   -- -- Open code is kinda an ADT in js
--- -- --   -- | OVar C.Lvl
--- -- --   -- | OLet Name JS (JS -> JS)
--- -- --   -- | OLam Name (NoShow (C.Lvl -> Open -> Open))
--- -- --   -- | OApp Open Open
--- -- --   -- | OErased String
--- -- --   -- | OQuote Open
--- -- --   -- | OSplice Open
--- -- --   -- | OReturn Open
--- -- --   -- | OBind Name Open (NoShow (C.Lvl -> Open))
--- -- --   -- | OSeq Open Open
--- -- --   -- | ONew Open
--- -- --   -- | OWrite Open Open
--- -- --   -- | ORead Open
--- -- --   -- | OClosed (Maybe Name) Closed
--- -- --   -- deriving Show
-
--- -- -- infixl 8 $$
--- -- -- ($$) :: JS -> [JS] -> JS
--- -- -- ($$) = App
-
--- -- -- stage :: Int -> (Stage => a) -> a
--- -- -- stage s act = let ?stage = s in act
-
--- -- -- lvl :: C.Lvl -> (Lvl => a) -> a
--- -- -- lvl l act = let ?lvl = l in act
-
--- -- -- --------------------------------------------------------------------------------
-
--- -- -- def :: Name -> JS -> (Env => a) -> (Env => a)
--- -- -- def x t act = let ?env = (x, t): ?env in act
-
--- -- -- eRun :: JS -> JS
--- -- -- eRun v = v $$ []
-
--- -- -- -- cSplice :: JS -> Maybe SourcePos -> JS
--- -- -- -- cSplice t pos = Case
-
--- -- --   -- CQuote t -> env [] $ lvl 0 $ ceval $ traceGen t pos
--- -- --   -- _        -> impossible
-
--- -- -- exec :: Env => Tm -> JS
--- -- -- exec = \case
--- -- --   Z.Var x        -> eRun $ snd (?env !! coerce x)
--- -- --   Z.Let x t u    -> Let x (ceval t) \v -> def x v $ exec u
--- -- --   Z.Lam x t      -> impossible
--- -- --   Z.App t u      -> eRun (ceval t $$ [ceval u])
--- -- --   Z.Erased{}     -> impossible
--- -- --   Z.Quote{}      -> impossible
--- -- --   -- Z.Splice t pos -> eRun $ cSplice (ceval t) pos
-
--- -- -- ceval :: Env => Tm -> JS
--- -- -- ceval = undefined
+genTop :: Z.Tm Void -> String
+genTop t =
+  let t' = cconvTop t in
+  trace "CCONV:" $ traceShow t' $ out $ execTop t'
+  -- out (str rts <> newl <> newl <> execTop (cconvTop t))

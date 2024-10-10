@@ -100,7 +100,7 @@ zonk0 = zonk 0 []
 unzonk :: Tm a -> S.Tm
 unzonk = \case
   Var x        -> S.Var x
-  Let x t u    -> S.Let x (S.Erased "") (unzonk t) (unzonk u)
+  Let x t u    -> S.Let x (S.Erased "⊘") (unzonk t) (unzonk u)
   Lam x t      -> S.Lam x Expl (unzonk t)
   App t u      -> S.App (unzonk t) (unzonk u) Expl
   Erased s     -> S.Erased s

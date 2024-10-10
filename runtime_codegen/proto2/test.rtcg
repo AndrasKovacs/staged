@@ -1,31 +1,73 @@
 
+-- Gen : U → U
+--    = λ A. {R : U} → (A → □ R) → □ R;
 
-let modify : {A} → Ref A → (A → A) → Eff ⊤ =
-  λ r f. do a ← read r;
-         write r (f a);
+-- ret : {A} → A → Gen A
+--   = λ a k. k a;
 
-let List : U → U =
-  λ A. (L : U) → (A → L → L) → L → L;
+-- bind : {A B} → Gen A → (A → Gen B) → Gen B
+--   = λ ga f k. ga λ a. (f a) k;
 
-let nil : {A} → List A =
-  λ L c n. n;
+-- runGen : {A} → Gen (□ A) → □ A
+--   = λ ga. ga (λ x. x);
 
-let cons : {A} → A → List A → List A =
-  λ a as L c n. c a (as L c n);
+ℕ : U
+   = (N : U) → (N → N) → N → N;
 
-do ref ← new (nil {⊤});
+zero  : ℕ = λ _ s z. z;
+suc   : ℕ → ℕ = λ n N s z. s (n N s z);
 
-do write ref (cons tt nil);
+iter  : {A} → ℕ → (A → A) → A → A
+  = λ n s z. n _ s z;
 
-let id : {A} → □ A → □ A =
-  λ x. x;
+add : ℕ → ℕ → ℕ
+  = λ a b N s z. a N s (b N s z);
 
-let majom : Eff ⊤ =
-  do x ← return tt;
-  let kek =
-    let bar =
-      tt;
-    bar;
-  return kek;
+mul : ℕ → ℕ → ℕ
+  = λ a b N s z. a N (b N s) z;
 
-return (cons tt (cons tt (cons tt nil)))
+n0   = zero;
+n1   = suc zero;
+n2   = suc $ suc zero;
+n3   = suc $ suc $ suc zero;
+n5   = suc $ suc $ suc $ suc $ suc zero;
+n10  = add n5 n5;
+n100 = mul n10 n10;
+n1k  = mul n100 n10;
+n10k = mul n100 n100;
+
+mkExp : ℕ → □ (ℕ → ℕ)
+  = λ x. <λ y. ~(x _ (λ f. <mul ~f y>) <n1>)>;
+
+exp5 = ~(mkExp n5);
+
+return exp5
+
+
+
+
+-- let List : U → U =
+--   λ A. (L : U) → (A → L → L) → L → L;
+
+-- let nil : {A} → List A =
+--   λ L c n. n;
+
+-- let cons : {A} → A → List A → List A =
+--   λ a as L c n. c a (as L c n);
+
+-- do ref ← new (nil {⊤});
+
+-- do write ref (cons tt nil);
+
+-- let id : {A} → □ A → □ A =
+--   λ x. x;
+
+-- let majom : Eff ⊤ =
+--   do x ← return tt;
+--   let kek =
+--     let bar =
+--       tt;
+--     bar;
+--   return kek;
+
+-- return (cons tt (cons tt (cons tt nil)))

@@ -13,6 +13,7 @@ import Pretty
 import Elaboration
 import Zonk
 import Interpreter
+import Compiler
 
 import qualified Presyntax as P
 
@@ -61,7 +62,14 @@ mainWith getOpt getRaw = do
       t <- unzonk <$> handleErr file (zonk0 t)
       putStrLn $ showTm0 t
     ["compile"] -> do
-      undefined
+      ((t, a), file) <- elab
+      t <- handleErr file (zonk0 t)
+      putStrLn "ZONK:"
+      putStrLn $ showTm0 $ unzonk t
+      putStrLn ""
+      let out = genTop t
+      putStrLn "\nOUT:"
+      putStrLn out
     ["interp"] -> do
       ((t, a), file) <- elab
       t <- handleErr file (zonk0 t)
@@ -81,8 +89,8 @@ main' :: String -> String -> IO ()
 main' mode src = mainWith (pure [mode]) ((,src) <$> parseString src)
 
 test :: String ->  IO ()
-test cmd= do
-  src <- readFile "test2.rtcg"
+test cmd = do
+  src <- readFile "test.rtcg"
   main' cmd src
   -- main' "elab" src
 

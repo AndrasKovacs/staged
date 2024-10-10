@@ -39,3 +39,35 @@ const New_    = (t)       => {return {tag: _New, _1: t}}
 const Write_  = (t, u)    => {return {tag: _Write, _1: t, _2: u}}
 const Read_   = (t)       => {return {tag: _Read, _1: t}}
 const Closed_ = (t)       => {return {tag: _Closed, _1: t}}
+
+const OpenApp_ = (t, u) => {
+
+
+
+
+}
+
+
+const foo = (f,x,y) => f(x, ((z) => z + 100)(y))
+
+// mutual "function" is supported
+// function even(n) {
+//     if (n == 0)
+// 	return true;
+//     else if (n == 1)
+// 	return false;
+//     else
+// 	return odd (n - 1);
+// }
+
+// function odd(n){
+//     if (n == 0)
+// 	return false;
+//     else if (n == 1)
+// 	return true;
+//     else
+// 	return even (n - 1);
+// }
+
+
+// console.log(even(20))

@@ -43,11 +43,14 @@ executable rtcg
       DerivingVia
       EmptyCase
       EmptyDataDeriving
+      FunctionalDependencies
       FlexibleContexts
+      FlexibleInstances
       GADTs
       GeneralizedNewtypeDeriving
       ImplicitParams
       LambdaCase
+      MultiParamTypeClasses
       OverloadedStrings
       PatternSynonyms
       RankNTypes
@@ -55,6 +58,7 @@ executable rtcg
       StandaloneDeriving
       StandaloneKindSignatures
       Strict
+      TemplateHaskell
       TupleSections
       ViewPatterns
   ghc-options: -Wall -Wno-name-shadowing -Wno-missing-signatures -Wno-unused-do-bind -Wno-unused-matches -O
@@ -62,5 +66,6 @@ executable rtcg
       base >=4.7 && <5
     , containers
     , megaparsec
+    , microlens-platform
     , mtl
   default-language: Haskell2010

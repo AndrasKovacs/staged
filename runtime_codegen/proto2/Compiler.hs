@@ -21,7 +21,8 @@ import Data.IORef
 import Data.String
 import Data.Void
 import System.IO.Unsafe
-import qualified Data.IntSet as IS
+import qualified Data.Set as S
+import Lens.Micro.Platform
 
 --------------------------------------------------------------------------------
 
@@ -81,7 +82,15 @@ data Tm =
   | Read Tm
   deriving Show
 
-data S = S {freeVars :: IS.IntSet, topLen :: Int, top :: [(Name, [Name], Name, Tm)]}
+
+data S = S {
+    sFreeVars :: S.Set Name
+  , sTopLen   :: Int
+  , sTop      :: [(Name, [Name], Name, Tm)]
+  } deriving Show
+
+makeFields ''S
+
 type Env = (?env :: [Name])
 
 fresh :: Name -> (Env => Name -> a) -> Env => a
@@ -91,19 +100,40 @@ fresh x act | elem x ?env = let x' = x ++ show (length ?env) in
             | otherwise   = let ?env = x : ?env in
                             act x
 
-cconv :: Env => ZTm -> State S Tm
-cconv = \case
-  Z.Var x ->
-    pure $! Var (?env !! coerce x)
+-- create fresh name, run action, delete bound name from freevars of the result
+bind :: Name -> (Env => Name -> State S a) -> Env => State S a
+bind x act = fresh x \x -> do
+  a <- act x
+  s <- get
+  freeVars %= S.delete x
+  pure a
 
-  Z.Let x t u -> do
-    t <- cconv t
-    fresh x \x -> Let x t <$> cconv u
+-- cconv :: Env => ZTm -> State S Tm
+-- cconv = \case
+--   Z.Var x -> do
+--     x <- pure $! ?env !! coerce x
+--     freeVars %= S.insert x
+--     pure $ Var x
 
-  -- Z.Lam x t -> fresh x \x -> do
-  --   _
+--   Z.Let x t u -> do
+--     t <- cconv t
+--     bind x \x -> Let x t <$> cconv u
 
+--   Z.Lam x t -> fresh x \x -> do
+--     old_fvs   <- use freeVars
+--     freeVars  .= S.empty
+--     t         <- cconv t
+--     t_capture <- S.delete x <$> use freeVars
+--     topid     <- topLen <<%= (+1)
+--     topid     <- pure $! "cl"++show topid
+--     capture   <- pure $! S.toList t_capture
+--     top       %= ((topid, capture, x, t):)
+--     freeVars  .= old_fvs
+--     pure $ Lam topid capture
 
+--   Z.App t u  -> App <$> cconv t <*> cconv u
+--   Z.Erased s -> pure $ Erased s
+--   Z.Quote t  -> pure $ Z.
 
 
 --------------------------------------------------------------------------------

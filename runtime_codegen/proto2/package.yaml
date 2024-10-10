@@ -18,11 +18,14 @@ default-extensions:
 - DerivingVia
 - EmptyCase
 - EmptyDataDeriving
+- FunctionalDependencies
 - FlexibleContexts
+- FlexibleInstances
 - GADTs
 - GeneralizedNewtypeDeriving
 - ImplicitParams
 - LambdaCase
+- MultiParamTypeClasses
 - OverloadedStrings
 - PatternSynonyms
 - RankNTypes
@@ -30,6 +33,7 @@ default-extensions:
 - StandaloneDeriving
 - StandaloneKindSignatures
 - Strict
+- TemplateHaskell
 - TupleSections
 - ViewPatterns
 

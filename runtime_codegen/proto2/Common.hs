@@ -8,9 +8,11 @@ module Common (
   , module Debug.Trace
   , module Data.Coerce
   , module Control.Monad
+  , module Data.Foldable
   , initialPos) where
 
 import Control.Monad
+import Data.Foldable
 import Data.Coerce
 import Data.Kind
 import Data.List

@@ -1,8 +1,5 @@
-let id : {A} → A → A = λ x. x;
 
-let id2 : ⊤ → ⊤ = λ x. id x;
 
-return id
 
 -- Gen : U → U
 --    = λ A. {R : U} → (A → □ R) → □ R;
@@ -67,12 +64,14 @@ return id
 -- let id : {A} → □ A → □ A =
 --   λ x. x;
 
--- let majom : Eff ⊤ =
---   do x ← return tt;
---   let kek =
---     let bar =
---       tt;
---     bar;
---   return kek;
+let majom : Eff (⊤ → ⊤) =
+  do x ← return (λ (y : ⊤). y);
+  let kek =
+    let bar =
+      (λ (y : ⊤). y);
+    bar;
+  return kek;
+
+return tt
 
 -- return (cons tt (cons tt (cons tt nil)))

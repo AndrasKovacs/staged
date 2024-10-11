@@ -1,68 +1,24 @@
 {-# language OverloadedStrings #-}
 {-# options_ghc -Wno-unused-imports #-}
 
-module Compiler (genTop) where
-
-{-
-1. Closure conversion
-2. Codegen
--}
+module Compiler  where
 
 import Common hiding (Lvl)
-
-import qualified Zonk   as Z
-import qualified Common as C
-import Pretty
 import ElabState
 import Errors
+import Pretty
+import StringBuilder
+import qualified Common as C
+import qualified Zonk   as Z
 
 import Control.Monad.State.Strict
 import Data.IORef
 import Data.String
 import Data.Void
-import System.IO.Unsafe
-import qualified Data.Set as S
 import Lens.Micro.Platform
 import Prelude hiding (const, tail)
-
---------------------------------------------------------------------------------
-
-data Build = Chunk String | Append Build Build | Newline Int | Empty
-  deriving Show
-
-instance IsString Build  where fromString = Chunk
-instance Semigroup Build where (<>) = Append
-instance Monoid Build    where mempty = Empty
-
-newtype Out = Out (Int -> Build)
-  deriving (Semigroup, Monoid) via (Int -> Build)
-
-str :: String -> Out
-str = fromString
-
-strLit :: String -> Out
-strLit s = "'" <> str s <> "'"
-
-instance IsString Out where fromString s = Out (\_ -> Chunk s)
-
--- indent :: Out -> Out
--- indent (Out f) = Out (\i -> f $! i + 4)
-
-newl :: Out
-newl = Out Newline
-
-out :: Out -> String
-out (Out f) = go (f 0) "" where
-  go :: Build -> String -> String
-  go b acc = case b of
-    Chunk s      -> s ++ acc
-    Append b1 b2 -> go b1 (go b2 acc)
-    Newline i    -> let acc' = indent i acc in '\n':acc'
-    Empty        -> acc
-
-  indent :: Int -> String -> String
-  indent 0 acc = acc
-  indent i acc = indent (i - 1) (' ':acc)
+import System.IO.Unsafe
+import qualified Data.Set as S
 
 
 -- Closure conversion
@@ -70,11 +26,19 @@ out (Out f) = go (f 0) "" where
 
 type ZTm = Z.Tm Void
 
-data Tm =
-    Var Name
+data Top
+  = TLet Name Tm Top
+  | TBind Name Tm Top
+  | TSeq Tm Top
+  | TBody Tm
+  | TClosure Name [Name] Name Tm Top -- name, env, arg, body
+  deriving Show
+
+data Tm
+  = Var Name
   | CSP Name
   | Let Name Tm Tm
-  | LiftedLam Name [Name] -- top code name, application to env
+  | LiftedLam Name [Name] -- name, env application
   | Lam Name Tm
   | App Tm Tm
   | Erased String
@@ -92,32 +56,36 @@ type TopClosures = [(Name, [Name], Name, Tm)]
 
 data S = S {
     sFreeVars :: S.Set Name
-  , sTopLen   :: Int
-  , sTop      :: TopClosures
+  , sNextId   :: Int
+  , sClosures :: TopClosures
   } deriving Show
 
 makeFields ''S
 
-type Env   = (?env  :: [(Bool, Bool, Name)])  -- is closed, is top-level, name
-type Mode  = (?mode :: Maybe Int)
+type Env     = (?env     :: [(Bool, Bool, Name)])  -- is closed, is top-level, name
+type Mode    = (?mode    :: Maybe Int)
+type TopName = (?topName :: String)
 
-fresh :: Name -> Bool -> (Env => Name -> a) -> Env => a
-fresh x isTop act
+freshenName :: Env => Name -> Name
+freshenName x
   | any ((==x).(\(_, _, x) -> x)) ?env =
-     let x' = x ++ show (length ?env) in
-     let ?env = (False, isTop, x') : ?env in act x'
-  | otherwise =
-     let ?env = (False, isTop, x) : ?env in act x
+     freshenName $ x ++ show (length ?env)
+  | otherwise = x
+
+fresh :: Name -> (Env => Name -> a) -> Env => a
+fresh x act = let x' = freshenName x in
+              let ?env = (False, False, x') : ?env in
+              act x'
 
 -- create fresh name, run action, delete bound name from freevars of the result
 bind :: Name -> (Env => Name -> State S a) -> Env => State S a
-bind x act = fresh x False \x -> do
+bind x act = fresh x \x -> do
   a <- act x
   s <- get
   freeVars %= S.delete x
   pure a
 
-cconv :: Env => Mode => ZTm -> State S Tm
+cconv :: Env => Mode => TopName => ZTm -> State S Tm
 cconv = \case
   Z.Var x -> do
     (closed, top, x) <- pure $! ?env !! coerce x
@@ -129,17 +97,16 @@ cconv = \case
     bind x \x -> Let x t <$> cconv u
 
   Z.Lam x t -> case ?mode of
-    Nothing -> fresh x False \x -> do
+    Nothing -> fresh x \x -> do
       old_fvs   <- use freeVars
       freeVars  .= S.empty
       t         <- cconv t
-      t_capture <- S.delete x <$> use freeVars
-      topid     <- topLen <<%= (+1)
-      topid     <- pure $! "_"++show topid
-      capture   <- pure $! S.toList t_capture
-      top       %= ((topid, capture, x, t):)
+      capture   <- S.toList . S.delete x <$> use freeVars
+      clId      <- nextId <<%= (+1)
+      clName    <- pure $! ?topName++show clId++"_"
+      closures  %= ((clName, capture, x, t):)
       freeVars  .= old_fvs
-      pure $ LiftedLam topid capture
+      pure $ LiftedLam clName capture
     Just{} ->
       bind x \x -> Lam x <$> cconv t
 
@@ -166,22 +133,35 @@ cconv = \case
   Z.Write t u  -> Write <$> cconv t <*> cconv u
   Z.Read t     -> Read <$> cconv t
 
-cconvTop :: Env => Mode => ZTm -> State S Tm
-cconvTop = \case
-  Z.Let x t u -> do
-    t <- cconv t
-    fresh x True \x -> Let x t <$> cconvTop u
-  Z.Bind x t u -> do
-    t <- cconv t
-    fresh x True \x -> Let x t <$> cconvTop u
-  t -> cconv t
+cconv0 :: Env => Mode => Name -> ZTm -> (Tm, TopClosures)
+cconv0 x t =
+  let ?topName = x in
+  case runState (cconv t) (S mempty 0 []) of
+    (t, S _ _ cs) -> (t, cs)
 
-runCconv :: ZTm -> (TopClosures, Tm)
-runCconv t =
-  let ?env  = []
-      ?mode = Nothing in
-  let (t', s) = runState (cconvTop t) (S mempty 0 []) in
-  (reverse (s^.top), t')
+addClosures :: TopClosures -> Top -> Top
+addClosures cs t =
+  foldl' (\acc (x, env, arg, t) -> TClosure x env arg t acc) t cs
+
+cconvTop :: Env => Mode => ZTm -> Top
+cconvTop = \case
+  Z.Let (freshenName -> x) t u ->
+    let (t', cs) = cconv0 x t in
+    let ?env     = (False, True, x) : ?env in
+    addClosures cs $ TLet x t' (cconvTop u)
+  Z.Bind (freshenName -> x) t u ->
+    let (t', cs) = cconv0 x t in
+    let ?env     = (False, True, x) : ?env in
+    addClosures cs $ TBind x t' (cconvTop u)
+  Z.Seq t u ->
+    let (t', cs) = cconv0 "cl" t in
+    addClosures cs $ TSeq t' (cconvTop u)
+  t ->
+    case cconv0 "cl" t of
+      (t', cs) -> addClosures cs (TBody t')
+
+runCConv :: ZTm -> Top
+runCConv t = let ?env = []; ?mode = Nothing in cconvTop t
 
 
 -- Code generation
@@ -202,7 +182,7 @@ nonTail act = let ?cxt = NonTail in act
 
 jLet :: Cxt => Name -> (Cxt => Out) -> (Cxt => Out) -> Out
 jLet x t u = case ?cxt of
-  Tail -> "const " <> str x <> " = " <> nonTail t <> ";" <> newl <> tail u
+  Tail -> "const " <> str x <> " = " <> indent (nonTail t) <> ";" <> newl <> tail u
   _    -> "((" <> str x <> ") => " <> nonTail u <> ")" <> nonTail t
 
 jTuple :: [Out] -> Out
@@ -247,16 +227,22 @@ closeVar x = x ++ "c"
 openVar :: Name -> Name
 openVar x = x ++ "o"
 
-execTop :: (TopClosures, Tm) -> Out
-execTop (topcls, body) = tail $ go topcls where
-
-  go :: Cxt => TopClosures -> Out
-  go [] =
-    exec body
-  go ((n, env, arg, t):topcls) =
-    jLet (closeVar n) (jLamEnv env $ jLam [arg] $ ceval t) $
-    jLet (openVar n)  (jLamEnv env $ jLam [arg] $ stage 0 $ oeval t) $
-    go topcls
+execTop :: Top -> Out
+execTop t = tail $ go t where
+  go :: Cxt => Top -> Out
+  go = \case
+    TLet x t u  ->
+      jLet x (ceval t) (go u)
+    TBind x t u ->
+      jLet x (exec t) (go u)
+    TSeq t u    ->
+      jLet "_" (exec t) (go u)
+    TClosure x env arg body t ->
+      jLet (closeVar x) (jLamEnv env $ jLam [arg] $ ceval body) $
+      jLet (openVar x)  (jLamEnv env $ jLam [arg] $ stage 0 $ oeval body) $
+      go t
+    TBody t ->
+      exec t
 
 exec :: Cxt => Tm -> Out
 exec = \case
@@ -397,6 +383,6 @@ rts = unlines [
 
 genTop :: Z.Tm Void -> String
 genTop t =
-  let t' = runCconv t in
-  trace "CCONV:" $ traceShow t' $ out $ execTop t'
+  let t' = runCConv t in
+  trace "CCONV:" $ traceShow t' $ build $ execTop t'
   -- out (str rts <> newl <> newl <> execTop (cconvTop t))

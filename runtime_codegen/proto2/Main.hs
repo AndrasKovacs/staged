@@ -12,8 +12,8 @@ import Parser
 import Pretty
 import Elaboration
 import Zonk
-import Interpreter
-import Compiler
+import qualified Interpreter
+import qualified Compiler
 
 import qualified Presyntax as P
 
@@ -67,14 +67,14 @@ mainWith getOpt getRaw = do
       putStrLn "ZONK:"
       putStrLn $ showTm0 $ unzonk t
       putStrLn ""
-      let out = genTop t
+      let out = Compiler.genTop t
       putStrLn "\nOUT:"
       putStrLn out
     ["interp"] -> do
       ((t, a), file) <- elab
       t <- handleErr file (zonk0 t)
-      res <- execTop (castTm t)
-      res <- pure $ unzonk $ readBackClosed res
+      res <- Interpreter.execTop (castTm t)
+      res <- pure $ unzonk $ Interpreter.readBackClosed res
       putStrLn "RESULT:"
       putStrLn $ showTm0 res
     ["run"] -> do

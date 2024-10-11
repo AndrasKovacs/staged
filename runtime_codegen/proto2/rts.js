@@ -1,24 +1,38 @@
-
 'use strict';
 
 function impossible(){
     throw new Error('Impossible')
 }
 
-const _Var    = 0
-const _Let    = 1
-const _Lam    = 2
-const _App    = 3
-const _Erased = 4
-const _Quote  = 5
-const _Splice = 6
-const _Return = 7
-const _Bind   = 8
-const _Seq    = 9
-const _New    = 10
-const _Write  = 11
-const _Read   = 12
-const _Closed = 13
+// const _Var    = 0
+// const _Let    = 1
+// const _Lam    = 2
+// const _App    = 3
+// const _Erased = 4
+// const _Quote  = 5
+// const _Splice = 6
+// const _Return = 7
+// const _Bind   = 8
+// const _Seq    = 9
+// const _New    = 10
+// const _Write  = 11
+// const _Read   = 12
+// const _Closed = 13
+
+const _Var    = 'Var'
+const _Let    = 'Let'
+const _Lam    = 'Lam'
+const _App    = 'App'
+const _Erased = 'Erased'
+const _Quote  = 'Quote'
+const _Splice = 'Splice'
+const _Return = 'Return'
+const _Bind   = 'Bind'
+const _Seq    = 'Seq'
+const _New    = 'New'
+const _Write  = 'Write'
+const _Read   = 'Read'
+const _Closed = 'Closed'
 
 function Var_    (x)       {return {tag: _Var, _1: x}}
 function Let_    (x, t, u) {return {tag: _Let, _1: x, _2: t, _3: u}}
@@ -68,12 +82,3 @@ function closedExec_(t){
 function closedEval_(t){
     throw new Error('code generation not implemented')
 }
-
-const _0c = (r) => {return (f) => {return () => {const a = r._1;r._1 = (f)._1(a)}}};
-const _0o = (r) => {return (f) => {return Bind_('a', Read_(r), (a) => {return Write_(r, openApp_(f, a))})}};
-const _1c = (r) => {return { _1 : _0c(r), _2 : _0o(r)}};
-const _1o = (r) => {return _0o(r)};
-const _2c = (A) => {return { _1 : _1c, _2 : _1o}};
-const _2o = (A) => {return _1o};
-const modify = { _1 : _2c, _2 : _2o};
-return modify

@@ -1,7 +1,7 @@
 {-# language OverloadedStrings #-}
 {-# options_ghc -Wno-unused-imports #-}
 
-module Compiler  where
+module Compiler (genTop, rts) where
 
 import Common hiding (Lvl)
 import ElabState
@@ -98,14 +98,15 @@ cconv = \case
 
   Z.Lam x t -> case ?mode of
     Nothing -> fresh x \x -> do
-      old_fvs   <- use freeVars
-      freeVars  .= S.empty
-      t         <- cconv t
-      capture   <- S.toList . S.delete x <$> use freeVars
-      clId      <- nextId <<%= (+1)
-      clName    <- pure $! ?topName++show clId++"_"
-      closures  %= ((clName, capture, x, t):)
-      freeVars  .= old_fvs
+      old_fvs    <- use freeVars
+      freeVars   .= S.empty
+      t          <- cconv t
+      captureSet <- S.delete x <$> use freeVars
+      capture    <- pure $ S.toList captureSet
+      clId       <- nextId <<%= (+1)
+      clName     <- pure $! ?topName++show clId++"_"
+      closures   %= ((clName, capture, x, t):)
+      freeVars   .= S.union old_fvs captureSet
       pure $ LiftedLam clName capture
     Just{} ->
       bind x \x -> Lam x <$> cconv t
@@ -183,7 +184,7 @@ nonTail act = let ?cxt = NonTail in act
 jLet :: Cxt => Name -> (Cxt => Out) -> (Cxt => Out) -> Out
 jLet x t u = case ?cxt of
   Tail -> "const " <> str x <> " = " <> indent (nonTail t) <> ";" <> newl <> tail u
-  _    -> "((" <> str x <> ") => " <> nonTail u <> ")" <> nonTail t
+  _    -> "((" <> str x <> ") => " <> nonTail u <> ")(" <> nonTail t <> ")"
 
 jTuple :: [Out] -> Out
 jTuple xs = "(" <> go xs <> ")" where
@@ -200,6 +201,9 @@ jReturn t = case ?cxt of
 jLam :: Cxt => [Name] -> (Cxt => Out) -> Out
 jLam xs t = jReturn $ jTuple (map str xs) <> " => {" <> tail t <> "}"
 
+jLamExp :: Cxt => [Name] -> (Cxt => Out) -> Out
+jLamExp xs t = jReturn $ jTuple (map str xs) <> " => " <> nonTail t
+
 cApp :: (Cxt => Out) -> (Cxt => Out) -> (Cxt => Out)
 cApp t u = jReturn $ parens t <> "._1(" <> u <> ")"
 
@@ -212,12 +216,12 @@ jApp t args = jReturn $ t <> jTuple args
 cRun :: (Cxt => Out) -> (Cxt => Out)
 cRun t = jReturn $ t <> "()"
 
-jLamEnv :: [Name] -> (Cxt => Out) -> (Cxt => Out)
-jLamEnv []  t = t
-jLamEnv env t = jLam env t
+jClosure :: [Name] -> Name -> (Cxt => Out) -> (Cxt => Out)
+jClosure []  x t = jLam [x] t
+jClosure env x t = jLamExp env $ jLam [x] t
 
-jAppEnv :: (Cxt => Out) -> (Cxt => [Out]) -> (Cxt => Out)
-jAppEnv t args = jReturn $ case args of
+jAppClosure :: (Cxt => Out) -> (Cxt => [Out]) -> (Cxt => Out)
+jAppClosure t args = jReturn $ case args of
   []   -> t
   args -> t <> jTuple args
 
@@ -232,17 +236,20 @@ execTop t = tail $ go t where
   go :: Cxt => Top -> Out
   go = \case
     TLet x t u  ->
-      jLet x (ceval t) (go u)
+      jLet x (ceval t) (newl <> go u)
     TBind x t u ->
-      jLet x (exec t) (go u)
+      jLet x (exec t) (newl <> go u)
     TSeq t u    ->
-      jLet "_" (exec t) (go u)
+      jLet "_" (exec t) (newl <> go u)
     TClosure x env arg body t ->
-      jLet (closeVar x) (jLamEnv env $ jLam [arg] $ ceval body) $
-      jLet (openVar x)  (jLamEnv env $ jLam [arg] $ stage 0 $ oeval body) $
+      jLet (closeVar x) (jClosure env arg $ ceval body) $
+      jLet (openVar x)  (jClosure env arg $ stage 0 $ oeval body) $
       go t
+
+    -- finalize
     TBody t ->
-      exec t
+      "const main_ = () => {" <> exec t <> "};" <> newl <>
+      "console.log(main_())" <> newl
 
 exec :: Cxt => Tm -> Out
 exec = \case
@@ -267,8 +274,8 @@ ceval = \case
   Var x           -> jReturn (str x)
   CSP{}           -> impossible
   Let x t u       -> jLet x (ceval t) (ceval u)
-  LiftedLam x env -> jReturn $ "{ _1 : " <> jAppEnv (str (closeVar x)) (map str env) <>
-                               ", _2 : " <> jAppEnv (str (openVar x))  (map str env) <> "}"
+  LiftedLam x env -> jReturn $ "{ _1 : " <> jAppClosure (str (closeVar x)) (map str env) <>
+                               ", _2 : " <> jAppClosure (str (openVar x))  (map str env) <> "}"
   Lam{}           -> impossible
   App t u         -> cApp (ceval t) (ceval u)
   Erased s        -> jReturn "undefined"
@@ -288,8 +295,10 @@ oeval = \case
   Let x t u       -> case ?stage of
                        0 -> jLet x (oeval t) (oeval u)
                        _ -> jApp "Let_" [strLit x, oeval t, jLam [x] (oeval u)]
-  LiftedLam x env -> jAppEnv (str (openVar x)) (map str env)
-  Lam x t         -> jLam [x] (oeval t)
+  LiftedLam x env -> jAppClosure (str (openVar x)) (map str env)
+  Lam x t         -> case ?stage of
+                       0 -> jLam [x] (oeval t)
+                       _ -> jApp "Lam_" [strLit x, jLam [x] (oeval t)]
   App t u         -> case ?stage of
                        0 -> jApp "openApp_" [oeval t, oeval u]
                        _ -> jApp "App_" [oeval t, oeval u]
@@ -299,7 +308,7 @@ oeval = \case
   Quote t         -> jApp "Quote_" [stage (?stage + 1) (oeval t)]
   Splice t _      -> case ?stage of
                        0 -> jApp "openSplice0_" [oeval t]
-                       _ -> jApp "openSplice_" [oeval t]
+                       _ -> stage (?stage - 1) $ jApp "openSplice_" [oeval t]
   Return t        -> jApp "Return_" [oeval t]
   Bind x t u      -> jApp "Bind_" [strLit x, oeval t, jLam [x] (oeval u)]
   Seq t u         -> jApp "Seq_" [oeval t, oeval u]
@@ -307,8 +316,12 @@ oeval = \case
   Write t u       -> jApp "Write_" [oeval t, oeval u]
   Read t          -> jApp "Read_" [oeval t]
 
-rts :: String
-rts = unlines [
+
+
+--------------------------------------------------------------------------------
+
+rts :: Out
+rts = str $ unlines [
    ""
   ,"'use strict';"
   ,""
@@ -316,20 +329,35 @@ rts = unlines [
   ,"    throw new Error('Impossible')"
   ,"}"
   ,""
-  ,"const _Var    = 0"
-  ,"const _Let    = 1"
-  ,"const _Lam    = 2"
-  ,"const _App    = 3"
-  ,"const _Erased = 4"
-  ,"const _Quote  = 5"
-  ,"const _Splice = 6"
-  ,"const _Return = 7"
-  ,"const _Bind   = 8"
-  ,"const _Seq    = 9"
-  ,"const _New    = 10"
-  ,"const _Write  = 11"
-  ,"const _Read   = 12"
-  ,"const _Closed = 13"
+  ,"// const _Var    = 0"
+  ,"// const _Let    = 1"
+  ,"// const _Lam    = 2"
+  ,"// const _App    = 3"
+  ,"// const _Erased = 4"
+  ,"// const _Quote  = 5"
+  ,"// const _Splice = 6"
+  ,"// const _Return = 7"
+  ,"// const _Bind   = 8"
+  ,"// const _Seq    = 9"
+  ,"// const _New    = 10"
+  ,"// const _Write  = 11"
+  ,"// const _Read   = 12"
+  ,"// const _Closed = 13"
+  ,""
+  ,"const _Var    = 'Var'"
+  ,"const _Let    = 'Let'"
+  ,"const _Lam    = 'Lam'"
+  ,"const _App    = 'App'"
+  ,"const _Erased = 'Erased'"
+  ,"const _Quote  = 'Quote'"
+  ,"const _Splice = 'Splice'"
+  ,"const _Return = 'Return'"
+  ,"const _Bind   = 'Bind'"
+  ,"const _Seq    = 'Seq'"
+  ,"const _New    = 'New'"
+  ,"const _Write  = 'Write'"
+  ,"const _Read   = 'Read'"
+  ,"const _Closed = 'Closed'"
   ,""
   ,"function Var_    (x)       {return {tag: _Var, _1: x}}"
   ,"function Let_    (x, t, u) {return {tag: _Let, _1: x, _2: t, _3: u}}"
@@ -381,8 +409,5 @@ rts = unlines [
   ,"}"
   ]
 
-genTop :: Z.Tm Void -> String
-genTop t =
-  let t' = runCConv t in
-  trace "CCONV:" $ traceShow t' $ build $ execTop t'
-  -- out (str rts <> newl <> newl <> execTop (cconvTop t))
+genTop :: Z.Tm Void -> Out
+genTop = execTop . runCConv

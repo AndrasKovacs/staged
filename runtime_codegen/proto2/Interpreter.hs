@@ -146,14 +146,16 @@ oeval = \case
                         (OLam _ f              , u           ) -> coerce f ?lvl u
                         (t                     , u           ) -> OApp t u
       Splice t pos -> case oeval t of
-                        OQuote t -> env (idEnv ?lvl) $ oeval $ traceGen t pos
-                        t        -> OSplice t
+                        OClosed _ (CQuote t) -> env (idEnv ?lvl) $ oeval $ traceGen t pos
+                        OQuote t             -> env (idEnv ?lvl) $ oeval $ traceGen t pos
+                        t                    -> OSplice t
     _ -> case t of
       Let x t u    -> OLet x (oeval t) (NoShow \l -> lvl l $ oeval u)
       App t u      -> OApp (oeval t) (oeval u)
       Splice t pos -> case stage (?stage - 1) $ oeval t of
-                        OQuote t -> t
-                        t        -> OSplice t
+                        OClosed _ (CQuote t) -> t
+                        OQuote t             -> t
+                        t                    -> OSplice t
 
 traceGen :: Lvl => Open -> Maybe SourcePos -> Tm
 traceGen t pos =

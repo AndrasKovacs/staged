@@ -13,6 +13,13 @@
 -- runGen : {A} → Gen (□ A) → □ A
 --   = λ ga. ga (λ x. x);
 
+ℕ : U = (N : U) → (N → N) → N → N;
+
+id  : □ (ℕ → ℕ) = <λ x. x>;
+id2 : □ (ℕ → ℕ) = <λ x. ~(let y = ~id x; <y>)>;
+
+return ~id2
+
 -- ℕ : U
 --    = (N : U) → (N → N) → N → N;
 
@@ -41,11 +48,8 @@
 -- mkExp : ℕ → □ (ℕ → ℕ)
 --   = λ x. <λ y. ~(x _ (λ f. <mul ~f y>) <n1>)>;
 
--- exp5 = ~(mkExp n5);
-
--- return exp5
-
-
+-- -- exp5 = ~(mkExp n5);
+-- return <λ (x : ℕ). suc x>
 
 
 -- let List : U → U =
@@ -59,19 +63,17 @@
 
 -- do ref ← new (nil {⊤});
 
--- do write ref (cons tt nil);
-
 -- let id : {A} → □ A → □ A =
 --   λ x. x;
 
-let majom : Eff (⊤ → ⊤) =
-  do x ← return (λ (y : ⊤). y);
-  let kek =
-    let bar =
-      (λ (y : ⊤). y);
-    bar;
-  return kek;
+-- let majom : Eff (⊤ → ⊤) =
+--   do x ← return (λ (y : ⊤). y);
+--   let kek =
+--     let bar =
+--       (λ (y : ⊤). y);
+--     bar;
+--   return kek;
 
-return tt
+-- return id
 
 -- return (cons tt (cons tt (cons tt nil)))

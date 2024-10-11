@@ -29,6 +29,7 @@ executable rtcg
       Parser
       Presyntax
       Pretty
+      StringBuilder
       Syntax
       Value
       Zonk

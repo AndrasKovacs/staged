@@ -10,6 +10,7 @@ import Evaluation
 import ElabState
 import Parser
 import Pretty
+import StringBuilder
 import Elaboration
 import Zonk
 import qualified Interpreter
@@ -64,12 +65,9 @@ mainWith getOpt getRaw = do
     ["compile"] -> do
       ((t, a), file) <- elab
       t <- handleErr file (zonk0 t)
-      putStrLn "ZONK:"
-      putStrLn $ showTm0 $ unzonk t
-      putStrLn ""
       let out = Compiler.genTop t
-      putStrLn "\nOUT:"
-      putStrLn out
+      putStrLn (build out)
+      writeFile "out.js" (build (Compiler.rts <> "\n" <> out))
     ["interp"] -> do
       ((t, a), file) <- elab
       t <- handleErr file (zonk0 t)
@@ -79,6 +77,11 @@ mainWith getOpt getRaw = do
       putStrLn $ showTm0 res
     ["run"] -> do
       undefined
+      -- ((t, a), file) <- elab
+      -- t <- handleErr file (zonk0 t)
+      -- let out = Compiler.genTop t
+      -- putStrLn "\nOUT:"
+      -- putStrLn (build out)
     _ -> putStrLn helpMsg
 
 main :: IO ()

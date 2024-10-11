@@ -98,20 +98,20 @@ data S = S {
 
 makeFields ''S
 
-type Env   = (?env  :: [(Bool, Name)])  -- is var closed, name
+type Env   = (?env  :: [(Bool, Bool, Name)])  -- is closed, is top-level, name
 type Mode  = (?mode :: Maybe Int)
 
-fresh :: Name -> (Env => Name -> a) -> Env => a
-fresh x act
-  | any ((==x).snd) ?env =
+fresh :: Name -> Bool -> (Env => Name -> a) -> Env => a
+fresh x isTop act
+  | any ((==x).(\(_, _, x) -> x)) ?env =
      let x' = x ++ show (length ?env) in
-     let ?env = (False, x') : ?env in act x'
+     let ?env = (False, isTop, x') : ?env in act x'
   | otherwise =
-     let ?env = (False, x) : ?env in act x
+     let ?env = (False, isTop, x) : ?env in act x
 
 -- create fresh name, run action, delete bound name from freevars of the result
 bind :: Name -> (Env => Name -> State S a) -> Env => State S a
-bind x act = fresh x \x -> do
+bind x act = fresh x False \x -> do
   a <- act x
   s <- get
   freeVars %= S.delete x
@@ -120,16 +120,16 @@ bind x act = fresh x \x -> do
 cconv :: Env => Mode => ZTm -> State S Tm
 cconv = \case
   Z.Var x -> do
-    (c, x) <- pure $! ?env !! coerce x
-    freeVars %= S.insert x
-    pure $! if c then CSP x else Var x
+    (closed, top, x) <- pure $! ?env !! coerce x
+    when (not top) $ freeVars %= S.insert x
+    pure $! if closed then CSP x else Var x
 
   Z.Let x t u -> do
     t <- cconv t
     bind x \x -> Let x t <$> cconv u
 
   Z.Lam x t -> case ?mode of
-    Nothing -> fresh x \x -> do
+    Nothing -> fresh x False \x -> do
       old_fvs   <- use freeVars
       freeVars  .= S.empty
       t         <- cconv t
@@ -148,7 +148,7 @@ cconv = \case
   Z.Quote t    -> case ?mode of
                     Nothing -> do
                       let ?mode = Just 1
-                          ?env  = map (\(_, x) -> (True, x)) ?env
+                          ?env  = map (\(_, top, x) -> (True, top, x)) ?env
                       Quote <$> cconv t
                     Just s -> do
                       let ?mode = Just $! s + 1
@@ -166,13 +166,22 @@ cconv = \case
   Z.Write t u  -> Write <$> cconv t <*> cconv u
   Z.Read t     -> Read <$> cconv t
 
-cconvTop :: ZTm -> (TopClosures, Tm)
-cconvTop t =
+cconvTop :: Env => Mode => ZTm -> State S Tm
+cconvTop = \case
+  Z.Let x t u -> do
+    t <- cconv t
+    fresh x True \x -> Let x t <$> cconvTop u
+  Z.Bind x t u -> do
+    t <- cconv t
+    fresh x True \x -> Let x t <$> cconvTop u
+  t -> cconv t
+
+runCconv :: ZTm -> (TopClosures, Tm)
+runCconv t =
   let ?env  = []
       ?mode = Nothing in
-  let (t', s) = runState (cconv t) (S mempty 0 []) in
+  let (t', s) = runState (cconvTop t) (S mempty 0 []) in
   (reverse (s^.top), t')
-
 
 
 -- Code generation
@@ -388,6 +397,6 @@ rts = unlines [
 
 genTop :: Z.Tm Void -> String
 genTop t =
-  let t' = cconvTop t in
+  let t' = runCconv t in
   trace "CCONV:" $ traceShow t' $ out $ execTop t'
   -- out (str rts <> newl <> newl <> execTop (cconvTop t))

@@ -1,5 +1,8 @@
 
+foo = <λ (x : ⊤). x>;
+bar = <λ x. ~foo x>;
 
+return tt
 
 -- Gen : U → U
 --    = λ A. {R : U} → (A → □ R) → □ R;
@@ -13,12 +16,10 @@
 -- runGen : {A} → Gen (□ A) → □ A
 --   = λ ga. ga (λ x. x);
 
-ℕ : U = (N : U) → (N → N) → N → N;
+-- ℕ : U = (N : U) → (N → N) → N → N;
 
-id  : □ (ℕ → ℕ) = <λ x. x>;
-id2 : □ (ℕ → ℕ) = <λ x. ~(let y = ~id x; <y>)>;
-
-return ~id2
+-- id  : □ (ℕ → ℕ) = <λ x. x>;
+-- id2 : □ (ℕ → ℕ) = <λ x. ~(let y = ~id x; <y>)>;
 
 -- ℕ : U
 --    = (N : U) → (N → N) → N → N;
@@ -44,6 +45,13 @@ return ~id2
 -- n100 = mul n10 n10;
 -- n1k  = mul n100 n10;
 -- n10k = mul n100 n100;
+
+-- serializeℕ : ℕ → □ ℕ =
+--   λ n. <λ N s z. ~(let x = n N s z; <x>)>;
+
+-- foo = ~(serializeℕ n100);
+
+-- return tt
 
 -- mkExp : ℕ → □ (ℕ → ℕ)
 --   = λ x. <λ y. ~(x _ (λ f. <mul ~f y>) <n1>)>;

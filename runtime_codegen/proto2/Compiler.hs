@@ -261,7 +261,7 @@ exec = \case
   App t u     -> cRun (ceval t `cApp` ceval u)
   Erased{}    -> impossible
   Quote{}     -> impossible
-  Splice t _  -> jApp "closedExec_" [ceval t]
+  Splice t _  -> jApp "codegenExec_" [ceval t]
   Return t    -> jReturn $ ceval t
   Bind x t u  -> jLet x (exec t) (exec u)
   Seq t u     -> jLet "_" (exec t) (exec u)
@@ -280,7 +280,7 @@ ceval = \case
   App t u         -> cApp (ceval t) (ceval u)
   Erased s        -> jReturn "undefined"
   Quote t         -> stage 1 $ oeval t
-  Splice t _      -> jApp "closedEval_" [ceval t]
+  Splice t _      -> jApp "codegenClosed_" [ceval t]
   t@Return{}      -> jLam [] $ exec t
   t@Bind{}        -> jLam [] $ exec t
   t@Seq{}         -> jLam [] $ exec t
@@ -295,20 +295,20 @@ oeval = \case
   Let x t u       -> case ?stage of
                        0 -> jLet x (oeval t) (oeval u)
                        _ -> jApp "Let_" [strLit x, oeval t, jLam [x] (oeval u)]
-  LiftedLam x env -> jAppClosure (str (openVar x)) (map str env)
+  LiftedLam x env -> impossible
   Lam x t         -> case ?stage of
                        0 -> jLam [x] (oeval t)
                        _ -> jApp "Lam_" [strLit x, jLam [x] (oeval t)]
   App t u         -> case ?stage of
-                       0 -> jApp "openApp_" [oeval t, oeval u]
+                       0 -> jApp "app_" [oeval t, oeval u]
                        _ -> jApp "App_" [oeval t, oeval u]
   Erased s        -> case ?stage of
                        0 -> jReturn "Erased_"
                        _ -> jReturn "undefined"
   Quote t         -> jApp "Quote_" [stage (?stage + 1) (oeval t)]
   Splice t _      -> case ?stage of
-                       0 -> jApp "openSplice0_" [oeval t]
-                       _ -> stage (?stage - 1) $ jApp "openSplice_" [oeval t]
+                       0 -> jApp "codegenOpen_" [oeval t]
+                       _ -> stage (?stage - 1) $ jApp "splice_" [oeval t]
   Return t        -> jApp "Return_" [oeval t]
   Bind x t u      -> jApp "Bind_" [strLit x, oeval t, jLam [x] (oeval u)]
   Seq t u         -> jApp "Seq_" [oeval t, oeval u]
@@ -322,91 +322,7 @@ oeval = \case
 
 rts :: Out
 rts = str $ unlines [
-   ""
-  ,"'use strict';"
-  ,""
-  ,"function impossible(){"
-  ,"    throw new Error('Impossible')"
-  ,"}"
-  ,""
-  ,"// const _Var    = 0"
-  ,"// const _Let    = 1"
-  ,"// const _Lam    = 2"
-  ,"// const _App    = 3"
-  ,"// const _Erased = 4"
-  ,"// const _Quote  = 5"
-  ,"// const _Splice = 6"
-  ,"// const _Return = 7"
-  ,"// const _Bind   = 8"
-  ,"// const _Seq    = 9"
-  ,"// const _New    = 10"
-  ,"// const _Write  = 11"
-  ,"// const _Read   = 12"
-  ,"// const _Closed = 13"
-  ,""
-  ,"const _Var    = 'Var'"
-  ,"const _Let    = 'Let'"
-  ,"const _Lam    = 'Lam'"
-  ,"const _App    = 'App'"
-  ,"const _Erased = 'Erased'"
-  ,"const _Quote  = 'Quote'"
-  ,"const _Splice = 'Splice'"
-  ,"const _Return = 'Return'"
-  ,"const _Bind   = 'Bind'"
-  ,"const _Seq    = 'Seq'"
-  ,"const _New    = 'New'"
-  ,"const _Write  = 'Write'"
-  ,"const _Read   = 'Read'"
-  ,"const _Closed = 'Closed'"
-  ,""
-  ,"function Var_    (x)       {return {tag: _Var, _1: x}}"
-  ,"function Let_    (x, t, u) {return {tag: _Let, _1: x, _2: t, _3: u}}"
-  ,"function Lam_    (x, t)    {return {tag: _Lam, _1: x, _2: t}}"
-  ,"function App_    (t, u)    {return {tag: _App, _1: t, _2: t}}"
-  ,"const    Erased_ =         {tag: _Erased}"
-  ,"function Quote_  (t)       {return {tag: _Quote, _1: t}}"
-  ,"function Splice_ (t)       {return {tag: _Splice, _1: t}}"
-  ,"function Return_ (t)       {return {tag: _Return, _1: t}}"
-  ,"function Bind_   (x, t, u) {return {tag: _Bind, _1: x, _2: t, _3: u}}"
-  ,"function Seq_    (t, u)    {return {tag: _Seq, _1: t, _2: u}}"
-  ,"function New_    (t)       {return {tag: _New, _1: t}}"
-  ,"function Write_  (t, u)    {return {tag: _Write, _1: t, _2: u}}"
-  ,"function Read_   (t)       {return {tag: _Read, _1: t}}"
-  ,"function Closed_ (t)       {return {tag: _Closed, _1: t}}"
-  ,""
-  ,"function openApp_(t, u) {"
-  ,"    if (t.tag == _Closed) {"
-  ,"        if (u.tag == _Closed) {"
-  ,"            return Closed_(t._1._1(u._1))"
-  ,"        } else {"
-  ,"            return t._1._2(u)"
-  ,"        }"
-  ,"    } else if (t.tag == _Lam) {"
-  ,"        return t._1(u)"
-  ,"    } else {"
-  ,"        impossible()"
-  ,"    }"
-  ,"}"
-  ,""
-  ,"function openSplice0_(t) {"
-  ,"    throw new Error('code generation not implemented')"
-  ,"}"
-  ,""
-  ,"function openSplice_(t) {"
-  ,"    if (t.tag == _Quote){"
-  ,"        return t._1"
-  ,"    } else {"
-  ,"        return Splice_(t)"
-  ,"    }"
-  ,"}"
-  ,""
-  ,"function closedExec_(t){"
-  ,"    throw new Error('code generation not implemented')"
-  ,"}"
-  ,""
-  ,"function closedEval_(t){"
-  ,"    throw new Error('code generation not implemented')"
-  ,"}"
+
   ]
 
 genTop :: Z.Tm Void -> Out

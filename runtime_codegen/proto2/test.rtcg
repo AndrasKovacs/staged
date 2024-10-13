@@ -1,8 +1,4 @@
 
-foo = <λ (x : ⊤). x>;
-bar = <λ x. ~foo x>;
-
-return tt
 
 -- Gen : U → U
 --    = λ A. {R : U} → (A → □ R) → □ R;
@@ -21,37 +17,38 @@ return tt
 -- id  : □ (ℕ → ℕ) = <λ x. x>;
 -- id2 : □ (ℕ → ℕ) = <λ x. ~(let y = ~id x; <y>)>;
 
--- ℕ : U
---    = (N : U) → (N → N) → N → N;
+ℕ : U
+   = (N : U) → (N → N) → N → N;
 
--- zero  : ℕ = λ _ s z. z;
--- suc   : ℕ → ℕ = λ n N s z. s (n N s z);
+zero  : ℕ = λ _ s z. z;
 
--- iter  : {A} → ℕ → (A → A) → A → A
---   = λ n s z. n _ s z;
+suc   : ℕ → ℕ = λ n N s z. s (n N s z);
 
--- add : ℕ → ℕ → ℕ
---   = λ a b N s z. a N s (b N s z);
+iter  : {A} → ℕ → (A → A) → A → A
+  = λ n s z. n _ s z;
 
--- mul : ℕ → ℕ → ℕ
---   = λ a b N s z. a N (b N s) z;
+add : ℕ → ℕ → ℕ
+  = λ a b N s z. a N s (b N s z);
 
--- n0   = zero;
--- n1   = suc zero;
--- n2   = suc $ suc zero;
--- n3   = suc $ suc $ suc zero;
--- n5   = suc $ suc $ suc $ suc $ suc zero;
--- n10  = add n5 n5;
--- n100 = mul n10 n10;
--- n1k  = mul n100 n10;
--- n10k = mul n100 n100;
+mul : ℕ → ℕ → ℕ
+  = λ a b N s z. a N (b N s) z;
 
--- serializeℕ : ℕ → □ ℕ =
---   λ n. <λ N s z. ~(let x = n N s z; <x>)>;
+n0   = zero;
+n1   = suc zero;
+n2   = suc $ suc zero;
+n3   = suc $ suc $ suc zero;
+n5   = suc $ suc $ suc $ suc $ suc zero;
+n10  = add n5 n5;
+n100 = mul n10 n10;
+n1k  = mul n100 n10;
+n10k = mul n100 n100;
 
--- foo = ~(serializeℕ n100);
+serializeℕ : ℕ → □ ℕ =
+  λ n. <λ N s z. ~(let x = n N s z; <x>)>;
 
--- return tt
+foo = ~(serializeℕ n10);
+
+return tt
 
 -- mkExp : ℕ → □ (ℕ → ℕ)
 --   = λ x. <λ y. ~(x _ (λ f. <mul ~f y>) <n1>)>;

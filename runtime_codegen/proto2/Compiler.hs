@@ -1,11 +1,12 @@
 {-# language OverloadedStrings #-}
 {-# options_ghc -Wno-unused-imports #-}
 
-module Compiler (genTop, rts) where
+module Compiler (genTop) where
 
 import Common hiding (Lvl)
 import ElabState
 import Errors
+import JSRTS
 import Pretty
 import StringBuilder
 import qualified Common as C
@@ -36,7 +37,7 @@ data Top
 
 data Tm
   = Var Name
-  | CSP Name
+  | Closed Name
   | Let Name Tm Tm
   | LiftedLam Name [Name] -- name, env application
   | Lam Name Tm
@@ -90,7 +91,7 @@ cconv = \case
   Z.Var x -> do
     (closed, top, x) <- pure $! ?env !! coerce x
     when (not top) $ freeVars %= S.insert x
-    pure $! if closed then CSP x else Var x
+    pure $! if closed then Closed x else Var x
 
   Z.Let x t u -> do
     t <- cconv t
@@ -254,7 +255,7 @@ execTop t = tail $ go t where
 exec :: Cxt => Tm -> Out
 exec = \case
   Var x       -> cRun (str x)
-  CSP {}      -> impossible
+  Closed {}   -> impossible
   Let x t u   -> jLet x (ceval t) (exec u)
   LiftedLam{} -> impossible
   Lam{}       -> impossible
@@ -272,7 +273,7 @@ exec = \case
 ceval :: Cxt => Tm -> Out
 ceval = \case
   Var x           -> jReturn (str x)
-  CSP{}           -> impossible
+  Closed{}        -> impossible
   Let x t u       -> jLet x (ceval t) (ceval u)
   LiftedLam x env -> jReturn $ "{ _1 : " <> jAppClosure (str (closeVar x)) (map str env) <>
                                ", _2 : " <> jAppClosure (str (openVar x))  (map str env) <> "}"
@@ -291,11 +292,11 @@ ceval = \case
 oeval :: Cxt => Stage => Tm -> Out
 oeval = \case
   Var x           -> jReturn (str x)
-  CSP x           -> jApp "Closed_" [str x]
+  Closed x        -> jApp "Closed_" [str x]
   Let x t u       -> case ?stage of
                        0 -> jLet x (oeval t) (oeval u)
                        _ -> jApp "Let_" [strLit x, oeval t, jLam [x] (oeval u)]
-  LiftedLam x env -> impossible
+  LiftedLam x env -> jAppClosure (str (openVar x)) (map str env)
   Lam x t         -> case ?stage of
                        0 -> jLam [x] (oeval t)
                        _ -> jApp "Lam_" [strLit x, jLam [x] (oeval t)]
@@ -317,13 +318,5 @@ oeval = \case
   Read t          -> jApp "Read_" [oeval t]
 
 
-
---------------------------------------------------------------------------------
-
-rts :: Out
-rts = str $ unlines [
-
-  ]
-
 genTop :: Z.Tm Void -> Out
-genTop = execTop . runCConv
+genTop t = str jsrts <> newl <> newl <> execTop (runCConv t)

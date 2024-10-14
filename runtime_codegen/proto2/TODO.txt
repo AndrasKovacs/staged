@@ -1,4 +1,7 @@
 
+- Test and fix JS codegen + RTS
+- Compute open Quote/Splice in interpreter and codegen
+
 Extras:
   - definitional monad laws
   - more Code unification

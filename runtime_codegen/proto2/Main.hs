@@ -65,7 +65,7 @@ mainWith getOpt getRaw = do
     ["compile"] -> do
       ((t, a), file) <- elab
       t <- handleErr file (zonk0 t)
-      let out = build $ Compiler.genTop t
+      out <- build <$> Compiler.genTop t
       putStrLn out
       writeFile "out.js" out
     ["interp"] -> do

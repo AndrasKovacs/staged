@@ -6,7 +6,6 @@ module Compiler (genTop) where
 import Common hiding (Lvl)
 import ElabState
 import Errors
-import JSRTS
 import Pretty
 import StringBuilder
 import qualified Common as C
@@ -20,6 +19,9 @@ import Lens.Micro.Platform
 import Prelude hiding (const, tail)
 import System.IO.Unsafe
 import qualified Data.Set as S
+import System.Directory
+
+import Paths_rtcg
 
 
 -- Closure conversion
@@ -37,7 +39,7 @@ data Top
 
 data Tm
   = Var Name
-  | Closed Name
+  | ClosedVar Name
   | Let Name Tm Tm
   | LiftedLam Name [Name] -- name, env application
   | Lam Name Tm
@@ -91,7 +93,7 @@ cconv = \case
   Z.Var x -> do
     (closed, top, x) <- pure $! ?env !! coerce x
     when (not top) $ freeVars %= S.insert x
-    pure $! if closed then Closed x else Var x
+    pure $! if closed then ClosedVar x else Var x
 
   Z.Let x t u -> do
     t <- cconv t
@@ -185,7 +187,7 @@ nonTail act = let ?cxt = NonTail in act
 jLet :: Cxt => Name -> (Cxt => Out) -> (Cxt => Out) -> Out
 jLet x t u = case ?cxt of
   Tail -> "const " <> str x <> " = " <> indent (nonTail t) <> ";" <> newl <> tail u
-  _    -> "((" <> str x <> ") => " <> nonTail u <> ")(" <> nonTail t <> ")"
+  _    -> "((" <> str x <> ") => " <> parens (nonTail u) <> ")(" <> nonTail t <> ")"
 
 jTuple :: [Out] -> Out
 jTuple xs = "(" <> go xs <> ")" where
@@ -254,26 +256,26 @@ execTop t = tail $ go t where
 
 exec :: Cxt => Tm -> Out
 exec = \case
-  Var x       -> cRun (str x)
-  Closed {}   -> impossible
-  Let x t u   -> jLet x (ceval t) (exec u)
-  LiftedLam{} -> impossible
-  Lam{}       -> impossible
-  App t u     -> cRun (ceval t `cApp` ceval u)
-  Erased{}    -> impossible
-  Quote{}     -> impossible
-  Splice t _  -> jApp "codegenExec_" [ceval t]
-  Return t    -> jReturn $ ceval t
-  Bind x t u  -> jLet x (exec t) (exec u)
-  Seq t u     -> jLet "_" (exec t) (exec u)
-  New t       -> jReturn $ "{_1 : " <> ceval t <> "}"
-  Write t u   -> nonTail $ ceval t <> "._1 = " <> ceval u
-  Read t      -> jReturn $ ceval t <> "._1"
+  Var x        -> cRun (str x)
+  ClosedVar{}  -> impossible
+  Let x t u    -> jLet x (ceval t) (exec u)
+  LiftedLam{}  -> impossible
+  Lam{}        -> impossible
+  App t u      -> cRun (ceval t `cApp` ceval u)
+  Erased{}     -> impossible
+  Quote{}      -> impossible
+  Splice t _   -> jApp "codegenExec_" [ceval t]
+  Return t     -> jReturn $ ceval t
+  Bind x t u   -> jLet x (exec t) (exec u)
+  Seq t u      -> jLet "_" (exec t) (exec u)
+  New t        -> jReturn $ "{_1 : " <> ceval t <> "}"
+  Write t u    -> nonTail $ ceval t <> "._1 = " <> ceval u
+  Read t       -> jReturn $ ceval t <> "._1"
 
 ceval :: Cxt => Tm -> Out
 ceval = \case
   Var x           -> jReturn (str x)
-  Closed{}        -> impossible
+  ClosedVar{}     -> impossible
   Let x t u       -> jLet x (ceval t) (ceval u)
   LiftedLam x env -> jReturn $ "{ _1 : " <> jAppClosure (str (closeVar x)) (map str env) <>
                                ", _2 : " <> jAppClosure (str (openVar x))  (map str env) <> "}"
@@ -292,21 +294,19 @@ ceval = \case
 oeval :: Cxt => Stage => Tm -> Out
 oeval = \case
   Var x           -> jReturn (str x)
-  Closed x        -> jApp "Closed_" [str x]
+  ClosedVar x     -> jApp "CSP_" [str x]
   Let x t u       -> case ?stage of
                        0 -> jLet x (oeval t) (oeval u)
                        _ -> jApp "Let_" [strLit x, oeval t, jLam [x] (oeval u)]
   LiftedLam x env -> jAppClosure (str (openVar x)) (map str env)
-  Lam x t         -> case ?stage of
-                       0 -> jLam [x] (oeval t)
-                       _ -> jApp "Lam_" [strLit x, jLam [x] (oeval t)]
+  Lam x t         -> jApp "Lam_" [strLit x, jLam [x] (oeval t)]
   App t u         -> case ?stage of
                        0 -> jApp "app_" [oeval t, oeval u]
                        _ -> jApp "App_" [oeval t, oeval u]
   Erased s        -> case ?stage of
                        0 -> jReturn "Erased_"
                        _ -> jReturn "undefined"
-  Quote t         -> jApp "Quote_" [stage (?stage + 1) (oeval t)]
+  Quote t         -> jApp "quote_" [stage (?stage + 1) (oeval t)]
   Splice t _      -> case ?stage of
                        0 -> jApp "codegenOpen_" [oeval t]
                        _ -> stage (?stage - 1) $ jApp "splice_" [oeval t]
@@ -318,5 +318,11 @@ oeval = \case
   Read t          -> jApp "Read_" [oeval t]
 
 
-genTop :: Z.Tm Void -> Out
-genTop t = str jsrts <> newl <> newl <> execTop (runCConv t)
+genTop :: Z.Tm Void -> IO Out
+genTop t = do
+  src <- do
+    exec_path <- getDataFileName "rts.js"
+    doesFileExist exec_path >>= \case
+      -- True -> readFile exec_path
+      _    -> readFile "rts.js"
+  return $! str src <> newl <> newl <> execTop (runCConv t)

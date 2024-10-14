@@ -85,6 +85,11 @@ cSplice t pos = case t of
   CQuote t -> env [] $ lvl 0 $ ceval $ traceGen t pos
   _        -> impossible
 
+oQuote :: Open -> Open
+oQuote = \case
+  OSplice t -> t
+  t         -> OQuote t
+
 exec :: CEnv => Tm -> IO Closed
 exec = \case
   Var x        -> eRun (snd (?env !! coerce x))
@@ -129,7 +134,7 @@ oeval = \case
   Var x      -> snd (?env !! coerce x)
   Lam x t    -> OLam x (coerce \l v -> def x v $ lvl l $ oeval t)
   Erased s   -> OErased s
-  Quote t    -> OQuote $ stage (?stage + 1) $ oeval t
+  Quote t    -> oQuote $ stage (?stage + 1) $ oeval t
   Return t   -> OReturn (oeval t)
   Bind x t u -> OBind x (oeval t) (NoShow \l -> lvl l $ oeval u)
   Seq t u    -> OSeq (oeval t) (oeval u)

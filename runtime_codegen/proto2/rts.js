@@ -343,7 +343,7 @@ function cconvTop_(top){
   /** @type {(cs: Array<Closure>, t: Top) => Top} */
   function addClosures(cs, t){
     let res = t
-    for (const cl of cs){
+    for (const cl of cs.reverse()){
       res = TopClosure_(cl.name, cl.env, cl.arg, cl.body, res)
     }
     return res
@@ -793,7 +793,7 @@ function cevalTop_(top){
       const arg  = top._3
       const body = top._4
       const t    = top._5
-      return jLet_(closeVar_(x), jClosure_(env, arg, () => {ceval_(body)}),
+      return jLet_(closeVar_(x), jClosure_(env, arg, () => ceval_(body)),
              jLet_(openVar_(x), jClosure_(env, arg, inStage_(0, () => oeval_(body))), () =>
              cevalTop_(t)))()
     }

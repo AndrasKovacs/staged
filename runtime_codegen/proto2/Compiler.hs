@@ -303,9 +303,7 @@ oeval = \case
   App t u         -> case ?stage of
                        0 -> jApp "app_" [oeval t, oeval u]
                        _ -> jApp "App_" [oeval t, oeval u]
-  Erased s        -> case ?stage of
-                       0 -> jReturn "Erased_"
-                       _ -> jReturn "undefined"
+  Erased s        -> jReturn "CSP_(undefined)"
   Quote t         -> jApp "quote_" [stage (?stage + 1) (oeval t)]
   Splice t _      -> case ?stage of
                        0 -> jApp "codegenOpen_" [oeval t]

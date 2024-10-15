@@ -42,12 +42,17 @@
 -- serializeℕ : ℕ → □ ℕ =
 --   λ n. <λ N s z. ~(let x = n N s z; <x>)>;
 
--- serializeℕ2 : ℕ → □ ℕ =
+-- serializeℕ : ℕ → □ ℕ =
 --   λ n. <λ N s z. ~(n _ (λ x. <s ~x>) <z>)>;
 
--- foo = ~(serializeℕ2 (λ N s z. s z));
+-- foo = ~(serializeℕ (λ N s z. z));
 
-kek = ~<λ (x : ⊤). x>;
+One = (O : U) → O → O;
+
+ser : One → □ One =
+  λ o. <λ O x. ~(o _ <x>)>;
+
+foo = ~(ser (λ _ x. x));
 
 return tt
 

@@ -316,6 +316,9 @@ oeval = \case
   Read t          -> jApp "Read_" [oeval t]
 
 
+TODO: erased should be CSP_(undefined) everywhere, open closures should be Lam_(!!)
+
+
 genTop :: Z.Tm Void -> IO Out
 genTop t = do
   src <- do

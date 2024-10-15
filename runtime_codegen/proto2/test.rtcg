@@ -17,14 +17,17 @@
 -- id  : □ (ℕ → ℕ) = <λ x. x>;
 -- id2 : □ (ℕ → ℕ) = <λ x. ~(let y = ~id x; <y>)>;
 
--- ℕ : U
---    = (N : U) → (N → N) → N → N;
+ℕ : U
+   = (N : U) → (N → N) → N → N;
 
--- zero  : ℕ = λ _ s z. z;
--- suc   : ℕ → ℕ = λ n N s z. s (n N s z);
+zero : ℕ =
+  λ _ s z. z;
 
--- add : ℕ → ℕ → ℕ
---   = λ a b N s z. a N s (b N s z);
+-- suc : ℕ → ℕ =
+--   λ n N s z. s (n N s z);
+
+add : ℕ → ℕ → ℕ
+  = λ a b N s z. a N s (b N s z);
 
 -- mul : ℕ → ℕ → ℕ
 --   = λ a b N s z. a N (b N s) z;
@@ -42,17 +45,26 @@
 -- serializeℕ : ℕ → □ ℕ =
 --   λ n. <λ N s z. ~(let x = n N s z; <x>)>;
 
--- serializeℕ : ℕ → □ ℕ =
---   λ n. <λ N s z. ~(n _ (λ x. <s ~x>) <z>)>;
+serializeℕ : ℕ → □ ℕ =
+  λ n. <λ N s z. ~(n _ (λ x. <z>) <z>)>;
 
 -- foo = ~(serializeℕ (λ N s z. z));
 
-One = (O : U) → O → O;
+kek = ~(serializeℕ (add zero zero));
 
-ser : One → □ One =
-  λ o. <λ O x. ~(o _ <x>)>;
+-- One = (O : U) → O → O;
 
-foo = ~(ser (λ _ x. x));
+-- ser : One → □ One =
+--   λ o. <λ O x. ~(o _ <x>)>;
+
+-- foo = ~(ser (λ _ x. x));
+
+-- Bool = (B : U) → B → B → B;
+
+-- ser : Bool → □ Bool =
+--   λ b. <λ B t f. ~(b _ <t> <f>)>;
+
+-- foo = ~(ser (λ _ t f. t));
 
 return tt
 

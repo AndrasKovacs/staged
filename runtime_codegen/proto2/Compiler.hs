@@ -41,7 +41,7 @@ data Tm
   = Var Name
   | ClosedVar Name
   | Let Name Tm Tm
-  | LiftedLam Name [Name] -- name, env application
+  | LiftedLam Name Name [Name] -- function name, arg name, env application
   | Lam Name Tm
   | App Tm Tm
   | Erased String
@@ -69,11 +69,17 @@ type Env     = (?env     :: [(Bool, Bool, Name)])  -- is closed, is top-level, n
 type Mode    = (?mode    :: Maybe Int)
 type TopName = (?topName :: String)
 
+mangle :: Name -> Name
+mangle = map \case
+  '\'' -> '$'
+  c    -> c
+
 freshenName :: Env => Name -> Name
-freshenName x
-  | any ((==x).(\(_, _, x) -> x)) ?env =
-     freshenName $ x ++ show (length ?env)
-  | otherwise = x
+freshenName x = go (mangle x) where
+  go :: Env => Name -> Name
+  go x | any ((==x).(\(_, _, x) -> x)) ?env =
+         go $ x ++ show (length ?env)
+       | otherwise = x
 
 fresh :: Name -> (Env => Name -> a) -> Env => a
 fresh x act = let x' = freshenName x in
@@ -110,7 +116,7 @@ cconv = \case
       clName     <- pure $! ?topName++show clId++"_"
       closures   %= ((clName, capture, x, t):)
       freeVars   .= S.union old_fvs captureSet
-      pure $ LiftedLam clName capture
+      pure $ LiftedLam clName x capture
     Just{} ->
       bind x \x -> Lam x <$> cconv t
 
@@ -282,11 +288,11 @@ exec = \case
 
 ceval :: Cxt => Tm -> Out
 ceval = \case
-  Var x           -> jReturn (str x)
-  ClosedVar{}     -> impossible
-  Let x t u       -> jLet x (ceval t) (ceval u)
-  LiftedLam x env -> jReturn $ "{ _1 : " <> jAppClosure (str (closeVar x)) (map str env) <>
-                               ", _2 : " <> jAppClosure (str (openVar x))  (map str env) <> "}"
+  Var x             -> jReturn (str x)
+  ClosedVar{}       -> impossible
+  Let x t u         -> jLet x (ceval t) (ceval u)
+  LiftedLam f x env -> jReturn $ "{ _1 : " <> jAppClosure (str (closeVar f)) (map str env) <>
+                                 ", _2 : " <> jAppClosure (str (openVar f))  (map str env) <> "}"
   Lam{}           -> impossible
   App t u         -> cApp (ceval t) (ceval u)
   Erased s        -> jReturn "undefined"
@@ -301,27 +307,27 @@ ceval = \case
 
 oeval :: Cxt => Stage => Tm -> Out
 oeval = \case
-  Var x           -> jReturn (str x)
-  ClosedVar x     -> jApp "CSP_" [str x]
-  Let x t u       -> case ?stage of
-                       0 -> jLet x (oeval t) (oeval u)
-                       _ -> jApp "Let_" [strLit x, oeval t, jLam [x] (oeval u)]
-  LiftedLam x env -> jAppClosure (str (openVar x)) (map str env)
-  Lam x t         -> jApp "Lam_" [strLit x, jLam [x] (oeval t)]
-  App t u         -> case ?stage of
-                       0 -> jApp "app_" [oeval t, oeval u]
-                       _ -> jApp "App_" [oeval t, oeval u]
-  Erased s        -> jReturn "CSP_undefined_"
-  Quote t         -> jApp "quote_" [stage (?stage + 1) (oeval t)]
-  Splice t loc    -> case ?stage of
-                       0 -> jApp "codegenOpen_" [oeval t, spliceLoc loc]
-                       _ -> stage (?stage - 1) $ jApp "splice_" [oeval t]
-  Return t        -> jApp "Return_" [oeval t]
-  Bind x t u      -> jApp "Bind_" [strLit x, oeval t, jLam [x] (oeval u)]
-  Seq t u         -> jApp "Seq_" [oeval t, oeval u]
-  New t           -> jApp "New_" [oeval t]
-  Write t u       -> jApp "Write_" [oeval t, oeval u]
-  Read t          -> jApp "Read_" [oeval t]
+  Var x             -> jReturn (str x)
+  ClosedVar x       -> jApp "CSP_" [str x]
+  Let x t u         -> case ?stage of
+                         0 -> jLet x (oeval t) (oeval u)
+                         _ -> jApp "Let_" [strLit x, oeval t, jLam [x] (oeval u)]
+  LiftedLam f x env -> jApp "Lam_" [strLit x, jAppClosure (str (openVar f)) (map str env)]
+  Lam x t           -> jApp "Lam_" [strLit x, jLam [x] (oeval t)]
+  App t u           -> case ?stage of
+                         0 -> jApp "app_" [oeval t, oeval u]
+                         _ -> jApp "App_" [oeval t, oeval u]
+  Erased s          -> jReturn "CSP_undefined_"
+  Quote t           -> jApp "quote_" [stage (?stage + 1) (oeval t)]
+  Splice t loc      -> case ?stage of
+                         0 -> jApp "codegenOpen_" [oeval t, spliceLoc loc]
+                         _ -> stage (?stage - 1) $ jApp "splice_" [oeval t]
+  Return t          -> jApp "Return_" [oeval t]
+  Bind x t u        -> jApp "Bind_" [strLit x, oeval t, jLam [x] (oeval u)]
+  Seq t u           -> jApp "Seq_" [oeval t, oeval u]
+  New t             -> jApp "New_" [oeval t]
+  Write t u         -> jApp "Write_" [oeval t, oeval u]
+  Read t            -> jApp "Read_" [oeval t]
 
 -- TODO: erased should be CSP_(undefined) everywhere, open closures should be Lam_(!!)
 

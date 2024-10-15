@@ -89,7 +89,7 @@ const CSP_undefined_ = CSP_(undefined)
    {tag: _ClosedVar, _1: Name} |
    {tag: _Let, _1: Name, _2: Tm, _3: Tm} |
    {tag: _Lam, _1: Name, _2: Tm} |
-   {tag: _LiftedLam, _1: Name, _2: Array<Name>} |
+   {tag: _LiftedLam, _1: Name, _2: Name, _3: Array<Name>} |
    {tag: _App, _1: Tm, _2: Tm} |
    {tag: _Quote, _1: Tm} |
    {tag: _Splice, _1: Tm} |
@@ -120,8 +120,8 @@ function TClosedVar_  (x) {return {tag: _ClosedVar, _1: x} }
 function TLet_       (x,t,u) {return {tag: _Let, _1:x , _2:u , _3:u } }
 /** @type {(x:Name, t:Tm) => Tm} */
 function TLam_       (x,t) {return {tag: _Lam, _1:x , _2: t } }
-/** @type {(x:Name, args:Array<Name>) => Tm} */
-function TLiftedLam_ (x,args) {return {tag: _LiftedLam, _1: x , _2: args} }
+/** @type {(f:Name, x:Name, args:Array<Name>) => Tm} */
+function TLiftedLam_ (f, x, args) {return {tag: _LiftedLam, _1: f , _2:x, _3: args} }
 /** @type {(t:Tm, u:Tm) => Tm} */
 function TApp_       (t,u) {return {tag: _App, _1: t , _2: u}}
 /** @type {(t: Tm) => Tm} */
@@ -266,7 +266,7 @@ function cconv_(top){
            closures_.push({name: clName, env: capture, arg: x, body: t2})
            freeVars_.forEach((x) => old_freeVars.add(x))
            freeVars_ = old_freeVars
-           return TLiftedLam_(clName, capture)
+           return TLiftedLam_(clName, x, capture)
          })
        } else {
          return bind_(x, (x) => TLam_(x, cconv_(t(Var_(x, false, false)))))
@@ -590,7 +590,7 @@ const cApp_ = (t, u) => () => {
 const jApp_ = (t, args) => () => {
   jReturn_(() => {
     t()
-    jTuple_(args)()
+    par_(jTuple_(args))()
   })()
 }
 
@@ -652,14 +652,14 @@ function exec_(top){
 /** @type {(t:Tm) => void} */
 function ceval_(top){
   switch (top.tag){
-    case _Var       : return jReturn_(() => put_(top._1))()
+    case _Var       : return jReturn_(str_(top._1))()
     case _Let       : return jLet_(top._1, () => ceval_(top._2), () => exec_(top._3))()
     case _Lam       : throw new Error('impossible')
     case _LiftedLam : return jReturn_(() => {
                         put_('{_1 : ');
-                        jAppClosure_(str_(closeVar_(top._1)), top._2.map(str_))();
+                        jAppClosure_(str_(closeVar_(top._1)), top._3.map(str_))();
                         put_(', _2 : ');
-                        jAppClosure_(str_(openVar_(top._1)), top._2.map(str_))();
+                        jAppClosure_(str_(openVar_(top._1)), top._3.map(str_))();
                         put_('}')
                         })()
     case _App       : return cApp_(() => ceval_(top._1), () => ceval_(top._2))()
@@ -697,7 +697,7 @@ function oeval_(top){
       }
     }
     case _LiftedLam : 
-      return jAppClosure_(str_(openVar_(top._1)), top._2.map(str_))()
+      return jApp_(str_('Lam_'), [strLit_(top._2), jAppClosure_(str_(openVar_(top._1)), top._3.map(str_))])()
 
     case _App : {
       if (stage_ === 0){

@@ -625,7 +625,9 @@ infer cxt t = do
     P.Splice t pos -> do
       (t, tty) <- infer cxt t
       a <- ensureBox cxt tty
-      pure (Splice t (Just pos), a)
+      srcFile <- readIORef sourceCode
+      let loc = displayLocation pos srcFile
+      pure (Splice t (Just loc), a)
 
     P.Eff t -> do
       t <- check cxt t VU

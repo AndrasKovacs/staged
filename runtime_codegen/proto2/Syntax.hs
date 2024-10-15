@@ -58,7 +58,7 @@ data Tm
 
   | Box Tm
   | Quote Tm
-  | Splice Tm (Maybe SourcePos)
+  | Splice Tm (Maybe String) -- displayed location of the splice
 
   | Unit
   | Tt

@@ -46,7 +46,7 @@ data Tm
   | App Tm Tm
   | Erased String
   | Quote Tm
-  | Splice Tm (Maybe SourcePos)
+  | Splice Tm (Maybe String)
   | Return Tm
   | Bind Name Tm Tm
   | Seq Tm Tm
@@ -234,6 +234,14 @@ closeVar x = x ++ "c"
 openVar :: Name -> Name
 openVar x = x ++ "o"
 
+spliceLoc :: Maybe String -> Out
+spliceLoc = \case
+  Nothing -> "undefined"
+  Just loc -> "[" <> go (lines loc) <> "]" where
+    go []     = ""
+    go [l]    = strLit l
+    go (l:ls) = strLit l <> ", " <> go ls
+
 execTop :: Top -> Out
 execTop t = tail $ go t where
   go :: Cxt => Top -> Out
@@ -252,7 +260,7 @@ execTop t = tail $ go t where
     -- finalize
     TBody t ->
       "const main_ = () => {" <> exec t <> "};" <> newl <>
-      "console.log(main_())" <> newl
+      "console.log('RESULT:');console.log(main_())" <> newl
 
 exec :: Cxt => Tm -> Out
 exec = \case
@@ -264,7 +272,7 @@ exec = \case
   App t u      -> cRun (ceval t `cApp` ceval u)
   Erased{}     -> impossible
   Quote{}      -> impossible
-  Splice t _   -> jApp "codegenExec_" [ceval t]
+  Splice t loc -> jApp "codegenExec_" [ceval t, spliceLoc loc]
   Return t     -> jReturn $ ceval t
   Bind x t u   -> jLet x (exec t) (exec u)
   Seq t u      -> jLet "_" (exec t) (exec u)
@@ -283,7 +291,7 @@ ceval = \case
   App t u         -> cApp (ceval t) (ceval u)
   Erased s        -> jReturn "undefined"
   Quote t         -> stage 1 $ oeval t
-  Splice t _      -> jApp "codegenClosed_" [ceval t]
+  Splice t loc    -> jApp "codegenClosed_" [ceval t, spliceLoc loc]
   t@Return{}      -> jLam [] $ exec t
   t@Bind{}        -> jLam [] $ exec t
   t@Seq{}         -> jLam [] $ exec t
@@ -303,10 +311,10 @@ oeval = \case
   App t u         -> case ?stage of
                        0 -> jApp "app_" [oeval t, oeval u]
                        _ -> jApp "App_" [oeval t, oeval u]
-  Erased s        -> jReturn "CSP_(undefined)"
+  Erased s        -> jReturn "CSP_undefined_"
   Quote t         -> jApp "quote_" [stage (?stage + 1) (oeval t)]
-  Splice t _      -> case ?stage of
-                       0 -> jApp "codegenOpen_" [oeval t]
+  Splice t loc    -> case ?stage of
+                       0 -> jApp "codegenOpen_" [oeval t, spliceLoc loc]
                        _ -> stage (?stage - 1) $ jApp "splice_" [oeval t]
   Return t        -> jApp "Return_" [oeval t]
   Bind x t u      -> jApp "Bind_" [strLit x, oeval t, jLam [x] (oeval u)]
@@ -315,9 +323,7 @@ oeval = \case
   Write t u       -> jApp "Write_" [oeval t, oeval u]
   Read t          -> jApp "Read_" [oeval t]
 
-
-TODO: erased should be CSP_(undefined) everywhere, open closures should be Lam_(!!)
-
+-- TODO: erased should be CSP_(undefined) everywhere, open closures should be Lam_(!!)
 
 genTop :: Z.Tm Void -> IO Out
 genTop t = do

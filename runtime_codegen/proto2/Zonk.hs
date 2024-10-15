@@ -24,7 +24,7 @@ data Tm a
   | App (Tm a) (Tm a)
   | Erased String
   | Quote (Tm a)
-  | Splice (Tm a) (Maybe SourcePos)
+  | Splice (Tm a) (Maybe String)
   | Return (Tm a)
   | Bind Name (Tm a) (Tm a)
   | Seq (Tm a) (Tm a)

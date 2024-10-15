@@ -10,7 +10,6 @@ const _Var       = 'Var'
 const _Let       = 'Let'
 const _Lam       = 'Lam'
 const _App       = 'App'
-const _Erased    = 'Erased'
 const _Quote     = 'Quote'
 const _Splice    = 'Splice'
 const _Return    = 'Return'
@@ -31,7 +30,6 @@ const _Body      = 'Body'
   {tag: _Let, _1: Name, _2: Open, _3: (v: Open) => Open} |
   {tag: _Lam, _1: Name, _2: (v: Open) => Open} |
   {tag: _App, _1: Open, _2: Open} |
-  {tag: _Erased} |
   {tag: _Quote, _1: Open} |
   {tag: _Splice, _1: Open} |
   {tag: _Return, _1: Open} |
@@ -59,8 +57,6 @@ function Let_    (x, t, u) {return {tag: _Let, _1: x, _2: t, _3: u}}
 function Lam_    (x, t)    {return {tag: _Lam, _1: x, _2: t}}
 /** @type {(t:Open, u:Open) => Open} */
 function App_    (t, u)    {return {tag: _App, _1: t, _2: t}}
-/** @type {Open} */
-const    Erased_ =  {tag: _Erased}
 /** @type {(t: Open) => Open} */
 function Quote_  (t)       {return {tag: _Quote, _1: t}}
 /** @type {(t: Open) => Open} */
@@ -80,7 +76,8 @@ function Read_   (t)       {return {tag: _Read, _1: t}}
 /** @type {(t: Closed) => Open} */
 function CSP_ (t)          {return {tag: _CSP, _1: t}}
 
-
+/** @type {Open} */
+const CSP_undefined_ = CSP_(undefined)
 
 // Closure conversion
 // ----------------------------------------------------------------------------------------------------
@@ -94,7 +91,6 @@ function CSP_ (t)          {return {tag: _CSP, _1: t}}
    {tag: _Lam, _1: Name, _2: Tm} |
    {tag: _LiftedLam, _1: Name, _2: Array<Name>} |
    {tag: _App, _1: Tm, _2: Tm} |
-   {tag: _Erased} |
    {tag: _Quote, _1: Tm} |
    {tag: _Splice, _1: Tm} |
    {tag: _Return, _1: Tm} |
@@ -128,8 +124,6 @@ function TLam_       (x,t) {return {tag: _Lam, _1:x , _2: t } }
 function TLiftedLam_ (x,args) {return {tag: _LiftedLam, _1: x , _2: args} }
 /** @type {(t:Tm, u:Tm) => Tm} */
 function TApp_       (t,u) {return {tag: _App, _1: t , _2: u}}
-/** @type {Tm} */
-const    TErased_    = {tag: _Erased}
 /** @type {(t: Tm) => Tm} */
 function TQuote_     (t) {return {tag: _Quote, _1: t } }
 /** @type {(t: Tm) => Tm} */
@@ -281,10 +275,6 @@ function cconv_(top){
 
      case _App : {
        return TApp_(cconv_(top._1), cconv_(top._2))
-     }
-
-     case _Erased : {
-       return TErased_
      }
 
      case _Quote : {
@@ -646,7 +636,6 @@ function exec_(top){
     case _Lam       : throw new Error('impossible')
     case _LiftedLam : throw new Error('impossible')
     case _App       : return cRun_(cApp_(() => ceval_(top._1), () => ceval_(top._2)))()
-    case _Erased    : throw new Error('impossible')
     case _Quote     : throw new Error('impossible')
     case _Splice    : return jApp_(str_('codegenExec_'), [() => ceval_(top._1)])()
     case _Return    : return jReturn_(() => ceval_(top._1))()
@@ -674,7 +663,6 @@ function ceval_(top){
                         put_('}')
                         })()
     case _App       : return cApp_(() => ceval_(top._1), () => ceval_(top._2))()
-    case _Erased    : return jReturn_(str_('undefined'))()
     case _Quote     : return inStage_(1, () => oeval_(top._1))()
     case _Splice    : return jApp_(str_('codegenClosed_'), [() => ceval_(top._1)])()
     case _Return    : return jLam_([], () => exec_(top))()
@@ -718,13 +706,7 @@ function oeval_(top){
         return jApp_(str_('App_'), [() => oeval_(top._1), () => oeval_(top._2)])()
       }
     }
-    case _Erased : {
-      if (stage_ === 0){
-        return jReturn_(str_('Erased_'))()
-      } else {
-        return jReturn_(str_('undefined'))()
-      }
-    }
+
     case _Quote : {
       return jApp_(str_('quote_'), [inStage_(stage_ + 1, () => oeval_(top._1))])()
     }
@@ -823,10 +805,25 @@ function oevalTop_(top){
   }
 }
 
+/** @type{(ls : undefined|Array<String>, code:String) => void} */
+function displayCode_(loc, code){
+  if (loc) {
+    console.log('CODE GENERATED AT:')
+    for (const l of loc){
+      console.log(l)
+    }
+  } else {
+    console.log('CODE GENERATED:')
+  }
+  console.log('CODE:')
+  console.log(code) 
+  console.log('')   
+}
+
 // Splicing in closed evaluation
-/** @type {(t:Open) => Closed} */
-function codegenClosed_(t){
-  const t2_       = runCConv_(t, undefined)
+/** @type {(t:Open, loc: undefined|Array<String>) => Closed} */
+function codegenClosed_(t_, loc_){
+  const t2_       = runCConv_(t_, undefined)
   builder_.length = 0
   indentation_    = 0
   isTail_         = true
@@ -837,16 +834,15 @@ function codegenClosed_(t){
 
   const csp_ = cspArray_
   const src_ = build_()
-  console.log('CODE GENERATED')
-  console.log(src_)  
+  displayCode_(loc_, src_)
   const res_ = eval(src_)()
   return res_
 }
 
 // Splicing at stage 0 in open evaluation
-/** @type {(t:Open) => Open} */
-function codegenOpen_(t){
-  const t2_       = runCConv_(t, undefined)
+/** @type {(t:Open, loc:undefined|Array<String>) => Open} */
+function codegenOpen_(t_, loc_){
+  const t2_       = runCConv_(t_, undefined)
   builder_.length = 0
   indentation_    = 0
   stage_          = 0
@@ -858,25 +854,28 @@ function codegenOpen_(t){
 
   const csp_ = cspArray_
   const src_ = build_()
-  console.log('CODE GENERATED')
-  console.log(src_)  
+  displayCode_(loc_, src_)
   const res_ = eval(src_)
   return res_
 }
 
-/** @type {(t:Open) => Closed} */
-function codegenExec_(t){
-  const t2_       = runCConv_(t, undefined)
+/** @type {(t:Open, loc:undefined|Array<String>) => Closed} */
+function codegenExec_(t_, loc_){
+  const t2_       = runCConv_(t_, undefined)
   builder_.length = 0
   indentation_    = 0
+  isTail_         = true
 
+  put_('() => {\n')  
   execTop_(t2_)
+  put_(';\n}')    
 
+  const csp_ = cspArray_
   const src_ = build_()
-  console.log('CODE GENERATED')
-  console.log(src_)
-  const res_ = eval(src_)() // run the resulting action
+  displayCode_(loc_, src_)
+  const res_ = eval(src_)()() // run the resulting action
   return res_
 }
 
+// BEGIN CODE
 // ----------------------------------------------------------------------------------------------------

@@ -98,3 +98,15 @@ infixl 4 :>
 pattern (:>) :: [a] -> a -> [a]
 pattern xs :> x <- x:xs where (:>) xs ~x = x:xs
 {-# complete (:>), [] #-}
+
+--------------------------------------------------------------------------------
+
+displayLocation :: SourcePos -> String -> String
+displayLocation (SourcePos path (unPos -> linum) (unPos -> colnum)) file =
+  let lnum = show linum
+      lpad = map (const ' ') lnum
+  in
+     printf "%s:%d:%d:\n" path linum colnum ++
+     printf "%s |\n"    lpad ++
+     printf "%s | %s\n" lnum (lines file !! (linum - 1)) ++
+     printf "%s | %s" lpad (replicate (colnum - 1) ' ' ++ "^")

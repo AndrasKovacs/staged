@@ -7,11 +7,8 @@ import Zonk   hiding (Tm)
 import qualified Zonk   as Z
 import qualified Common as C
 import Pretty
-import ElabState
-import Errors
 
 import Data.IORef
-import System.IO.Unsafe
 
 --------------------------------------------------------------------------------
 
@@ -80,9 +77,9 @@ cApp t u = case t of
   CLam x f g -> coerce f u
   t          -> impossible
 
-cSplice :: Closed -> Maybe SourcePos -> Closed
-cSplice t pos = case t of
-  CQuote t -> env [] $ lvl 0 $ ceval $ traceGen t pos
+cSplice :: Closed -> Maybe String -> Closed
+cSplice t loc = case t of
+  CQuote t -> env [] $ lvl 0 $ ceval $ traceGen t loc
   _        -> impossible
 
 oQuote :: Open -> Open
@@ -150,9 +147,9 @@ oeval = \case
                         (OClosed x (CLam _ _ f), u           ) -> coerce f ?lvl u
                         (OLam _ f              , u           ) -> coerce f ?lvl u
                         (t                     , u           ) -> OApp t u
-      Splice t pos -> case oeval t of
-                        OClosed _ (CQuote t) -> env (idEnv ?lvl) $ oeval $ traceGen t pos
-                        OQuote t             -> env (idEnv ?lvl) $ oeval $ traceGen t pos
+      Splice t loc -> case oeval t of
+                        OClosed _ (CQuote t) -> env (idEnv ?lvl) $ oeval $ traceGen t loc
+                        OQuote t             -> env (idEnv ?lvl) $ oeval $ traceGen t loc
                         t                    -> OSplice t
     _ -> case t of
       Let x t u    -> OLet x (oeval t) (NoShow \l -> lvl l $ oeval u)
@@ -162,17 +159,16 @@ oeval = \case
                         OQuote t             -> t
                         t                    -> OSplice t
 
-traceGen :: Lvl => Open -> Maybe SourcePos -> Tm
-traceGen t pos =
+traceGen :: Lvl => Open -> Maybe String -> Tm
+traceGen t loc =
   let t' = gen t
       freevars = map (\l -> "x" ++ show l) [0.. ?lvl - 1]
       displayCode  = prettyTm 0 0 freevars (Z.unzonk t') ""
-  in case pos of
+  in case loc of
     Nothing ->
       trace ("CODE GENERATED: \n\n" ++ displayCode ++ "\n") t'
-    Just pos ->
-      let file = unsafeDupablePerformIO (readIORef sourceCode)
-      in trace ("CODE GENERATED AT:\n" ++ displayLocation pos file ++ "\nCODE:\n  " ++ displayCode ++ "\n") t'
+    Just loc ->
+      trace ("CODE GENERATED AT:\n" ++ loc ++ "\nCODE:\n  " ++ displayCode ++ "\n") t'
 
 gen :: Lvl => Open -> Tm
 gen = \case

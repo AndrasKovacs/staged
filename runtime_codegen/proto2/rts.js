@@ -1,4 +1,4 @@
-//@ts-check
+// //@ts-check
 'use strict';
 
 /** @typedef {String} Name */
@@ -365,7 +365,7 @@ function cconvTop_(top){
       const t = top._1
       const u = top._2
 
-      reset('cl')
+      reset('$cl')
       const t2 = cconv_(t)
       const new_closures = closures_
       const u2 = cconvTop_(u)
@@ -373,7 +373,7 @@ function cconvTop_(top){
     }
 
     default: {
-      reset('cl')
+      reset('$cl')
       const t2 = cconv_(top)
       return addClosures(closures_, TopBody_(t2))
     }
@@ -461,7 +461,7 @@ const put_ = (s) => {builder_.push(s)}
 const str_ = (s) => () => put_(s)
 
 /** @type {(s:String) => () => void} */
-const strLit_ = (s) => () => put_("'" + s + "'")
+const strLit_ = (s) => () => put_("`" + s + "`")
 
 /** @type {() => void} */
 const newl_ = () => {put_('\n' + ' '.repeat(indentation_))}
@@ -534,7 +534,6 @@ const jLet_ = (x, closed, t, u) => () => {
 /** @type{ (t: () => void, u: () => void) => (() => void) } */
 const jSeq_ = (t, u) => () => {
   if (isTail_){
-    put_('const _ = ')
     indent_(nonTail_(t))()
     semi_()
     newl_()
@@ -655,7 +654,7 @@ function exec_(top){
     case _Seq       : return jSeq_(() => exec_(top._1), () => exec_(top._2))()
     case _New       : return jReturn_(() => {put_('{_1 : '); ceval_(top._1); put_('}')})()
     case _Write     : return nonTail_(() => {ceval_(top._1); put_('._1 = '); ceval_(top._2)})()
-    case _Read      : return jReturn_(() => {ceval_(top._1); put_('._1 = ')})()
+    case _Read      : return jReturn_(() => {ceval_(top._1); put_('._1')})()
     case _CSP       : return jReturn_(() => put_('csp_[' + top._1 + ']()'))() // running the CSP-d action
   }
 }
@@ -749,13 +748,13 @@ function execTop_(top){
   tail_(() => {
     switch (top.tag){
       case _Let : {
-        return jLet_(top._1, true, () => ceval_(top._2), () => {newl_(); execTop_(top._3)})()
+        return jLet_(top._1, true, () => ceval_(top._2), () => {execTop_(top._3)})()
       }
       case _Bind : {
-        return jLet_(top._1, true, () => exec_(top._2), () => {newl_(); execTop_(top._3)})()
+        return jLet_(top._1, true, () => exec_(top._2), () => {execTop_(top._3)})()
       }
       case _Seq : {
-        return jSeq_((() => exec_(top._1)), (() => {newl_(); execTop_(top._2)}))()
+        return jSeq_((() => exec_(top._1)), (() => {execTop_(top._2)}))()
       }
       case _Closure : {
         const x    = top._1
@@ -763,8 +762,8 @@ function execTop_(top){
         const arg  = top._3
         const body = top._4
         const t    = top._5
-        return jLet_(closeVar_(x), true, () => jClosure_(env, arg, true, () => {ceval_(body)}),
-               jLet_(openVar_(x), true, () => jClosure_(env, arg, false, () => inStage_(0, () => oeval_(body))), () =>
+        return jLet_(closeVar_(x), true, jClosure_(env, arg, true, () => {ceval_(body)}),
+               jLet_(openVar_(x), true, jClosure_(env, arg, false, () => inStage_(0, () => oeval_(body))), () =>
                execTop_(t)))()
       }
       case _Body : {
@@ -893,7 +892,7 @@ function codegenExec_(t_, loc_){
   const csp_ = cspArray_
   const src_ = build_()
   displayCode_(loc_, src_)
-  const res_ = eval(src_)()() // run the resulting action
+  const res_ = eval(src_)() // run the resulting action
   return res_
 }
 

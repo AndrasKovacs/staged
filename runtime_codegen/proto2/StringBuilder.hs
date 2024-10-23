@@ -16,7 +16,7 @@ str :: String -> Out
 str = fromString
 
 strLit :: String -> Out
-strLit s = "'" <> str s <> "'"
+strLit s = "`" <> str s <> "`"
 
 instance IsString Out where fromString s = Out (\_ -> Chunk s)
 

@@ -17,8 +17,11 @@
 -- id  : □ (ℕ → ℕ) = <λ x. x>;
 -- id2 : □ (ℕ → ℕ) = <λ x. ~(let y = ~id x; <y>)>;
 
-ℕ : U
-   = (N : U) → (N → N) → N → N;
+ℕ : U =
+  (N : U) → (N → N) → N → N;
+
+iterate : {A} → ℕ → (A → A) → A → A =
+  λ n f a. n _ f a;
 
 zero : ℕ =
   λ _ s z. z;
@@ -42,15 +45,18 @@ n100 = mul n10 n10;
 n1k  = mul n100 n10;
 n10k = mul n100 n100;
 
--- serializeℕ : ℕ → □ ℕ =
---   λ n. <λ N s z. ~(let x = n N s z; <x>)>;
-
 serializeℕ : ℕ → □ ℕ =
-  λ n. <λ N s z. ~(n _ (λ x. <s ~x>) <z>)>;
+  λ n. <λ N s z. ~(let x = n N s z; <x>)>;
 
--- foo = ~(serializeℕ (λ N s z. z));
+-- serializeℕ : ℕ → □ ℕ =
+--   λ n. <λ N s z. ~(n _ (λ x. <s ~x>) <z>)>;
 
-return ~(serializeℕ n5)
+trip : ℕ → ℕ → ℕ =
+  λ n. iterate n (λ res. ~(serializeℕ res));
+
+test = trip n5 n10;
+
+return tt
 
 -- mkExp : ℕ → □ (ℕ → ℕ)
 --   = λ x. <λ y. ~(x _ (λ f. <mul ~f y>) <n1>)>;

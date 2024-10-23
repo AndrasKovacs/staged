@@ -1,159 +1,180 @@
 
--- Prelude
---------------------------------------------------------------------------------
+-- -- Prelude
+-- --------------------------------------------------------------------------------
 
-the : (A : U) → A → A
-  = λ _ x. x;
+-- the : (A : U) → A → A
+--   = λ _ x. x;
 
-id : {A} → A → A
-  = λ x. x;
+-- id : {A} → A → A
+--   = λ x. x;
 
-const : {A B} → A → B → A
-  = λ x y. x;
+-- const : {A B} → A → B → A
+--   = λ x y. x;
 
-comp : {A B C} → (B → C) → (A → B) → A → C
-  = λ f g x. f (g x);
+-- comp : {A B C} → (B → C) → (A → B) → A → C
+--   = λ f g x. f (g x);
 
-modify : {A} → Ref A → (A → A) → Eff ⊤
-  = λ r f. do a ← read r; write r (f a);
+-- modify : {A} → Ref A → (A → A) → Eff ⊤
+--   = λ r f. do a ← read r; write r (f a);
 
---------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------
 
-Gen : U → U
-   = λ A. {R : U} → (A → □ R) → □ R;
+-- Gen : U → U
+--    = λ A. {R : U} → (A → □ R) → □ R;
 
-ret : {A} → A → Gen A
-  = λ a k. k a;
+-- ret : {A} → A → Gen A
+--   = λ a k. k a;
 
-bind : {A B} → Gen A → (A → Gen B) → Gen B
-  = λ ga f k. ga λ a. (f a) k;
+-- bind : {A B} → Gen A → (A → Gen B) → Gen B
+--   = λ ga f k. ga λ a. (f a) k;
 
-runGen : {A} → Gen (□ A) → □ A
-  = λ ga. ga (λ x. x);
+-- runGen : {A} → Gen (□ A) → □ A
+--   = λ ga. ga (λ x. x);
 
---------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------
 
-ℕ : U
-   = (N : U) → (N → N) → N → N;
+-- ℕ : U
+--    = (N : U) → (N → N) → N → N;
 
-zero  : ℕ = λ _ s z. z;
-suc   : ℕ → ℕ = λ n N s z. s (n N s z);
+-- zero  : ℕ = λ _ s z. z;
+-- suc   : ℕ → ℕ = λ n N s z. s (n N s z);
 
-iter  : {A} → ℕ → (A → A) → A → A
-  = λ n s z. n _ s z;
+-- iter  : {A} → ℕ → (A → A) → A → A
+--   = λ n s z. n _ s z;
 
-add : ℕ → ℕ → ℕ
-  = λ a b N s z. a N s (b N s z);
+-- add : ℕ → ℕ → ℕ
+--   = λ a b N s z. a N s (b N s z);
 
-mul : ℕ → ℕ → ℕ
-  = λ a b N s z. a N (b N s) z;
+-- mul : ℕ → ℕ → ℕ
+--   = λ a b N s z. a N (b N s) z;
 
-n0   = zero;
-n1   = suc zero;
-n2   = suc $ suc zero;
-n3   = suc $ suc $ suc zero;
-n5   = suc $ suc $ suc $ suc $ suc zero;
-n10  = add n5 n5;
-n100 = mul n10 n10;
-n1k  = mul n100 n10;
-n10k = mul n100 n100;
+-- n0   = zero;
+-- n1   = suc zero;
+-- n2   = suc $ suc zero;
+-- n3   = suc $ suc $ suc zero;
+-- n5   = suc $ suc $ suc $ suc $ suc zero;
+-- n10  = add n5 n5;
+-- n100 = mul n10 n10;
+-- n1k  = mul n100 n10;
+-- n10k = mul n100 n100;
 
-mkExp : ℕ → □ (ℕ → ℕ)
-  = λ x. <λ y. ~(x _ (λ f. <mul ~f y>) <n1>)>;
+-- mkExp : ℕ → □ (ℕ → ℕ)
+--   = λ x. <λ y. ~(x _ (λ f. <mul ~f y>) <n1>)>;
 
-exp5 = ~(mkExp n5);
+-- exp5 = ~(mkExp n5);
 
---------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------
 
-Bool
-  = (B : U) → B → B → B;
+-- Bool
+--   = (B : U) → B → B → B;
 
-true  : Bool = λ B t f. t;
-false : Bool = λ B t f. f;
+-- true  : Bool = λ B t f. t;
+-- false : Bool = λ B t f. f;
 
-case : {B} → Bool → B → B → B
-  = λ {B} b. b B;
+-- case : {B} → Bool → B → B → B
+--   = λ {B} b. b B;
 
-not : Bool → Bool
-  = λ b B t f. b B f t;
+-- not : Bool → Bool
+--   = λ b B t f. b B f t;
 
-and : Bool → Bool → Bool
-  = λ x y B t f. x B (y B t f) f;
+-- and : Bool → Bool → Bool
+--   = λ x y B t f. x B (y B t f) f;
 
-or : Bool → Bool → Bool
-  = λ x y B t f. x B t (y B t f);
+-- or : Bool → Bool → Bool
+--   = λ x y B t f. x B t (y B t f);
 
-splitBool : {A} → □ Bool → Gen A → Gen A → Gen A
-  = λ b t f k. <~b _ ~(t k) ~(f k)>;
+-- splitBool : {A} → □ Bool → Gen A → Gen A → Gen A
+--   = λ b t f k. <~b _ ~(t k) ~(f k)>;
 
---------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------
 
-List  : U → U
-  = λ A. (L : U) → (A → L → L) → L → L;
+-- List  : U → U
+--   = λ A. (L : U) → (A → L → L) → L → L;
 
-nil  : {A} → List A = λ L c n. n;
-cons : {A} → A → List A → List A = λ a as L c n. c a (as L c n);
+-- nil  : {A} → List A = λ L c n. n;
+-- cons : {A} → A → List A → List A = λ a as L c n. c a (as L c n);
 
-foldr : {A B} → (A → B → B) → B → List A → B
-  = λ c n as. as _ c n;
+-- foldr : {A B} → (A → B → B) → B → List A → B
+--   = λ c n as. as _ c n;
 
---------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------
 
-Pair : U → U → U
-  = λ A B. (P : U) → (A → B → P) → P;
+-- Pair : U → U → U
+--   = λ A B. (P : U) → (A → B → P) → P;
 
-pair : {A B} → A → B → Pair A B
-  = λ a b P p. p a b;
+-- pair : {A B} → A → B → Pair A B
+--   = λ a b P p. p a b;
 
-fst : {A B} → Pair A B → A
-  = λ ab. ab _ (λ a b. a);
+-- fst : {A B} → Pair A B → A
+--   = λ ab. ab _ (λ a b. a);
 
-snd : {A B} → Pair A B → B
-  = λ ab. ab _ (λ a b. b);
-
-
--- Foldr fusion
---------------------------------------------------------------------------------
-
-Push : U → U
-  = λ A. (L : U) → (A → □ L → □ L) → □ L → □ L;
-
-map : {A B} → (A → B) → Push A → Push B
-  = λ f as L c n. as L (λ a b. c (f a) b) n;
-
-filter : {A} → (A → Gen Bool) → Push A → Push A
-  = λ f as L c n. as L (λ a l. runGen $ bind (f a) λ b. b _ (ret (c a l)) (ret l)) n;
-
-pushList : {A} → □ (List A) → Push (□ A)
-  = λ as L c n. <foldr (λ a l. ~(c <a> <l>)) ~n ~as>;
-
-unpushList : {A} → Push (□ A) → □ (List A)
-  = λ as. as _ (λ a as. <cons ~a ~as>) <nil>;
-
-example : List ℕ → List ℕ
-  = ~<λ ns. ~(unpushList $
-         map    (λ n. <add n10 ~n>) $
-         map    (λ n. <add n10 ~n>) $
-         filter (λ _. ret true)     $
-         map    (λ n. <add n10 ~n>) $
-         pushList <ns>)>;
-
---------------------------------------------------------------------------------
+-- snd : {A B} → Pair A B → B
+--   = λ ab. ab _ (λ a b. b);
 
 
-test : Ref ℕ → Eff (□ (Eff ⊤))
-  = λ r. return <modify r (add n1)>;
+-- -- Foldr fusion
+-- --------------------------------------------------------------------------------
 
-test' : Ref ℕ → Eff (□ (Eff ⊤))
-  = λ r. return <modify r (add n2)>;
+-- Push : U → U
+--   = λ A. (L : U) → (A → □ L → □ L) → □ L → □ L;
 
-main : Eff ℕ
-  = do r ← new zero;
-    do action  ← test r;
-    do action' ← test' r;
-    do ~action;
-    do ~action';
-    do x ← read r;
-    return x;
+-- map : {A B} → (A → B) → Push A → Push B
+--   = λ f as L c n. as L (λ a b. c (f a) b) n;
 
-main
+-- filter : {A} → (A → Gen Bool) → Push A → Push A
+--   = λ f as L c n. as L (λ a l. runGen $ bind (f a) λ b. b _ (ret (c a l)) (ret l)) n;
+
+-- pushList : {A} → □ (List A) → Push (□ A)
+--   = λ as L c n. <foldr (λ a l. ~(c <a> <l>)) ~n ~as>;
+
+-- unpushList : {A} → Push (□ A) → □ (List A)
+--   = λ as. as _ (λ a as. <cons ~a ~as>) <nil>;
+
+-- example : List ℕ → List ℕ
+--   = ~<λ ns. ~(unpushList $
+--          map    (λ n. <add n10 ~n>) $
+--          map    (λ n. <add n10 ~n>) $
+--          filter (λ _. ret true)     $
+--          map    (λ n. <add n10 ~n>) $
+--          pushList <ns>)>;
+
+-- --------------------------------------------------------------------------------
+
+-- ℕ : U
+--    = (N : U) → (N → N) → N → N;
+
+-- zero  : ℕ = λ _ s z. z;
+-- suc   : ℕ → ℕ = λ n N s z. s (n N s z);
+
+-- modify : Ref ℕ → (ℕ → ℕ) → Eff ⊤
+--   = λ r f. do a ← read r; write r (f a);
+
+-- test : Ref ℕ → Eff (□ (Eff ⊤))
+--   = λ r. return <modify r suc>;
+
+-- -- test' : Ref ℕ → Eff (□ (Eff ⊤))
+-- --   = λ r. return <modify r (add n2)>;
+
+-- main : Eff ℕ
+--   = do r ← new zero;
+--     do action  ← test r;
+--     -- do action' ← test' r;
+--     do ~action;
+--     -- do ~action';
+--     do x ← read r;
+--     return x;
+
+do ref ← new (λ (x : ⊤) (y : ⊤). x);
+
+let action = <do write ref (λ x y. y); read ref>;
+
+-- do f ← ~action;
+let f : ⊤ → ⊤ → ⊤ = λ x y. x  ;
+let kek = ~<λ x y. ~(let res = f x y; <res>)>;
+let lel = ~<λ x y. ~(let res = f x y; <res>)>;
+return f
+
+
+-- () => {
+-- return (((csp_[0])._1(csp_[1]))._1(csp_[2]))._1(csp_[3])();
+-- }

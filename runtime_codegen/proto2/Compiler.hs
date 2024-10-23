@@ -78,7 +78,7 @@ freshenName x = go (mangle x) where
   go :: Env => Name -> Name
   go x | any ((==x).(\(_, x) -> x)) ?env =
          go $ x ++ show (length ?env)
-       | otherwise = x
+       | otherwise = "$" ++ x
 
 fresh :: Name -> (Env => Name -> a) -> Env => a
 fresh x act = let x' = freshenName x in
@@ -162,10 +162,10 @@ cconvTop = \case
     let ?env     = (True, x) : ?env in
     addClosures cs $ TBind x t' (cconvTop u)
   Z.Seq t u ->
-    let (t', cs) = cconv0 "cl" t in
+    let (t', cs) = cconv0 "$cl" t in
     addClosures cs $ TSeq t' (cconvTop u)
   t ->
-    case cconv0 "cl" t of
+    case cconv0 "$cl" t of
       (t', cs) -> addClosures cs (TBody t')
 
 runCConv :: ZTm -> Top
@@ -199,7 +199,7 @@ jLet x closed t u = case ?isTail of
 
 jSeq :: IsTail => Cxt => (IsTail => Out) -> (IsTail => Out) -> Out
 jSeq t u = case ?isTail of
-  Tail -> "const _ = " <> indent (nonTail t) <> ";" <> newl <> tail u
+  Tail -> indent (nonTail t) <> ";" <> newl <> tail u
   _    -> "(_) => " <> parens (nonTail u) <> ")(" <> nonTail t <> ")"
 
 jTuple :: [Out] -> Out

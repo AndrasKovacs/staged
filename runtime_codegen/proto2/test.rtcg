@@ -45,12 +45,21 @@ add : ℕ → ℕ → ℕ
 -- serializeℕ : ℕ → □ ℕ =
 --   λ n. <λ N s z. ~(let x = n N s z; <x>)>;
 
-serializeℕ : ℕ → □ ℕ =
-  λ n. <λ N s z. ~(n _ (λ x. <z>) <z>)>;
+-- serializeℕ : ℕ → □ ℕ =
+--   λ n. <λ N s z. ~(n _ (λ x. <z>) <z>)>;
 
 -- foo = ~(serializeℕ (λ N s z. z));
 
-kek = ~(serializeℕ (add zero zero));
+-- kek = ~(serializeℕ (add zero zero));
+
+bleh = λ z.
+  let x = zero;
+  let y = zero;
+  add x (add y zero);
+
+foo = <<<bleh>>>;
+
+bar = ~foo;
 
 -- One = (O : U) → O → O;
 

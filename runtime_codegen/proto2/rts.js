@@ -18,7 +18,6 @@ const _Seq       = 'Seq'
 const _New       = 'New'
 const _Write     = 'Write'
 const _Read      = 'Read'
-const _ClosedVar = 'Closed'
 const _Closure   = 'Closure'
 const _CSP       = 'CSP'
 const _LiftedLam = 'LiftedLam'
@@ -26,7 +25,7 @@ const _Body      = 'Body'
 
 /**
   @typedef {
-  {tag: _Var, name: Name, isTop: Boolean, isClosed: Boolean} |
+  {tag: _Var, name: Name, isTop: Boolean} |
   {tag: _Let, _1: Name, _2: Open, _3: (v: Open) => Open} |
   {tag: _Lam, _1: Name, _2: (v: Open) => Open} |
   {tag: _App, _1: Open, _2: Open} |
@@ -42,15 +41,15 @@ const _Body      = 'Body'
   } Open
 
   @typedef {
-  undefined          |
+  undefined |
   {_1: (v:Closed) => Closed, _2: (v:Open) => Open} |
-  Open               |
+  Open |
   {_1 : Closed}
   } Closed
 */
 
 /** @type {(x:Name, isTop:Boolean, isClosed:Boolean) => Open} */
-function Var_    (x, isTop, isClosed)       {return {tag: _Var, name: x, isTop: isTop, isClosed: isClosed}}
+function Var_    (x, isTop)       {return {tag: _Var, name: x, isTop: isTop}}
 /** @type {(x:Name, t:Open, u:(v: Open) => Open) => Open} */
 function Let_    (x, t, u) {return {tag: _Let, _1: x, _2: t, _3: u}}
 /** @type {(x:Name, t:(v: Open) => Open) => Open} */
@@ -86,7 +85,6 @@ const CSP_undefined_ = CSP_(undefined)
    @typedef {
    {tag: _Var, _1: Name} |
    {tag: _CSP, _1: Number} |
-   {tag: _ClosedVar, _1: Name} |
    {tag: _Let, _1: Name, _2: Tm, _3: Tm} |
    {tag: _Lam, _1: Name, _2: Tm} |
    {tag: _LiftedLam, _1: Name, _2: Name, _3: Array<Name>} |
@@ -114,8 +112,6 @@ const CSP_undefined_ = CSP_(undefined)
 function TVar_       (x) {return {tag: _Var, _1: x } }
 /** @type {(x:Number) => Tm} */
 function TCSP_       (i) {return {tag: _CSP, _1: i} }
-/** @type {(x:Name) => Tm} */
-function TClosedVar_  (x) {return {tag: _ClosedVar, _1: x} }
 /** @type {(x:Name, t:Tm, u:Tm) => Tm} */
 function TLet_       (x,t,u) {return {tag: _Let, _1:x , _2:u , _3:u } }
 /** @type {(x:Name, t:Tm) => Tm} */
@@ -231,15 +227,7 @@ function cconv_(top){
        if (!top.isTop) {
          freeVars_.add(top.name)
        }
-       if (mode_ === undefined) {
-         return TVar_(top.name)
-       } else {
-         if (top.isClosed) {
-           return TClosedVar_(top.name)
-         } else {
-           return TVar_(top.name)
-         }
-       }
+       return TVar_(top.name)
      }
 
      case _Let : {
@@ -458,6 +446,14 @@ let indentation_ = 0
 /** @type {Boolean} */
 let isTail_ = true
 
+/** @type{Number} */
+let stage_ = 0
+
+/** @type{Map<Name,Boolean>} */
+const cxt_ = new Map()
+
+//----------------------------------------------------------------------------------------------------
+
 /** @type {(s:String) => void} */
 const put_ = (s) => {builder_.push(s)}
 
@@ -469,9 +465,6 @@ const strLit_ = (s) => () => put_("'" + s + "'")
 
 /** @type {() => void} */
 const newl_ = () => {put_('\n' + ' '.repeat(indentation_))}
-
-/** @type{Number} */
-let stage_ = 0
 
 /** @type{(s : Number, act: () => void) => (() => void)} */
 const inStage_ = (s, act) => () => {
@@ -521,16 +514,33 @@ const par_ = (act) => () => {
   put_(')')
 }
 
-/** @type{ (x: Name, t: () => void, u: () => void) => (() => void) } */
-const jLet_ = (x, t, u) => () => {
+/** @type{ (x: Name, closed: Boolean, t: () => void, u: () => void) => (() => void) } */
+const jLet_ = (x, closed, t, u) => () => {
   if (isTail_){
     put_('const ' + x + ' = ')
     indent_(nonTail_(t))()
     semi_()
     newl_()
-    tail_(u)()
+    tail_(() => {cxt_.set(x, closed); u(); cxt_.delete(x)})()
   } else {
     put_('((' + x + ') => ')
+    par_(nonTail_(() => {cxt_.set(x, closed); u(); cxt_.delete(x)}))()
+    put_(')(')
+    nonTail_(t)()
+    put_(')')
+  }
+}
+
+/** @type{ (t: () => void, u: () => void) => (() => void) } */
+const jSeq_ = (t, u) => () => {
+  if (isTail_){
+    put_('const _ = ')
+    indent_(nonTail_(t))()
+    semi_()
+    newl_()
+    tail_(u)()
+  } else {
+    put_('((_) => ')
     par_(nonTail_(u))()
     put_(')(')
     nonTail_(t)()
@@ -558,22 +568,22 @@ const jReturn_ = (t) => () => {
   }
 }
 
-/** @type{(xs : Array<Name>, t: () => void) => () => void} */
-const jLam_ = (xs, t) => () => {
+/** @type{(xs : Array<Name>, closed: Boolean, t: () => void) => () => void} */
+const jLam_ = (xs, closed, t) => () => {
   jReturn_(() => {
     jTuple_(xs.map(str_))();
     put_(' => {')
-    tail_(t)()
+    tail_(() => {xs.forEach((x) => cxt_.set(x, closed)); t(); xs.forEach((x) => cxt_.delete(x))})()
     put_('}')
   })()
 }
 
-/** @type{(xs: Array<Name>, t: () => void) => () => void} */
-const jLamExp_ = (xs, t) => () => {
+/** @type{(xs: Array<Name>, closed:Boolean, t: () => void) => () => void} */
+const jLamExp_ = (xs, closed, t) => () => {
   jReturn_(() => {
     jTuple_(xs.map(str_))();
     put_(' => ')
-    nonTail_(t)()
+    nonTail_(() => {xs.forEach((x) => cxt_.set(x, closed)); t(); xs.forEach((x) => cxt_.delete(x))})()
   })()
 }
 
@@ -602,12 +612,12 @@ const cRun_ = (t) => () => {
   })()
 }
 
-/** @type{(env: Array<Name>, x: Name, t : () => void) => () => void} */
-const jClosure_ = (env, x, t) => () => {
-  if (env.length ===0){
-    jLam_([x], t)()
+/** @type{(env: Array<Name>, x: Name, closed:Boolean, t : () => void) => () => void} */
+const jClosure_ = (env, x, closed, t) => () => {
+  if (env.length === 0){
+    jLam_([x], closed, t)()
   } else {
-    jLamExp_(env, jLam_([x], t))()
+    jLamExp_(env, closed, jLam_([x], closed, t))()
   }
 }
 
@@ -632,20 +642,19 @@ const openVar_  = (x) => x + 'o'
 function exec_(top){
   switch (top.tag){
     case _Var       : return cRun_(() => put_(top._1))()
-    case _Let       : return jLet_(top._1, () => ceval_(top._2), () => exec_(top._3))()
+    case _Let       : return jLet_(top._1, true, () => ceval_(top._2), () => exec_(top._3))()
     case _Lam       : throw new Error('impossible')
     case _LiftedLam : throw new Error('impossible')
     case _App       : return cRun_(cApp_(() => ceval_(top._1), () => ceval_(top._2)))()
     case _Quote     : throw new Error('impossible')
     case _Splice    : return jApp_(str_('codegenExec_'), [() => ceval_(top._1)])()
     case _Return    : return jReturn_(() => ceval_(top._1))()
-    case _Bind      : return jLet_(top._1, () => exec_(top._2), () => exec_(top._3))()
-    case _Seq       : return jLet_(' ', () => exec_(top._1), () => exec_(top._2))()
+    case _Bind      : return jLet_(top._1, true, () => exec_(top._2), () => exec_(top._3))()
+    case _Seq       : return jSeq_(() => exec_(top._1), () => exec_(top._2))()
     case _New       : return jReturn_(() => {put_('{_1 : '); ceval_(top._1); put_('}')})()
     case _Write     : return nonTail_(() => {ceval_(top._1); put_('._1 = '); ceval_(top._2)})()
     case _Read      : return jReturn_(() => {ceval_(top._1); put_('._1 = ')})()
     case _CSP       : return jReturn_(() => put_('csp_[' + top._1 + ']()'))() // running the CSP-d action
-    case _ClosedVar : throw new Error('impossible')
   }
 }
 
@@ -653,48 +662,55 @@ function exec_(top){
 function ceval_(top){
   switch (top.tag){
     case _Var       : return jReturn_(str_(top._1))()
-    case _Let       : return jLet_(top._1, () => ceval_(top._2), () => exec_(top._3))()
+    case _Let       : return jLet_(top._1, true, () => ceval_(top._2), () => exec_(top._3))()
     case _Lam       : throw new Error('impossible')
     case _LiftedLam : return jReturn_(() => {
                         put_('{_1 : ');
                         jAppClosure_(str_(closeVar_(top._1)), top._3.map(str_))();
                         put_(', _2 : ');
-                        jAppClosure_(str_(openVar_(top._1)), top._3.map(str_))();
+                        jAppClosure_(str_(openVar_(top._1)), top._3.map(oevalVar_))();
                         put_('}')
                         })()
     case _App       : return cApp_(() => ceval_(top._1), () => ceval_(top._2))()
     case _Quote     : return inStage_(1, () => oeval_(top._1))()
     case _Splice    : return jApp_(str_('codegenClosed_'), [() => ceval_(top._1)])()
-    case _Return    : return jLam_([], () => exec_(top))()
-    case _Bind      : return jLam_([], () => exec_(top))()
-    case _Seq       : return jLam_([], () => exec_(top))()
-    case _New       : return jLam_([], () => exec_(top))()
-    case _Write     : return jLam_([], () => exec_(top))()
-    case _Read      : return jLam_([], () => exec_(top))()
+    case _Return    : return jLam_([], true, () => exec_(top))()
+    case _Bind      : return jLam_([], true, () => exec_(top))()
+    case _Seq       : return jLam_([], true, () => exec_(top))()
+    case _New       : return jLam_([], true, () => exec_(top))()
+    case _Write     : return jLam_([], true, () => exec_(top))()
+    case _Read      : return jLam_([], true, () => exec_(top))()
     case _CSP       : return jReturn_(() => put_('csp_[' + top._1 + ']'))()
-    case _ClosedVar : throw new Error('impossible')
+  }
+}
+
+/** @type {(x:Name) => () => void} */
+const oevalVar_ = (x) => () => {
+  const closed = cxt_.get(x)
+  if (closed === true){
+    jApp_(str_('CSP_'), [str_(x)])();
+  } else if (closed == false) {  
+    str_(x)();
+  } else {
+    throw new Error('impossible')  
   }
 }
 
 /** @type {(t:Tm) => void} */
 function oeval_(top){
   switch (top.tag){
-    case _Var : return jReturn_(str_(top._1))()
+    case _Var : return oevalVar_(top._1)()
     case _CSP : return jApp_(str_('Closed_'), [str_('csp_[' + top._1 + ']')])()
 
     case _Let : {
       if (stage_ === 0){
-        return jLet_(top._1, () => oeval_(top._2), () => oeval_(top._3))()
+        return jLet_(top._1, false, () => oeval_(top._2), () => oeval_(top._3))()
       } else {
-        return jApp_(str_('Let_'), [strLit_(top._1), () => oeval_(top._2), jLam_([top._1], () => oeval_(top._3))])()
+        return jApp_(str_('Let_'), [strLit_(top._1), () => oeval_(top._2), jLam_([top._1], false, () => oeval_(top._3))])()
       }
     }
     case _Lam : {
-      if (stage_ === 0) {
-        return jLam_([top._1], () => oeval_(top._2))()
-      } else {
-        return jApp_(str_('Lam_'), [strLit_(top._1), jLam_([top._1], () => oeval_(top._2))])()
-      }
+      return jApp_(str_('Lam_'), [strLit_(top._1), jLam_([top._1], false, () => oeval_(top._2))])()      
     }
     case _LiftedLam : 
       return jApp_(str_('Lam_'), [strLit_(top._2), jAppClosure_(str_(openVar_(top._1)), top._3.map(str_))])()
@@ -718,12 +734,11 @@ function oeval_(top){
       }
     }
     case _Return    : return jApp_(str_('Return_'), [() => oeval_(top._1)])()
-    case _Bind      : return jApp_(str_('Bind_'), [strLit_(top._1), () => oeval_(top._2), jLam_([top._1], () => oeval_(top._3))])()
+    case _Bind      : return jApp_(str_('Bind_'), [strLit_(top._1), () => oeval_(top._2), jLam_([top._1], false, () => oeval_(top._3))])()
     case _Seq       : return jApp_(str_('Seq_'), [() => oeval_(top._1), () => oeval_(top._2)])()
     case _New       : return jApp_(str_('New_'), [() => oeval_(top._1)])()
     case _Write     : return jApp_(str_('Write_'), [() => oeval_(top._1), () => oeval_(top._2)])()
     case _Read      : return jApp_(str_('Read_'), [() => oeval_(top._1)])()
-    case _ClosedVar : return jApp_(str_('CSP_'), [str_(top._1)])()
   }
 }
 
@@ -732,13 +747,13 @@ function execTop_(top){
   tail_(() => {
     switch (top.tag){
       case _Let : {
-        return jLet_(top._1, () => ceval_(top._2), () => {newl_(); execTop_(top._3)})()
+        return jLet_(top._1, true, () => ceval_(top._2), () => {newl_(); execTop_(top._3)})()
       }
       case _Bind : {
-        return jLet_(top._1, () => exec_(top._2), () => {newl_(); execTop_(top._3)})()
+        return jLet_(top._1, true, () => exec_(top._2), () => {newl_(); execTop_(top._3)})()
       }
       case _Seq : {
-        return jLet_('_', (() => exec_(top._1)), (() => {newl_(); execTop_(top._2)}))()
+        return jSeq_((() => exec_(top._1)), (() => {newl_(); execTop_(top._2)}))()
       }
       case _Closure : {
         const x    = top._1
@@ -746,8 +761,8 @@ function execTop_(top){
         const arg  = top._3
         const body = top._4
         const t    = top._5
-        return jLet_(closeVar_(x), () => jClosure_(env, arg, () => {ceval_(body)}),
-               jLet_(openVar_(x), () => jClosure_(env, arg, () => inStage_(0, () => oeval_(body))), () =>
+        return jLet_(closeVar_(x), true, () => jClosure_(env, arg, true, () => {ceval_(body)}),
+               jLet_(openVar_(x), true, () => jClosure_(env, arg, false, () => inStage_(0, () => oeval_(body))), () =>
                execTop_(t)))()
       }
       case _Body : {
@@ -761,13 +776,13 @@ function execTop_(top){
 function cevalTop_(top){
   switch (top.tag){
     case _Let : {
-      return jLet_(top._1, () => ceval_(top._2), () => {newl_(); cevalTop_(top._3)})()
+      return jLet_(top._1, true, () => ceval_(top._2), () => {newl_(); cevalTop_(top._3)})()
     }
     case _Bind : {
-      return jLam_([], () => execTop_(top))()
+      return jLam_([], true, () => execTop_(top))()
     }
     case _Seq : {
-      return jLam_([], () => execTop_(top))()
+      return jLam_([], true, () => execTop_(top))()
     }
     case _Closure : {
       const x    = top._1
@@ -775,8 +790,8 @@ function cevalTop_(top){
       const arg  = top._3
       const body = top._4
       const t    = top._5
-      return jLet_(closeVar_(x), jClosure_(env, arg, () => ceval_(body)),
-             jLet_(openVar_(x), jClosure_(env, arg, inStage_(0, () => oeval_(body))), () =>
+      return jLet_(closeVar_(x), true, jClosure_(env, arg, true, () => ceval_(body)),
+             jLet_(openVar_(x), true, jClosure_(env, arg, false, inStage_(0, () => oeval_(body))), () =>
              cevalTop_(t)))()
     }
     case _Body:
@@ -789,13 +804,13 @@ function oevalTop_(top){
   switch (top.tag){
     case _Let: {
       if (stage_ === 0){
-        return jLet_(top._1, () => oeval_(top._2), () => {newl_(); oevalTop_(top._3)})()
+        return jLet_(top._1, false, () => oeval_(top._2), () => {newl_(); oevalTop_(top._3)})()
       } else {
-        return jApp_(str_('Let_'), [strLit_(top._1), () => oeval_(top._2), jLam_([top._1], () => oevalTop_(top._3))])()
+        return jApp_(str_('Let_'), [strLit_(top._1), () => oeval_(top._2), jLam_([top._1], false, () => oevalTop_(top._3))])()
       }
     }
     case _Bind:
-      return jApp_(str_('Bind_'), [strLit_(top._1), () => oeval_(top._2), jLam_([top._1], () => oevalTop_(top._3))])()
+      return jApp_(str_('Bind_'), [strLit_(top._1), () => oeval_(top._2), jLam_([top._1], false, () => oevalTop_(top._3))])()
     case _Seq:
       return jApp_(str_('Seq_'), [() => oeval_(top._1), () => oevalTop_(top._2)])()
     case _Closure:
@@ -827,6 +842,7 @@ function codegenClosed_(t_, loc_){
   builder_.length = 0
   indentation_    = 0
   isTail_         = true
+  cxt_.clear()
 
   put_('() => {\n')
   cevalTop_(t2_)
@@ -847,6 +863,7 @@ function codegenOpen_(t_, loc_){
   indentation_    = 0
   stage_          = 0
   isTail_         = true
+  cxt_.clear()
 
   put_('() => {\n')
   oevalTop_(t2_)
@@ -865,6 +882,7 @@ function codegenExec_(t_, loc_){
   builder_.length = 0
   indentation_    = 0
   isTail_         = true
+  cxt_.clear()
 
   put_('() => {\n')  
   execTop_(t2_)

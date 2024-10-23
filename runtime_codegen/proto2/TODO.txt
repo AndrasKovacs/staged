@@ -1,6 +1,10 @@
 
-- Test and fix JS codegen + RTS
-- Compute open Quote/Splice in interpreter and codegen
+- Don't compute Closed in closure conversion! Just lift the lambdas.
+- Instead, insert Closed/CSP when generating code from cconv-ed code!
+  Add variable closed-ness tracking to codegen!
+  - Open closures have open capture and open args!
+    When building an open closure in closed code, box everything up
+
 
 Extras:
   - definitional monad laws

@@ -39,7 +39,6 @@ data Top
 
 data Tm
   = Var Name
-  | ClosedVar Name
   | Let Name Tm Tm
   | LiftedLam Name Name [Name] -- function name, arg name, env application
   | Lam Name Tm
@@ -65,7 +64,7 @@ data S = S {
 
 makeFields ''S
 
-type Env     = (?env     :: [(Bool, Bool, Name)])  -- is closed, is top-level, name
+type Env     = (?env     :: [(Bool, Name)])  -- is top-level, name
 type Mode    = (?mode    :: Maybe Int)
 type TopName = (?topName :: String)
 
@@ -77,13 +76,13 @@ mangle = map \case
 freshenName :: Env => Name -> Name
 freshenName x = go (mangle x) where
   go :: Env => Name -> Name
-  go x | any ((==x).(\(_, _, x) -> x)) ?env =
+  go x | any ((==x).(\(_, x) -> x)) ?env =
          go $ x ++ show (length ?env)
        | otherwise = x
 
 fresh :: Name -> (Env => Name -> a) -> Env => a
 fresh x act = let x' = freshenName x in
-              let ?env = (False, False, x') : ?env in
+              let ?env = (False, x') : ?env in
               act x'
 
 -- create fresh name, run action, delete bound name from freevars of the result
@@ -97,9 +96,9 @@ bind x act = fresh x \x -> do
 cconv :: Env => Mode => TopName => ZTm -> State S Tm
 cconv = \case
   Z.Var x -> do
-    (closed, top, x) <- pure $! ?env !! coerce x
+    (top, x) <- pure $! ?env !! coerce x
     when (not top) $ freeVars %= S.insert x
-    pure $! if closed then ClosedVar x else Var x
+    pure $ Var x
 
   Z.Let x t u -> do
     t <- cconv t
@@ -125,7 +124,6 @@ cconv = \case
   Z.Quote t    -> case ?mode of
                     Nothing -> do
                       let ?mode = Just 1
-                          ?env  = map (\(_, top, x) -> (True, top, x)) ?env
                       Quote <$> cconv t
                     Just s -> do
                       let ?mode = Just $! s + 1
@@ -157,11 +155,11 @@ cconvTop :: Env => Mode => ZTm -> Top
 cconvTop = \case
   Z.Let (freshenName -> x) t u ->
     let (t', cs) = cconv0 x t in
-    let ?env     = (False, True, x) : ?env in
+    let ?env     = (True, x) : ?env in
     addClosures cs $ TLet x t' (cconvTop u)
   Z.Bind (freshenName -> x) t u ->
     let (t', cs) = cconv0 x t in
-    let ?env     = (False, True, x) : ?env in
+    let ?env     = (True, x) : ?env in
     addClosures cs $ TBind x t' (cconvTop u)
   Z.Seq t u ->
     let (t', cs) = cconv0 "cl" t in
@@ -177,23 +175,32 @@ runCConv t = let ?env = []; ?mode = Nothing in cconvTop t
 -- Code generation
 --------------------------------------------------------------------------------
 
-type Stage = (?stage :: Int)
-data Context = Tail | NonTail deriving Show
-type Cxt   = (?cxt :: Context)
+type Stage   = (?stage :: Int)
+data IsTail' = Tail | NonTail deriving Show
+type IsTail  = (?isTail :: IsTail')
+type Cxt     = (?cxt :: [(Name, Bool)]) -- (Name, is closed)
+                                        -- We need to box if we reference a closed value from open code
 
 stage :: Int -> (Stage => a) -> a
 stage s act = let ?stage = s in act
 
-tail :: (Cxt => Out) -> Out
-tail act = let ?cxt = Tail in act
+tail :: (IsTail => Out) -> Out
+tail act = let ?isTail = Tail in act
 
-nonTail :: (Cxt => Out) -> Out
-nonTail act = let ?cxt = NonTail in act
+nonTail :: (IsTail => Out) -> Out
+nonTail act = let ?isTail = NonTail in act
 
-jLet :: Cxt => Name -> (Cxt => Out) -> (Cxt => Out) -> Out
-jLet x t u = case ?cxt of
-  Tail -> "const " <> str x <> " = " <> indent (nonTail t) <> ";" <> newl <> tail u
-  _    -> "((" <> str x <> ") => " <> parens (nonTail u) <> ")(" <> nonTail t <> ")"
+jLet :: Name -> Bool -> (IsTail => Cxt => Out) -> (IsTail => Cxt => Out) -> (IsTail => Cxt => Out)
+jLet x closed t u = case ?isTail of
+  Tail -> let u' = (let ?cxt = (x, closed): ?cxt in tail u) in
+          "const " <> str x <> " = " <> indent (nonTail t) <> ";" <> newl <> u'
+  _    -> let u' = (let ?cxt = (x, closed): ?cxt in nonTail u) in
+          "((" <> str x <> ") => " <> parens u' <> ")(" <> nonTail t <> ")"
+
+jSeq :: IsTail => Cxt => (IsTail => Out) -> (IsTail => Out) -> Out
+jSeq t u = case ?isTail of
+  Tail -> "const _ = " <> indent (nonTail t) <> ";" <> newl <> tail u
+  _    -> "(_) => " <> parens (nonTail u) <> ")(" <> nonTail t <> ")"
 
 jTuple :: [Out] -> Out
 jTuple xs = "(" <> go xs <> ")" where
@@ -202,34 +209,38 @@ jTuple xs = "(" <> go xs <> ")" where
     [x]    -> x
     (x:xs) -> x <> ", " <> go xs
 
-jReturn :: (Cxt => Out) -> (Cxt => Out)
-jReturn t = case ?cxt of
+jReturn :: (IsTail => Out) -> (IsTail => Out)
+jReturn t = case ?isTail of
   Tail -> "return " <> nonTail t
   _    -> t
 
-jLam :: Cxt => [Name] -> (Cxt => Out) -> Out
-jLam xs t = jReturn $ jTuple (map str xs) <> " => {" <> tail t <> "}"
+jLam :: Cxt => [Name] -> Bool -> (IsTail => Cxt => Out) -> (IsTail => Cxt => Out)
+jLam xs closed t =
+  let t' = (let ?cxt = map (,closed) xs ++ ?cxt in tail t) in
+  jReturn $ jTuple (map str xs) <> " => {" <> t' <> "}"
 
-jLamExp :: Cxt => [Name] -> (Cxt => Out) -> Out
-jLamExp xs t = jReturn $ jTuple (map str xs) <> " => " <> nonTail t
+jLamExp :: [Name] -> Bool -> (IsTail => Cxt => Out) -> (IsTail => Cxt => Out)
+jLamExp xs closed t =
+  let t' = (let ?cxt = map (,closed) xs ++ ?cxt in nonTail t) in
+  jReturn $ jTuple (map str xs) <> " => " <> t'
 
-cApp :: (Cxt => Out) -> (Cxt => Out) -> (Cxt => Out)
+cApp :: (IsTail => Out) -> (IsTail => Out) -> (IsTail => Out)
 cApp t u = jReturn $ parens t <> "._1(" <> u <> ")"
 
 parens :: Out -> Out
 parens t = "(" <> t <> ")"
 
-jApp :: (Cxt => Out) -> (Cxt => [Out]) -> (Cxt => Out)
+jApp :: (IsTail => Out) -> (IsTail => [Out]) -> (IsTail => Out)
 jApp t args = jReturn $ t <> jTuple args
 
-cRun :: (Cxt => Out) -> (Cxt => Out)
+cRun :: (IsTail => Out) -> (IsTail => Out)
 cRun t = jReturn $ t <> "()"
 
-jClosure :: [Name] -> Name -> (Cxt => Out) -> (Cxt => Out)
-jClosure []  x t = jLam [x] t
-jClosure env x t = jLamExp env $ jLam [x] t
+jClosure :: [Name] -> Name -> Bool -> (Cxt => IsTail => Out) -> (Cxt => IsTail => Out)
+jClosure []  x closed t = jLam [x] closed t
+jClosure env x closed t = jLamExp env closed $ jLam [x] closed t
 
-jAppClosure :: (Cxt => Out) -> (Cxt => [Out]) -> (Cxt => Out)
+jAppClosure :: (IsTail => Out) -> (IsTail => [Out]) -> (IsTail => Out)
 jAppClosure t args = jReturn $ case args of
   []   -> t
   args -> t <> jTuple args
@@ -248,19 +259,19 @@ spliceLoc = \case
     go [l]    = strLit l
     go (l:ls) = strLit l <> ", " <> go ls
 
-execTop :: Top -> Out
+execTop :: Cxt => Top -> Out
 execTop t = tail $ go t where
-  go :: Cxt => Top -> Out
+  go :: IsTail => Cxt => Top -> Out
   go = \case
     TLet x t u  ->
-      jLet x (ceval t) (newl <> go u)
+      jLet x True (ceval t) (newl <> go u)
     TBind x t u ->
-      jLet x (exec t) (newl <> go u)
+      jLet x True (exec t) (newl <> go u)
     TSeq t u    ->
-      jLet "_" (exec t) (newl <> go u)
+      jSeq (exec t) (newl <> go u)
     TClosure x env arg body t ->
-      jLet (closeVar x) (jClosure env arg $ ceval body) $
-      jLet (openVar x)  (jClosure env arg $ stage 0 $ oeval body) $
+      jLet (closeVar x) True (jClosure env arg True $ ceval body) $
+      jLet (openVar x)  True (jClosure env arg False $ stage 0 $ oeval body) $
       go t
 
     -- finalize
@@ -268,11 +279,10 @@ execTop t = tail $ go t where
       "const main_ = () => {" <> exec t <> "};" <> newl <>
       "console.log('RESULT:');console.log(main_())" <> newl
 
-exec :: Cxt => Tm -> Out
+exec :: IsTail => Cxt => Tm -> Out
 exec = \case
   Var x        -> cRun (str x)
-  ClosedVar{}  -> impossible
-  Let x t u    -> jLet x (ceval t) (exec u)
+  Let x t u    -> jLet x True (ceval t) (exec u)
   LiftedLam{}  -> impossible
   Lam{}        -> impossible
   App t u      -> cRun (ceval t `cApp` ceval u)
@@ -280,40 +290,45 @@ exec = \case
   Quote{}      -> impossible
   Splice t loc -> jApp "codegenExec_" [ceval t, spliceLoc loc]
   Return t     -> jReturn $ ceval t
-  Bind x t u   -> jLet x (exec t) (exec u)
-  Seq t u      -> jLet "_" (exec t) (exec u)
+  Bind x t u   -> jLet x True (exec t) (exec u)
+  Seq t u      -> jSeq (exec t) (exec u)
   New t        -> jReturn $ "{_1 : " <> ceval t <> "}"
   Write t u    -> nonTail $ ceval t <> "._1 = " <> ceval u
   Read t       -> jReturn $ ceval t <> "._1"
 
-ceval :: Cxt => Tm -> Out
+oevalVar :: Cxt => IsTail => Name -> Out
+oevalVar x = case lookup x ?cxt of
+  Nothing    -> impossible
+  Just True  -> jApp "CSP_" [str x]
+  Just False -> str x
+
+ceval :: IsTail => Cxt => Tm -> Out
 ceval = \case
   Var x             -> jReturn (str x)
-  ClosedVar{}       -> impossible
-  Let x t u         -> jLet x (ceval t) (ceval u)
-  LiftedLam f x env -> jReturn $ "{ _1 : " <> jAppClosure (str (closeVar f)) (map str env) <>
-                                 ", _2 : " <> jAppClosure (str (openVar f))  (map str env) <> "}"
+  Let x t u         -> jLet x True (ceval t) (ceval u)
+  LiftedLam f x env -> jReturn $ nonTail $
+                          "{ _1 : " <> jAppClosure (str (closeVar f)) (map str env) <>
+                          ", _2 : " <> jAppClosure (str (openVar f))  (map oevalVar env) <> "}"
   Lam{}           -> impossible
   App t u         -> cApp (ceval t) (ceval u)
   Erased s        -> jReturn "undefined"
   Quote t         -> stage 1 $ oeval t
   Splice t loc    -> jApp "codegenClosed_" [ceval t, spliceLoc loc]
-  t@Return{}      -> jLam [] $ exec t
-  t@Bind{}        -> jLam [] $ exec t
-  t@Seq{}         -> jLam [] $ exec t
-  t@Write{}       -> jLam [] $ exec t
-  t@Read{}        -> jLam [] $ exec t
-  t@New{}         -> jLam [] $ exec t
+  t@Return{}      -> jLam [] True $ exec t
+  t@Bind{}        -> jLam [] True $ exec t
+  t@Seq{}         -> jLam [] True $ exec t
+  t@Write{}       -> jLam [] True $ exec t
+  t@Read{}        -> jLam [] True $ exec t
+  t@New{}         -> jLam [] True $ exec t
 
-oeval :: Cxt => Stage => Tm -> Out
+oeval :: IsTail => Cxt => Stage => Tm -> Out
 oeval = \case
-  Var x             -> jReturn (str x)
-  ClosedVar x       -> jApp "CSP_" [str x]
+  Var x             -> oevalVar x
   Let x t u         -> case ?stage of
-                         0 -> jLet x (oeval t) (oeval u)
-                         _ -> jApp "Let_" [strLit x, oeval t, jLam [x] (oeval u)]
+                         0 -> jLet x False (oeval t) (oeval u)
+                         _ -> jApp "Let_" [strLit x, oeval t, jLam [x] False (oeval u)]
   LiftedLam f x env -> jApp "Lam_" [strLit x, jAppClosure (str (openVar f)) (map str env)]
-  Lam x t           -> jApp "Lam_" [strLit x, jLam [x] (oeval t)]
+  Lam x t           -> jApp "Lam_" [strLit x, jLam [x] False (oeval t)]
   App t u           -> case ?stage of
                          0 -> jApp "app_" [oeval t, oeval u]
                          _ -> jApp "App_" [oeval t, oeval u]
@@ -323,13 +338,11 @@ oeval = \case
                          0 -> jApp "codegenOpen_" [oeval t, spliceLoc loc]
                          _ -> stage (?stage - 1) $ jApp "splice_" [oeval t]
   Return t          -> jApp "Return_" [oeval t]
-  Bind x t u        -> jApp "Bind_" [strLit x, oeval t, jLam [x] (oeval u)]
+  Bind x t u        -> jApp "Bind_" [strLit x, oeval t, jLam [x] False (oeval u)]
   Seq t u           -> jApp "Seq_" [oeval t, oeval u]
   New t             -> jApp "New_" [oeval t]
   Write t u         -> jApp "Write_" [oeval t, oeval u]
   Read t            -> jApp "Read_" [oeval t]
-
--- TODO: erased should be CSP_(undefined) everywhere, open closures should be Lam_(!!)
 
 genTop :: Z.Tm Void -> IO Out
 genTop t = do
@@ -338,4 +351,5 @@ genTop t = do
     doesFileExist exec_path >>= \case
       -- True -> readFile exec_path
       _    -> readFile "rts.js"
+  let ?cxt = []
   return $! str src <> newl <> newl <> execTop (runCConv t)

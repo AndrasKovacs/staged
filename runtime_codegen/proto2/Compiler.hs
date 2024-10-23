@@ -300,7 +300,7 @@ oevalVar :: Cxt => IsTail => Name -> Out
 oevalVar x = case lookup x ?cxt of
   Nothing    -> impossible
   Just True  -> jApp "CSP_" [str x]
-  Just False -> str x
+  Just False -> jReturn (str x)
 
 ceval :: IsTail => Cxt => Tm -> Out
 ceval = \case

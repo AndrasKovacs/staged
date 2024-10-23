@@ -551,10 +551,12 @@ const jSeq_ = (t, u) => () => {
 /** @type{(xs: Array<() => void>) => (() => void)} */
 const jTuple_ = (xs) => () => {
   if (xs.length === 0){
-    return
+    put_('()')
   } else {
+    put_('(')
     xs[0]()
     xs.slice(1, xs.length).forEach((act) => {put_(', '); act()})
+    put_(')')
   }
 }
 
@@ -600,7 +602,7 @@ const cApp_ = (t, u) => () => {
 const jApp_ = (t, args) => () => {
   jReturn_(() => {
     t()
-    par_(jTuple_(args))()
+    jTuple_(args)()
   })()
 }
 
@@ -690,7 +692,7 @@ const oevalVar_ = (x) => () => {
   if (closed === true){
     jApp_(str_('CSP_'), [str_(x)])();
   } else if (closed == false) {  
-    str_(x)();
+    jReturn_(str_(x))();
   } else {
     throw new Error('impossible')  
   }

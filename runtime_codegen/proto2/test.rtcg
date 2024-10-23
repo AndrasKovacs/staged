@@ -23,43 +23,45 @@
 zero : ℕ =
   λ _ s z. z;
 
--- suc : ℕ → ℕ =
---   λ n N s z. s (n N s z);
+suc : ℕ → ℕ =
+  λ n N s z. s (n N s z);
 
 add : ℕ → ℕ → ℕ
   = λ a b N s z. a N s (b N s z);
 
--- mul : ℕ → ℕ → ℕ
---   = λ a b N s z. a N (b N s) z;
+mul : ℕ → ℕ → ℕ
+  = λ a b N s z. a N (b N s) z;
 
--- n0   = zero;
--- n1   = suc zero;
--- n2   = suc $ suc zero;
--- n3   = suc $ suc $ suc zero;
--- n5   = suc $ suc $ suc $ suc $ suc zero;
--- n10  = add n5 n5;
--- n100 = mul n10 n10;
--- n1k  = mul n100 n10;
--- n10k = mul n100 n100;
+n0   = zero;
+n1   = suc zero;
+n2   = suc $ suc zero;
+n3   = suc $ suc $ suc zero;
+n5   = suc $ suc $ suc $ suc $ suc zero;
+n10  = add n5 n5;
+n100 = mul n10 n10;
+n1k  = mul n100 n10;
+n10k = mul n100 n100;
 
 -- serializeℕ : ℕ → □ ℕ =
 --   λ n. <λ N s z. ~(let x = n N s z; <x>)>;
 
--- serializeℕ : ℕ → □ ℕ =
---   λ n. <λ N s z. ~(n _ (λ x. <z>) <z>)>;
+serializeℕ : ℕ → □ ℕ =
+  λ n. <λ N s z. ~(n _ (λ x. <s ~x>) <z>)>;
+
+foo = ~(serializeℕ (λ N s z. s (s (s z))));
 
 -- foo = ~(serializeℕ (λ N s z. z));
 
 -- kek = ~(serializeℕ (add zero zero));
 
-bleh = λ z.
-  let x = zero;
-  let y = zero;
-  add x (add y zero);
+-- bleh = λ z.
+--   let x = zero;
+--   let y = zero;
+--   add x (add y zero);
 
-foo = <<<bleh>>>;
+-- foo = <<<bleh>>>;
 
-bar = ~foo;
+-- bar = ~foo;
 
 -- One = (O : U) → O → O;
 
@@ -75,7 +77,7 @@ bar = ~foo;
 
 -- foo = ~(ser (λ _ t f. t));
 
-return tt
+return foo
 
 -- mkExp : ℕ → □ (ℕ → ℕ)
 --   = λ x. <λ y. ~(x _ (λ f. <mul ~f y>) <n1>)>;

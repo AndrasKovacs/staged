@@ -48,36 +48,9 @@ n10k = mul n100 n100;
 serializeℕ : ℕ → □ ℕ =
   λ n. <λ N s z. ~(n _ (λ x. <s ~x>) <z>)>;
 
-foo = ~(serializeℕ (λ N s z. s (s (s z))));
-
 -- foo = ~(serializeℕ (λ N s z. z));
 
--- kek = ~(serializeℕ (add zero zero));
-
--- bleh = λ z.
---   let x = zero;
---   let y = zero;
---   add x (add y zero);
-
--- foo = <<<bleh>>>;
-
--- bar = ~foo;
-
--- One = (O : U) → O → O;
-
--- ser : One → □ One =
---   λ o. <λ O x. ~(o _ <x>)>;
-
--- foo = ~(ser (λ _ x. x));
-
--- Bool = (B : U) → B → B → B;
-
--- ser : Bool → □ Bool =
---   λ b. <λ B t f. ~(b _ <t> <f>)>;
-
--- foo = ~(ser (λ _ t f. t));
-
-return foo
+return ~(serializeℕ n5)
 
 -- mkExp : ℕ → □ (ℕ → ℕ)
 --   = λ x. <λ y. ~(x _ (λ f. <mul ~f y>) <n1>)>;

@@ -48,14 +48,14 @@ const _Body      = 'Body'
   } Closed
 */
 
-/** @type {(x:Name, isTop:Boolean, isClosed:Boolean) => Open} */
+/** @type {(x:Name, isTop:Boolean) => Open} */
 function Var_    (x, isTop)       {return {tag: _Var, name: x, isTop: isTop}}
 /** @type {(x:Name, t:Open, u:(v: Open) => Open) => Open} */
 function Let_    (x, t, u) {return {tag: _Let, _1: x, _2: t, _3: u}}
 /** @type {(x:Name, t:(v: Open) => Open) => Open} */
 function Lam_    (x, t)    {return {tag: _Lam, _1: x, _2: t}}
 /** @type {(t:Open, u:Open) => Open} */
-function App_    (t, u)    {return {tag: _App, _1: t, _2: t}}
+function App_    (t, u)    {return {tag: _App, _1: t, _2: u}}
 /** @type {(t: Open) => Open} */
 function Quote_  (t)       {return {tag: _Quote, _1: t}}
 /** @type {(t: Open) => Open} */
@@ -236,7 +236,7 @@ function cconv_(top){
        const u = top._3
        const t2 = cconv_(t)
        return bind_(x, (x) =>
-         TLet_(x, t2, cconv_(u(Var_(x, false, mode_ === undefined)))))
+         TLet_(x, t2, cconv_(u(Var_(x, false)))))
      }
 
      case _Lam : {
@@ -246,10 +246,10 @@ function cconv_(top){
          return fresh_(x, (x) => {
            let old_freeVars = freeVars_
            freeVars_ = new Set()
-           const t2 = cconv_(t(Var_(x, false, true)))
+           const t2 = cconv_(t(Var_(x, false)))
            freeVars_.delete(x)
            const capture = Array.from(freeVars_.values())
-           const clName = currentTopName_ + nextClosureId_
+           const clName = currentTopName_ + nextClosureId_ + '_'
            nextClosureId_ += 1
            closures_.push({name: clName, env: capture, arg: x, body: t2})
            freeVars_.forEach((x) => old_freeVars.add(x))
@@ -257,7 +257,7 @@ function cconv_(top){
            return TLiftedLam_(clName, x, capture)
          })
        } else {
-         return bind_(x, (x) => TLam_(x, cconv_(t(Var_(x, false, false)))))
+         return bind_(x, (x) => TLam_(x, cconv_(t(Var_(x, false)))))
        }
      }
 
@@ -288,7 +288,7 @@ function cconv_(top){
      case _Bind : {
        const t2 = cconv_(top._2)
        return bind_(top._1, (x) =>
-         TBind_(x, t2, cconv_(top._3(Var_(x, false, mode_ === undefined)))))
+         TBind_(x, t2, cconv_(top._3(Var_(x, false)))))
      }
 
      case _Seq : {
@@ -345,7 +345,7 @@ function cconvTop_(top){
       const t2 = cconv_(t)
       const new_closures = closures_
       cxtNames_.add(x)
-      const u2 = cconvTop_(u(Var_(x, false, mode_ === undefined)))
+      const u2 = cconvTop_(u(Var_(x, false)))
       return addClosures(new_closures, TopLet_(x, t2, u2))
     }
     case _Bind : {
@@ -357,7 +357,7 @@ function cconvTop_(top){
       const t2 = cconv_(t)
       const new_closures = closures_
       cxtNames_.add(x)
-      const u2 = cconvTop_(u(Var_(x, false, mode_ === undefined)))
+      const u2 = cconvTop_(u(Var_(x, false)))
       return addClosures(new_closures, TopBind_(x, t2, u2))
     }
 

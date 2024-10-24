@@ -149,13 +149,30 @@ funOrApps = do
     Nothing -> pure sp
     Just _  -> Pi "_" Expl sp <$> tm
 
+-- | Desugar Coq-style definition arguments.
+desugarIdentArgs :: [([Name], Tm, Icit)] -> Maybe Tm -> Tm -> (Tm, Maybe Tm)
+desugarIdentArgs args mty rhs = case mty of
+
+  -- if there's no return type annotation, we desugar to annotated lambdas
+  Nothing -> let
+    tm = foldr' (\(xs, a, i) t -> foldr' (\x -> Lam x (Right i) (Just a)) t xs) rhs args
+    in (tm, Nothing)
+
+  -- otherwise we pull out the iterated Pi type to get an annotation on a "let".
+  Just a  -> let
+    tm = foldr' (\(xs, a, i) t -> foldr' (\x -> Lam x (Right i) Nothing) t xs) rhs args
+    ty = foldr' (\(xs, a, i) b -> foldr' (\x -> Pi x i a) b xs) a args
+    in (tm, Just ty)
+
 pLet :: Parser Tm
 pLet = do
   keyword "let"
   x <- ident
+  args <- many piBinder
   ann <- optional (char ':' *> tm)
   char '='
   t <- tm
+  (t, ann) <- pure $ desugarIdentArgs args ann t
   char ';'
   u <- tm
   pure $ Let x ann t u
@@ -185,12 +202,14 @@ tm = withPos (
 
 topLet :: Parser Tm
 topLet = do
-  (x, ann) <- try do
+  (x, args, ann) <- try do
     x <- ident
+    args <- many piBinder
     ann <- optional (char ':' *> tm)
     char '='
-    pure (x, ann)
+    pure (x, args, ann)
   t <- tm
+  (t, ann) <- pure $ desugarIdentArgs args ann t
   char ';'
   u <- top
   pure $ Let x ann t u

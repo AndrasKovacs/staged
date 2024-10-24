@@ -5,11 +5,6 @@
   - Reading a Nat from terminal
   - Printing a String to terminal
 
-- Sugar
-  - multiple lambda binders with the same type
-  - Coq-style fun params
-  - optional type annotation on "new"
-
 - JS RTS:
   - have basic pretty printer, print pretty non-closure code
     when doing codegen

@@ -762,8 +762,8 @@ function execTop_(top){
         const arg  = top._3
         const body = top._4
         const t    = top._5
-        return jLet_(closeVar_(x), true, jClosure_(env, arg, true, () => {ceval_(body)}),
-               jLet_(openVar_(x), true, jClosure_(env, arg, false, () => inStage_(0, () => oeval_(body))), () =>
+        return jLet_(closeVar_(x), true, jClosure_(env, arg, true, () => ceval_(body)),
+               jLet_(openVar_(x), true, jClosure_(env, arg, false, inStage_(0, () => oeval_(body))), () =>
                execTop_(t)))()
       }
       case _Body : {

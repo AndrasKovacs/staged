@@ -164,15 +164,15 @@
 --     do x ← read r;
 --     return x;
 
-do ref ← new (λ (x : ⊤) (y : ⊤). x);
+do ref ← new (λ (x : ⊤)(y : ⊤). x);
 
 let action = <do write ref (λ x y. y); read ref>;
 
--- do f ← ~action;
-let f : ⊤ → ⊤ → ⊤ = λ x y. x  ;
+do f ← ~action;
 let kek = ~<λ x y. ~(let res = f x y; <res>)>;
-let lel = ~<λ x y. ~(let res = f x y; <res>)>;
-return f
+let heh = ~<λ x y. ~(let res = kek x y; <res>)>;
+
+return kek
 
 
 -- () => {

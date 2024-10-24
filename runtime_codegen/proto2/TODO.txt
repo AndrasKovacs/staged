@@ -1,12 +1,27 @@
 
-- Don't compute Closed in closure conversion! Just lift the lambdas.
-- Instead, insert Closed/CSP when generating code from cconv-ed code!
-  Add variable closed-ness tracking to codegen!
-  - Open closures have open capture and open args!
-    When building an open closure in closed code, box everything up
+- Builtins:
+  - Builtin Nat, literals, induction, primitive arith
+  - Builtin String, conversion from Nat to String, basic primops
+  - Reading a Nat from terminal
+  - Printing a String to terminal
 
+- Sugar
+  - multiple lambda binders with the same type
+  - Coq-style fun params
+  - optional type annotation on "new"
 
-Extras:
+- JS RTS:
+  - have basic pretty printer, print pretty non-closure code
+    when doing codegen
+    - Try to annotate CSP's with varnames, similarly as in Hs interp
+
+- Compilation:
+  - more erasure in Zonk: pass/compute type, immediately erase things with U/Unit type
+
+- Type formers:
+  - Anonymous records
+
+- Elaboration
   - definitional monad laws
   - more Code unification
-  - more erasure in Zonk: pass/compute type, immediately erase things with U/Unit type
+  - (record unification)

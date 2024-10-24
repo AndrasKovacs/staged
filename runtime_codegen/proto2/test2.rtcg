@@ -164,15 +164,27 @@
 --     do x ← read r;
 --     return x;
 
+-- TESTING passing Eff as param
+
+foo {A} (act : Eff A) : Eff A =
+  do act;
+  do act;
+  do res ← act;
+  return res;
+
 do ref ← new (λ (x : ⊤)(y : ⊤). x);
+do foo (write ref (λ x y. y));
 
-let action = <do write ref (λ x y. y); read ref>;
+lel : {A B} → (A → B) → A → B =
+  λ f x. f x;
 
-do f ← ~action;
-let kek = ~<λ x y. ~(let res = f x y; <res>)>;
-let heh = ~<λ x y. ~(let res = kek x y; <res>)>;
+-- do ref ← new (λ (x : ⊤)(y : ⊤). x);
+-- let action = <do write ref (λ x y. y); read ref>;
+-- do f ← ~action;
+-- let kek = ~<λ x y. ~(let res = f x y; <res>)>;
+-- let heh = ~<λ x y. ~(let res = kek x y; <res>)>;
 
-return kek
+read ref
 
 
 -- () => {

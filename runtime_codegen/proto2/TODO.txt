@@ -6,8 +6,8 @@
   - Printing a String to terminal
 
 - JS RTS:
-  - have basic pretty printer, print pretty non-closure code
-    when doing codegen
+  - have basic pretty printer, print pretty non-closure code when doing codegen
+    - Try to demangle names to get back to source code style
     - Try to annotate CSP's with varnames, similarly as in Hs interp
 
 - Compilation:

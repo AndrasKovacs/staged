@@ -137,22 +137,15 @@ example : List ℕ → List ℕ
          map    (λ n. <add n10 ~n>) $
          pushList <ns>)>;
 
+example' : List ℕ → List ℕ
+  = ~<λ ns. ~(unpushList $
+         map    (λ n. <add n10 ~n>) $
+         map    (λ n. <add n10 ~n>) $
+         filter (λ _. ret true)     $
+         map    (λ n. <add n10 ~n>) $
+         pushList <ns>)>;
+
 --------------------------------------------------------------------------------
-
--- ℕ : U
---    = (N : U) → (N → N) → N → N;
-
--- zero  : ℕ = λ _ s z. z;
--- suc   : ℕ → ℕ = λ n N s z. s (n N s z);
-
--- modify : Ref ℕ → (ℕ → ℕ) → Eff ⊤
---   = λ r f. do a ← read r; write r (f a);
-
--- test : Ref ℕ → Eff (□ (Eff ⊤))
---   = λ r. return <modify r suc>;
-
--- -- test' : Ref ℕ → Eff (□ (Eff ⊤))
--- --   = λ r. return <modify r (add n2)>;
 
 -- main : Eff ℕ
 --   = do r ← new zero;
@@ -184,8 +177,3 @@ example : List ℕ → List ℕ
 -- -- let heh = ~<λ x y. ~(let res = kek x y; <res>)>;
 
 return tt
-
-
--- () => {
--- return (((csp_[0])._1(csp_[1]))._1(csp_[2]))._1(csp_[3])();
--- }

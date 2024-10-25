@@ -70,7 +70,7 @@ type TopName = (?topName :: String)
 
 mangle :: Name -> Name
 mangle = map \case
-  '\'' -> '$'
+  '\'' -> '#'
   c    -> c
 
 freshenName :: Env => Name -> Name

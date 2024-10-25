@@ -68,8 +68,8 @@ lookupCheck = unsafeDupablePerformIO . readCheck
 addBlocking :: CheckVar -> MetaVar -> IO ()
 addBlocking blocked blocks =
   modifyMeta blocks $ \case
-    Unsolved bs a p -> Unsolved (IS.insert (coerce blocked) bs) a p
-    _               -> impossible
+    Unsolved bs ns oa a p -> Unsolved (IS.insert (coerce blocked) bs) ns oa a p
+    _                     -> impossible
 
 --------------------------------------------------------------------------------
 
@@ -78,7 +78,7 @@ type Blocking = IS.IntSet
 
 data MetaEntry
   -- ^ Unsolved meta which may block checking problems.
-  = Unsolved Blocking ~VTy SourcePos
+  = Unsolved Blocking Cxt ~VTy ~VTy SourcePos
 
   -- ^ Contains value and type of solution.
   | Solved Val ~VTy
@@ -96,11 +96,11 @@ modifyMeta m f = alterMeta m (maybe (error "impossible") (Just . f))
 writeMeta :: MetaVar -> MetaEntry -> IO ()
 writeMeta m e = modifyMeta m (const e)
 
-newRawMeta :: Blocking -> VTy -> SourcePos -> IO MetaVar
-newRawMeta bs ~a p = do
+newRawMeta :: Blocking -> Cxt -> VTy -> VTy -> SourcePos -> IO MetaVar
+newRawMeta bs cxt openA ~a p = do
   m <- readIORef nextMetaVar
   writeIORef nextMetaVar $! m + 1
-  alterMeta m (maybe (Just (Unsolved bs a p)) impossible)
+  alterMeta m (maybe (Just (Unsolved bs cxt openA a p)) impossible)
   pure m
 
 type MCxt = IM.IntMap MetaEntry
@@ -118,8 +118,8 @@ readMeta m = do
 
 readUnsolved :: MetaVar -> IO (Blocking, VTy, SourcePos)
 readUnsolved m = readMeta m >>= \case
-  Unsolved bs ty p -> pure (bs, ty, p)
-  _                -> impossible
+  Unsolved bs _ _ ty p -> pure (bs, ty, p)
+  _                    -> impossible
 
 lookupMeta :: MetaVar -> MetaEntry
 lookupMeta = unsafeDupablePerformIO . readMeta

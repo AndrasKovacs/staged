@@ -46,8 +46,11 @@ zonk l e = go where
     goSp' :: S.Tm -> IO (Either V.Val (Tm Void))
     goSp' = \case
       S.Meta x           -> case lookupMeta x of
-                              Solved v _     -> pure $ Left v
-                              Unsolved _ a p -> throwIO $ Error (emptyCxt p) $ UnsolvedMetaInZonk x (E.quote 0 a)
+                              Solved v _          ->
+                                pure $ Left v
+                              Unsolved _ cxt a _ p ->
+                                throwIO $ Error (emptyCxt p) $
+                                  UnsolvedMetaInZonk x cxt (E.quote (lvl cxt) a)
       S.PostponedCheck x -> case lookupCheck x of
                               Checked t   -> Right <$!> go t
                               Unchecked{} -> impossible

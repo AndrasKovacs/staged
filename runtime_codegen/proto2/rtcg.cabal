@@ -73,4 +73,5 @@ executable rtcg
     , megaparsec
     , microlens-platform
     , mtl
+    , process
   default-language: Haskell2010

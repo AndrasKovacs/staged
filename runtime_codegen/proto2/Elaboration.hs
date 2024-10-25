@@ -35,7 +35,7 @@ unifyPlaceholder cxt t m = case lookupMeta m of
 
   -- If the placeholder meta is unsolved, we can solve it efficiently here,
   -- without any possibility of failure.
-  Unsolved bs a _ -> do
+  Unsolved bs _ _ a _ -> do
     debug ["solve unconstrained placeholder", show m, showTm0 (closeTm (locals cxt) t)]
 
     -- we can simply close the checked term, to get the solution
@@ -176,7 +176,7 @@ pruneMeta :: Dbg => Pruning -> MetaVar -> IO Val
 pruneMeta pruning m = do
   (!bs, !mty, !pos) <- readUnsolved m
   prunedty <- eval [] <$> pruneTy (revPruning pruning) mty
-  m' <- newRawMeta bs prunedty pos
+  m' <- newRawMeta bs (emptyCxt pos) prunedty prunedty pos
   let solution = eval [] $ lams (Lvl $ length pruning) mty $ AppPruning (Meta m') pruning
   writeMeta m (Solved solution mty)
   pure solution
@@ -376,7 +376,7 @@ closeVTy cxt a = eval [] $ closeTy (locals cxt) (quote (lvl cxt) a)
 
 freshMeta :: Dbg => Cxt -> VTy -> IO Tm
 freshMeta cxt a = do
-  m <- newRawMeta mempty (closeVTy cxt a) (pos cxt)
+  m <- newRawMeta mempty cxt a (closeVTy cxt a) (pos cxt)
   debug ["freshMeta", show m, showVal cxt a]
   pure $ AppPruning (Meta m) (pruning cxt)
 
@@ -480,7 +480,7 @@ check cxt t a = do
 
     -- If the checking type is unknown, we postpone checking.
     (t, topA@(VFlex m sp)) -> do
-      placeholder <- newRawMeta mempty (closeVTy cxt topA) (pos cxt)
+      placeholder <- newRawMeta mempty cxt topA (closeVTy cxt topA) (pos cxt)
       c <- newCheck cxt t topA placeholder
       addBlocking c m
 

@@ -6,6 +6,7 @@ import System.Environment
 import System.Exit
 import System.Directory
 import System.FilePath
+import System.Process
 
 import Errors
 import Evaluation
@@ -80,12 +81,11 @@ mainWith getOpt getRaw = do
       putStrLn "RESULT:"
       putStrLn $ showTm0 res
     ["run"] -> do
-      undefined
-      -- ((t, a), file) <- elab
-      -- t <- handleErr file (zonk0 t)
-      -- let out = Compiler.genTop t
-      -- putStrLn "\nOUT:"
-      -- putStrLn (build out)
+      ((t, a), file) <- elab
+      t <- handleErr file (zonk0 t)
+      out <- build <$> Compiler.genTop t
+      writeFile "out.js" out
+      callCommand "node out.js"
     _ -> putStrLn helpMsg
 
 main :: IO ()

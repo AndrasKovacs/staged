@@ -62,92 +62,96 @@ mkExp : ℕ → □ (ℕ → ℕ)
 
 exp5 = ~(mkExp n1);
 
--- --------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
--- Bool
---   = (B : U) → B → B → B;
+Bool
+  = (B : U) → B → B → B;
 
--- true  : Bool = λ B t f. t;
--- false : Bool = λ B t f. f;
+true  : Bool = λ B t f. t;
+false : Bool = λ B t f. f;
 
--- case : {B} → Bool → B → B → B
---   = λ {B} b. b B;
+case : {B} → Bool → B → B → B
+  = λ {B} b. b B;
 
--- not : Bool → Bool
---   = λ b B t f. b B f t;
+not : Bool → Bool
+  = λ b B t f. b B f t;
 
--- and : Bool → Bool → Bool
---   = λ x y B t f. x B (y B t f) f;
+and : Bool → Bool → Bool
+  = λ x y B t f. x B (y B t f) f;
 
--- or : Bool → Bool → Bool
---   = λ x y B t f. x B t (y B t f);
+or : Bool → Bool → Bool
+  = λ x y B t f. x B t (y B t f);
 
--- splitBool : {A} → □ Bool → Gen A → Gen A → Gen A
---   = λ b t f k. <~b _ ~(t k) ~(f k)>;
+splitBool : {A} → □ Bool → Gen A → Gen A → Gen A
+  = λ b t f k. <~b _ ~(t k) ~(f k)>;
 
--- --------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
--- List  : U → U
---   = λ A. (L : U) → (A → L → L) → L → L;
+List  : U → U
+  = λ A. (L : U) → (A → L → L) → L → L;
 
--- nil  : {A} → List A = λ L c n. n;
--- cons : {A} → A → List A → List A = λ a as L c n. c a (as L c n);
+nil  : {A} → List A = λ L c n. n;
+cons : {A} → A → List A → List A = λ a as L c n. c a (as L c n);
 
--- foldr : {A B} → (A → B → B) → B → List A → B
---   = λ c n as. as _ c n;
+foldr : {A B} → (A → B → B) → B → List A → B
+  = λ c n as. as _ c n;
 
--- --------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
--- Pair : U → U → U
---   = λ A B. (P : U) → (A → B → P) → P;
+Pair : U → U → U
+  = λ A B. (P : U) → (A → B → P) → P;
 
--- pair : {A B} → A → B → Pair A B
---   = λ a b P p. p a b;
+pair : {A B} → A → B → Pair A B
+  = λ a b P p. p a b;
 
--- fst : {A B} → Pair A B → A
---   = λ ab. ab _ (λ a b. a);
+fst : {A B} → Pair A B → A
+  = λ ab. ab _ (λ a b. a);
 
--- snd : {A B} → Pair A B → B
---   = λ ab. ab _ (λ a b. b);
+snd : {A B} → Pair A B → B
+  = λ ab. ab _ (λ a b. b);
 
 
 -- Foldr fusion
 --------------------------------------------------------------------------------
 
--- Push : U → U
---   = λ A. (L : U) → (A → □ L → □ L) → □ L → □ L;
 
--- map : {A B} → (A → B) → Push A → Push B
---   = λ f as L c n. as L (λ a b. c (f a) b) n;
 
--- filter : {A} → (A → Gen Bool) → Push A → Push A
---   = λ f as L c n. as L (λ a l. runGen $ bind (f a) λ b. b _ (ret (c a l)) (ret l)) n;
+Push (A : U) = (L : U) → (A → □ L → □ L) → □ L → □ L;
 
--- pushList {A} (as : □ (List A)) : Push (□ A)
---   = λ L c n. <foldr (λ a l. ~(c <a> <l>)) ~n ~as>;
+map : {A B} → (A → B) → Push A → Push B
+  = λ f as L c n. as L (λ a b. c (f a) b) n;
 
--- unpushList : {A} → Push (□ A) → □ (List A)
---   = λ as. as _ (λ a as. <cons ~a ~as>) <nil>;
+filter : {A} → (A → Gen Bool) → Push A → Push A
+  = λ f as L c n. as L (λ a l. runGen $ bind (f a) λ b. b _ (ret (c a l)) (ret l)) n;
 
--- example : List ℕ → List ℕ
---   = ~<λ ns. ~(unpushList $
---          map    (λ n. <add n10 ~n>) $
---          map    (λ n. <add n10 ~n>) $
---          filter (λ _. ret true)     $
---          map    (λ n. <add n10 ~n>) $
---          pushList <ns>)>;
+pushList {A} (as : □ (List A)) : Push (□ A)
+  = λ L c n. <foldr (λ a l. ~(c <a> <l>)) ~n ~as>;
 
--- example' : List ℕ → List ℕ
---   = ~<λ ns. ~(unpushList $
---          map    (λ n. <add n10 ~n>) $
---          map    (λ n. <add n10 ~n>) $
---          filter (λ _. ret true)     $
---          map    (λ n. <add n10 ~n>) $
---          pushList <ns>)>;
+unpushList {A} (as : Push (□ A)) : □ (List A)
+  = as _ (λ a as. <cons ~a ~as>) <nil>;
 
--- kutya-malac = U;
+upBool : Bool → Gen Bool
+  = λ b {R} k. <_>;
+
+example : List ℕ → List ℕ
+  = ~<λ ns. ~(unpushList $
+         map    (λ n. <add n10 ~n>) $
+         map    (λ n. <add n10 ~n>) $
+         filter (λ _. ret true)     $
+         map    (λ n. <add n10 ~n>) $
+         pushList <ns>)>;
+
+example' : List ℕ → List ℕ
+  = ~<λ ns. ~(unpushList $
+         map    (λ n. <add n10 ~n>) $
+         map    (λ n. <add n10 ~n>) $
+         filter (λ _. ret true)     $
+         map    (λ n. <add n10 ~n>) $
+         pushList <ns>)>;
 
 --------------------------------------------------------------------------------
+
+
 
 -- main : Eff ℕ
 --   = do r ← new zero;

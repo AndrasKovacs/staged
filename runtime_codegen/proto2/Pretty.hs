@@ -148,6 +148,6 @@ displayMetas :: IO ()
 displayMetas = do
   ms <- readIORef mcxt
   forM_ (IM.toList ms) $ \(m, e) -> case e of
-    Unsolved _ a _ -> printf "?%s = UNSOLVED;\n"  (show m)
-    Solved v a     -> printf "?%s = %s;\n" (show m) (showTm0 $ quote 0 v)
+    Unsolved _ _ _ _ _ -> printf "?%s = UNSOLVED;\n"  (show m)
+    Solved v a         -> printf "?%s = %s;\n" (show m) (showTm0 $ quote 0 v)
   putStrLn ""

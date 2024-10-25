@@ -4,6 +4,8 @@ module Main where
 import Control.Exception
 import System.Environment
 import System.Exit
+import System.Directory
+import System.FilePath
 
 import Errors
 import Evaluation
@@ -67,6 +69,8 @@ mainWith getOpt getRaw = do
       t <- handleErr file (zonk0 t)
       out <- build <$> Compiler.genTop t
       putStrLn out
+      dir <- getCurrentDirectory
+      putStrLn $ "written to: " ++ (dir </> "out.js")
       writeFile "out.js" out
     ["interp"] -> do
       ((t, a), file) <- elab

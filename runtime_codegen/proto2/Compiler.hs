@@ -69,9 +69,9 @@ type Mode    = (?mode    :: Maybe Int)
 type TopName = (?topName :: String)
 
 mangle :: Name -> Name
-mangle = map \case
-  '\'' -> '#'
-  c    -> c
+mangle = concatMap \case
+  '\'' -> "__"
+  c    -> [c]
 
 freshenName :: Env => Name -> Name
 freshenName x = go (mangle x) where
@@ -299,7 +299,7 @@ exec = \case
 oevalVar :: Cxt => IsTail => Name -> Out
 oevalVar x = case lookup x ?cxt of
   Nothing    -> impossible
-  Just True  -> jApp "CSP_" [str x]
+  Just True  -> jApp "CSP_" [str x, strLit x]
   Just False -> jReturn (str x)
 
 ceval :: IsTail => Cxt => Tm -> Out

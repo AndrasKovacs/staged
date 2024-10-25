@@ -1,4 +1,4 @@
-// //@ts-check
+//@ts-check
 'use strict';
 
 /** @typedef {String} Name */
@@ -37,7 +37,7 @@ const _Body      = 'Body'
   {tag: _New, _1: Open} |
   {tag: _Write, _1: Open, _2: Open} |
   {tag: _Read, _1: Open} |
-  {tag: _CSP, _1: Closed}
+  {tag: _CSP, _1: Closed, _2: Name}
   } Open
 
   @typedef {
@@ -72,11 +72,11 @@ function New_    (t)       {return {tag: _New, _1: t}}
 function Write_  (t, u)    {return {tag: _Write, _1: t, _2: u}}
 /** @type {(t: Open) => Open} */
 function Read_   (t)       {return {tag: _Read, _1: t}}
-/** @type {(t: Closed) => Open} */
-function CSP_ (t)          {return {tag: _CSP, _1: t}}
+/** @type {(t: Closed, x:Name) => Open} */
+function CSP_ (t,x)        {return {tag: _CSP, _1: t, _2:x}}
 
 /** @type {Open} */
-const CSP_undefined_ = CSP_(undefined)
+const CSP_undefined_ = CSP_(undefined, 'undefined')
 
 // Closure conversion
 // ----------------------------------------------------------------------------------------------------
@@ -84,7 +84,7 @@ const CSP_undefined_ = CSP_(undefined)
 /**
    @typedef {
    {tag: _Var, _1: Name} |
-   {tag: _CSP, _1: Number} |
+   {tag: _CSP, _1: Number, _2: Name} |
    {tag: _Let, _1: Name, _2: Tm, _3: Tm} |
    {tag: _Lam, _1: Name, _2: Tm} |
    {tag: _LiftedLam, _1: Name, _2: Name, _3: Array<Name>} |
@@ -110,8 +110,8 @@ const CSP_undefined_ = CSP_(undefined)
 
 /** @type {(x: Name) => Tm} */
 function TVar_       (x) {return {tag: _Var, _1: x } }
-/** @type {(x:Number) => Tm} */
-function TCSP_       (i) {return {tag: _CSP, _1: i} }
+/** @type {(x:Number, y:Name) => Tm} */
+function TCSP_       (i, x) {return {tag: _CSP, _1: i, _2:x} }
 /** @type {(x:Name, t:Tm, u:Tm) => Tm} */
 function TLet_       (x,t,u) {return {tag: _Let, _1:x , _2:u , _3:u } }
 /** @type {(x:Name, t:Tm) => Tm} */
@@ -310,7 +310,7 @@ function cconv_(top){
      case _CSP : {
        const id = cspArray_.length
        cspArray_.push(top._1)
-       return TCSP_(id)
+       return TCSP_(id, top._2)
      }
    }
 }
@@ -396,7 +396,7 @@ function app_(t, u) {
         // t must be a closed closure
         const v1 = /** @type{{_1: (v:Closed) => Closed, _2: (v:Open) => Open}} */ (t._1)
         if (u.tag === _CSP) {
-            return CSP_(v1._1(u._1))
+            return CSP_(v1._1(u._1), '')
         } else {
             return v1._2(u)
         }
@@ -655,7 +655,7 @@ function exec_(top){
     case _New       : return jReturn_(() => {put_('{_1 : '); ceval_(top._1); put_('}')})()
     case _Write     : return nonTail_(() => {ceval_(top._1); put_('._1 = '); ceval_(top._2)})()
     case _Read      : return jReturn_(() => {ceval_(top._1); put_('._1')})()
-    case _CSP       : return jReturn_(() => put_('csp_[' + top._1 + ']()'))() // running the CSP-d action
+    case _CSP       : return jReturn_(() => {put_('csp_[' + top._1 + ']()/*'); strLit_(top._2); put_('*/')})()      
   }
 }
 
@@ -681,7 +681,7 @@ function ceval_(top){
     case _New       : return jLam_([], true, () => exec_(top))()
     case _Write     : return jLam_([], true, () => exec_(top))()
     case _Read      : return jLam_([], true, () => exec_(top))()
-    case _CSP       : return jReturn_(() => put_('csp_[' + top._1 + ']'))()
+    case _CSP       : return jReturn_(() => {put_('csp_[' + top._1 + ']/*'); str_(top._2)(); put_('*/')})()      
   }
 }
 
@@ -689,7 +689,7 @@ function ceval_(top){
 const oevalVar_ = (x) => () => {
   const closed = cxt_.get(x)
   if (closed === true){
-    jApp_(str_('CSP_'), [str_(x)])();
+    jApp_(str_('CSP_'), [str_(x), strLit_(x)])();
   } else if (closed == false) {  
     jReturn_(str_(x))();
   } else {
@@ -701,7 +701,7 @@ const oevalVar_ = (x) => () => {
 function oeval_(top){
   switch (top.tag){
     case _Var : return oevalVar_(top._1)()
-    case _CSP : return jApp_(str_('Closed_'), [str_('csp_[' + top._1 + ']')])()
+    case _CSP : return jApp_(str_('CSP_'), [str_('csp_[' + top._1 + ']'), strLit_(top._2)])()
 
     case _Let : {
       if (stage_ === 0){
@@ -895,6 +895,3 @@ function codegenExec_(t_, loc_){
   const res_ = eval(src_)() // run the resulting action
   return res_
 }
-
-// BEGIN CODE
-// ----------------------------------------------------------------------------------------------------

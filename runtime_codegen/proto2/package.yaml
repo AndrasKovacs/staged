@@ -51,6 +51,7 @@ dependencies:
 - megaparsec
 - microlens-platform
 - mtl
+- filepath
 
 data-files:
 - rts.js

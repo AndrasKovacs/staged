@@ -69,6 +69,7 @@ executable rtcg
       base >=4.7 && <5
     , containers
     , directory
+    , filepath
     , megaparsec
     , microlens-platform
     , mtl

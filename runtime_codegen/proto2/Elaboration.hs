@@ -105,37 +105,65 @@ lift (PSub occ dom cod sub) = PSub occ (dom + 1) (cod + 1) (IM.insert (unLvl cod
 skip :: PartialSub -> PartialSub
 skip (PSub occ dom cod sub) = PSub occ dom (cod + 1) sub
 
--- | Eta expand an unsolved meta, return the solution value. This removes
---   splices from spines of the meta.
-etaExpandMeta :: MetaVar -> IO Val
-etaExpandMeta m = do
+-- | Eta expand an unsolved meta enough so that projections and splices disappear from a spine.
+--   Precondition: the spine only consists of app, proj and splice.
+etaExpandMeta :: MetaVar -> RevSpine -> IO Val
+etaExpandMeta m sp = do
   (!_, !a, !pos) <- readUnsolved m
 
-  let go :: Cxt -> VTy -> IO Tm
-      go cxt a = case force a of
-        VPi x i a b -> Lam x i <$> go (bind cxt x a) (b $$ VVar (lvl cxt))
-        VBox a      -> Quote <$> go cxt a
-        a           -> freshMeta cxt a
+  let goRec :: Cxt -> Name -> RecClosure -> RevSpine -> IO [(Name, Tm)]
+      goRec cxt x (RClosure e fs) sp = case fs of
+        [] ->
+          pure []
+        (x', a):fs | x == x' -> do
+          let ~va = eval e a
+          t  <- go cxt va sp
+          let ~vt = eval (env cxt) t
+          ts <- goRec (bind cxt x va) x (RClosure (vt:e) fs) sp
+          pure $ (x, t) : ts
+        (x', a):fs -> do
+          let ~va = eval e a
+          m  <- freshMeta cxt va
+          let ~vm = eval (env cxt) m
+          ts <- goRec (bind cxt x va) x (RClosure (vm:e) fs) sp
+          pure $ (x', m) : ts
 
-  t <- go (emptyCxt (initialPos "")) a
+      go :: Cxt -> VTy -> RevSpine -> IO Tm
+      go cxt a sp = case (force a, sp) of
+        (a           , RSId        ) -> freshMeta cxt a
+        (VPi x i a b , RSApp t _ sp) -> Lam x i <$> go (bind cxt x a) (b $$ VVar (lvl cxt)) sp
+        (VBox a      , RSSplice sp ) -> Quote <$> go cxt a sp
+        (VRecTy fs   , RSProj x sp ) -> Rec <$> goRec cxt x fs sp
+        (a           , sp          ) -> impossible
+
+  t <- go (emptyCxt (initialPos "")) a sp
   let val = eval [] t
   modifyIORef' mcxt $ IM.insert (coerce m) (Solved val a)
   pure val
 
--- | Eta-expand splices in the spine, if possible.
+
+-- | Eta-expand splices and projections in the spine, if possible.
+--   Expandible spine: contains only app, projection and splice.
 expandVFlex :: MetaVar -> Spine -> IO (MetaVar, Spine)
 expandVFlex m sp = do
 
-  let hasSplice SId           = False
-      hasSplice (SApp sp _ _) = hasSplice sp
-      hasSplice SSplice{}     = True
+  -- Just True : can expand and should
+  -- Just False: can expand but shouldn't
+  -- Nothing   : can't expand
+  let shouldExpand :: Spine -> Maybe Bool
+      shouldExpand SId                 = pure False
+      shouldExpand (SApp sp _ _)       = shouldExpand sp
+      shouldExpand (SSplice sp)        = shouldExpand sp >> Just True
+      shouldExpand (SProj sp _)        = shouldExpand sp >> Just True
+      shouldExpand (SNatElim _ _ _ sp) = Nothing
 
-  if hasSplice sp then do
-    m          <- etaExpandMeta m
-    VFlex m sp <- pure $! vAppSp m sp
-    pure (m, sp)
-  else do
-    pure (m, sp)
+  case shouldExpand sp of
+    Just True -> do
+      m          <- etaExpandMeta m (revSpine sp)
+      VFlex m sp <- pure $! vAppSp m sp
+      pure (m, sp)
+    _ ->
+      pure (m, sp)
 
 -- | @invert : (Γ : Cxt) → (spine : Sub Δ Γ) → PSub Γ Δ@
 --   Optionally returns a pruning of nonlinear spine entries, if there's any.
@@ -148,8 +176,10 @@ invert gamma sp = do
         case IM.member x sub || IS.member x nlvars of
           True  -> pure $! (,,,) $$! (dom + 1) $$! (IM.delete x sub)            $$! (IS.insert x nlvars) $$! (fsp :> (Lvl x, i))
           False -> pure $! (,,,) $$! (dom + 1) $$! (IM.insert x (VVar dom) sub) $$! nlvars               $$! (fsp :> (Lvl x, i))
-      go SApp{}    = throwIO UnifyException
-      go SSplice{} = impossible
+      go SApp{}     = throwIO UnifyException
+      go SSplice{}  = impossible
+      go SProj{}    = impossible
+      go SNatElim{} = throwIO UnifyException
 
   (!dom, !sub, !nlvars, !fsp) <- go sp
 
@@ -203,7 +233,9 @@ pruneVFlex psub m sp = do
           VQuote (VVar x)        -> varCase x
           _                      -> Nothing
 
-      pruning SSplice{} = impossible
+      pruning SSplice{}  = Nothing
+      pruning SProj{}    = Nothing
+      pruning SNatElim{} = Nothing
 
   case pruning sp of
     Just pr | any isNothing pr -> do
@@ -215,9 +247,19 @@ pruneVFlex psub m sp = do
 
 psubstSp :: Dbg => PartialSub -> Tm -> Spine -> IO Tm
 psubstSp pren t = \case
-  SId            -> pure t
-  SApp sp u i    -> App <$> psubstSp pren t sp <*> psubst pren u <*> pure i
-  SSplice sp     -> Splice <$> psubstSp pren t sp <*> pure Nothing
+  SId              -> pure t
+  SApp sp u i      -> App <$> psubstSp pren t sp <*> psubst pren u <*> pure i
+  SSplice sp       -> Splice <$> psubstSp pren t sp <*> pure Nothing
+  SProj sp x       -> Proj <$> psubstSp pren t sp <*> pure x
+  SNatElim p s z n -> NatElim <$> psubst pren p <*> psubst pren s <*> psubst pren z <*> psubstSp pren t n
+
+psubstRecTy :: PartialSub -> RecClosure -> IO [(Name, Tm)]
+psubstRecTy psub (RClosure e fs) = case fs of
+  [] -> pure []
+  (x, a):fs -> do
+    a  <- psubst psub (eval e a)
+    fs <- psubstRecTy (lift psub) (RClosure (VVar (cod psub):e) fs)
+    pure $ (x, a) : fs
 
 psubst :: Dbg => PartialSub -> Val -> IO Tm
 psubst psub t = case force t of
@@ -246,6 +288,11 @@ psubst psub t = case force t of
   VNew t      -> New <$> psubst psub t
   VWrite t u  -> Write <$> psubst psub t <*> psubst psub u
   VRead t     -> Read <$> psubst psub t
+  VNat        -> pure Nat
+  VSuc t      -> Suc <$> psubst psub t
+  VNatLit n   -> pure $ NatLit n
+  VRecTy fs   -> RecTy <$> psubstRecTy psub fs
+  VRec ts     -> Rec <$> traverse (\(x, t) -> (x,) <$> psubst psub t) ts
 
 -- | Wrap a term in Lvl number of lambdas. We get the domain info from the
 --   VTy argument.
@@ -667,13 +714,11 @@ infer cxt t = do
 
     P.New t -> do
       (t, tty) <- infer cxt t
-      -- debug2 ["HALLO", showTm cxt t, showVal cxt tty]
       pure (New t, VEff (VRef tty))
 
     P.Write t u -> do
       (t, tty) <- infer cxt t
       a <- ensureRef cxt tty
-      -- debug2 ["BÉKA", showTm cxt t, showVal cxt a]
       u <- check cxt u a
       pure (Write t u, VEff VUnit)
 

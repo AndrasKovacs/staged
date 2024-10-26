@@ -73,6 +73,15 @@ data Tm
   | Write Tm Tm
   | Read Tm
   | Erased String
+
+  | Nat
+  | NatLit Integer
+  | Suc Tm
+  | NatElim Tm Tm Tm Tm
+
+  | RecTy [(Name, Tm)]
+  | Rec [(Name, Tm)]
+  | Proj Tm Name
   deriving Show
 
 -- | Unfold `AppPruning` to an iterated application to vars. This applies a term to all de Bruijn indices

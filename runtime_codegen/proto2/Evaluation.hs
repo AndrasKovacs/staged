@@ -18,11 +18,40 @@ vApp t ~u i = case t of
   VRigid x sp -> VRigid x (SApp sp u i)
   t           -> impossible
 
+vAppI :: Val -> Val -> Val
+vAppI t ~u = vApp t u Impl
+
+vAppE :: Val -> Val -> Val
+vAppE t ~u = vApp t u Expl
+
+vNatElimLit :: Val -> Val -> Integer -> Val
+vNatElimLit s z n = case n of
+  0 -> z
+  n -> let n' = n - 1 in
+       s `vAppI` VNatLit n' `vAppE` vNatElimLit s z n'
+
+vNatElim :: Val -> Val -> Val -> Val -> Val
+vNatElim p s z = \case
+  VNatLit n   -> vNatElimLit s z n
+  VSuc n      -> s `vAppI` n `vAppE` vNatElim p s z n
+  VFlex m sp  -> VFlex  m (SNatElim p s z sp)
+  VRigid x sp -> VRigid x (SNatElim p s z sp)
+  _           -> impossible
+
+vProj :: Val -> Name -> Val
+vProj v x = case v of
+  VRec fs     -> fromJust $ lookup x fs
+  VFlex m sp  -> VFlex  m (SProj sp x)
+  VRigid i sp -> VRigid i (SProj sp x)
+  _           -> impossible
+
 vAppSp :: Val -> Spine -> Val
 vAppSp t = \case
-  SId          -> t
-  SApp sp u i  -> vApp (vAppSp t sp) u i
-  SSplice sp   -> vSplice (vAppSp t sp)
+  SId              -> t
+  SApp sp u i      -> vApp (vAppSp t sp) u i
+  SSplice sp       -> vSplice (vAppSp t sp)
+  SNatElim p s z n -> vNatElim p s z (vAppSp t n)
+  SProj sp x        -> vProj (vAppSp t sp) x
 
 vMeta :: MetaVar -> Val
 vMeta m = case lookupMeta m of
@@ -65,6 +94,11 @@ vSplice = \case
 vBind :: Name -> Val -> Closure -> Val
 vBind = VBind               -- TODO: definitional monad laws with functional closures
 
+evalFields :: Env -> [(Name, Tm)] -> [(Name, Val)]
+evalFields env = go where
+  go []          = []
+  go ((x, t):ts) = (:) $$! ((x,) $$! eval env t) $$! go ts
+
 eval :: Dbg => Env -> Tm -> Val
 eval env = \case
   Var x            -> vVar env x
@@ -90,6 +124,13 @@ eval env = \case
   Read t           -> VRead (eval env t)
   Write t u        -> VWrite (eval env t) (eval env u)
   Erased _         -> impossible
+  Nat              -> VNat
+  NatLit n         -> VNatLit n
+  Suc t            -> VSuc (eval env t)
+  NatElim p s z n  -> vNatElim (eval env p) (eval env s) (eval env z) (eval env n)
+  RecTy t          -> VRecTy (RClosure env t)
+  Rec t            -> VRec (evalFields env t)
+  Proj t x         -> vProj (eval env t) x
 
 force :: Val -> Val
 force = \case
@@ -98,9 +139,23 @@ force = \case
 
 quoteSp :: Lvl -> Tm -> Spine -> Tm
 quoteSp l t = \case
-  SId          -> t
-  SApp sp u i  -> App (quoteSp l t sp) (quote l u) i
-  SSplice sp   -> Splice (quoteSp l t sp) Nothing
+  SId              -> t
+  SApp sp u i      -> App (quoteSp l t sp) (quote l u) i
+  SSplice sp       -> Splice (quoteSp l t sp) Nothing
+  SNatElim p s z n -> NatElim (quote l p) (quote l s) (quote l z) (quoteSp l t n)
+  SProj sp x        -> Proj (quoteSp l t sp) x
+
+quoteRecClosure :: Lvl -> RecClosure -> [(Name, Tm)]
+quoteRecClosure l (RClosure env ts) = case ts of
+  []        -> []
+  (x, a):ts -> let a'  = quote l (eval env a)
+                   ts' = quoteRecClosure (l + 1) (RClosure (VVar l:env) ts)
+               in (x, a'):ts'
+
+quoteRec :: Lvl -> [(Name, Val)] -> [(Name, Tm)]
+quoteRec l = \case
+  []        -> []
+  (x, t):ts -> (:) $$! ((x,) $$! quote l t) $$! quoteRec l ts
 
 quote :: Dbg => Lvl -> Val -> Tm
 quote l t = case force t of
@@ -121,6 +176,11 @@ quote l t = case force t of
   VNew t      -> New (quote l t)
   VRead t     -> Read (quote l t)
   VWrite t u  -> Write (quote l t) (quote l u)
+  VNat        -> Nat
+  VSuc t      -> Suc (quote l t)
+  VNatLit n   -> NatLit n
+  VRecTy ts   -> RecTy (quoteRecClosure l ts)
+  VRec ts     -> Rec (quoteRec l ts)
 
 nf :: Env -> Tm -> Tm
 nf env t = quote (Lvl (length env)) (eval env t)

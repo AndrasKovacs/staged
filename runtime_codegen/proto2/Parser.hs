@@ -7,10 +7,12 @@ import Control.Monad
 import Data.Char
 import Data.Void
 import Data.Foldable
+import Data.Set (Set)
 import System.Exit
 import Text.Megaparsec
 import Data.IORef
 
+import qualified Data.Set as Set
 import qualified Text.Megaparsec.Char       as C
 import qualified Text.Megaparsec.Char.Lexer as L
 
@@ -41,12 +43,36 @@ braces p   = char '{' *> p <* char '}'
 arrow      = symbol "→" <|> symbol "->"
 bind       = ident <|> symbol "_"
 
-isKeyword :: String -> Bool
-isKeyword x =
-     x == "let" || x == "λ" || x == "U"
-  || x == "return" || x == "do" || x == "Code"
-  || x == "Eff" || x == "Top" || x == "tt"
-  || x == "Ref" || x == "new" || x == "read" || x == "write"
+natural :: Parser Integer
+natural = lexeme $ do
+  ds <- takeWhile1P Nothing isDigit
+  pure $! foldl' (\acc d -> 10*acc + fromIntegral (digitToInt d)) 0 ds
+
+keywords :: Set String
+keywords = Set.fromList [
+    "Code"
+  , "Eff"
+  , "Nat"
+  , "NatElim"
+  , "Ref"
+  , "Top"
+  , "U"
+  , "do"
+  , "let"
+  , "new"
+  , "Rec"
+  , "read"
+  , "return"
+  , "suc"
+  , "tt"
+  , "write"
+  , "zero"
+  , "Σ"
+  , "λ"
+  , "ℕ"
+  , "ℕElim"
+  , "⊤"
+  ]
 
 isIdentRestChar :: Char -> Bool
 isIdentRestChar c = c == '\'' || c == '-' || isAlphaNum c
@@ -54,7 +80,7 @@ isIdentRestChar c = c == '\'' || c == '-' || isAlphaNum c
 ident :: Parser Name
 ident = try $ do
   x <- (:) <$> C.letterChar <*> takeWhileP Nothing isIdentRestChar
-  guard (not (isKeyword x))
+  guard (Set.notMember x keywords)
   x <$ ws
 
 keyword :: String -> Parser ()
@@ -62,14 +88,25 @@ keyword kw = do
   C.string kw
   (satisfy isIdentRestChar *> empty) <|> ws
 
+recTy :: Parser [(Name, Tm)]
+recTy = do
+  keyword "Σ" <|> keyword "Rec"
+  char '('
+  res <- sepBy ((,) <$> ident <*> (char ':' *> lamLet)) (char ',')
+  char ')'
+  pure res
+
 atom :: Parser Tm
 atom =
       withPos (    (Var    <$> ident)
+               <|> (NatLit <$> natural)
                <|> (U      <$  char 'U')
-               <|> (Unit   <$  char '⊤')
-               <|> (Unit   <$  keyword "Top")
+               <|> (Nat    <$  (keyword "Nat" <|> keyword "ℕ"))
+               <|> (Unit   <$  ((()<$ char '⊤') <|> keyword "Top"))
+               <|> (Zero   <$  keyword "zero")
                <|> (Tt     <$  keyword "tt")
                <|> (Quote  <$> (char '<' *> tm <* char '>'))
+               <|> (RecTy  <$> recTy)
                <|> (Hole   <$  char '_'))
   <|> parens tm
 
@@ -79,8 +116,13 @@ splice =
           Splice <$> (char '~' *> splice) <*> pure p)
   <|> atom
 
+proj :: Parser Tm
+proj = do
+  let go t = do {char '.'; x <- ident; go (Proj t x)} <|> pure t
+  go =<< splice
+
 explArg :: Parser Tm
-explArg = splice <|> lam
+explArg = proj <|> lam
 
 arg :: Parser (Either Name Icit, Tm)
 arg =   (try $ braces $ do {x <- ident; char '='; t <- tm; pure (Left x, t)})
@@ -89,23 +131,27 @@ arg =   (try $ braces $ do {x <- ident; char '='; t <- tm; pure (Left x, t)})
 
 spine :: Parser Tm
 spine =
-  (Box <$> (char '□' *> splice))
+  (Box <$> (char '□' *> proj))
   <|>
-  (Box <$> (keyword "Code" *> splice))
+  (Box <$> (keyword "Code" *> proj))
   <|>
-  (Eff <$> (keyword "Eff" *> splice))
+  (Eff <$> (keyword "Eff" *> proj))
   <|>
   (Return <$> (keyword "return" *> explArg))
   <|>
-  (Ref <$> (keyword "Ref" *> splice))
+  (Ref <$> (keyword "Ref" *> proj))
   <|>
   (New <$> (keyword "new" *> explArg))
   <|>
-  (Write <$> (keyword "write" *> splice) <*> explArg)
+  (Write <$> (keyword "write" *> proj) <*> explArg)
   <|>
   (Read <$> (keyword "read" *> explArg))
   <|>
-  do h <- splice
+  (Suc <$> (keyword "suc" *> explArg))
+  <|>
+  (NatElim <$> ((keyword "ℕElim" <|> keyword "NatElim") *> optional (braces tm)) <*> explArg <*> explArg)
+  <|>
+  do h <- proj
      args <- many arg
      pure $ foldl' (\t (i, u) -> App t u i) h args
 
@@ -192,13 +238,27 @@ pDo = do
       u <- tm
       pure $ Bind x t u
 
-tm :: Parser Tm
-tm = withPos (
+lamLet :: Parser Tm
+lamLet = withPos (
       lam
   <|> pLet
   <|> pDo
   <|> try pi
   <|> funOrApps)
+
+recField :: Parser (Maybe Name, Tm)
+recField = (,) <$> optional (try (ident <* char '=')) <*> lamLet
+
+tm :: Parser Tm
+tm =  do x <- try (ident <* char '=')
+         t <- lamLet
+         rest <- many (char ',' *> recField)
+         pure $ Rec ((Just x, t):rest)
+  <|> do t <- lamLet
+         let mkRec = do char ','
+                        rest <- sepBy recField (char ',')
+                        pure (Rec ((Nothing, t):rest))
+         mkRec <|> pure t
 
 topLet :: Parser Tm
 topLet = do

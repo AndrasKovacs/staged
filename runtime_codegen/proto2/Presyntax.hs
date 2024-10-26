@@ -23,12 +23,22 @@ data Tm
   | Seq Tm Tm                                 -- do t; u
 
   | Unit                                      -- ⊤, Top
-  | Tt                                        -- tt
+  | Tt                                        -- tte
 
   | Ref Tm                                    -- Ref t
   | New Tm                                    -- new t
   | Write Tm Tm                               -- write t u
   | Read Tm                                   -- read t
+
+  | Nat                                       -- ℕ or Nat
+  | Zero                                      -- zero
+  | Suc Tm                                    -- suc t
+  | NatLit Integer                            -- numeral
+  | NatElim (Maybe Tm) Tm Tm                  -- NatElim {P} s z | ℕElim {P} s z
+
+  | RecTy [(Name, Tm)]                        -- Σ(a : A, b : B ...) <|> Rec(a : A, b : B ...)
+  | Rec [(Maybe Name, Tm)]                    -- (a = t, b = u, v, ...)
+  | Proj Tm Name                              -- t.field
 
   | Hole                                      -- _
   deriving Show
@@ -36,24 +46,32 @@ data Tm
 -- | Get rid of source positions, for better debug printing.
 stripPos :: Tm -> Tm
 stripPos = \case
-  Var x        -> Var x
-  Lam x i ma t -> Lam x i (stripPos <$> ma) (stripPos t)
-  App t u i    -> App (stripPos t) (stripPos u) i
-  U            -> U
-  Pi x i a b   -> Pi x i (stripPos a) (stripPos b)
-  Let x a t u  -> Let x (stripPos <$> a) (stripPos t) (stripPos u)
-  SrcPos _ t   -> stripPos t
-  Hole         -> Hole
-  Box t        -> Box (stripPos t)
-  Quote t      -> Quote (stripPos t)
-  Splice t p   -> Splice (stripPos t) p
-  Eff t        -> Eff (stripPos t)
-  Return t     -> Return (stripPos t)
-  Bind x t u   -> Bind x (stripPos t) (stripPos u)
-  Seq t u      -> Seq (stripPos t) (stripPos u)
-  Unit         -> Unit
-  Tt           -> Tt
-  Ref t        -> Ref (stripPos t)
-  New t        -> New (stripPos t)
-  Write t u    -> Write (stripPos t) (stripPos u)
-  Read  t      -> Read (stripPos t)
+  Var x         -> Var x
+  Lam x i ma t  -> Lam x i (stripPos <$> ma) (stripPos t)
+  App t u i     -> App (stripPos t) (stripPos u) i
+  U             -> U
+  Pi x i a b    -> Pi x i (stripPos a) (stripPos b)
+  Let x a t u   -> Let x (stripPos <$> a) (stripPos t) (stripPos u)
+  SrcPos _ t    -> stripPos t
+  Hole          -> Hole
+  Box t         -> Box (stripPos t)
+  Quote t       -> Quote (stripPos t)
+  Splice t p    -> Splice (stripPos t) p
+  Eff t         -> Eff (stripPos t)
+  Return t      -> Return (stripPos t)
+  Bind x t u    -> Bind x (stripPos t) (stripPos u)
+  Seq t u       -> Seq (stripPos t) (stripPos u)
+  Unit          -> Unit
+  Tt            -> Tt
+  Ref t         -> Ref (stripPos t)
+  New t         -> New (stripPos t)
+  Write t u     -> Write (stripPos t) (stripPos u)
+  Read  t       -> Read (stripPos t)
+  Nat           -> Nat
+  Zero          -> Zero
+  Suc t         -> Suc (stripPos t)
+  NatLit n      -> NatLit n
+  NatElim p s z -> NatElim (stripPos <$> p) (stripPos s) (stripPos z)
+  RecTy fs      -> RecTy ((stripPos <$>) <$> fs)
+  Rec fs        -> Rec   ((stripPos <$>) <$> fs)
+  Proj t x      -> Proj (stripPos t) x

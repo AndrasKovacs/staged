@@ -9,10 +9,12 @@ module Common (
   , module Data.Coerce
   , module Control.Monad
   , module Data.Foldable
+  , module Data.Maybe
   , initialPos) where
 
 import Control.Monad
 import Data.Foldable
+import Data.Maybe
 import Data.Coerce
 import Data.Kind
 import Data.List

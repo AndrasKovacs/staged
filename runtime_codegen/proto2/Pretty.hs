@@ -21,10 +21,13 @@ fresh ns x | elem x ns = fresh ns (x ++ "'")
            | otherwise = x
 
 -- printing precedences
-atomp = 3  :: Int -- U, var
-appp  = 2  :: Int -- application
-pip   = 1  :: Int -- pi
-letp  = 0  :: Int -- let, lambda
+-- atomp   = 6  :: Int -- U, var
+splicep = 5  :: Int -- splice
+projp   = 4  :: Int -- field proj
+appp    = 3  :: Int -- application
+pip     = 2  :: Int -- pi
+letp    = 1  :: Int -- let, lambda
+tupp    = 0  :: Int -- record
 
 -- Wrap in parens if expression precedence is lower than
 -- enclosing expression precedence.
@@ -48,8 +51,8 @@ prettyTm prec i = goTop prec i where
   bracket :: ShowS -> ShowS
   bracket ss = ('{':).ss.('}':)
 
-  piBind ns i x Expl a = showParen True ((x++) . (" : "++) . go letp i ns a)
-  piBind ns i x Impl a = bracket        ((x++) . (" : "++) . go letp i ns a)
+  piBind ns i x Expl a = showParen True ((x++) . (" : "++) . go tupp i ns a)
+  piBind ns i x Impl a = bracket        ((x++) . (" : "++) . go tupp i ns a)
 
   lamBind x Impl = bracket (x++)
   lamBind x Expl = (x++)
@@ -75,20 +78,32 @@ prettyTm prec i = goTop prec i where
     Unchecked cxt t a m -> go p i ns (appPruning (Meta m) (pruning cxt))
     Checked t           -> go p i ns t
 
+  goRecTy :: Int -> [Name] -> [(Name, Tm)] -> ShowS
+  goRecTy i ns = \case
+    []        -> id
+    [(x, a)]  -> (x++) . (" : "++) . go letp i ns a
+    (x, a):fs -> (x++) . (" : "++) . go letp i ns a . (" , "++) . goRecTy i (x:ns) fs
+
+  goRec :: Int -> [Name] -> [(Name, Tm)] -> ShowS
+  goRec i ns = \case
+    []        -> id
+    [(x, t)]  -> (x++) . (" = "++) . go letp i ns t
+    (x, t):fs -> (x++) . (" = "++) . go letp i ns t . (" , "++) . goRecTy i ns fs
+
   go :: Int -> Int -> [Name] -> Tm -> ShowS
   go p i ns = \case
     Var x                     -> goIx ns x
 
-    App t u Expl              -> par p appp $ go appp i ns t . (' ':) . go atomp i ns u
-    App t u Impl              -> par p appp $ go appp i ns t . (' ':) . bracket (go letp i ns u)
+    App t u Expl              -> par p appp $ go appp i ns t . (' ':) . go projp i ns u
+    App t u Impl              -> par p appp $ go appp i ns t . (' ':) . bracket (go tupp i ns u)
 
-    Lam (fresh ns -> x) ic t  -> par p letp $ ("λ "++) . lamBind x ic . goLam (ns:>x) t where
+    Lam (fresh ns -> x) ic t  -> par p tupp $ ("λ "++) . lamBind x ic . goLam (ns:>x) t where
                                    goLam ns (Lam (fresh ns -> x) ic t) =
                                      (' ':) . lamBind x ic . goLam (ns:>x) t
                                    goLam ns t | lamNewl t =
-                                     (". "++) . newl (i + 2) . go letp (i + 2) ns t
+                                     (". "++) . newl (i + 2) . go tupp (i + 2) ns t
                                    goLam ns t =
-                                     (". "++) . go letp i ns t
+                                     (". "++) . go tupp i ns t
 
     U                         -> ("U"++)
 
@@ -100,49 +115,60 @@ prettyTm prec i = goTop prec i where
                                    goPi ns b = (" → "++) . go pip i ns b
 
     Let (fresh ns -> x) a t u -> let i' = i + 2 in
-                                 par p letp $ ("let "++) . (x++) . (" : "++) . go letp i' ns a
-                                 . (" = "++). newl i' . go letp i' ns t . (";"++) . newl i . go letp i (ns:>x) u
+                                 par p tupp $ ("let "++) . (x++) . (" : "++) . go tupp i' ns a
+                                 . (" = "++). newl i' . go tupp i' ns t . (";"++) . newl i . go tupp i (ns:>x) u
 
     Meta m                    -> (("?"++show m)++)
     AppPruning t pr           -> goPr p i ns ns t pr
     PostponedCheck c          -> goCheck p i ns c
 
-    Box t                     -> par p appp $ ('□':) . (' ':) . go atomp i ns t
-    Quote t                   -> ('<':) . go letp i ns t . ('>':)
-    Splice t _                -> ('~':) . go atomp i ns t
+    Box t                     -> par p appp $ ('□':) . (' ':) . go projp i ns t
+    Quote t                   -> ('<':) . go tupp i ns t . ('>':)
+    Splice t _                -> ('~':) . go splicep i ns t
     Unit                      -> ('⊤':)
     Tt                        -> ("tt"++)
-    Eff t                     -> par p appp $ ("Eff "++) . go atomp i ns t
-    Return t                  -> par p appp $ ("return "++) . go atomp i ns t
+    Eff t                     -> par p appp $ ("Eff "++) . go projp i ns t
+    Return t                  -> par p appp $ ("return "++) . go projp i ns t
     Seq t u                   -> let i' = i + 2 in
-                                 par p letp $ ("do " ++) .  go letp i' ns t
-                                 . (";"++) . newl i . go letp i ns u
+                                 par p tupp $ ("do " ++) .  go tupp i' ns t
+                                 . (";"++) . newl i . go tupp i ns u
     Bind (fresh ns -> x) t u  -> let i' = i + 2 in
-                                 par p letp $ ("do " ++) . (x++) . (" ← "++) . go letp i' ns t
-                                 . (";"++) . newl i . go letp i (ns:>x) u
+                                 par p tupp $ ("do " ++) . (x++) . (" ← "++) . go tupp i' ns t
+                                 . (";"++) . newl i . go tupp i (ns:>x) u
 
-    Ref t                     -> par p appp $ ("Ref "++) . go atomp i ns t
-    New t                     -> par p appp $ ("new "++) . go atomp i ns t
-    Read t                    -> par p appp $ ("read "++) . go atomp i ns t
-    Write t u                 -> par p appp $ ("write "++) . go atomp i ns t . (' ':) . go atomp i ns u
+    Ref t                     -> par p appp $ ("Ref "++) . go projp i ns t
+    New t                     -> par p appp $ ("new "++) . go projp i ns t
+    Read t                    -> par p appp $ ("read "++) . go projp i ns t
+    Write t u                 -> par p appp $ ("write "++) . go projp i ns t . (' ':) . go projp i ns u
     Erased msg                -> (msg++)
+
+    Nat                       -> ('ℕ':)
+    NatLit n                  -> (show n ++)
+    Suc t                     -> par p appp $ ("suc "++) . go projp i ns t
+    NatElim pr s z n          -> par p appp $ ("ℕElim "++) . go projp i ns pr . (' ':)
+                                                           . go projp i ns s . (' ':)
+                                                           . go projp i ns z . (' ':)
+                                                           . go projp i ns n
+    RecTy fs                  -> ("Σ(" ++) . goRecTy i ns fs . (')':)
+    Rec fs                    -> ('(':) . goRec i ns fs . (')':)
+    Proj t x                  -> par p projp $ go projp i ns t . ('.':) . (x++)
+
 
   goTop :: Int -> Int -> [Name] -> Tm -> ShowS
   goTop p i ns = \case
     Seq t u                   -> let i' = i + 2 in
-                                 par p letp $ ("do " ++) .  go letp i' ns t
-                                 . (";\n\n"++) . goTop letp i ns u
+                                 par p tupp $ ("do " ++) .  go tupp i' ns t
+                                 . (";\n\n"++) . goTop tupp i ns u
     Bind (fresh ns -> x) t u  -> let i' = i + 2 in
-                                 par p letp $ ("do " ++) . (x++) . (" ← "++) . go letp i' ns t
-                                 . (";\n\n"++) . goTop letp i (ns:>x) u
+                                 par p tupp $ ("do " ++) . (x++) . (" ← "++) . go tupp i' ns t
+                                 . (";\n\n"++) . goTop tupp i (ns:>x) u
     Let (fresh ns -> x) a t u -> let i' = i + 2 in
-                                 (x++) . (" : "++) . go letp i ns a
-                                 . (" =\n  "++) . go letp i' ns t . (";\n\n"++) . goTop letp i (ns:>x) u
+                                 (x++) . (" : "++) . go tupp i ns a
+                                 . (" =\n  "++) . go tupp i' ns t . (";\n\n"++) . goTop tupp i (ns:>x) u
     t                         -> go p i ns t
 
 showTm0 :: Tm -> String
 showTm0 t = prettyTm 0 0 [] t []
--- showTm0 = show
 
 displayMetas :: IO ()
 displayMetas = do

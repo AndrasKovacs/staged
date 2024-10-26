@@ -145,10 +145,10 @@ prettyTm prec i = goTop prec i where
     Nat                       -> ('ℕ':)
     NatLit n                  -> (show n ++)
     Suc t                     -> par p appp $ ("suc "++) . go projp i ns t
-    NatElim pr s z n          -> par p appp $ ("ℕElim "++) . go projp i ns pr . (' ':)
+    NatElim pr s z            -> par p appp $ ("ℕElim "++) . go projp i ns pr . (' ':)
                                                            . go projp i ns s . (' ':)
-                                                           . go projp i ns z . (' ':)
-                                                           . go projp i ns n
+                                                           . go projp i ns z
+
     RecTy fs                  -> ("Σ(" ++) . goRecTy i ns fs . (')':)
     Rec fs                    -> ('(':) . goRec i ns fs . (')':)
     Proj t x                  -> par p projp $ go projp i ns t . ('.':) . (x++)

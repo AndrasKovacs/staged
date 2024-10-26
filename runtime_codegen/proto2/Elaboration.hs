@@ -131,7 +131,7 @@ etaExpandMeta m sp = do
       go :: Cxt -> VTy -> RevSpine -> IO Tm
       go cxt a sp = case (force a, sp) of
         (a           , RSId        ) -> freshMeta cxt a
-        (VPi x i a b , RSApp t _ sp) -> Lam x i <$> go (bind cxt x a) (b $$ VVar (lvl cxt)) sp
+        (VPi x i a b , RSApp t _ sp) -> Lam x i <$> go (bind cxt x a) (coerce b $ VVar (lvl cxt)) sp
         (VBox a      , RSSplice sp ) -> Quote <$> go cxt a sp
         (VRecTy fs   , RSProj x sp ) -> Rec <$> goRec cxt x fs sp
         (a           , sp          ) -> impossible
@@ -156,6 +156,7 @@ expandVFlex m sp = do
       shouldExpand (SSplice sp)        = shouldExpand sp >> Just True
       shouldExpand (SProj sp _)        = shouldExpand sp >> Just True
       shouldExpand (SNatElim _ _ _ sp) = Nothing
+      shouldExpand (SSuc _)            = Nothing
 
   case shouldExpand sp of
     Just True -> do
@@ -177,9 +178,10 @@ invert gamma sp = do
           True  -> pure $! (,,,) $$! (dom + 1) $$! (IM.delete x sub)            $$! (IS.insert x nlvars) $$! (fsp :> (Lvl x, i))
           False -> pure $! (,,,) $$! (dom + 1) $$! (IM.insert x (VVar dom) sub) $$! nlvars               $$! (fsp :> (Lvl x, i))
       go SApp{}     = throwIO UnifyException
-      go SSplice{}  = impossible
-      go SProj{}    = impossible
+      go SSplice{}  = throwIO UnifyException
+      go SProj{}    = throwIO UnifyException
       go SNatElim{} = throwIO UnifyException
+      go SSuc{}     = throwIO UnifyException
 
   (!dom, !sub, !nlvars, !fsp) <- go sp
 
@@ -197,8 +199,8 @@ pruneTy (RevPruning pr) a = go pr (PSub Nothing 0 0 mempty) a where
   go pr psub a = case (pr, force a) of
     ([]          , a          ) -> psubst psub a
     (Just{}  : pr, VPi x i a b) -> Pi x i <$> psubst psub a
-                                          <*> go pr (lift psub) (b $$ VVar (cod psub))
-    (Nothing : pr, VPi x i a b) -> go pr (skip psub) (b $$ VVar (cod psub))
+                                          <*> go pr (lift psub) (coerce b $ VVar (cod psub))
+    (Nothing : pr, VPi x i a b) -> go pr (skip psub) (coerce b $ VVar (cod psub))
     _                           -> impossible
 
 -- | Prune arguments from a meta, return pruned value.
@@ -236,6 +238,7 @@ pruneVFlex psub m sp = do
       pruning SSplice{}  = Nothing
       pruning SProj{}    = Nothing
       pruning SNatElim{} = Nothing
+      pruning SSuc{}     = Nothing
 
   case pruning sp of
     Just pr | any isNothing pr -> do
@@ -251,7 +254,8 @@ psubstSp pren t = \case
   SApp sp u i      -> App <$> psubstSp pren t sp <*> psubst pren u <*> pure i
   SSplice sp       -> Splice <$> psubstSp pren t sp <*> pure Nothing
   SProj sp x       -> Proj <$> psubstSp pren t sp <*> pure x
-  SNatElim p s z n -> NatElim <$> psubst pren p <*> psubst pren s <*> psubst pren z <*> psubstSp pren t n
+  SNatElim p s z n -> natElim <$> psubst pren p <*> psubst pren s <*> psubst pren z <*> psubstSp pren t n
+  SSuc sp          -> Suc <$> psubstSp pren t sp
 
 psubstRecTy :: PartialSub -> RecClosure -> IO [(Name, Tm)]
 psubstRecTy psub (RClosure e fs) = case fs of
@@ -273,8 +277,8 @@ psubst psub t = case force t of
     Nothing -> throwIO UnifyException  -- scope error ("escaping variable" error)
     Just v  -> psubstSp psub (quote (dom psub) v) sp
 
-  VLam x i t  -> Lam x i <$> psubst (lift psub) (t $$ VVar (cod psub))
-  VPi x i a b -> Pi x i <$> psubst psub a <*> psubst (lift psub) (b $$ VVar (cod psub))
+  VLam x i t  -> Lam x i <$> psubst (lift psub) (coerce t $ VVar (cod psub))
+  VPi x i a b -> Pi x i <$> psubst psub a <*> psubst (lift psub) (coerce b $ VVar (cod psub))
   VU          -> pure U
   VBox t      -> Box <$> psubst psub t
   VQuote t    -> Quote <$> psubst psub t
@@ -300,8 +304,8 @@ lams :: Dbg => Lvl -> VTy -> Tm -> Tm
 lams l a t = go a (0 :: Lvl) where
   go a l' | l' == l = t
   go a l' = case force a of
-    VPi "_" i a b -> Lam ("x"++show l') i $ go (b $$ VVar l') (l' + 1)
-    VPi x i a b   -> Lam x i $ go (b $$ VVar l') (l' + 1)
+    VPi "_" i a b -> Lam ("x"++show l') i $ go (coerce b $ VVar l') (l' + 1)
+    VPi x i a b   -> Lam x i $ go (coerce b $ VVar l') (l' + 1)
     _             -> impossible
 
 -- | Solve (Γ ⊢ m spine =? rhs)
@@ -391,7 +395,7 @@ unify l t u = do
   debug ["unify", showTm0 (quote l t), showTm0 (quote l u)]
   case (force t, force u) of
     (VU         , VU             ) -> pure ()
-    (VPi x i a b, VPi x' i' a' b') | i == i' -> unify l a a' >> unify (l + 1) (b $$ VVar l) (b' $$ VVar l)
+    (VPi x i a b, VPi x' i' a' b') | i == i' -> unify l a a' >> unify (l + 1) (coerce b $ VVar l) (coerce b' $ VVar l)
     (VUnit      , VUnit          ) -> pure ()
     (VTt        , VTt            ) -> pure ()
     (VEff t     , VEff t'        ) -> unify l t t'
@@ -407,9 +411,9 @@ unify l t u = do
     (VRigid x sp, VRigid x' sp'  ) | x == x' -> unifySp l sp sp'
     (VFlex m sp , VFlex m' sp'   ) | m == m' -> intersect l m sp sp'
     (VFlex m sp , VFlex m' sp'   )           -> flexFlex l m sp m' sp'
-    (VLam _ _ t , VLam _ _ t'    ) -> unify (l + 1) (t $$ VVar l) (t' $$ VVar l)
-    (t          , VLam _ i t'    ) -> unify (l + 1) (vApp t (VVar l) i) (t' $$ VVar l)
-    (VLam _ i t , t'             ) -> unify (l + 1) (t $$ VVar l) (vApp t' (VVar l) i)
+    (VLam _ _ t , VLam _ _ t'    ) -> unify (l + 1) (coerce t $ VVar l) (coerce t' $ VVar l)
+    (t          , VLam _ i t'    ) -> unify (l + 1) (vApp t (VVar l) i) (coerce t' $ VVar l)
+    (VLam _ i t , t'             ) -> unify (l + 1) (coerce t $ VVar l) (vApp t' (VVar l) i)
     (VFlex m sp , t'             ) -> solve l m sp t'
     (t          , VFlex m' sp'   ) -> solve l m' sp' t
     _                              -> throwIO UnifyException  -- rigid mismatch error
@@ -440,7 +444,7 @@ insert' cxt act = go =<< act where
     VPi x Impl a b -> do
       m <- freshMeta cxt a
       let mv = eval (env cxt) m
-      go (App t m Impl, b $$ mv)
+      go (App t m Impl, coerce b $ mv)
     va -> pure (t, va)
 
 -- | Insert fresh implicit applications to a term which is not
@@ -461,7 +465,7 @@ insertUntilName cxt name act = go =<< act where
       else do
         m <- freshMeta cxt a
         let mv = eval (env cxt) m
-        go (App t m Impl, b $$ mv)
+        go (App t m Impl, coerce b $ mv)
     _ ->
       throwIO $ Error cxt $ NoNamedImplicitArg name
 
@@ -492,6 +496,13 @@ ensureRef cxt a = case force a of
     unifyCatch cxt (VRef res) a ExpectedInferred
     pure res
 
+ensureRecTy :: Cxt -> VTy -> IO RecClosure
+ensureRecTy cxt a = case force a of
+  VRecTy fs ->
+    pure fs
+  a ->
+    throwIO $ Error cxt $ ExpectedRecTy (quote (lvl cxt) a)
+
 check :: Dbg => Cxt -> P.Tm -> VTy -> IO Tm
 check cxt (P.SrcPos pos t) a =
   -- we handle the SrcPos case here, because we do not want to
@@ -511,7 +522,7 @@ check cxt t a = do
         Just a  -> do a <- check cxt a VU
                       unifyCatch cxt (eval (env cxt) a) a' LamBinderType
 
-      Lam x i' <$> check (bind cxt x a') t (b' $$ VVar (lvl cxt))
+      Lam x i' <$> check (bind cxt x a') t (coerce b' $ VVar (lvl cxt))
 
     -- If we're checking a local variable with unknown type, with an implicit function,
     -- we immediately unify types. This is a modest but useful approximation of
@@ -523,7 +534,7 @@ check cxt t a = do
 
     -- Otherwise if Pi is implicit, insert a new implicit lambda
     (t, VPi x Impl a b) -> do
-      Lam x Impl <$> check (newBinder cxt x a) t (b $$ VVar (lvl cxt))
+      Lam x Impl <$> check (newBinder cxt x a) t (coerce b $ VVar (lvl cxt))
 
     -- If the checking type is unknown, we postpone checking.
     (t, topA@(VFlex m sp)) -> do
@@ -550,6 +561,25 @@ check cxt t a = do
       u <- check (define cxt x t vt a va) u a'
       pure (Let x a t u)
 
+    (P.NatElim p s z, VPi x i a b) -> do
+      unless (i == Expl) $
+        throwIO $ Error cxt $ IcitMismatch i Expl
+      unifyCatch cxt VNat a ExpectedInferred
+      p <- case p of
+        Nothing ->
+          pure $ Lam "n" Expl $ quote (lvl cxt + 1) (coerce b $ VVar (lvl cxt))
+        Just p -> do
+          p <- check cxt p (VNat ==> VU)
+          let ~vp = eval (env cxt) p
+          unifyCatch (bind cxt "n" VNat)
+            (vp `vAppE` VVar (lvl cxt))
+            (coerce b $ VVar (lvl cxt))
+            ExpectedInferred
+          pure p
+      s <- check cxt s (vPiI "n" VNat \n -> coerce b n ==> coerce b (vSuc n))
+      z <- check cxt z (coerce b (VNatLit 0))
+      pure $ NatElim p s z
+
     (P.Return t, VEff a) ->
       Return <$> check cxt t a
 
@@ -575,17 +605,71 @@ check cxt t a = do
       unifyCatch cxt expected inferred ExpectedInferred
       pure t
 
+inferRecTy :: Cxt -> [(Name, P.Tm)] -> IO [(Name, Tm)]
+inferRecTy cxt = \case
+  []        -> pure []
+  (x, a):fs -> do
+    case lookup x fs of
+      Nothing -> pure ()
+      _       -> throwIO $ Error cxt $ DuplicateRecField x
+    a  <- check cxt a VU
+    fs <- inferRecTy (bind cxt x (eval (env cxt) a)) fs
+    pure ((x, a):fs)
+
+inferProj :: Cxt -> Name -> RecClosure -> Tm -> Val -> IO (Tm, VTy)
+inferProj cxt x (RClosure e fs) t ~vt = case fs of
+  [] ->
+    throwIO $ Error cxt $ NoSuchField x
+  (x', a):fs | x == x' ->
+    pure (Proj t x, eval e a)
+  (x', a):fs ->
+    inferProj cxt x (RClosure (vProj vt x':e) fs) t vt
+
 infer :: Dbg => Cxt -> P.Tm -> IO (Tm, VTy)
 infer cxt (P.SrcPos pos t) =
   -- we handle the SrcPos case here, because we do not want to
   -- perform debug printing at position annotations.
   infer (cxt {pos = pos}) t
-
 infer cxt t = do
 
   debug ["infer", show (P.stripPos t)]
 
   res <- case t of
+
+    P.Proj t x -> do
+      (t, a) <- infer cxt t
+      fs     <- ensureRecTy cxt a
+      inferProj cxt x fs t (force (eval (env cxt) t))
+
+    P.Nat -> do
+      pure (Nat, VU)
+
+    P.Zero -> do
+      pure (NatLit 0, VNat)
+
+    P.Suc t -> do
+      t <- check cxt t VNat
+      pure (Suc t, VNat)
+
+    P.NatLit n -> do
+      pure (NatLit n, VNat)
+
+    P.NatElim p s z -> do
+      p <- case p of
+        Nothing -> freshMeta cxt (VNat ==> VU)
+        Just p  -> check cxt p   (VNat ==> VU)
+      let ~vp = eval (env cxt) p
+      s <- check cxt s (vPiI "n" VNat \n -> vp `vAppE` n ==> vp `vAppE` vSuc n)
+      z <- check cxt z (vp `vAppE` VNatLit 0)
+      let resty = vPiE "n" VNat \n -> vp `vAppE` n
+      pure (NatElim p s z, resty)
+
+    P.RecTy fs -> do
+      fs <- inferRecTy cxt fs
+      pure (RecTy fs, VU)
+
+    P.Rec ts -> do
+      throwIO $ Error cxt $ CantInferRecord
 
     P.Var x -> do
       case M.lookup x (localNames cxt) of
@@ -599,7 +683,7 @@ infer cxt t = do
 
       let cxt' = bind cxt x a
       (t, b) <- insert cxt' $ infer cxt' t
-      pure (Lam x i t, VPi x i a $ valToClosure cxt b)
+      pure (Lam x i t, VPi x i a $ NoShow $ valToClosure cxt b)
 
     P.Lam x Left{} ma t ->
       throwIO $ Error cxt $ InferNamedLam
@@ -626,12 +710,13 @@ infer cxt t = do
           pure (a, b)
         tty -> do
           a <- eval (env cxt) <$> freshMeta cxt VU
-          b <- Closure (env cxt) <$> freshMeta (bind cxt "x" a) VU
+          b <- do b <- freshMeta (bind cxt "x" a) VU
+                  pure $ NoShow \x -> eval (x:env cxt) b
           unifyCatch cxt (VPi "x" i a b) tty ExpectedInferred
           pure (a, b)
 
       u <- check cxt u a
-      pure (App t u i, b $$ eval (env cxt) u)
+      pure (App t u i, coerce b $ eval (env cxt) u)
 
     P.U ->
       pure (U, VU)

@@ -27,7 +27,11 @@ data ElabError
   | InferNamedLam
   | NoNamedImplicitArg Name
   | IcitMismatch Icit Icit
-  | UnsolvedMetaInZonk MetaVar Cxt Tm
+  | UnsolvedMetaInZonk MetaVar Tm
+  | DuplicateRecField Name
+  | CantInferRecord
+  | ExpectedRecTy Tm
+  | NoSuchField Name
   deriving (Show, Exception)
 
 data Error = Error Cxt ElabError
@@ -63,9 +67,17 @@ displayError (Error cxt e) = do
         IcitMismatch i i' -> printf
           ("Function icitness mismatch: expected %s, got %s.")
           (show i) (show i')
-        UnsolvedMetaInZonk x cxt a ->
+        UnsolvedMetaInZonk x a ->
           "Unsolved metavariable. Expected type:\n\n  " ++
           showTm cxt a ++ "\n"
+        DuplicateRecField x ->
+          "Duplicate record field: " ++ x
+        CantInferRecord ->
+          "Can't infer type for record"
+        ExpectedRecTy a ->
+          "Expected a record type, inferred:\n\n  " ++ showTm cxt a
+        NoSuchField x ->
+          "No such record field: " ++ x
 
   let locMsg = displayLocation (pos cxt) file
 

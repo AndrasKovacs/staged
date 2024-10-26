@@ -25,6 +25,8 @@ data Closed
   | CRef (NoShow (IORef Closed))
   | CQuote Open
   | CErased String
+  | CRec [(Name, Closed)]
+  | CNat Integer
   deriving Show
 
 data Open
@@ -42,6 +44,11 @@ data Open
   | OWrite Open Open
   | ORead Open
   | OClosed (Maybe Name) Closed
+  | ONatLit Integer
+  | OSuc Open
+  | ONatElim Open Open
+  | OProj Open Name
+  | ORec [(Name, Open)]
   deriving Show
 
 def :: Name -> v -> (Env v => a) -> (Env v => a)
@@ -77,10 +84,37 @@ cApp t u = case t of
   CLam x f g -> coerce f u
   t          -> impossible
 
+cProj :: Closed -> Name -> Closed
+cProj t x = case t of
+  CRec ts -> fromJust $ lookup x ts
+  _       -> impossible
+
 cSplice :: Closed -> Maybe String -> Closed
 cSplice t loc = case t of
   CQuote t -> env [] $ lvl 0 $ ceval $ traceGen t loc
   _        -> impossible
+
+cSuc :: Closed -> Closed
+cSuc = \case
+  CNat n -> CNat (n + 1)
+  _      -> impossible
+
+cNatElim :: Closed -> Closed -> Closed -> Closed
+cNatElim s z n =
+  let go 0 = z
+      go n = s `cApp` CNat (n - 1) `cApp` go (n - 1)
+  in case n of
+    CNat n -> go n
+    _      -> impossible
+
+oNatElim :: Lvl => Open -> Open -> Open -> Open
+oNatElim s z n =
+  let go 0 = z
+      go n = s `oApp` ONatLit (n - 1) `oApp` go (n - 1)
+  in case n of
+    ONatLit n -> go n
+    OSuc n    -> s `oApp` n `oApp` oNatElim s z n
+    n         -> ONatElim s z `oApp` n
 
 oQuote :: Open -> Open
 oQuote = \case
@@ -106,6 +140,11 @@ exec = \case
   Read t       -> case ceval t of
                     CRef r -> readIORef (coerce r)
                     _      -> impossible
+  NatLit n     -> impossible
+  Suc t        -> impossible
+  NatElim s z  -> impossible
+  Rec ts       -> impossible
+  Proj t x     -> eRun (cProj (ceval t) x)
   CSP x t      -> eRun t
 
 ceval :: CEnv => Tm -> Closed
@@ -124,7 +163,32 @@ ceval = \case
   t@New{}      -> CAction (coerce (exec t))
   t@Write{}    -> CAction (coerce (exec t))
   t@Read{}     -> CAction (coerce (exec t))
+  NatLit n     -> CNat n
+  Suc t        -> cSuc (ceval t)
+  NatElim s z  -> let vs = ceval s; ~vz = ceval z in
+                  CLam "n" (NoShow $ cNatElim vs vz)
+                           (NoShow $ \l n -> closeEnv $ lvl l $ stage 0 $ oNatElim (oeval s) (oeval z) n)
+  Rec ts       -> CRec (fmap (fmap ceval) ts)
+  Proj t x     -> cProj (ceval t) x
   CSP _ t      -> t
+
+oApp :: Lvl => Open -> Open -> Open
+oApp t u = case (t, u) of
+  (OClosed x (CLam _ f _), OClosed x' u) -> OClosed Nothing (coerce f u)
+  (OClosed x (CLam _ _ f), u           ) -> coerce f ?lvl u
+  (OLam _ f              , u           ) -> coerce f ?lvl u
+  (t                     , u           ) -> OApp t u
+
+oSplice :: Open -> Open
+oSplice = \case
+  OClosed _ (CQuote t) -> t
+  OQuote t             -> t
+  t                    -> OSplice t
+
+oProj :: Open -> Name -> Open
+oProj t x = case t of
+  ORec ts -> fromJust $ lookup x ts
+  t       -> OProj t x
 
 oeval :: OEnv => Lvl => Stage => Tm -> Open
 oeval = \case
@@ -139,25 +203,25 @@ oeval = \case
   Write t u  -> OWrite (oeval t) (oeval u)
   Read t     -> ORead (oeval t)
   CSP x t    -> OClosed x t
+  Suc t      -> OSuc (oeval t)
+  Rec ts     -> ORec (fmap (fmap oeval) ts)
+  NatLit n   -> ONatLit n
   t -> case ?stage of
     0 -> case t of
-      Let x t u    -> def x (oeval t) (oeval u)
-      App t u      -> case (oeval t, oeval u) of
-                        (OClosed x (CLam _ f _), OClosed x' u) -> OClosed Nothing (coerce f u)
-                        (OClosed x (CLam _ _ f), u           ) -> coerce f ?lvl u
-                        (OLam _ f              , u           ) -> coerce f ?lvl u
-                        (t                     , u           ) -> OApp t u
-      Splice t loc -> case oeval t of
-                        OClosed _ (CQuote t) -> env (idEnv ?lvl) $ oeval $ traceGen t loc
-                        OQuote t             -> env (idEnv ?lvl) $ oeval $ traceGen t loc
-                        t                    -> OSplice t
+      Let x t u     -> def x (oeval t) (oeval u)
+      App t u       -> oApp (oeval t) (oeval u)
+      Splice t loc  -> case oeval t of
+                         OClosed _ (CQuote t) -> env (idEnv ?lvl) $ oeval $ traceGen t loc
+                         OQuote t             -> env (idEnv ?lvl) $ oeval $ traceGen t loc
+                         t                    -> OSplice t
+      NatElim s z   -> OLam "n" $ NoShow $ \l n -> lvl l $ oNatElim (oeval s) (oeval z) n
+      Proj t x      -> oProj (oeval t) x
     _ -> case t of
-      Let x t u    -> OLet x (oeval t) (NoShow \l -> lvl l $ oeval u)
-      App t u      -> OApp (oeval t) (oeval u)
-      Splice t pos -> case stage (?stage - 1) $ oeval t of
-                        OClosed _ (CQuote t) -> t
-                        OQuote t             -> t
-                        t                    -> OSplice t
+      Let x t u     -> OLet x (oeval t) (NoShow \l -> lvl l $ oeval u)
+      App t u       -> OApp (oeval t) (oeval u)
+      Splice t pos  -> oSplice $ stage (?stage - 1) $ oeval t
+      NatElim s z   -> ONatElim (oeval s) (oeval z)
+      Proj t x      -> OProj (oeval t) x
 
 traceGen :: Lvl => Open -> Maybe String -> Tm
 traceGen t loc =
@@ -172,20 +236,25 @@ traceGen t loc =
 
 gen :: Lvl => Open -> Tm
 gen = \case
-  OVar x      -> Var (coerce (?lvl - x - 1))
-  OLet x t u  -> Let x (gen t) $ fresh \_ -> gen (coerce u ?lvl)
-  OLam x t    -> Lam x $ fresh \v -> gen (coerce t ?lvl v)
-  OApp t u    -> App (gen t) (gen u)
-  OErased s   -> Erased s
-  OQuote t    -> Quote (gen t)
-  OSplice t   -> Splice (gen t) Nothing
-  OReturn t   -> Return (gen t)
-  OBind x t u -> Bind x (gen t) $ fresh \_ -> gen (coerce u ?lvl)
-  OSeq t u    -> Seq (gen t) (gen u)
-  ONew t      -> New (gen t)
-  OWrite t u  -> Write (gen t) (gen u)
-  ORead t     -> Read (gen t)
-  OClosed x t -> CSP x t
+  OVar x         -> Var (coerce (?lvl - x - 1))
+  OLet x t u     -> Let x (gen t) $ fresh \_ -> gen (coerce u ?lvl)
+  OLam x t       -> Lam x $ fresh \v -> gen (coerce t ?lvl v)
+  OApp t u       -> App (gen t) (gen u)
+  OErased s      -> Erased s
+  OQuote t       -> Quote (gen t)
+  OSplice t      -> Splice (gen t) Nothing
+  OReturn t      -> Return (gen t)
+  OBind x t u    -> Bind x (gen t) $ fresh \_ -> gen (coerce u ?lvl)
+  OSeq t u       -> Seq (gen t) (gen u)
+  ONew t         -> New (gen t)
+  OWrite t u     -> Write (gen t) (gen u)
+  ORead t        -> Read (gen t)
+  ONatLit n      -> NatLit n
+  OSuc t         -> Suc (gen t)
+  ONatElim s z   -> NatElim (gen s) (gen z)
+  ORec ts        -> Rec (fmap (fmap gen) ts)
+  OProj t x      -> Proj (gen t) x
+  OClosed x t    -> CSP x t
 
 -- Only for pretty printing purposes
 readBackClosed :: Closed -> Tm
@@ -195,6 +264,8 @@ readBackClosed t = let ?lvl = 0 in case t of
   CRef _     -> Erased "Ref"
   CQuote t   -> Quote (gen t)
   CErased s  -> Erased s
+  CRec ts    -> Rec (fmap (fmap readBackClosed) ts)
+  CNat n     -> NatLit n
 
 execTop :: Tm -> IO Closed
 execTop t = env [] $ exec t

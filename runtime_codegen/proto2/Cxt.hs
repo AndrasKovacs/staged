@@ -71,9 +71,8 @@ define (Cxt env l ls pr topns ns pos) x ~t ~vt ~a ~va  =
       (M.insert x (l, va) ns)
       pos
 
--- | valToClosure : (Γ : Con) → Val (Γ, x : A) B → Closure Γ A B
-valToClosure :: Cxt -> Val -> Closure
-valToClosure cxt t = Closure (env cxt) (quote (lvl cxt + 1) t)
+valToClosure :: Cxt -> Val -> Val -> Val
+valToClosure cxt t u = eval (u:env cxt) $ quote (lvl cxt + 1) t
 
 defineTop :: Cxt -> Name -> Tm -> Val -> Ty -> VTy -> Cxt
 defineTop (Cxt env l ls pr topns ns pos) x ~t ~vt ~a ~va  =

@@ -45,6 +45,12 @@ closeTm mcl t = case mcl of
   LBind mcl x a     -> closeTm mcl (Lam x Expl t)
   LDefine mcl x a u -> closeTm mcl (Let x a u t)
 
+appE :: Tm -> Tm -> Tm
+appE t u = App t u Expl
+
+appI :: Tm -> Tm -> Tm
+appI t u = App t u Impl
+
 data Tm
   = Var Ix
   | Lam Name Icit Tm
@@ -77,12 +83,15 @@ data Tm
   | Nat
   | NatLit Integer
   | Suc Tm
-  | NatElim Tm Tm Tm Tm
+  | NatElim Tm Tm Tm
 
   | RecTy [(Name, Tm)]
   | Rec [(Name, Tm)]
   | Proj Tm Name
   deriving Show
+
+natElim :: Tm -> Tm -> Tm -> Tm -> Tm
+natElim p s z n = NatElim p s z `appE` n
 
 -- | Unfold `AppPruning` to an iterated application to vars. This applies a term to all de Bruijn indices
 --   which are `Just` in the mask.

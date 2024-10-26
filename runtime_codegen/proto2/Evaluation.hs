@@ -1,5 +1,7 @@
 
-module Evaluation (($$), quote, eval, nf, force, lvl2Ix, vApp, vAppSp, vAppPruning, vSplice) where
+module Evaluation (
+  ($$), quote, eval, nf, force, lvl2Ix, vApp, vAppSp, vAppPruning, vSplice, vAppI, vAppE, vSuc, vProj)
+  where
 
 import Common
 import ElabState
@@ -13,10 +15,17 @@ infixl 8 $$
 
 vApp :: Val -> Val -> Icit -> Val
 vApp t ~u i = case t of
-  VLam _ _ t  -> t $$ u
+  VLam _ _ t  -> coerce t u
   VFlex  m sp -> VFlex m  (SApp sp u i)
   VRigid x sp -> VRigid x (SApp sp u i)
   t           -> impossible
+
+vSuc :: Val -> Val
+vSuc = \case
+  VNatLit n   -> VNatLit (n + 1)
+  VFlex  m sp -> VFlex m  (SSuc sp)
+  VRigid x sp -> VRigid x (SSuc sp)
+  _           -> impossible
 
 vAppI :: Val -> Val -> Val
 vAppI t ~u = vApp t u Impl
@@ -51,7 +60,8 @@ vAppSp t = \case
   SApp sp u i      -> vApp (vAppSp t sp) u i
   SSplice sp       -> vSplice (vAppSp t sp)
   SNatElim p s z n -> vNatElim p s z (vAppSp t n)
-  SProj sp x        -> vProj (vAppSp t sp) x
+  SProj sp x       -> vProj (vAppSp t sp) x
+  SSuc sp          -> vSuc (vAppSp t sp)
 
 vMeta :: MetaVar -> Val
 vMeta m = case lookupMeta m of
@@ -103,8 +113,8 @@ eval :: Dbg => Env -> Tm -> Val
 eval env = \case
   Var x            -> vVar env x
   App t u i        -> vApp (eval env t) (eval env u) i
-  Lam x i t        -> VLam x i (Closure env t)
-  Pi x i a b       -> VPi x i (eval env a) (Closure env b)
+  Lam x i t        -> VLam x i (NoShow \u -> eval (u:env) t)
+  Pi x i a b       -> VPi x i (eval env a) (NoShow \u -> eval (u:env) b)
   Let _ _ t u      -> eval (env :> eval env t) u
   U                -> VU
   Meta m           -> vMeta m
@@ -127,7 +137,12 @@ eval env = \case
   Nat              -> VNat
   NatLit n         -> VNatLit n
   Suc t            -> VSuc (eval env t)
-  NatElim p s z n  -> vNatElim (eval env p) (eval env s) (eval env z) (eval env n)
+  NatElim p s z    -> let vp  = eval env p
+                          vs  = eval env s
+                          ~vz = eval env z in
+                      VLam "n" Expl $ NoShow $ vNatElim vp vs vz
+
+    -- vNatElim (eval env p) (eval env s) (eval env z) (eval env n)
   RecTy t          -> VRecTy (RClosure env t)
   Rec t            -> VRec (evalFields env t)
   Proj t x         -> vProj (eval env t) x
@@ -142,8 +157,9 @@ quoteSp l t = \case
   SId              -> t
   SApp sp u i      -> App (quoteSp l t sp) (quote l u) i
   SSplice sp       -> Splice (quoteSp l t sp) Nothing
-  SNatElim p s z n -> NatElim (quote l p) (quote l s) (quote l z) (quoteSp l t n)
-  SProj sp x        -> Proj (quoteSp l t sp) x
+  SNatElim p s z n -> NatElim (quote l p) (quote l s) (quote l z) `appE` quoteSp l t n
+  SProj sp x       -> Proj (quoteSp l t sp) x
+  SSuc sp          -> Suc (quoteSp l t sp)
 
 quoteRecClosure :: Lvl -> RecClosure -> [(Name, Tm)]
 quoteRecClosure l (RClosure env ts) = case ts of
@@ -161,8 +177,8 @@ quote :: Dbg => Lvl -> Val -> Tm
 quote l t = case force t of
   VFlex m sp  -> quoteSp l (Meta m) sp
   VRigid x sp -> quoteSp l (Var (lvl2Ix l x)) sp
-  VLam x i t  -> Lam x i (quote (l + 1) (t $$ VVar l))
-  VPi x i a b -> Pi x i (quote l a) (quote (l + 1) (b $$ VVar l))
+  VLam x i t  -> Lam x i (quote (l + 1) (coerce t $ VVar l))
+  VPi x i a b -> Pi x i (quote l a) (quote (l + 1) (coerce b $ VVar l))
   VU          -> U
   VBox t      -> Box (quote l t)
   VQuote t    -> Quote (quote l t)

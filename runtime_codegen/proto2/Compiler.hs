@@ -1,5 +1,5 @@
 {-# language OverloadedStrings #-}
-{-# options_ghc -Wno-unused-imports #-}
+{-# options_ghc -Wno-unused-imports -Wno-incomplete-patterns #-}
 
 module Compiler (genTop) where
 

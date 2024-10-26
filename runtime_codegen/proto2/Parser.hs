@@ -84,7 +84,7 @@ ident = try $ do
   x <$ ws
 
 keyword :: String -> Parser ()
-keyword kw = do
+keyword kw = try $ do
   C.string kw
   (satisfy isIdentRestChar *> empty) <|> ws
 
@@ -180,7 +180,7 @@ pi :: Parser Tm
 pi = do
   dom <- some piBinder
   arrow
-  cod <- tm
+  cod <- lamLet
   pure $! foldr' (\(!xs, !a, !i) t -> foldr' (\x -> Pi x i a) t xs) cod dom
 
 apps :: Parser Tm
@@ -193,7 +193,7 @@ funOrApps = do
   sp <- apps
   optional arrow >>= \case
     Nothing -> pure sp
-    Just _  -> Pi "_" Expl sp <$> tm
+    Just _  -> Pi "_" Expl sp <$> lamLet
 
 -- | Desugar Coq-style definition arguments.
 desugarIdentArgs :: [([Name], Tm, Icit)] -> Maybe Tm -> Tm -> (Tm, Maybe Tm)
@@ -215,12 +215,12 @@ pLet = do
   keyword "let"
   x <- ident
   args <- many piBinder
-  ann <- optional (char ':' *> tm)
+  ann <- optional (char ':' *> lamLet)
   char '='
-  t <- tm
+  t <- lamLet
   (t, ann) <- pure $ desugarIdentArgs args ann t
   char ';'
-  u <- tm
+  u <- lamLet
   pure $ Let x ann t u
 
 pDo :: Parser Tm
@@ -230,42 +230,51 @@ pDo = do
     Nothing -> do
       t <- tm
       char ';'
-      u <- tm
+      u <- lamLet
       pure $ Seq t u
     Just x  -> do
       t <- tm
       char ';'
-      u <- tm
+      u <- lamLet
       pure $ Bind x t u
 
 lamLet :: Parser Tm
-lamLet = withPos (
-      lam
-  <|> pLet
-  <|> pDo
-  <|> try pi
-  <|> funOrApps)
+lamLet = do
+  withPos (
+       lam
+   <|> pLet
+   <|> pDo
+   <|> try pi
+   <|> funOrApps)
 
 recField :: Parser (Maybe Name, Tm)
 recField = (,) <$> optional (try (ident <* char '=')) <*> lamLet
 
 tm :: Parser Tm
-tm =  do x <- try (ident <* char '=')
-         t <- lamLet
-         rest <- many (char ',' *> recField)
-         pure $ Rec ((Just x, t):rest)
-  <|> do t <- lamLet
-         let mkRec = do char ','
-                        rest <- sepBy recField (char ',')
-                        pure (Rec ((Nothing, t):rest))
-         mkRec <|> pure t
+tm = do
+  optional (try (ident <* char '=')) >>= \case
+    Nothing -> do
+      t <- lamLet
+      let mkRec = do char ','
+                     rest <- sepBy recField (char ',')
+                     pure (Rec ((Nothing, t):rest))
+      mkRec <|> pure t
+    Just x -> do
+      t <- lamLet
+      rest <- many (char ',' *> recField)
+      pure $ Rec ((Just x, t):rest)
+
+-- dbg :: String -> Parser ()
+-- dbg msg = do
+--   l <- lookAhead takeRest
+--   traceM (msg ++ "|" ++ l)
 
 topLet :: Parser Tm
 topLet = do
-  (x, args, ann) <- try do
+  (x, args, ann) <- do
     x <- ident
     args <- many piBinder
-    ann <- optional (char ':' *> tm)
+    ann  <- optional (char ':' *> lamLet)
     char '='
     pure (x, args, ann)
   t <- tm

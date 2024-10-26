@@ -337,33 +337,42 @@ solveWithPSub gamma m (psub, pruneNonlinear) rhs = do
   -- retry all blocked problems
   forM_ (IS.toList blocked) (retryCheck . CheckVar)
 
+unSuc :: Spine -> Spine -> IO (Spine, Spine)
+unSuc sp sp' = case (sp, sp') of
+  (SSuc sp, SSuc sp') -> unSuc sp sp'
+  _                   -> pure (sp, sp')
+
+unifyEq :: Eq a => a -> a -> IO ()
+unifyEq x y = unless (x == y) (throwIO UnifyException)
 
 unifySp :: Dbg => Lvl -> Spine -> Spine -> IO ()
 unifySp l sp sp' = case (sp, sp') of
-  (SId         , SId           ) -> pure ()
+  (SId             , SId           ) -> pure ()
 
   -- Note: we don't have to compare Icit-s, since we know from the recursive
   -- call that sp and sp' have the same type.
-  (SApp sp t _ , SApp sp' t' _ ) -> unifySp l sp sp' >> unify l t t'
-  (SSplice sp  , SSplice sp'   ) -> unifySp l sp sp'
-
-  _                              -> throwIO UnifyException -- rigid mismatch error
-
+  (SApp sp t _     , SApp sp' t' _       ) -> unifySp l sp sp' >> unify l t t'
+  (SSplice sp      , SSplice sp'         ) -> unifySp l sp sp'
+  (SSuc sp         , SSuc sp'            ) -> unifySp l sp sp'
+  (SNatElim p s z n, SNatElim p' s' z' n') -> unify l p p' >> unify l s s' >> unify l z z' >> unifySp l n n'
+  (SProj sp x      , SProj sp' x'        ) -> unifySp l sp sp' >> unifyEq x x'
+  _                                        -> throwIO UnifyException -- rigid mismatch error
 
 -- | Solve (Γ ⊢ m spine =? m' spine').
 flexFlex :: Dbg => Lvl -> MetaVar -> Spine -> MetaVar -> Spine -> IO ()
-flexFlex gamma m sp m' sp' = let
+flexFlex gamma m sp m' sp' = do
+  (sp, sp') <- unSuc sp sp'
 
   -- It may be that only one of the two spines is invertible
-  go :: Dbg => MetaVar -> Spine -> MetaVar -> Spine -> IO ()
-  go m sp m' sp' = try (invert gamma sp) >>= \case
-    Left UnifyException -> solve gamma m' sp' (VFlex m sp)
-    Right psub          -> solveWithPSub gamma m psub (VFlex m' sp')
+  let go :: Dbg => MetaVar -> Spine -> MetaVar -> Spine -> IO ()
+      go m sp m' sp' = try (invert gamma sp) >>= \case
+        Left UnifyException -> solve gamma m' sp' (VFlex m sp)
+        Right psub          -> solveWithPSub gamma m psub (VFlex m' sp')
 
   -- usually, a longer spine indicates that the meta is in an inner scope. If we solve
   -- inner metas with outer metas, that means that we have to do less pruning.
-  in if spineApps sp < spineApps sp' then go m' sp' m sp
-                                     else go m sp m' sp'
+  if spineApps sp < spineApps sp' then go m' sp' m sp
+                                  else go m sp m' sp'
 
 -- | Try to solve the problem (Γ ⊢ m spine =? m spine') by intersection.
 --   If spine and spine' are both renamings, but different, then
@@ -372,7 +381,7 @@ flexFlex gamma m sp m' sp' = let
 --   If some of spine/spine' are not renamings, we fall back to simple unification.
 intersect :: Dbg => Lvl -> MetaVar -> Spine -> Spine -> IO ()
 intersect l m sp sp' = do
-
+  (sp, sp')   <- unSuc sp sp'
   (m', sp)    <- expandVFlex m sp             -- expand m
   VFlex _ sp' <- pure $! force (VFlex m sp')  -- force sp' with old m
   m           <- pure m'                      -- we don't care about old m anymore
@@ -382,7 +391,7 @@ intersect l m sp sp' = do
         case (force t, force t') of
           (VVar x, VVar x') -> ((i <$ guard (x == x')):) <$> go sp sp'
           _                 -> Nothing
-      go _ _ = impossible
+      go _ _ = Nothing
 
   case go sp sp' of
     Nothing -> unifySp l sp sp'
@@ -407,6 +416,8 @@ unify l t u = do
     (VRead t    , VRead t'       ) -> unify l t t'
     (VWrite t u , VWrite t' u'   ) -> unify l t t' >> unify l u u'
     (VNew t     , VNew t'        ) -> unify l t t'
+    (VNat       , VNat           ) -> pure ()
+    (VNatLit n  , VNatLit n'     ) -> unifyEq n n'
 
     (VRigid x sp, VRigid x' sp'  ) | x == x' -> unifySp l sp sp'
     (VFlex m sp , VFlex m' sp'   ) | m == m' -> intersect l m sp sp'

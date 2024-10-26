@@ -64,7 +64,7 @@ executable rtcg
       TemplateHaskell
       TupleSections
       ViewPatterns
-  ghc-options: -Wall -Wno-name-shadowing -Wno-missing-signatures -Wno-unused-do-bind -Wno-unused-matches -O
+  ghc-options: -Wall -Wno-name-shadowing -Wno-missing-signatures -Wno-unused-do-bind -Wno-unused-matches -Wno-missing-pattern-synonym-signatures -O
   build-depends:
       base >=4.7 && <5
     , containers

@@ -98,16 +98,25 @@ recTy = do
 
 atom :: Parser Tm
 atom =
-      withPos (    (Var    <$> ident)
-               <|> (NatLit <$> natural)
-               <|> (U      <$  char 'U')
-               <|> (Nat    <$  (keyword "Nat" <|> keyword "ℕ"))
-               <|> (Unit   <$  ((()<$ char '⊤') <|> keyword "Top"))
-               <|> (Zero   <$  keyword "zero")
-               <|> (Tt     <$  keyword "tt")
-               <|> (Quote  <$> (char '<' *> tm <* char '>'))
-               <|> (RecTy  <$> recTy)
-               <|> (Hole   <$  char '_'))
+      withPos (    (Var     <$> ident)
+               <|> (NatLit  <$> natural)
+               <|> (U       <$  char 'U')
+               <|> (Box     <$  ((() <$ char '□') <|> keyword "Code"))
+               <|> (Eff     <$  (keyword "Eff"    ))
+               <|> (Return  <$  (keyword "return" ))
+               <|> (Ref     <$  (keyword "Ref"    ))
+               <|> (New     <$  (keyword "new"    ))
+               <|> (Write   <$  (keyword "write"  ))
+               <|> (Read    <$  (keyword "read"   ))
+               <|> (Suc     <$  (keyword "suc"    ))
+               <|> (NatElim <$  (keyword "ℕElim" <|> keyword "NatElim"))
+               <|> (Nat     <$  (keyword "Nat" <|> keyword "ℕ"))
+               <|> (Unit    <$  ((()<$ char '⊤') <|> keyword "Top"))
+               <|> (Zero    <$  keyword "zero")
+               <|> (Tt      <$  keyword "tt")
+               <|> (Quote   <$> (char '<' *> tm <* char '>'))
+               <|> (RecTy   <$> recTy)
+               <|> (Hole    <$  char '_'))
   <|> parens tm
 
 splice :: Parser Tm
@@ -121,39 +130,16 @@ proj = do
   let go t = do {char '.'; x <- ident; go (Proj t x)} <|> pure t
   go =<< splice
 
-explArg :: Parser Tm
-explArg = proj <|> lam
-
 arg :: Parser (Either Name Icit, Tm)
 arg =   (try $ braces $ do {x <- ident; char '='; t <- tm; pure (Left x, t)})
     <|> ((Right Impl,) <$> (char '{' *> tm <* char '}'))
-    <|> ((Right Expl,) <$> explArg)
+    <|> ((Right Expl,) <$> (proj <|> lam))
 
 spine :: Parser Tm
-spine =
-  (Box <$> (char '□' *> proj))
-  <|>
-  (Box <$> (keyword "Code" *> proj))
-  <|>
-  (Eff <$> (keyword "Eff" *> proj))
-  <|>
-  (Return <$> (keyword "return" *> explArg))
-  <|>
-  (Ref <$> (keyword "Ref" *> proj))
-  <|>
-  (New <$> (keyword "new" *> explArg))
-  <|>
-  (Write <$> (keyword "write" *> proj) <*> explArg)
-  <|>
-  (Read <$> (keyword "read" *> explArg))
-  <|>
-  (Suc <$> (keyword "suc" *> explArg))
-  <|>
-  (NatElim <$> ((keyword "ℕElim" <|> keyword "NatElim") *> optional (braces tm)) <*> explArg <*> explArg)
-  <|>
-  do h <- proj
-     args <- many arg
-     pure $ foldl' (\t (i, u) -> App t u i) h args
+spine = do
+  h <- proj
+  args <- many arg
+  pure $ foldl' (\t (i, u) -> App t u i) h args
 
 lamBinder :: Parser (Name, Either Name Icit, Maybe Tm)
 lamBinder =

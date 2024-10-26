@@ -43,6 +43,7 @@ ghc-options:
 - -Wno-missing-signatures
 - -Wno-unused-do-bind
 - -Wno-unused-matches
+- -Wno-missing-pattern-synonym-signatures
 
 dependencies:
 - base >= 4.7 && < 5

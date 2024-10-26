@@ -254,8 +254,8 @@ psubstSp pren t = \case
   SApp sp u i      -> App <$> psubstSp pren t sp <*> psubst pren u <*> pure i
   SSplice sp       -> Splice <$> psubstSp pren t sp <*> pure Nothing
   SProj sp x       -> Proj <$> psubstSp pren t sp <*> pure x
-  SNatElim p s z n -> natElim <$> psubst pren p <*> psubst pren s <*> psubst pren z <*> psubstSp pren t n
-  SSuc sp          -> Suc <$> psubstSp pren t sp
+  SNatElim p s z n -> NatElim' <$> psubst pren p <*> psubst pren s <*> psubst pren z <*> psubstSp pren t n
+  SSuc sp          -> Suc' <$> psubstSp pren t sp
 
 psubstRecTy :: PartialSub -> RecClosure -> IO [(Name, Tm)]
 psubstRecTy psub (RClosure e fs) = case fs of
@@ -277,26 +277,26 @@ psubst psub t = case force t of
     Nothing -> throwIO UnifyException  -- scope error ("escaping variable" error)
     Just v  -> psubstSp psub (quote (dom psub) v) sp
 
-  VLam x i t  -> Lam x i <$> psubst (lift psub) (coerce t $ VVar (cod psub))
-  VPi x i a b -> Pi x i <$> psubst psub a <*> psubst (lift psub) (coerce b $ VVar (cod psub))
-  VU          -> pure U
-  VBox t      -> Box <$> psubst psub t
-  VQuote t    -> Quote <$> psubst psub t
-  VEff t      -> Eff <$> psubst psub t
-  VReturn t   -> Return <$> psubst psub t
-  VBind x t u -> Bind x <$> psubst psub t <*> psubst (lift psub) (u $$ VVar (cod psub))
-  VSeq t u    -> Seq <$> psubst psub t <*> psubst psub u
-  VUnit       -> pure Unit
-  VTt         -> pure Tt
-  VRef t      -> Ref <$> psubst psub t
-  VNew t      -> New <$> psubst psub t
-  VWrite t u  -> Write <$> psubst psub t <*> psubst psub u
-  VRead t     -> Read <$> psubst psub t
-  VNat        -> pure Nat
-  VSuc t      -> Suc <$> psubst psub t
-  VNatLit n   -> pure $ NatLit n
-  VRecTy fs   -> RecTy <$> psubstRecTy psub fs
-  VRec ts     -> Rec <$> traverse (\(x, t) -> (x,) <$> psubst psub t) ts
+  VLam x i t   -> Lam x i <$> psubst (lift psub) (coerce t $ VVar (cod psub))
+  VPi x i a b  -> Pi x i <$> psubst psub a <*> psubst (lift psub) (coerce b $ VVar (cod psub))
+  VU           -> pure U
+  VBox t       -> Box' <$> psubst psub t
+  VQuote t     -> Quote <$> psubst psub t
+  VEff t       -> Eff' <$> psubst psub t
+  VReturn a t  -> Return' <$> psubst psub a <*> psubst psub t
+  VBind x t u  -> Bind x <$> psubst psub t <*> psubst (lift psub) (u $$ VVar (cod psub))
+  VSeq t u     -> Seq <$> psubst psub t <*> psubst psub u
+  VUnit        -> pure Unit
+  VTt          -> pure Tt
+  VRef t       -> Ref' <$> psubst psub t
+  VNew a t     -> New' <$> psubst psub a <*> psubst psub t
+  VWrite a t u -> Write' <$> psubst psub a <*> psubst psub t <*> psubst psub u
+  VRead a t    -> Read' <$> psubst psub a <*> psubst psub t
+  VNat         -> pure Nat
+  VSuc t       -> Suc' <$> psubst psub t
+  VNatLit n    -> pure $ NatLit n
+  VRecTy fs    -> RecTy <$> psubstRecTy psub fs
+  VRec ts      -> Rec <$> traverse (\(x, t) -> (x,) <$> psubst psub t) ts
 
 -- | Wrap a term in Lvl number of lambdas. We get the domain info from the
 --   VTy argument.
@@ -403,21 +403,21 @@ unify :: Dbg => Lvl -> Val -> Val -> IO ()
 unify l t u = do
   debug ["unify", showTm0 (quote l t), showTm0 (quote l u)]
   case (force t, force u) of
-    (VU         , VU             ) -> pure ()
-    (VPi x i a b, VPi x' i' a' b') | i == i' -> unify l a a' >> unify (l + 1) (coerce b $ VVar l) (coerce b' $ VVar l)
-    (VUnit      , VUnit          ) -> pure ()
-    (VTt        , VTt            ) -> pure ()
-    (VEff t     , VEff t'        ) -> unify l t t'
-    (VBox t     , VBox t'        ) -> unify l t t'
-    (VQuote t   , VQuote t'      ) -> unify l t t'
-    (VReturn t  , VReturn t'     ) -> unify l t t'
-    (VBind _ t u, VBind _ t' u'  ) -> unify l t t' >> unify (l + 1) (u $$ VVar l) (u' $$ VVar l)
-    (VRef t     , VRef t'        ) -> unify l t t'
-    (VRead t    , VRead t'       ) -> unify l t t'
-    (VWrite t u , VWrite t' u'   ) -> unify l t t' >> unify l u u'
-    (VNew t     , VNew t'        ) -> unify l t t'
-    (VNat       , VNat           ) -> pure ()
-    (VNatLit n  , VNatLit n'     ) -> unifyEq n n'
+    (VU           , VU              ) -> pure ()
+    (VPi x i a b  , VPi x' i' a' b' ) | i == i' -> unify l a a' >> unify (l + 1) (coerce b $ VVar l) (coerce b' $ VVar l)
+    (VUnit        , VUnit           ) -> pure ()
+    (VTt          , VTt             ) -> pure ()
+    (VEff t       , VEff t'         ) -> unify l t t'
+    (VBox t       , VBox t'         ) -> unify l t t'
+    (VQuote t     , VQuote t'       ) -> unify l t t'
+    (VReturn _ t  , VReturn _ t'    ) -> unify l t t'
+    (VBind _ t u  , VBind _ t' u'   ) -> unify l t t' >> unify (l + 1) (u $$ VVar l) (u' $$ VVar l)
+    (VRef t       , VRef t'         ) -> unify l t t'
+    (VRead _ t    , VRead _ t'      ) -> unify l t t'
+    (VWrite _ t u , VWrite _ t' u'  ) -> unify l t t' >> unify l u u'
+    (VNew _ t     , VNew _ t'       ) -> unify l t t'
+    (VNat         , VNat            ) -> pure ()
+    (VNatLit n    , VNatLit n'      ) -> unifyEq n n'
 
     (VRigid x sp, VRigid x' sp'  ) | x == x' -> unifySp l sp sp'
     (VFlex m sp , VFlex m' sp'   ) | m == m' -> intersect l m sp sp'
@@ -498,15 +498,6 @@ ensureBox cxt a = case force a of
     unifyCatch cxt (VBox res) a ExpectedInferred
     pure res
 
-ensureRef :: Cxt -> VTy -> IO VTy
-ensureRef cxt a = case force a of
-  VRef a ->
-    pure a
-  a -> do
-    res <- eval (env cxt) <$> freshMeta cxt VU
-    unifyCatch cxt (VRef res) a ExpectedInferred
-    pure res
-
 ensureRecTy :: Cxt -> VTy -> IO RecClosure
 ensureRecTy cxt a = case force a of
   VRecTy fs ->
@@ -572,27 +563,17 @@ check cxt t a = do
       u <- check (define cxt x t vt a va) u a'
       pure (Let x a t u)
 
-    (P.NatElim p s z, VPi x i a b) -> do
+    (P.NatElim `P.AppE` s `P.AppE` z, VPi x i a b) -> do
       unless (i == Expl) $
         throwIO $ Error cxt $ IcitMismatch i Expl
       unifyCatch cxt VNat a ExpectedInferred
-      p <- case p of
-        Nothing ->
-          pure $ Lam "n" Expl $ quote (lvl cxt + 1) (coerce b $ VVar (lvl cxt))
-        Just p -> do
-          p <- check cxt p (VNat ==> VU)
-          let ~vp = eval (env cxt) p
-          unifyCatch (bind cxt "n" VNat)
-            (vp `vAppE` VVar (lvl cxt))
-            (coerce b $ VVar (lvl cxt))
-            ExpectedInferred
-          pure p
-      s <- check cxt s (vPiI "n" VNat \n -> coerce b n ==> coerce b (vSuc n))
-      z <- check cxt z (coerce b (VNatLit 0))
-      pure $ NatElim p s z
+      let p = LamE "n" $ quote (lvl cxt + 1) (b $$ VVar (lvl cxt))
+      s <- check cxt s (VPiI "n" VNat \n -> b $$ n ==> b $$ vSuc n)
+      z <- check cxt z (b $$ VZero)
+      pure $ NatElim `AppI` p `AppE` s `AppE` z
 
-    (P.Return t, VEff a) ->
-      Return <$> check cxt t a
+    (P.Return `P.AppE` t, VEff a) ->
+      Return' (quote (lvl cxt) a) <$> check cxt t a
 
     (P.Bind x t u, VEff b) -> do
       (t, a) <- do
@@ -605,8 +586,11 @@ check cxt t a = do
     (P.Quote t, VBox a) -> do
       Quote <$> check cxt t a
 
-    (P.New t, VEff (force -> VRef a)) ->
-      New <$> check cxt t a
+    (P.Read `P.AppE` t, VEff a) ->
+      Read' (quote (lvl cxt) a) <$> check cxt t (VRef a)
+
+    (P.New `P.AppE` t, VEff (force -> VRef a)) ->
+      New' (quote (lvl cxt) a) <$> check cxt t a
 
     (P.Hole, a) ->
       freshMeta cxt a
@@ -658,22 +642,19 @@ infer cxt t = do
     P.Zero -> do
       pure (NatLit 0, VNat)
 
-    P.Suc t -> do
-      t <- check cxt t VNat
-      pure (Suc t, VNat)
+    P.Suc -> do
+      pure (Suc, VNat ==> VNat)
 
     P.NatLit n -> do
       pure (NatLit n, VNat)
 
-    P.NatElim p s z -> do
-      p <- case p of
-        Nothing -> freshMeta cxt (VNat ==> VU)
-        Just p  -> check cxt p   (VNat ==> VU)
-      let ~vp = eval (env cxt) p
-      s <- check cxt s (vPiI "n" VNat \n -> vp `vAppE` n ==> vp `vAppE` vSuc n)
-      z <- check cxt z (vp `vAppE` VNatLit 0)
-      let resty = vPiE "n" VNat \n -> vp `vAppE` n
-      pure (NatElim p s z, resty)
+    P.NatElim -> do
+      let ty = VPiI "P" (VNat ==> VU)                            \(vAppE -> p) ->
+               VPiE "s" (VPiI "n" VNat \n -> p n ==> p (vSuc n)) \s ->
+               VPiE "z" (p VZero)                                \z ->
+               VPiE "n" VNat                                     \n ->
+               p n
+      pure (NatElim, ty)
 
     P.RecTy fs -> do
       fs <- inferRecTy cxt fs
@@ -757,9 +738,8 @@ infer cxt t = do
       t <- freshMeta cxt a
       pure (t, a)
 
-    P.Box t -> do
-      t <- check cxt t VU
-      pure (Box t, VU)
+    P.Box -> do
+      pure (Box, VU ==> VU)
 
     P.Quote t -> do
       (t, tty) <- infer cxt t
@@ -772,13 +752,11 @@ infer cxt t = do
       let loc = displayLocation pos srcFile
       pure (Splice t (Just loc), a)
 
-    P.Eff t -> do
-      t <- check cxt t VU
-      pure (Eff t, VU)
+    P.Eff -> do
+      pure (Eff, VU ==> VU)
 
-    P.Return t -> do
-      (t, tty) <- infer cxt t
-      pure (Return t, VEff tty)
+    P.Return -> do
+      pure (Return, VPiI "A" VU \a -> a ==> VEff a)
 
     P.Bind x t u -> do
       (t, a) <- do
@@ -804,24 +782,17 @@ infer cxt t = do
     P.Tt -> do
       pure (Tt, VUnit)
 
-    P.Ref t -> do
-      t <- check cxt t VU
-      pure (Ref t, VU)
+    P.Ref -> do
+      pure (Ref, VU ==> VU)
 
-    P.New t -> do
-      (t, tty) <- infer cxt t
-      pure (New t, VEff (VRef tty))
+    P.New -> do
+      pure (New, VPiI "A" VU \a -> a ==> VEff (VRef a))
 
-    P.Write t u -> do
-      (t, tty) <- infer cxt t
-      a <- ensureRef cxt tty
-      u <- check cxt u a
-      pure (Write t u, VEff VUnit)
+    P.Write -> do
+      pure (Write, VPiI "A" VU \a -> VRef a ==> a ==> VEff VUnit)
 
-    P.Read t -> do
-      (t, tty) <- infer cxt t
-      a <- ensureRef cxt tty
-      pure (Read t, VEff a)
+    P.Read -> do
+      pure (Read, VPiI "A" VU \a -> VRef a ==> VEff a)
 
   debug ["inferred", showTm cxt (fst res), showVal cxt (snd res)]
   pure res

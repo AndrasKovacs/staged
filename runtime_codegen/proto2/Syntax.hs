@@ -45,12 +45,6 @@ closeTm mcl t = case mcl of
   LBind mcl x a     -> closeTm mcl (Lam x Expl t)
   LDefine mcl x a u -> closeTm mcl (Let x a u t)
 
-appE :: Tm -> Tm -> Tm
-appE t u = App t u Expl
-
-appI :: Tm -> Tm -> Tm
-appI t u = App t u Impl
-
 data Tm
   = Var Ix
   | Lam Name Icit Tm
@@ -62,36 +56,48 @@ data Tm
   | Meta MetaVar
   | PostponedCheck CheckVar
 
-  | Box Tm
+  | Box
   | Quote Tm
   | Splice Tm (Maybe String) -- displayed location of the splice
 
   | Unit
   | Tt
 
-  | Eff Tm
-  | Return Tm
+  | Eff
+  | Return
   | Bind Name Tm Tm
   | Seq Tm Tm
 
-  | Ref Tm
-  | New Tm
-  | Write Tm Tm
-  | Read Tm
+  | Ref
+  | New
+  | Write
+  | Read
   | Erased String
 
   | Nat
   | NatLit Integer
-  | Suc Tm
-  | NatElim Tm Tm Tm
+  | Suc
+  | NatElim
 
   | RecTy [(Name, Tm)]
   | Rec [(Name, Tm)]
   | Proj Tm Name
   deriving Show
 
-natElim :: Tm -> Tm -> Tm -> Tm -> Tm
-natElim p s z n = NatElim p s z `appE` n
+pattern LamI x t = Lam x Impl t
+pattern LamE x t = Lam x Expl t
+pattern AppE t u = App t u Expl
+pattern AppI t u = App t u Impl
+pattern NatElim' p s z n = NatElim `AppI` p `AppE` s `AppE` z `AppE` n
+pattern Eff' t = Eff `AppE` t
+pattern Return' a t = Return `AppI` a `AppE` t
+pattern Ref' a = Ref `AppE` a
+pattern New' a t = New `AppI` a `AppE` t
+pattern Write' a t u = Write `AppI` a `AppE` t `AppE` u
+pattern Read' a t = Read `AppI` a `AppE` t
+pattern Suc' t = Suc `AppE` t
+pattern Box' t = Box `AppE` t
+
 
 -- | Unfold `AppPruning` to an iterated application to vars. This applies a term to all de Bruijn indices
 --   which are `Just` in the mask.

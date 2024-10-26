@@ -9,13 +9,19 @@ import Syntax
 import Value
 import Cxt.Type
 
-infixl 8 $$
-($$) :: Dbg => Closure -> Val -> Val
-($$) (Closure env t) ~u = eval (env :> u) t
+class Apply a where
+  ($$) :: a -> Val -> Val
+  infixl 8 $$
+
+instance Apply Closure where
+  ($$) (Closure env t) ~u = eval (env :> u) t
+
+instance Apply (NoShow (Val -> Val)) where
+  ($$) f ~u = coerce f u
 
 vApp :: Val -> Val -> Icit -> Val
 vApp t ~u i = case t of
-  VLam _ _ t  -> coerce t u
+  VLam _ _ t  -> t $$ u
   VFlex  m sp -> VFlex m  (SApp sp u i)
   VRigid x sp -> VRigid x (SApp sp u i)
   t           -> impossible
@@ -120,29 +126,25 @@ eval env = \case
   Meta m           -> vMeta m
   AppPruning t pr  -> vAppPruning env (eval env t) pr
   PostponedCheck c -> vCheck env c
-  Box t            -> VBox (eval env t)
+  Box              -> VLamE "A" VBox
   Quote t          -> vQuote (eval env t)
   Splice t _       -> vSplice (eval env t)
   Unit             -> VUnit
   Tt               -> VTt
-  Eff t            -> VEff (eval env t)
-  Return t         -> VReturn (eval env t)
+  Eff              -> VLamE "A" VEff
+  Return           -> VLamI "A" \a -> VLamE "a" (VReturn a)
   Bind x t u       -> vBind x (eval env t) (Closure env u)
   Seq t u          -> VSeq (eval env t) (eval env u)
-  Ref t            -> VRef (eval env t)
-  New t            -> VNew (eval env t)
-  Read t           -> VRead (eval env t)
-  Write t u        -> VWrite (eval env t) (eval env u)
+  Ref              -> VLamE "A" VRef
+  New              -> VLamI "A" \a -> VLamE "a" (VNew a)
+  Read             -> VLamI "A" \a -> VLamE "a" (VRead a)
+  Write            -> VLamI "A" \a -> VLamE "t" \t -> VLamE "u" \u -> VWrite a t u
   Erased _         -> impossible
   Nat              -> VNat
   NatLit n         -> VNatLit n
-  Suc t            -> VSuc (eval env t)
-  NatElim p s z    -> let vp  = eval env p
-                          vs  = eval env s
-                          ~vz = eval env z in
-                      VLam "n" Expl $ NoShow $ vNatElim vp vs vz
-
-    -- vNatElim (eval env p) (eval env s) (eval env z) (eval env n)
+  Suc              -> VLamE "n" VSuc
+  NatElim          -> VLamE "P" \p -> VLamE "s" \s -> VLamE "z" \z -> VLamE "n" \n ->
+                      vNatElim p s z n
   RecTy t          -> VRecTy (RClosure env t)
   Rec t            -> VRec (evalFields env t)
   Proj t x         -> vProj (eval env t) x
@@ -157,9 +159,9 @@ quoteSp l t = \case
   SId              -> t
   SApp sp u i      -> App (quoteSp l t sp) (quote l u) i
   SSplice sp       -> Splice (quoteSp l t sp) Nothing
-  SNatElim p s z n -> NatElim (quote l p) (quote l s) (quote l z) `appE` quoteSp l t n
+  SNatElim p s z n -> NatElim' (quote l p) (quote l s) (quote l z) (quoteSp l t n)
   SProj sp x       -> Proj (quoteSp l t sp) x
-  SSuc sp          -> Suc (quoteSp l t sp)
+  SSuc sp          -> Suc' (quoteSp l t sp)
 
 quoteRecClosure :: Lvl -> RecClosure -> [(Name, Tm)]
 quoteRecClosure l (RClosure env ts) = case ts of
@@ -175,28 +177,28 @@ quoteRec l = \case
 
 quote :: Dbg => Lvl -> Val -> Tm
 quote l t = case force t of
-  VFlex m sp  -> quoteSp l (Meta m) sp
-  VRigid x sp -> quoteSp l (Var (lvl2Ix l x)) sp
-  VLam x i t  -> Lam x i (quote (l + 1) (coerce t $ VVar l))
-  VPi x i a b -> Pi x i (quote l a) (quote (l + 1) (coerce b $ VVar l))
-  VU          -> U
-  VBox t      -> Box (quote l t)
-  VQuote t    -> Quote (quote l t)
-  VEff t      -> Eff (quote l t)
-  VReturn t   -> Return (quote l t)
-  VBind x t u -> Bind x (quote l t) (quote (l + 1) (u $$ VVar l))
-  VSeq t u    -> Seq (quote l t) (quote l u)
-  VUnit       -> Unit
-  VTt         -> Tt
-  VRef t      -> Ref (quote l t)
-  VNew t      -> New (quote l t)
-  VRead t     -> Read (quote l t)
-  VWrite t u  -> Write (quote l t) (quote l u)
-  VNat        -> Nat
-  VSuc t      -> Suc (quote l t)
-  VNatLit n   -> NatLit n
-  VRecTy ts   -> RecTy (quoteRecClosure l ts)
-  VRec ts     -> Rec (quoteRec l ts)
+  VFlex m sp   -> quoteSp l (Meta m) sp
+  VRigid x sp  -> quoteSp l (Var (lvl2Ix l x)) sp
+  VLam x i t   -> Lam x i (quote (l + 1) (coerce t $ VVar l))
+  VPi x i a b  -> Pi x i (quote l a) (quote (l + 1) (coerce b $ VVar l))
+  VU           -> U
+  VBox t       -> Box' (quote l t)
+  VQuote t     -> Quote (quote l t)
+  VEff t       -> Eff' (quote l t)
+  VReturn a t  -> Return' (quote l a) (quote l t)
+  VBind x t u  -> Bind x (quote l t) (quote (l + 1) (u $$ VVar l))
+  VSeq t u     -> Seq (quote l t) (quote l u)
+  VUnit        -> Unit
+  VTt          -> Tt
+  VRef t       -> Ref' (quote l t)
+  VNew a t     -> New' (quote l a) (quote l t)
+  VRead a t    -> Read' (quote l a) (quote l t)
+  VWrite a t u -> Write' (quote l a) (quote l t) (quote l u)
+  VNat         -> Nat
+  VSuc t       -> Suc' (quote l t)
+  VNatLit n    -> NatLit n
+  VRecTy ts    -> RecTy (quoteRecClosure l ts)
+  VRec ts      -> Rec (quoteRec l ts)
 
 nf :: Env -> Tm -> Tm
 nf env t = quote (Lvl (length env)) (eval env t)

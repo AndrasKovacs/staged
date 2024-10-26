@@ -13,28 +13,28 @@ data Tm
   | Let Name (Maybe Tm) Tm Tm                 -- let x : A = t; u
   | SrcPos SourcePos Tm                       -- source position for error reporting
 
-  | Box Tm                                    -- □
+  | Box                                       -- □
   | Quote Tm                                  -- <t>
   | Splice Tm SourcePos                       -- ~t
 
-  | Eff Tm                                    -- Eff
-  | Return Tm                                 -- return
+  | Eff                                       -- Eff
+  | Return                                    -- return
   | Bind Name Tm Tm                           -- do x <- t; u
   | Seq Tm Tm                                 -- do t; u
 
-  | Unit                                      -- ⊤, Top
+  | Unit                                      -- ⊤ | Top
   | Tt                                        -- tte
 
-  | Ref Tm                                    -- Ref t
-  | New Tm                                    -- new t
-  | Write Tm Tm                               -- write t u
-  | Read Tm                                   -- read t
+  | Ref                                       -- Ref t
+  | New                                       -- new t
+  | Write                                     -- write t u
+  | Read                                      -- read t
 
-  | Nat                                       -- ℕ or Nat
+  | Nat                                       -- ℕ | Nat
   | Zero                                      -- zero
-  | Suc Tm                                    -- suc t
+  | Suc                                       -- suc
   | NatLit Integer                            -- numeral
-  | NatElim (Maybe Tm) Tm Tm                  -- NatElim {P} s z | ℕElim {P} s z
+  | NatElim                                   -- NatElim | ℕElim
 
   | RecTy [(Name, Tm)]                        -- Σ(a : A, b : B ...) <|> Rec(a : A, b : B ...)
   | Rec [(Maybe Name, Tm)]                    -- (a = t, b = u, v, ...)
@@ -42,6 +42,9 @@ data Tm
 
   | Hole                                      -- _
   deriving Show
+
+pattern AppE t u = App t u (Right Expl)
+pattern AppI t u = App t u (Right Impl)
 
 -- | Get rid of source positions, for better debug printing.
 stripPos :: Tm -> Tm
@@ -54,24 +57,24 @@ stripPos = \case
   Let x a t u   -> Let x (stripPos <$> a) (stripPos t) (stripPos u)
   SrcPos _ t    -> stripPos t
   Hole          -> Hole
-  Box t         -> Box (stripPos t)
+  Box           -> Box
   Quote t       -> Quote (stripPos t)
   Splice t p    -> Splice (stripPos t) p
-  Eff t         -> Eff (stripPos t)
-  Return t      -> Return (stripPos t)
+  Eff           -> Eff
+  Return        -> Return
   Bind x t u    -> Bind x (stripPos t) (stripPos u)
   Seq t u       -> Seq (stripPos t) (stripPos u)
   Unit          -> Unit
   Tt            -> Tt
-  Ref t         -> Ref (stripPos t)
-  New t         -> New (stripPos t)
-  Write t u     -> Write (stripPos t) (stripPos u)
-  Read  t       -> Read (stripPos t)
+  Ref           -> Ref
+  New           -> New
+  Write         -> Write
+  Read          -> Read
   Nat           -> Nat
   Zero          -> Zero
-  Suc t         -> Suc (stripPos t)
+  Suc           -> Suc
   NatLit n      -> NatLit n
-  NatElim p s z -> NatElim (stripPos <$> p) (stripPos s) (stripPos z)
+  NatElim       -> NatElim
   RecTy fs      -> RecTy ((stripPos <$>) <$> fs)
   Rec fs        -> Rec   ((stripPos <$>) <$> fs)
   Proj t x      -> Proj (stripPos t) x

@@ -122,13 +122,10 @@ prettyTm prec i = goTop prec i where
     AppPruning t pr           -> goPr p i ns ns t pr
     PostponedCheck c          -> goCheck p i ns c
 
-    Box t                     -> par p appp $ ('□':) . (' ':) . go projp i ns t
     Quote t                   -> ('<':) . go tupp i ns t . ('>':)
     Splice t _                -> ('~':) . go splicep i ns t
     Unit                      -> ('⊤':)
     Tt                        -> ("tt"++)
-    Eff t                     -> par p appp $ ("Eff "++) . go projp i ns t
-    Return t                  -> par p appp $ ("return "++) . go projp i ns t
     Seq t u                   -> let i' = i + 2 in
                                  par p tupp $ ("do " ++) .  go tupp i' ns t
                                  . (";"++) . newl i . go tupp i ns u
@@ -136,18 +133,19 @@ prettyTm prec i = goTop prec i where
                                  par p tupp $ ("do " ++) . (x++) . (" ← "++) . go tupp i' ns t
                                  . (";"++) . newl i . go tupp i (ns:>x) u
 
-    Ref t                     -> par p appp $ ("Ref "++) . go projp i ns t
-    New t                     -> par p appp $ ("new "++) . go projp i ns t
-    Read t                    -> par p appp $ ("read "++) . go projp i ns t
-    Write t u                 -> par p appp $ ("write "++) . go projp i ns t . (' ':) . go projp i ns u
-    Erased msg                -> (msg++)
+    Ref                       -> ("Ref "++)
+    New                       -> ("new "++)
+    Read                      -> ("read "++)
+    Write                     -> ("write "++)
+    Suc                       -> ("suc "++)
+    Eff                       -> ("Eff "++)
+    Return                    -> ("return "++)
+    Box                       -> ('□':)
+    NatElim                   -> ("ℕElim "++)
 
+    Erased msg                -> (msg++)
     Nat                       -> ('ℕ':)
     NatLit n                  -> (show n ++)
-    Suc t                     -> par p appp $ ("suc "++) . go projp i ns t
-    NatElim pr s z            -> par p appp $ ("ℕElim "++) . go projp i ns pr . (' ':)
-                                                           . go projp i ns s . (' ':)
-                                                           . go projp i ns z
 
     RecTy fs                  -> ("Σ(" ++) . goRecTy i ns fs . (')':)
     Rec fs                    -> ('(':) . goRec i ns fs . (')':)

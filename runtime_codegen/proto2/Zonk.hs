@@ -92,18 +92,18 @@ zonk l e = go where
     S.Unit               -> pure $ Erased "⊘"
     S.Tt                 -> pure $ Erased "⊘"
     S.Eff{}              -> pure $ Erased "⊘"
-    S.Return t           -> Return <$!> go t
+    S.Return' _ t        -> Return <$!> go t
     S.Bind x t u         -> Bind x <$!> go t <*!> goBind u
     S.Seq t u            -> Seq <$!> go t <*!> go u
     S.Ref{}              -> pure $ Erased "⊘"
-    S.New t              -> New <$!> go t
-    S.Write t u          -> Write <$!> go t <*!> go u
-    S.Read t             -> Read <$!> go t
+    S.New' _ t           -> New <$!> go t
+    S.Write' _ t u       -> Write <$!> go t <*!> go u
+    S.Read' _ t          -> Read <$!> go t
     S.Erased _           -> pure $ Erased "⊘"
     S.Nat                -> pure $ Erased "⊘"
     S.NatLit n           -> pure $ NatLit n
-    S.Suc n              -> Suc <$!> go n
-    S.NatElim _ s z      -> NatElim <$!> go s <*!> go z
+    S.Suc' n             -> Suc <$!> go n
+    S.NatElim _ s z n    -> NatElim <$!> go s <*!> go z
     S.RecTy fs           -> pure $ Erased "⊘"
     S.Rec ts             -> Rec <$!> traverse (traverse go) ts
     S.Proj t x           -> Proj <$!> go t <*!> pure x
@@ -120,15 +120,15 @@ unzonk = \case
   Erased s      -> S.Erased s
   Quote t       -> S.Quote (unzonk t)
   Splice t pos  -> S.Splice (unzonk t) pos
-  Return t      -> S.Return (unzonk t)
+  Return t      -> S.Return' _ (unzonk t)
   Bind x t u    -> S.Bind x (unzonk t) (unzonk u)
   Seq t u       -> S.Seq (unzonk t) (unzonk u)
-  New t         -> S.New (unzonk t)
-  Write t u     -> S.Write (unzonk t) (unzonk u)
-  Read t        -> S.Read (unzonk t)
+  New t         -> S.New' _ (unzonk t)
+  Write t u     -> S.Write' _ (unzonk t) (unzonk u)
+  Read t        -> S.Read' _ (unzonk t)
   CSP x _       -> S.Erased $ maybe "*CSP*" (\x -> "*"++x++"*") x
   NatLit n      -> S.NatLit n
-  Suc n         -> S.Suc (unzonk n)
-  NatElim s z   -> S.NatElim (S.Erased "⊘") (unzonk s) (unzonk z)
+  Suc n         -> S.Suc' (unzonk n)
+  NatElim s z   -> S.NatElim `S.AppI` (S.Erased "⊘") `S.AppE` (unzonk s) `S.AppE` (unzonk z)
   Rec ts        -> S.Rec (fmap (fmap unzonk) ts)
   Proj t x      -> S.Proj (unzonk t) x

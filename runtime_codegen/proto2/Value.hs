@@ -49,7 +49,7 @@ data Val
   | VQuote Val
 
   | VEff Val
-  | VReturn Val
+  | VReturn Val Val
   | VBind Name Val {-# unpack #-} Closure
   | VSeq Val Val
 
@@ -57,9 +57,9 @@ data Val
   | VTt
 
   | VRef Val
-  | VNew Val
-  | VWrite Val Val
-  | VRead Val
+  | VNew Val Val
+  | VWrite Val Val Val
+  | VRead Val Val
 
   | VNat
   | VSuc Val
@@ -85,12 +85,12 @@ pattern VVar x = VRigid x SId
 pattern VMeta :: MetaVar -> Val
 pattern VMeta m = VFlex m SId
 
+pattern VPiI x a b = VPi x Impl a (NoShow b)
+pattern VPiE x a b = VPi x Expl a (NoShow b)
+pattern VLamI x t  = VLam x Impl (NoShow t)
+pattern VLamE x t  = VLam x Expl (NoShow t)
+pattern VZero = VNatLit 0
+
 (==>) :: Val -> Val -> Val
-(==>) a b = VPi "_" Expl a $ NoShow $ \_ -> b
+(==>) a b = VPiE "_" a (\_ -> b)
 infixr 4 ==>
-
-vPiI :: Name -> Val -> (Val -> Val) -> Val
-vPiI x a b = VPi x Impl a (coerce b)
-
-vPiE :: Name -> Val -> (Val -> Val) -> Val
-vPiE x a b = VPi x Expl a (coerce b)

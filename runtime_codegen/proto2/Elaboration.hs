@@ -582,6 +582,7 @@ check cxt t a = do
       a <- check cxt a VU
       let ~va = eval (env cxt) a
       t <- check cxt t va
+      checkEverything
       let ~vt = eval (env cxt) t
       u <- check (define cxt x t vt a va) u a'
       pure (Let x a t u)
@@ -603,6 +604,7 @@ check cxt t a = do
         (t, tty) <- infer cxt t
         a <- ensureEff cxt tty
         pure (t, a)
+      checkEverything
       u <- check (bind cxt x a) u (VEff b)
       pure (Bind x t u)
 
@@ -611,6 +613,7 @@ check cxt t a = do
         (t, tty) <- infer cxt t
         ensureEff cxt tty
         pure t
+      checkEverything
       u <- check cxt u (VEff b)
       pure (Seq t u)
 
@@ -775,12 +778,14 @@ infer cxt t = do
       a <- check cxt a VU
       let ~va = eval (env cxt) a
       t <- check cxt t va
+      checkEverything
       let ~vt = eval (env cxt) t
       (u, b) <- infer (define cxt x t vt a va) u
       pure (Let x a t u, b)
 
     P.Let x Nothing t u -> do
       (t, a) <- infer cxt t
+      checkEverything
       let ~vt = eval (env cxt) t
       let qa = quote (lvl cxt) a
       (u, b) <- infer (define cxt x t vt qa a) u

@@ -150,7 +150,7 @@ lam = do
   char 'λ' <|> char '\\'
   xs <- some lamBinder
   char '.'
-  t <- tm
+  t <- lamLet
   pure $ foldr' (\(!x, !i, !ma) -> Lam x i ma) t xs
 
 piBinder :: Parser ([Name], Tm, Icit)

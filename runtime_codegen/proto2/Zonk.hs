@@ -138,7 +138,7 @@ unzonk = \case
   New t         -> S.New' (S.Erased "⊘") (unzonk t)
   Write t u     -> S.Write' (S.Erased "⊘") (unzonk t) (unzonk u)
   Read t        -> S.Read' (S.Erased "⊘") (unzonk t)
-  CSP x _       -> S.Erased $ maybe "*CSP*" (\x -> "*"++x++"*") x
+  CSP x t       -> S.Erased $ maybe "*CSP*" (\x -> "*"++x++"*") x
   NatLit n      -> S.NatLit n
   Suc n         -> S.Suc' (unzonk n)
   NatElim s z n -> S.NatElim' (S.Erased "⊘") (unzonk s) (unzonk z) (unzonk n)

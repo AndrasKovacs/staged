@@ -64,14 +64,12 @@ keywords = Set.fromList [
   , "read"
   , "return"
   , "suc"
-  , "tt"
   , "write"
   , "zero"
   , "Σ"
   , "λ"
   , "ℕ"
   , "ℕElim"
-  , "⊤"
   ]
 
 isIdentRestChar :: Char -> Bool
@@ -112,9 +110,7 @@ atom =
                <|> (Suc     <$  (keyword "suc"    ))
                <|> (NatElim <$  (keyword "ℕElim" <|> keyword "NatElim"))
                <|> (Nat     <$  (keyword "Nat" <|> keyword "ℕ"))
-               <|> (Unit    <$  ((()<$ char '⊤') <|> keyword "Top"))
                <|> (Zero    <$  keyword "zero")
-               <|> (Tt      <$  keyword "tt")
                <|> (Quote   <$> (char '<' *> tm <* char '>'))
                <|> (RecTy   <$> recTy)
                <|> (Hole    <$  char '_'))

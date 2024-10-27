@@ -123,8 +123,6 @@ prettyTm prec i = goTop prec i where
 
     Quote t                   -> ('<':) . go tupp i ns t . ('>':)
     Splice t _                -> ('~':) . go splicep i ns t
-    Unit                      -> ('⊤':)
-    Tt                        -> ("tt"++)
     Seq t u                   -> let i' = i + 2 in
                                  par p tupp $ ("do " ++) .  go tupp i' ns t
                                  . (";"++) . newl i . go tupp i ns u

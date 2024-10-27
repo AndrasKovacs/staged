@@ -286,8 +286,6 @@ psubst psub t = case force t of
   VReturn a t  -> Return' <$> psubst psub a <*> psubst psub t
   VBind x t u  -> Bind x <$> psubst psub t <*> psubst (lift psub) (u $$ VVar (cod psub))
   VSeq t u     -> Seq <$> psubst psub t <*> psubst psub u
-  VUnit        -> pure Unit
-  VTt          -> pure Tt
   VRef t       -> Ref' <$> psubst psub t
   VNew a t     -> New' <$> psubst psub a <*> psubst psub t
   VWrite a t u -> Write' <$> psubst psub a <*> psubst psub t <*> psubst psub u
@@ -398,6 +396,14 @@ intersect l m sp sp' = do
     Just pr | any (==Nothing) pr -> () <$ pruneMeta pr m  -- at least 1 pruned entry
             | otherwise          -> pure ()
 
+unifyRecTy :: Lvl -> RecClosure -> RecClosure -> IO ()
+unifyRecTy l (RClosure e fs) (RClosure e' fs') = case (fs, fs') of
+  ([], []) -> pure ()
+  ((x, a):fs, ((x', a'):fs')) -> do
+    unifyEq x x'
+    unify l (eval e a) (eval e' a')
+    unifyRecTy (l + 1) (RClosure (VVar l:e) fs) (RClosure (VVar l:e') fs')
+  _ -> throwIO UnifyException
 
 unify :: Dbg => Lvl -> Val -> Val -> IO ()
 unify l t u = do
@@ -405,8 +411,6 @@ unify l t u = do
   case (force t, force u) of
     (VU           , VU              ) -> pure ()
     (VPi x i a b  , VPi x' i' a' b' ) | i == i' -> unify l a a' >> unify (l + 1) (coerce b $ VVar l) (coerce b' $ VVar l)
-    (VUnit        , VUnit           ) -> pure ()
-    (VTt          , VTt             ) -> pure ()
     (VEff t       , VEff t'         ) -> unify l t t'
     (VBox t       , VBox t'         ) -> unify l t t'
     (VQuote t     , VQuote t'       ) -> unify l t t'
@@ -418,10 +422,15 @@ unify l t u = do
     (VNew _ t     , VNew _ t'       ) -> unify l t t'
     (VNat         , VNat            ) -> pure ()
     (VNatLit n    , VNatLit n'      ) -> unifyEq n n'
+    (VRecTy fs    , VRecTy fs'      ) -> unifyRecTy l fs fs'
 
     (VRigid x sp, VRigid x' sp'  ) | x == x' -> unifySp l sp sp'
     (VFlex m sp , VFlex m' sp'   ) | m == m' -> intersect l m sp sp'
     (VFlex m sp , VFlex m' sp'   )           -> flexFlex l m sp m' sp'
+
+    (VRec ts    , VRec ts'       ) -> zipWithM_ (\(_, t) (_, t') -> unify l t t') ts ts'
+    (VRec ts    , t'             ) -> forM_ ts  \(x, t)  -> unify l t (vProj t' x)
+    (t          , VRec ts'       ) -> forM_ ts' \(x, t') -> unify l (vProj t x) t'
     (VLam _ _ t , VLam _ _ t'    ) -> unify (l + 1) (coerce t $ VVar l) (coerce t' $ VVar l)
     (t          , VLam _ i t'    ) -> unify (l + 1) (vApp t (VVar l) i) (coerce t' $ VVar l)
     (VLam _ i t , t'             ) -> unify (l + 1) (coerce t $ VVar l) (vApp t' (VVar l) i)
@@ -634,6 +643,19 @@ inferProj cxt x (RClosure e fs) t ~vt = case fs of
   (x', a):fs ->
     inferProj cxt x (RClosure (vProj vt x':e) fs) t vt
 
+-- infering non-dependent type for records
+inferRec :: Cxt -> [(Maybe Name, P.Tm)] -> IO ([(Name, Tm)], [(Name, Tm)])
+inferRec cxt = \case
+  [] -> pure ([], [])
+  (mx, t):ts -> do
+    x <- case mx of
+      Nothing -> throwIO $ Error cxt $ CantInferFieldName
+      Just x  -> pure x
+    (t, a) <- infer cxt t
+    let ~qa = quote (lvl cxt) a
+    (ts, fs) <- inferRec cxt ts
+    pure (((x,t):ts), ((x, qa):fs))
+
 infer :: Dbg => Cxt -> P.Tm -> IO (Tm, VTy)
 infer cxt (P.SrcPos pos t) =
   -- we handle the SrcPos case here, because we do not want to
@@ -674,8 +696,10 @@ infer cxt t = do
       fs <- inferRecTy cxt fs
       pure (RecTy fs, VU)
 
+    -- infer non-dependent type for record
     P.Rec ts -> do
-      throwIO $ Error cxt $ CantInferRecord
+      (ts, fs) <- inferRec cxt ts
+      pure (Rec ts, VRecTy $ RClosure (env cxt) fs)
 
     P.Var x -> do
       case M.lookup x (localNames cxt) of
@@ -790,12 +814,6 @@ infer cxt t = do
       b <- ensureEff cxt uty
       pure (Seq t u, VEff b)
 
-    P.Unit -> do
-      pure (Unit, VU)
-
-    P.Tt -> do
-      pure (Tt, VUnit)
-
     P.Ref -> do
       pure (Ref, VU ==> VU)
 
@@ -803,7 +821,7 @@ infer cxt t = do
       pure (New, VPiI "A" VU \a -> a ==> VEff (VRef a))
 
     P.Write -> do
-      pure (Write, VPiI "A" VU \a -> VRef a ==> a ==> VEff VUnit)
+      pure (Write, VPiI "A" VU \a -> VRef a ==> a ==> VEff (VRecTy (RClosure [] []) ))
 
     P.Read -> do
       pure (Read, VPiI "A" VU \a -> VRef a ==> VEff a)

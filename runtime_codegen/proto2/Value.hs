@@ -53,9 +53,6 @@ data Val
   | VBind Name Val {-# unpack #-} Closure
   | VSeq Val Val
 
-  | VUnit
-  | VTt
-
   | VRef Val
   | VNew Val Val
   | VWrite Val Val Val

@@ -35,6 +35,7 @@ data ElabError
   | NoSuchField Name
   | TooManyFields
   | MissingFields [Name]
+  | CantInferFieldName
   deriving (Show, Exception)
 
 data Error = Error Cxt ElabError
@@ -85,6 +86,8 @@ displayError (Error cxt e) = do
           "Missing record field definitions: " ++ (intercalate ", " xs)
         TooManyFields ->
           "Too many record field definitions"
+        CantInferFieldName ->
+          "Can't infer field name for record expression. Tip: give a field name."
 
   let locMsg = displayLocation (pos cxt) file
 

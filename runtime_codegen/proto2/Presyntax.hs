@@ -22,9 +22,6 @@ data Tm
   | Bind Name Tm Tm                           -- do x <- t; u
   | Seq Tm Tm                                 -- do t; u
 
-  | Unit                                      -- ⊤ | Top
-  | Tt                                        -- tte
-
   | Ref                                       -- Ref t
   | New                                       -- new t
   | Write                                     -- write t u
@@ -64,8 +61,6 @@ stripPos = \case
   Return        -> Return
   Bind x t u    -> Bind x (stripPos t) (stripPos u)
   Seq t u       -> Seq (stripPos t) (stripPos u)
-  Unit          -> Unit
-  Tt            -> Tt
   Ref           -> Ref
   New           -> New
   Write         -> Write

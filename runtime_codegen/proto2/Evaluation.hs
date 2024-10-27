@@ -129,8 +129,6 @@ eval env = \case
   Box              -> VLamE "A" VBox
   Quote t          -> vQuote (eval env t)
   Splice t _       -> vSplice (eval env t)
-  Unit             -> VUnit
-  Tt               -> VTt
   Eff              -> VLamE "A" VEff
   Return           -> VLamI "A" \a -> VLamE "a" (VReturn a)
   Bind x t u       -> vBind x (eval env t) (Closure env u)
@@ -188,8 +186,6 @@ quote l t = case force t of
   VReturn a t  -> Return' (quote l a) (quote l t)
   VBind x t u  -> Bind x (quote l t) (quote (l + 1) (u $$ VVar l))
   VSeq t u     -> Seq (quote l t) (quote l u)
-  VUnit        -> Unit
-  VTt          -> Tt
   VRef t       -> Ref' (quote l t)
   VNew a t     -> New' (quote l a) (quote l t)
   VRead a t    -> Read' (quote l a) (quote l t)

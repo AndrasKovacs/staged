@@ -60,9 +60,6 @@ data Tm
   | Quote Tm
   | Splice Tm (Maybe String) -- displayed location of the splice
 
-  | Unit
-  | Tt
-
   | Eff
   | Return
   | Bind Name Tm Tm

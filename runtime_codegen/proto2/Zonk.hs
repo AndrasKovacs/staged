@@ -91,8 +91,6 @@ zonk l e = go where
     S.Box{}              -> pure $ Erased "⊘"
     S.Quote t            -> Quote <$!> go t
     t@S.Splice{}         -> goSp t
-    S.Unit               -> pure $ Erased "⊘"
-    S.Tt                 -> pure $ Erased "⊘"
     S.Eff{}              -> pure $ Erased "⊘"
     S.Return' _ t        -> Return <$!> go t
     S.Bind x t u         -> Bind x <$!> go t <*!> goBind u

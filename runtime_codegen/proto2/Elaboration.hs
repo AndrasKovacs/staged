@@ -505,6 +505,18 @@ ensureRecTy cxt a = case force a of
   a ->
     throwIO $ Error cxt $ ExpectedRecTy (quote (lvl cxt) a)
 
+checkRec :: Cxt -> [(Maybe Name, P.Tm)] -> RecClosure -> IO [(Name, Tm)]
+checkRec cxt ts (RClosure e fs) = case (ts, fs) of
+  ([], []) -> pure []
+  ((mx, t):ts, (x, a):fs) -> do
+    case mx of Nothing -> pure ()
+               Just x' -> unless (x == x') $ throwIO $ Error cxt $ NoSuchField x'
+    t <- check cxt t (eval e a)
+    ts <- checkRec cxt ts (RClosure (eval (env cxt) t:e) fs)
+    pure ((x, t):ts)
+  (_:_, []) -> throwIO $ Error cxt $ TooManyFields
+  ([] , fs) -> throwIO $ Error cxt $ MissingFields (map fst fs)
+
 check :: Dbg => Cxt -> P.Tm -> VTy -> IO Tm
 check cxt (P.SrcPos pos t) a =
   -- we handle the SrcPos case here, because we do not want to
@@ -545,8 +557,10 @@ check cxt t a = do
       addBlocking c m
 
       debug ["postpone", show c, show (P.stripPos t), showVal cxt topA, show placeholder]
-
       pure $ PostponedCheck c
+
+    (P.Rec ts, VRecTy fs) -> do
+      Rec <$> checkRec cxt ts fs
 
     (P.Let x Nothing t u, a') -> do
       (t, a) <- infer cxt t

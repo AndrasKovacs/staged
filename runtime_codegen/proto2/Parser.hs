@@ -101,6 +101,7 @@ atom =
       withPos (    (Var     <$> ident)
                <|> (NatLit  <$> natural)
                <|> (U       <$  char 'U')
+               <|> (Rec []  <$  try (char '(' *> char ')'))
                <|> (Box     <$  ((() <$ char '□') <|> keyword "Code"))
                <|> (Eff     <$  (keyword "Eff"    ))
                <|> (Return  <$  (keyword "return" ))
@@ -196,11 +197,19 @@ desugarIdentArgs args mty rhs = case mty of
     ty = foldr' (\(xs, a, i) b -> foldr' (\x -> Pi x i a) b xs) a args
     in (tm, Just ty)
 
+letArg :: Parser ([Name], Tm, Icit)
+letArg =
+      braces ((,,Impl) <$> some bind
+                       <*> ((char ':' *> tm) <|> pure Hole))
+  <|> parens ((,,Expl) <$> some bind
+                       <*> (char ':' *> tm))
+  <|> (do {x <- ident; pure ([x], Hole, Expl)})
+
 pLet :: Parser Tm
 pLet = do
   keyword "let"
   x <- ident
-  args <- many piBinder
+  args <- many letArg
   ann <- optional (char ':' *> lamLet)
   char '='
   t <- lamLet
@@ -259,7 +268,7 @@ topLet :: Parser Tm
 topLet = do
   (x, args, ann) <- do
     x <- ident
-    args <- many piBinder
+    args <- many letArg
     ann  <- optional (char ':' *> lamLet)
     char '='
     pure (x, args, ann)

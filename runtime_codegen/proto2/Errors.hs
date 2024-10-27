@@ -4,6 +4,7 @@ module Errors where
 import Control.Exception
 import Text.Printf
 import Data.IORef
+import Data.List
 
 import Common
 import Cxt
@@ -32,6 +33,8 @@ data ElabError
   | CantInferRecord
   | ExpectedRecTy Tm
   | NoSuchField Name
+  | TooManyFields
+  | MissingFields [Name]
   deriving (Show, Exception)
 
 data Error = Error Cxt ElabError
@@ -78,6 +81,10 @@ displayError (Error cxt e) = do
           "Expected a record type, inferred:\n\n  " ++ showTm cxt a
         NoSuchField x ->
           "No such record field: " ++ x
+        MissingFields xs ->
+          "Missing record field definitions: " ++ (intercalate ", " xs)
+        TooManyFields ->
+          "Too many record field definitions"
 
   let locMsg = displayLocation (pos cxt) file
 

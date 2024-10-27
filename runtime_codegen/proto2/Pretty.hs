@@ -75,8 +75,8 @@ prettyTm prec i = goTop prec i where
 
   goCheck :: Int -> Int -> [Name] -> CheckVar -> ShowS
   goCheck p i ns c = case lookupCheck c of
-    Unchecked cxt t a m -> go p i ns (appPruning (Meta m) (pruning cxt))
-    Checked t           -> go p i ns t
+    Right (Unchecked cxt t a m) -> go p i ns (appPruning (Meta m) (pruning cxt))
+    Left t                      -> go p i ns t
 
   goRecTy :: Int -> [Name] -> [(Name, Tm)] -> ShowS
   goRecTy i ns = \case

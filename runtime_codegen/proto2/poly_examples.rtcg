@@ -17,11 +17,8 @@ let Bool   : U                                 = (B : U) → B → B → B;
 let true   : Bool                              = λ b t f. t;
 let Pair   : U → U → U                         = λ A B. (P : U) → (A → B → P) → P;
 let pair   : {A B} → A → B → Pair A B          = λ a b P p. p a b;
-let Nat    : U                                 = (N : U) → (N → N) → N → N;
-let zero   : Nat                               = λ N s z. z;
-let suc    : Nat → Nat                         = λ n N s z. s (n N s z);
 let append : {A} → List A → List A → List A    = λ xs ys L n c. xs L (ys L n c) c;
-let length : {A} → List A → Nat                = λ as N s z. as N z (λ x. s);
+let length : {A} → List A → Nat                = λ as. as _ zero (λ _ n. suc n);
 let map    : {A B} → (A → B) → List A → List B = λ f as L n c. as L n (λ a. c (f a));
 let ST     : U → U → U                         = λ S A. S → A;
 let runST  : {A} → ({S} → ST S A) → A          = λ f. f {Bool} true;
@@ -136,4 +133,4 @@ let D5 = revapp argST runST;
 let E3 =
   λ (r : ({A} → A → {B} → B → B) → Nat). r (λ x y. y);
 
-return tt
+return ()

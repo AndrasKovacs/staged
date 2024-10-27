@@ -56,8 +56,8 @@ zonk l e = go where
                               Unsolved _ cxt a _ p ->
                                 throwIO $ Error cxt $ UnsolvedMetaInZonk x (E.quote (lvl cxt) a)
       S.PostponedCheck x -> case lookupCheck x of
-                              Checked t   -> Right <$!> go t
-                              Unchecked{} -> impossible
+                              Left t -> Right <$!> go t
+                              _      -> impossible
       S.App t u i        -> goSp' t >>= \case
                               Left v  -> pure $! Left $! E.vApp v (E.eval e u) i
                               Right t -> Right . App t <$!> go u

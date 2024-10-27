@@ -19,51 +19,50 @@ import Syntax
 -- data structure, but that would be somewhat less "well-typed", and would make
 -- it less efficient to iterate over only metas or only checking problems.
 
-data CheckEntry
-  -- ^ In (Unchecked Γ t A m), we postpone checking t with A in Γ and create m
-  --   as a fresh meta, which is a "placedholder" for the eventual checking
-  --   result. After we actually perform the checking, we have to unify the
-  --   result with the placeholder.
-  = Unchecked Cxt P.Tm VTy MetaVar
+-- | In (Unchecked Γ t A m), we postpone checking t with A in Γ and create m
+--   as a fresh meta, which is a "placedholder" for the eventual checking
+--   result. After we actually perform the checking, we have to unify the
+--   result with the placeholder.
+data Unchecked = Unchecked Cxt P.Tm VTy MetaVar
 
-  -- ^ Result of postponed checking. We unfold these when pretty printing terms.
-  | Checked Tm
+type UncheckedCxt = IM.IntMap Unchecked
+type CheckedCxt   = IM.IntMap Tm
 
-type CheckCxt = IM.IntMap CheckEntry
+uncheckedCxt :: IORef UncheckedCxt
+uncheckedCxt = unsafeDupablePerformIO $ newIORef mempty
+{-# noinline uncheckedCxt #-}
 
-checkCxt :: IORef CheckCxt
-checkCxt = unsafeDupablePerformIO $ newIORef mempty
-{-# noinline checkCxt #-}
+checkedCxt :: IORef CheckedCxt
+checkedCxt = unsafeDupablePerformIO $ newIORef mempty
 
 nextCheckVar :: IORef CheckVar
 nextCheckVar = unsafeDupablePerformIO $ newIORef 0
 {-# noinline nextCheckVar #-}
 
-alterCheck :: CheckVar -> (Maybe CheckEntry -> Maybe CheckEntry) -> IO ()
-alterCheck m f = modifyIORef' checkCxt (IM.alter f (coerce m))
-
-modifyCheck :: CheckVar -> (CheckEntry -> CheckEntry) -> IO ()
-modifyCheck m f = alterCheck m (maybe (error "impossible") (Just . f))
-
-writeCheck :: CheckVar -> CheckEntry -> IO ()
-writeCheck m e = modifyCheck m (const e)
-
 newCheck :: Cxt -> P.Tm -> VTy -> MetaVar -> IO CheckVar
 newCheck cxt t a m = do
   c <- readIORef nextCheckVar
   writeIORef nextCheckVar $! c + 1
-  alterCheck c (maybe (Just (Unchecked cxt t a m)) impossible)
+  modifyIORef' uncheckedCxt $ IM.insert (coerce c) $ Unchecked cxt t a m
   pure c
 
-readCheck :: CheckVar -> IO CheckEntry
+readCheck :: CheckVar -> IO (Either Tm Unchecked)
 readCheck c = do
-  cs <- readIORef checkCxt
-  case IM.lookup (coerce c) cs of
-    Just e  -> pure e
-    Nothing -> impossible
+  ucs <- readIORef uncheckedCxt
+  cs  <- readIORef checkedCxt
+  case IM.lookup (coerce c) ucs of
+    Just e -> pure (Right e)
+    _      -> case IM.lookup (coerce c) cs of
+      Just t -> pure $ Left t
+      _      -> impossible
 
-lookupCheck :: CheckVar -> CheckEntry
+lookupCheck :: CheckVar -> Either Tm Unchecked
 lookupCheck = unsafeDupablePerformIO . readCheck
+
+writeChecked :: CheckVar -> Tm -> IO ()
+writeChecked c t = do
+  modifyIORef' uncheckedCxt $ IM.delete (coerce c)
+  modifyIORef' checkedCxt   $ IM.insert (coerce c) t
 
 addBlocking :: CheckVar -> MetaVar -> IO ()
 addBlocking blocked blocks =
@@ -138,5 +137,6 @@ reset = do
   writeIORef nextMetaVar 0
   writeIORef mcxt mempty
   writeIORef nextCheckVar 0
-  writeIORef checkCxt mempty
+  writeIORef uncheckedCxt mempty
+  writeIORef checkedCxt mempty
   writeIORef sourceCode ""

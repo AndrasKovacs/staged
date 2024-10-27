@@ -79,8 +79,8 @@ vCheck env c = case lookupCheck c of
 
   -- We know from the saved "cxt" which variables the placeholder "m" abstracts
   -- over.
-  Unchecked cxt t a m -> vAppPruning env (vMeta m) (pruning cxt)
-  Checked t           -> eval env t
+  Right (Unchecked cxt t a m) -> vAppPruning env (vMeta m) (pruning cxt)
+  Left t                      -> eval env t
 
 vAppPruning :: Dbg => Env -> Val -> Pruning -> Val
 vAppPruning env ~v pr = case (env, pr) of

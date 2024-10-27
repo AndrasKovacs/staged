@@ -1,5 +1,5 @@
 
-module Elaboration (check, infer, checkEverything, inferTop) where
+module Elaboration (check, infer, checkAllPostponed, inferTop) where
 
 import Control.Exception
 import Control.Monad
@@ -55,7 +55,7 @@ unifyPlaceholder cxt t m = case lookupMeta m of
 -- | Try to perform a delayed checking.
 retryCheck :: Dbg => CheckVar -> IO ()
 retryCheck c = case lookupCheck c of
-  Unchecked cxt t a m -> case force a of
+  Right (Unchecked cxt t a m) -> case force a of
     -- still blocked by another meta
     VFlex m' _ -> do
       addBlocking c m'
@@ -64,28 +64,23 @@ retryCheck c = case lookupCheck c of
     a -> do
       t <- check cxt t a
       unifyPlaceholder cxt t m
-      writeCheck c $ Checked t
+      writeChecked c t
   _ ->
     pure ()
 
 -- | Unblock and perform all remaining checking problems, assuming each time
 --   that no implicit insertion should occur.
-checkEverything :: Dbg => IO ()
-checkEverything = go 0 where
-  go :: CheckVar -> IO ()
-  go c = do
-    c' <- readIORef nextCheckVar
-    when (c < c') $ do
-      case lookupCheck c of
-        Unchecked cxt t a m -> do
-          debug ["checkEverything", show c, show c']
-          (t, tty) <- insert cxt $ infer cxt t
-          writeCheck c (Checked t)
-          unifyCatch cxt a tty ExpectedInferred
-          unifyPlaceholder cxt t m
-        _ ->
-          pure ()
-      go (c + 1)
+checkAllPostponed :: IO ()
+checkAllPostponed = do
+  ucs <- readIORef uncheckedCxt
+  case IM.minViewWithKey ucs of
+    Nothing -> pure ()
+    Just ((c, Unchecked cxt t a m), ucs') -> do
+      (t, tty) <- insert cxt $ infer cxt t
+      writeChecked (coerce c) t
+      unifyCatch cxt a tty ExpectedInferred
+      unifyPlaceholder cxt t m
+      checkAllPostponed
 
 -- Unification
 --------------------------------------------------------------------------------
@@ -582,7 +577,7 @@ check cxt t a = do
       a <- check cxt a VU
       let ~va = eval (env cxt) a
       t <- check cxt t va
-      checkEverything
+      checkAllPostponed
       let ~vt = eval (env cxt) t
       u <- check (define cxt x t vt a va) u a'
       pure (Let x a t u)
@@ -604,7 +599,7 @@ check cxt t a = do
         (t, tty) <- infer cxt t
         a <- ensureEff cxt tty
         pure (t, a)
-      checkEverything
+      checkAllPostponed
       u <- check (bind cxt x a) u (VEff b)
       pure (Bind x t u)
 
@@ -613,7 +608,7 @@ check cxt t a = do
         (t, tty) <- infer cxt t
         ensureEff cxt tty
         pure t
-      checkEverything
+      checkAllPostponed
       u <- check cxt u (VEff b)
       pure (Seq t u)
 
@@ -778,14 +773,14 @@ infer cxt t = do
       a <- check cxt a VU
       let ~va = eval (env cxt) a
       t <- check cxt t va
-      checkEverything
+      checkAllPostponed
       let ~vt = eval (env cxt) t
       (u, b) <- infer (define cxt x t vt a va) u
       pure (Let x a t u, b)
 
     P.Let x Nothing t u -> do
       (t, a) <- infer cxt t
-      checkEverything
+      checkAllPostponed
       let ~vt = eval (env cxt) t
       let qa = quote (lvl cxt) a
       (u, b) <- infer (define cxt x t vt qa a) u
@@ -854,7 +849,7 @@ inferTop :: FilePath -> P.Tm -> IO (Tm, VTy)
 inferTop path t = do
   let cxt = emptyCxt (initialPos path)
   (t, a) <- infer cxt t
-  checkEverything
+  checkAllPostponed
   case force a of
     VEff a -> pure (t, VEff a)
     a      -> do

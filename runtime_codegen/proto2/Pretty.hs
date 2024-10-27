@@ -93,7 +93,6 @@ prettyTm prec i = goTop prec i where
   go :: Int -> Int -> [Name] -> Tm -> ShowS
   go p i ns = \case
     Var x                     -> goIx ns x
-
     App t u Expl              -> par p appp $ go appp i ns t . (' ':) . go projp i ns u
     App t u Impl              -> par p appp $ go appp i ns t . (' ':) . bracket (go tupp i ns u)
 
@@ -133,15 +132,15 @@ prettyTm prec i = goTop prec i where
                                  par p tupp $ ("do " ++) . (x++) . (" ← "++) . go tupp i' ns t
                                  . (";"++) . newl i . go tupp i (ns:>x) u
 
-    Ref                       -> ("Ref "++)
-    New                       -> ("new "++)
-    Read                      -> ("read "++)
-    Write                     -> ("write "++)
-    Suc                       -> ("suc "++)
-    Eff                       -> ("Eff "++)
-    Return                    -> ("return "++)
+    Ref                       -> ("Ref"++)
+    New                       -> ("new"++)
+    Read                      -> ("read"++)
+    Write                     -> ("write"++)
+    Suc                       -> ("suc"++)
+    Eff                       -> ("Eff"++)
+    Return                    -> ("return"++)
     Box                       -> ('□':)
-    NatElim                   -> ("ℕElim "++)
+    NatElim                   -> ("ℕElim"++)
 
     Erased msg                -> (msg++)
     Nat                       -> ('ℕ':)

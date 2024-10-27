@@ -20,3 +20,8 @@
   - definitional monad laws
   - more Code unification
   - (record unification)
+
+
+- PROBLEM:
+  open eval JS should need a fresh var supply being passed!!!
+  we need to ensure that open codegen doesn't shadow open free vars!!!

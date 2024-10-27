@@ -33,7 +33,7 @@ data Tm a
   | Read (Tm a)
   | NatLit Integer
   | Suc (Tm a)
-  | NatElim (Tm a) (Tm a)  -- s, z
+  | NatElim (Tm a) (Tm a) (Tm a)
   | Rec [(Name, Tm a)]
   | Proj (Tm a) Name
   | CSP (Maybe Name) a
@@ -64,6 +64,9 @@ zonk l e = go where
       S.Splice t pos     -> goSp' t >>= \case
                               Left v  -> pure $! Left $! E.vSplice v
                               Right t -> pure $ Right $ Splice t pos
+      S.Proj t x         -> goSp' t >>= \case
+                              Left v  -> pure $! Left $! E.vProj v x
+                              Right t -> pure $ Right $ Proj t x
       t                  -> Right <$!> go t
 
   goBind :: S.Tm -> IO (Tm Void)
@@ -79,7 +82,6 @@ zonk l e = go where
   go = \case
     S.Var x              -> pure $ Var x
     S.Lam x i t          -> Lam x <$!> goBind t
-    t@S.App{}            -> goSp t
     S.Let x a t u        -> Let x <$!> go t <*!> goBind u
     S.AppPruning t pr    -> go (unAppPruning t pr)
     S.U                  -> pure $ Erased "⊘"
@@ -103,10 +105,19 @@ zonk l e = go where
     S.Nat                -> pure $ Erased "⊘"
     S.NatLit n           -> pure $ NatLit n
     S.Suc' n             -> Suc <$!> go n
-    S.NatElim _ s z n    -> NatElim <$!> go s <*!> go z
+    S.NatElim' p s z n   -> NatElim <$!> go s <*!> go z <*!> go n
     S.RecTy fs           -> pure $ Erased "⊘"
     S.Rec ts             -> Rec <$!> traverse (traverse go) ts
     S.Proj t x           -> Proj <$!> go t <*!> pure x
+
+    t@S.App{}            -> goSp t
+
+    S.Return  -> pure $! Lam "A" $ Lam "a" $ Return (Var 0)
+    S.New     -> pure $! Lam "A" $ Lam "a" $ New (Var 0)
+    S.Write   -> pure $! Lam "A" $ Lam "t" $ Lam "u" $ Write (Var 1) (Var 0)
+    S.Read    -> pure $! Lam "A" $ Lam "t" $ Read (Var 0)
+    S.Suc     -> pure $! Lam "n" $ Suc (Var 0)
+    S.NatElim -> pure $! Lam "P" $ Lam "s" $ Lam "z" $ Lam "n" $ NatElim (Var 2) (Var 1) (Var 0)
 
 zonk0 :: S.Tm -> IO (Tm Void)
 zonk0 = zonk 0 []
@@ -120,15 +131,15 @@ unzonk = \case
   Erased s      -> S.Erased s
   Quote t       -> S.Quote (unzonk t)
   Splice t pos  -> S.Splice (unzonk t) pos
-  Return t      -> S.Return' _ (unzonk t)
+  Return t      -> S.Return' (S.Erased "⊘") (unzonk t)
   Bind x t u    -> S.Bind x (unzonk t) (unzonk u)
   Seq t u       -> S.Seq (unzonk t) (unzonk u)
-  New t         -> S.New' _ (unzonk t)
-  Write t u     -> S.Write' _ (unzonk t) (unzonk u)
-  Read t        -> S.Read' _ (unzonk t)
+  New t         -> S.New' (S.Erased "⊘") (unzonk t)
+  Write t u     -> S.Write' (S.Erased "⊘") (unzonk t) (unzonk u)
+  Read t        -> S.Read' (S.Erased "⊘") (unzonk t)
   CSP x _       -> S.Erased $ maybe "*CSP*" (\x -> "*"++x++"*") x
   NatLit n      -> S.NatLit n
   Suc n         -> S.Suc' (unzonk n)
-  NatElim s z   -> S.NatElim `S.AppI` (S.Erased "⊘") `S.AppE` (unzonk s) `S.AppE` (unzonk z)
+  NatElim s z n -> S.NatElim' (S.Erased "⊘") (unzonk s) (unzonk z) (unzonk n)
   Rec ts        -> S.Rec (fmap (fmap unzonk) ts)
   Proj t x      -> S.Proj (unzonk t) x

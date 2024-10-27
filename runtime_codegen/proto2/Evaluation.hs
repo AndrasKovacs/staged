@@ -142,7 +142,7 @@ eval env = \case
   Erased _         -> impossible
   Nat              -> VNat
   NatLit n         -> VNatLit n
-  Suc              -> VLamE "n" VSuc
+  Suc              -> VLamE "n" vSuc
   NatElim          -> VLamE "P" \p -> VLamE "s" \s -> VLamE "z" \z -> VLamE "n" \n ->
                       vNatElim p s z n
   RecTy t          -> VRecTy (RClosure env t)

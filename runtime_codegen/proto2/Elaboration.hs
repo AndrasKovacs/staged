@@ -90,7 +90,7 @@ checkEverything = go 0 where
 -- Unification
 --------------------------------------------------------------------------------
 
--- | A partial renaming from Γ to Δ.
+-- | A partial substitution from Γ to Δ.
 data PartialSub = PSub {
     occ :: Maybe MetaVar   -- ^ Optional occurs check.
   , dom :: Lvl             -- ^ Size of Γ.
@@ -606,6 +606,14 @@ check cxt t a = do
       u <- check (bind cxt x a) u (VEff b)
       pure (Bind x t u)
 
+    (P.Seq t u, VEff b) -> do
+      t <- do
+        (t, tty) <- infer cxt t
+        ensureEff cxt tty
+        pure t
+      u <- check cxt u (VEff b)
+      pure (Seq t u)
+
     (P.Quote t, VBox a) -> do
       Quote <$> check cxt t a
 
@@ -655,6 +663,13 @@ inferRec cxt = \case
     let ~qa = quote (lvl cxt) a
     (ts, fs) <- inferRec cxt ts
     pure (((x,t):ts), ((x, qa):fs))
+
+-- check that a value in Γ,A context is valid in Γ
+strengthen :: Cxt -> Val -> IO Val
+strengthen cxt t = do
+  let sub = IM.fromList [(coerce l, VVar l) | l <- [0 .. lvl cxt-1]]
+  t <- psubst (PSub Nothing (lvl cxt) (lvl cxt + 1) sub) t
+  pure $ eval (env cxt) t
 
 infer :: Dbg => Cxt -> P.Tm -> IO (Tm, VTy)
 infer cxt (P.SrcPos pos t) =
@@ -802,14 +817,15 @@ infer cxt t = do
         a <- ensureEff cxt tty
         pure (t, a)
       (u, uty) <- infer (bind cxt x a) u
-      b <- ensureEff cxt uty
+      uty      <- strengthen cxt uty
+      b        <- ensureEff cxt uty
       pure (Bind x t u, VEff b)
 
     P.Seq t u -> do
-      (t, a) <- do
+      t <- do
         (t, tty) <- infer cxt t
-        a <- ensureEff cxt tty
-        pure (t, a)
+        ensureEff cxt tty
+        pure t
       (u, uty) <- infer cxt u
       b <- ensureEff cxt uty
       pure (Seq t u, VEff b)

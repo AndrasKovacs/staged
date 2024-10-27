@@ -82,13 +82,13 @@ prettyTm prec i = goTop prec i where
   goRecTy i ns = \case
     []        -> id
     [(x, a)]  -> (x++) . (" : "++) . go letp i ns a
-    (x, a):fs -> (x++) . (" : "++) . go letp i ns a . (" , "++) . goRecTy i (x:ns) fs
+    (x, a):fs -> (x++) . (" : "++) . go letp i ns a . (", "++) . goRecTy i (x:ns) fs
 
   goRec :: Int -> [Name] -> [(Name, Tm)] -> ShowS
   goRec i ns = \case
     []        -> id
     [(x, t)]  -> (x++) . (" = "++) . go letp i ns t
-    (x, t):fs -> (x++) . (" = "++) . go letp i ns t . (" , "++) . goRec i ns fs
+    (x, t):fs -> (x++) . (" = "++) . go letp i ns t . (", "++) . goRec i ns fs
 
   go :: Int -> Int -> [Name] -> Tm -> ShowS
   go p i ns = \case

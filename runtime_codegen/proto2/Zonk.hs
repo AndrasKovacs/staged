@@ -88,10 +88,9 @@ zonk l e = go where
     S.Pi{}               -> pure $ Erased "⊘"
     t@S.Meta{}           -> goSp t
     t@S.PostponedCheck{} -> goSp t
-    S.Box{}              -> pure $ Erased "⊘"
     S.Quote t            -> Quote <$!> go t
     t@S.Splice{}         -> goSp t
-    S.Eff{}              -> pure $ Erased "⊘"
+
     S.Return' _ t        -> Return <$!> go t
     S.Bind x t u         -> Bind x <$!> go t <*!> goBind u
     S.Seq t u            -> Seq <$!> go t <*!> go u
@@ -107,6 +106,8 @@ zonk l e = go where
     S.RecTy fs           -> pure $ Erased "⊘"
     S.Rec ts             -> Rec <$!> traverse (traverse go) ts
     S.Proj t x           -> Proj <$!> go t <*!> pure x
+    S.Box' _             -> pure $ Erased "⊘"
+    S.Eff' _             -> pure $ Erased "⊘"
 
     t@S.App{}            -> goSp t
 
@@ -116,6 +117,8 @@ zonk l e = go where
     S.Read    -> pure $! Lam "A" $ Lam "t" $ Read (Var 0)
     S.Suc     -> pure $! Lam "n" $ Suc (Var 0)
     S.NatElim -> pure $! Lam "P" $ Lam "s" $ Lam "z" $ Lam "n" $ NatElim (Var 2) (Var 1) (Var 0)
+    S.Eff     -> pure $! Lam "A" $ Erased "⊘"
+    S.Box     -> pure $! Lam "A" $ Erased "⊘"
 
 zonk0 :: S.Tm -> IO (Tm Void)
 zonk0 = zonk 0 []

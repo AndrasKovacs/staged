@@ -82,7 +82,7 @@ eRun = \case
 cApp :: Closed -> Closed -> Closed
 cApp t u = case t of
   CLam x f g -> coerce f u
-  t          -> impossible
+  t          -> error $ show t
 
 cProj :: Closed -> Name -> Closed
 cProj t x = case t of

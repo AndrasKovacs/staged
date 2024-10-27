@@ -1,5 +1,5 @@
 
-;;; rtcg.el --- Mode for the cctt programming language -*- lexical-binding: t -*-
+;;; rtcg.el --- Mode for the rtcg programming language -*- lexical-binding: t -*-
 ;; URL: https://github.com/AndrasKovacs/staged
 ;; Package-version: 1.0
 ;; Package-Requires: ((emacs "24.1") (cl-lib "0.5"))
@@ -27,7 +27,7 @@
   "Keywords.")
 
 (defvar rtcg-operations
-  '("U" "Top" "Code" "Ref" "Eff" "tt" "read" "write" "new" "return")
+  '("U" "Code" "Ref" "Eff" "read" "write" "new" "return" "ℕ" "Nat" "zero" "suc" "NatElim" "ℕElim")
   "Operations.")
 
 (defvar rtcg-special
@@ -43,7 +43,7 @@
   "Regexp that recognizes operations.")
 
 (defvar rtcg-operators-regexp
-  (regexp-opt '(":" "->" "<-" "→" "←" "=" ":=" "=" "\\" "λ" "_" "." "<" ">" "~" "⊤" "□" ";") t)
+  (regexp-opt '(":" "->" "<-" "→" "←" "=" ":=" "=" "\\" "λ" "_" "." "<" ">" "~" "□" ";") t)
   "Regexp that recognizes operators.")
 
 (defvar rtcg-special-regexp

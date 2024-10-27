@@ -21,6 +21,9 @@ showVal cxt v =
 showTm :: Cxt -> Tm -> String
 showTm cxt t = prettyTm 0 0 (names cxt) t []
 
+-- showTm :: Cxt -> Tm -> String
+-- showTm cxt t = show t
+
 emptyCxt :: SourcePos -> Cxt
 emptyCxt = Cxt [] 0 LHere [] mempty mempty
 

@@ -59,7 +59,6 @@ data Val
   | VRead Val Val
 
   | VNat
-  | VSuc Val
   | VNatLit Integer
 
   | VRecTy {-# unpack #-} RecClosure

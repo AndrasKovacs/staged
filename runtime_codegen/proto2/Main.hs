@@ -77,7 +77,6 @@ mainWith getOpt getRaw = do
       ((t, a), file) <- elab
       t <- handleErr file (zonk0 t)
       res <- Interpreter.execTop (castTm t)
-      print $ Interpreter.readBackClosed res
       res <- pure $ unzonk $ Interpreter.readBackClosed res
       putStrLn "RESULT:"
       putStrLn $ showTm0 res

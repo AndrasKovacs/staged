@@ -130,7 +130,7 @@ proj = do
 arg :: Parser (Either Name Icit, Tm)
 arg =   (try $ braces $ do {x <- ident; char '='; t <- tm; pure (Left x, t)})
     <|> ((Right Impl,) <$> (char '{' *> tm <* char '}'))
-    <|> ((Right Expl,) <$> (proj <|> lam))
+    <|> ((Right Expl,) <$> (proj <|> lam <|> pLet <|> pDo))
 
 spine :: Parser Tm
 spine = do
@@ -169,7 +169,7 @@ pi = do
 apps :: Parser Tm
 apps = do
   t <- spine
-  (char '$' *> (App t <$> apps <*> pure (Right Expl))) <|> pure t
+  (char '$' *> (App t <$> lamLet <*> pure (Right Expl))) <|> pure t
 
 funOrApps :: Parser Tm
 funOrApps = do

@@ -286,7 +286,6 @@ psubst psub t = case force t of
   VWrite a t u -> Write' <$> psubst psub a <*> psubst psub t <*> psubst psub u
   VRead a t    -> Read' <$> psubst psub a <*> psubst psub t
   VNat         -> pure Nat
-  VSuc t       -> Suc' <$> psubst psub t
   VNatLit n    -> pure $ NatLit n
   VRecTy fs    -> RecTy <$> psubstRecTy psub fs
   VRec ts      -> Rec <$> traverse (\(x, t) -> (x,) <$> psubst psub t) ts
@@ -301,10 +300,42 @@ lams l a t = go a (0 :: Lvl) where
     VPi x i a b   -> Lam x i $ go (coerce b $ VVar l') (l' + 1)
     _             -> impossible
 
+unSuc :: Spine -> Spine -> IO (Spine, Spine)
+unSuc sp sp' = case (sp, sp') of
+  (SSuc sp, SSuc sp') -> unSuc sp sp'
+  _                   -> pure (sp, sp')
+
+-- | Peel off suc-es and NatElim-s from the equation when possible.
+reduceEquation :: Lvl -> Spine -> Val -> IO (Spine, Val)
+reduceEquation l sp v = case force v of
+  VFlex m sp' -> do
+    (sp, sp') <- unSuc sp sp'
+    pure (sp, VFlex m sp')
+  VRigid x sp' -> do
+
+    let go (SSuc sp) (SSuc sp') = go sp sp'
+
+    -- TODO: this loses solutions! It can be repaired by only solving strong
+    -- rigid occurring metas in p, s, z, i.e. metas that occur directly under
+    -- canonical type/term formers.
+        go (SNatElim p s z sp) (SNatElim p' s' z' sp') = do
+          unify l p p'
+          unify l s s'
+          unify l z z'
+          go sp sp'
+
+        go sp sp' = pure (sp, sp')
+
+    (sp, sp') <- go sp sp'
+    pure (sp, VRigid x sp')
+  v -> do
+    pure (sp, v)
+
 -- | Solve (Γ ⊢ m spine =? rhs)
 solve :: Dbg => Lvl -> MetaVar -> Spine -> Val -> IO ()
 solve gamma m sp rhs = do
-  (!m, !sp) <- expandVFlex m sp
+  (sp, rhs) <- reduceEquation gamma sp rhs
+  (m, sp) <- expandVFlex m sp
   psub <- invert gamma sp
   solveWithPSub gamma m psub rhs
 
@@ -329,11 +360,6 @@ solveWithPSub gamma m (psub, pruneNonlinear) rhs = do
 
   -- retry all blocked problems
   forM_ (IS.toList blocked) (retryCheck . CheckVar)
-
-unSuc :: Spine -> Spine -> IO (Spine, Spine)
-unSuc sp sp' = case (sp, sp') of
-  (SSuc sp, SSuc sp') -> unSuc sp sp'
-  _                   -> pure (sp, sp')
 
 unifyEq :: Eq a => a -> a -> IO ()
 unifyEq x y = unless (x == y) (throwIO UnifyException)

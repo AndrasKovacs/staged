@@ -47,11 +47,12 @@ vNatElimLit s z n = case n of
 
 vNatElim :: Val -> Val -> Val -> Val -> Val
 vNatElim p s z = \case
-  VNatLit n   -> vNatElimLit s z n
-  VSuc n      -> s `vAppI` n `vAppE` vNatElim p s z n
-  VFlex m sp  -> VFlex  m (SNatElim p s z sp)
-  VRigid x sp -> VRigid x (SNatElim p s z sp)
-  _           -> impossible
+  VNatLit n          -> vNatElimLit s z n
+  VFlex m (SSuc sp)  -> let v = VFlex  m sp in s `vAppI` v `vAppE` vNatElim p s z v
+  VRigid x (SSuc sp) -> let v = VRigid x sp in s `vAppI` v `vAppE` vNatElim p s z v
+  VFlex m sp         -> VFlex  m (SNatElim p s z sp)
+  VRigid x sp        -> VRigid x (SNatElim p s z sp)
+  _                  -> impossible
 
 vProj :: Val -> Name -> Val
 vProj v x = case v of
@@ -140,7 +141,7 @@ eval env = \case
   Erased _         -> impossible
   Nat              -> VNat
   NatLit n         -> VNatLit n
-  Suc              -> VLamE "n" vSuc
+  Suc              -> VLamE "n" \n -> vSuc n
   NatElim          -> VLamE "P" \p -> VLamE "s" \s -> VLamE "z" \z -> VLamE "n" \n ->
                       vNatElim p s z n
   RecTy t          -> VRecTy (RClosure env t)
@@ -191,7 +192,6 @@ quote l t = case force t of
   VRead a t    -> Read' (quote l a) (quote l t)
   VWrite a t u -> Write' (quote l a) (quote l t) (quote l u)
   VNat         -> Nat
-  VSuc t       -> Suc' (quote l t)
   VNatLit n    -> NatLit n
   VRecTy ts    -> RecTy (quoteRecClosure l ts)
   VRec ts      -> Rec (quoteRec l ts)

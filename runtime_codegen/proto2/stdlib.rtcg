@@ -1,0 +1,104 @@
+
+iter {A} (n : ℕ) (f : ℕ → A → A) (a : A) =
+  ℕElim (λ {n} a. f n a) a n;
+
+add (n m : ℕ) : ℕ = iter n (λ _. suc) m;
+mul (n m : ℕ) : ℕ = iter n (λ _. add m) 0;
+
+Pair A B = Σ(fst : A, snd : B);
+
+Functor (F : U → U) = Σ(
+  map : {A B} → (A → B) → F A → F B
+);
+
+Monad (M : U → U) = Σ(
+    ret  : {A} → A → M A
+  , bind : {A B} → M A → (A → M B) → M B
+);
+
+Gen (A : U) : U =
+  {R} → (A → □ R) → □ R;
+
+MonadGen : Monad Gen = (
+    ret  = λ a k. k a
+  , bind = λ ga f k. ga λ a. (f a) k
+);
+
+runGen : {A} → Gen (□ A) → □ A
+  = λ ga. ga (λ x. x);
+
+gen : {A} → □ A → Gen (□ A) =
+  λ a k. <let x = ~a; ~(k <x>)>;
+
+Eq {A}(x y : A) =
+  (P : A → U) → P x → P y;
+
+refl {A}{x : A} : Eq x x =
+  λ _ px. px;
+
+Vec (n : ℕ) A : U =
+  iter n (λ _ B. Pair A B) Σ();
+
+vnil {A} : Vec 0 A = ();
+vcons {A n} (a : A)(as : Vec n A) : Vec (suc n) A = (a, as);
+
+vfoldl {A : U}(B : ℕ → U) (f : {n} → B n → A → B (suc n))(z : B 0){n}(as : Vec n A) : B n
+  = ℕElim
+      {λ n. (B : ℕ → U) → ({n} → B n → A → B (suc n)) → B 0 → Vec n A → B n}
+      (λ {n} rec B f z as. rec (λ x. B (suc x)) f (f z as.fst) as.snd)
+      (λ B f z as. z)
+      n B f z as;
+
+vfoldr {A  : U}
+       (B  : ℕ → U)
+       (f  : {n} → □ (Vec (suc n) A) → □ A → □ (B n) → □ (B (suc n)))
+       (z  : □ (B 0))
+       {n  : ℕ}
+       (as : □ (Vec n A))
+     : □ (B n)
+  = < ℕElim
+        {λ n. Vec n A → B n}
+        (λ {n} rec as. ~(f <as> <as.fst> <rec as.snd>))
+        (λ _. ~z)
+        n ~as
+    >;
+
+vappend : {n m A}(xs : Vec n A)(ys : Vec m A) → Vec (add n m) A =
+  ~<λ {n}{m}{A} xs ys.
+     ~(vfoldr (λ n. Vec (add n m) A) (λ _ a as. <(~a, ~as)>) <ys> {n} <xs>)>;
+
+
+--   ℕElim {λ n. Vec n A → Vec (add n m) A}
+--         (λ hyp xs. vcons xs.fst (hyp xs.snd))
+-- 	(λ _. ys)
+-- 	n xs;
+
+-- -- vsum {n}(ns : Vec n ℕ) : ℕ
+
+-- List A = Σ(length : ℕ, vec : Vec length A);
+
+-- vToList {n A}(as : Vec n A) : List A =
+--   (n, as);
+
+-- nil {A} : List A =
+--   (0, ());
+
+-- cons {A}(a : A)(as : List A) : List A =
+--   (suc as.length, (a, as.vec));
+
+-- append {A}(xs ys : List A) : List A =
+--   (add xs.length ys.length, vappend xs.vec ys.vec);
+
+-- map {A B}(f : A → B)(as : List A) : List B =
+--   (as.length, vmap f as.vec);
+
+-- -- vconcatMap {n A B} (as : Vec n A)(f : A → List B) : Vec (sum (map (λ a. (f a).length)) B
+
+
+
+-- return $
+--   append (map (λ x. add x 20) $ cons 10 $ cons 20 $ cons 30 nil)
+--          (map (λ x. add x 20) $ cons 10 $ cons 20 $ cons 30 nil)
+
+
+return ()

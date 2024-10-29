@@ -75,10 +75,6 @@ uhh : Gen (□ ℕ) =
 tesst : □ ℕ =
   <open MonadGen; ~(runGen $ ret <100>)>;
 
--- kekaroo = ~(runGen uhh);
-
-kkkk = ~tesst;
-
 
 
 -- mul (m n : ℕ) =

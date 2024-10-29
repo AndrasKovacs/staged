@@ -489,7 +489,7 @@ insert' cxt act = go =<< act where
     va -> pure (t, va)
 
 -- | Insert fresh implicit applications to a term which is not
---   an implicit lambda.
+--   an implicit lambda or a splice.
 insert :: Dbg => Cxt -> IO (Tm, VTy) -> IO (Tm, VTy)
 insert cxt act = act >>= \case
   (t@(Lam _ Impl _), va) -> pure (t, va)
@@ -575,6 +575,13 @@ check cxt t a = do
       | Just (x, force -> a@(VFlex _ _)) <- M.lookup x (localNames cxt) -> do
       unify (lvl cxt) a topA
       pure (Var (lvl2Ix (lvl cxt) x))
+
+    -- if checking a splice, we push checking in immediately
+    (P.Splice t pos, a) -> do
+      t <- check cxt t (VBox a)
+      srcFile <- readIORef sourceCode
+      let loc = displayLocation pos srcFile
+      pure $ Splice t (Just loc)
 
     -- Otherwise if Pi is implicit, insert a new implicit lambda
     (t, VPi x Impl a b) -> do

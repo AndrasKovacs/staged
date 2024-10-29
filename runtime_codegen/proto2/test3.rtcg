@@ -1,0 +1,37 @@
+
+iter {A} (n : ℕ) (f : ℕ → A → A) (a : A) =
+  ℕElim (λ {n} a. f n a) a n;
+
+add (n m : ℕ) : ℕ = iter n (λ _. suc) m;
+mul (n m : ℕ) : ℕ = iter n (λ _. add m) 0;
+
+Pair A B = Σ(fst : A, snd : B);
+
+--------------------------------------------------------------------------------
+
+Vec (n : ℕ) A : U =
+  iter n (λ _ B. Pair A B) Σ();
+
+vnil {A} : Vec 0 A = ();
+
+vcons {A n} (a : A)(as : Vec n A) : Vec (suc n) A = (a, as);
+
+vmap {A B n} (f : A → B) (as : Vec n A) : Vec n B =
+  ℕElim {λ n. Vec n A → Vec n B}
+    (λ rec acc. vcons (f acc.fst) (rec acc.snd))
+    (λ _. ())
+    n as;
+
+List A = Σ(length : ℕ, vec : Vec length A);
+
+nil {A} : List A = (0, ());
+cons {A}(a : A)(as : List A) : List A = (suc as.length, (a, as.vec));
+
+map {A B}(f : A → B)(as : List A) : List B =
+  (as.length, vmap f as.vec);
+
+Eq {A}(x y : A) = (P : A → U) → P x → P y;
+refl {A}{x : A} : Eq x x = λ _ px. px;
+
+
+return $ map (λ x. add x 20) $ cons 10 $ cons 20 $ cons 30 nil

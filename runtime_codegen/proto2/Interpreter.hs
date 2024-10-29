@@ -96,7 +96,7 @@ cProj t x = case t of
 cSplice :: Closed -> Maybe String -> Closed
 cSplice t loc = case t of
   CQuote t -> env [] $ lvl 0 $ ceval $ traceGen t loc
-  _        -> impossible
+  t        -> error $ show t
 
 cSuc :: Closed -> Closed
 cSuc = \case
@@ -206,7 +206,9 @@ oOpen xs t u =
   in seq ?env u
 
 defs :: [Name] -> C.Lvl -> (OEnv => a) -> (OEnv => a)
-defs xs l act = undefined
+defs xs l act =
+  let ?env = snd $ foldl' (\(l, env) x -> (l+1, (x, OVar l):env)) (l-coerce (length xs), ?env) xs in
+  seq ?env act
 
 oeval :: OEnv => Lvl => Stage => Tm -> Open
 oeval = \case

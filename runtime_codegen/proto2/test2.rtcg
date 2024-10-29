@@ -72,7 +72,12 @@ uhh : Gen (□ ℕ) =
   bind (gen <20>) λ y.
   ret <add ~x ~y>;
 
-kekaroo = ~(runGen uhh);
+tesst : □ ℕ =
+  <open MonadGen; ~(runGen $ ret <100>)>;
+
+-- kekaroo = ~(runGen uhh);
+
+kkkk = ~tesst;
 
 
 
@@ -208,4 +213,4 @@ kekaroo = ~(runGen uhh);
 -- -- let kek = ~<λ x y. ~(let res = f x y; <res>)>;
 -- -- let heh = ~<λ x y. ~(let res = kek x y; <res>)>;
 
-return kekaroo
+return ()

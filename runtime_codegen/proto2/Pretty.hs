@@ -49,8 +49,8 @@ lamNewl = \case
   Quote{} -> True
   _       -> False
 
-prettyTm :: Int -> Int -> [Name] -> Tm -> ShowS
-prettyTm prec i = goTop prec i where
+prettyTm :: Bool -> Int -> Int -> [Name] -> Tm -> ShowS
+prettyTm top prec i = if top then goTop prec i else go prec i where
 
   bracket :: ShowS -> ShowS
   bracket ss = ('{':).ss.('}':)
@@ -171,7 +171,7 @@ prettyTm prec i = goTop prec i where
     t                         -> go p i ns t
 
 showTm0 :: Tm -> String
-showTm0 t = prettyTm 0 0 [] t []
+showTm0 t = prettyTm True 0 0 [] t []
 
 displayMetas :: IO ()
 displayMetas = do

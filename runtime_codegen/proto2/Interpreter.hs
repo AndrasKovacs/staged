@@ -196,22 +196,26 @@ oSplice = \case
 
 oProj :: Open -> Name -> Open
 oProj t x = case t of
-  ORec ts -> fromJust $ lookup x ts
-  t       -> OProj t x
+  OClosed _ (CRec ts) -> OClosed Nothing (fromJust $ lookup x ts)
+  ORec ts             -> fromJust $ lookup x ts
+  t                   -> OProj t x
 
 oOpen :: [Name] -> Open -> (OEnv => a) -> OEnv => a
 oOpen xs t u =
   let ?env = foldl' (\env x -> (x, oProj t x):env) ?env xs
   in seq ?env u
 
+defs :: [Name] -> C.Lvl -> (OEnv => a) -> (OEnv => a)
+defs xs l act = undefined
+
 oeval :: OEnv => Lvl => Stage => Tm -> Open
 oeval = \case
   Var x      -> snd (?env !! coerce x)
-  Lam x t    -> OLam x (coerce \l v -> def x v $ lvl l $ oeval t)
+  Lam x t    -> OLam x (coerce \l v -> lvl l $ def x v $ oeval t)
   Erased s   -> OErased s
   Quote t    -> oQuote $ stage (?stage + 1) $ oeval t
   Return t   -> OReturn (oeval t)
-  Bind x t u -> OBind x (oeval t) (NoShow \l -> lvl l $ oeval u)
+  Bind x t u -> OBind x (oeval t) (NoShow \l -> lvl l $ def x (OVar (l-1)) $ oeval u)
   Seq t u    -> OSeq (oeval t) (oeval u)
   New t      -> ONew (oeval t)
   Write t u  -> OWrite (oeval t) (oeval u)
@@ -232,8 +236,8 @@ oeval = \case
       NatElim s z n -> oNatElim (oeval s) (oeval z) (oeval n)
       Proj t x      -> oProj (oeval t) x
     _ -> case t of
-      Let x t u     -> OLet x (oeval t) (NoShow \l -> lvl l $ oeval u)
-      Open xs t u   -> OOpen xs (oeval t) (NoShow \l -> lvl l $ oeval u)
+      Let x t u     -> OLet x (oeval t) (NoShow \l -> lvl l $ def x (OVar (l-1)) $ oeval u)
+      Open xs t u   -> OOpen xs (oeval t) (NoShow \l -> lvl l $ defs xs l $ oeval u)
       App t u       -> OApp (oeval t) (oeval u)
       Splice t pos  -> oSplice $ stage (?stage - 1) $ oeval t
       NatElim s z n -> ONatElim (oeval s) (oeval z) (oeval n)
@@ -243,12 +247,13 @@ traceGen :: Lvl => Open -> Maybe String -> Tm
 traceGen t loc =
   let t' = gen t
       freevars = map (\l -> "x" ++ show l) [0.. ?lvl - 1]
-      displayCode  = prettyTm 0 0 freevars (Z.unzonk t') ""
+      displayCode  = prettyTm False 0 0 freevars (Z.unzonk t') ""
+      -- displayCode = show t' ++ " | " ++ (show $ Z.unzonk t')
   in case loc of
     Nothing ->
       trace ("CODE GENERATED: \n\n" ++ displayCode ++ "\n") t'
     Just loc ->
-      trace ("CODE GENERATED AT:\n" ++ loc ++ "\nCODE:\n  " ++ displayCode ++ "\n") t'
+      trace ("CODE GENERATED AT:\n" ++ loc ++ "\nCODE:\n\n" ++ displayCode ++ "\n") t'
 
 gen :: Lvl => Open -> Tm
 gen = \case

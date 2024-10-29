@@ -208,4 +208,4 @@ kekaroo = ~(runGen uhh);
 -- -- let kek = ~<λ x y. ~(let res = f x y; <res>)>;
 -- -- let heh = ~<λ x y. ~(let res = kek x y; <res>)>;
 
-return ()
+return kekaroo

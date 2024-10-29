@@ -16,10 +16,10 @@ import Cxt.Type
 
 showVal :: Cxt -> Val -> String
 showVal cxt v =
-  prettyTm 0 0 (names cxt) (quote (lvl cxt) v) []
+  prettyTm True 0 0 (names cxt) (quote (lvl cxt) v) []
 
 showTm :: Cxt -> Tm -> String
-showTm cxt t = prettyTm 0 0 (names cxt) t []
+showTm cxt t = prettyTm True 0 0 (names cxt) t []
 
 -- showTm :: Cxt -> Tm -> String
 -- showTm cxt t = show t

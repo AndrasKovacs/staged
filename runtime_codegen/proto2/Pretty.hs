@@ -166,6 +166,8 @@ prettyTm prec i = goTop prec i where
     Let (fresh ns -> x) a t u -> let i' = i + 2 in
                                  (x++) . (" : "++) . go letp i ns a
                                  . (" =\n  "++) . go tupp i' ns t . (";\n\n"++) . goTop tupp i (ns:>x) u
+    Open (freshes ns -> ns') t u  ->
+      let i' = i + 2 in par p letp $ ("open "++) . go tupp i' ns t . (";\n\n"++) . goTop tupp i ns'  u
     t                         -> go p i ns t
 
 showTm0 :: Tm -> String

@@ -29,19 +29,26 @@ Monad (M : U → U) = Σ(
   , bind : {A B} → M A → (A → M B) → M B
 );
 
+MonadId : Monad (λ A. A) = (
+    ret  = λ x. x
+  , bind = λ a f. f a
+);
+
 --------------------------------------------------------------------------------
 
 Gen (A : U) : U =
   {R} → (A → □ R) → □ R;
 
-ret : {A} → A → Gen A
-  = λ a k. k a;
-
-bind : {A B} → Gen A → (A → Gen B) → Gen B
-  = λ ga f k. ga λ a. (f a) k;
+MonadGen : Monad Gen = (
+    ret = λ a k. k a
+  , bind = λ ga f k. ga λ a. (f a) k
+);
 
 runGen : {A} → Gen (□ A) → □ A
   = λ ga. ga (λ x. x);
+
+gen : {A} → □ A → Gen (□ A) =
+  λ a k. <let x = ~a; ~(k <x>)>;
 
 --------------------------------------------------------------------------------
 
@@ -58,6 +65,16 @@ test : ℕ → ℕ =
   λ x.  let m : ℕ = _;
         let p : Eq (caseℕ x (λ _. 0) 0) (caseℕ m (λ _. 0) 0) = refl;
 	x;
+
+uhh : Gen (□ ℕ) =
+  open MonadGen;
+  bind (gen <10>) λ x.
+  bind (gen <20>) λ y.
+  ret <add ~x ~y>;
+
+kekaroo = ~(runGen uhh);
+
+
 
 -- mul (m n : ℕ) =
 

@@ -116,6 +116,9 @@ evalFields env = go where
   go []          = []
   go ((x, t):ts) = (:) $$! ((x,) $$! eval env t) $$! go ts
 
+vOpen :: Env -> [Name] -> Val -> Tm -> Val
+vOpen env xs t u = eval (foldl' (\env x -> vProj t x:env) env xs) u
+
 eval :: Dbg => Env -> Tm -> Val
 eval env = \case
   Var x            -> vVar env x
@@ -147,6 +150,7 @@ eval env = \case
   RecTy t          -> VRecTy (RClosure env t)
   Rec t            -> VRec (evalFields env t)
   Proj t x         -> vProj (eval env t) x
+  Open xs t u      -> vOpen env xs (eval env t) u
 
 force :: Val -> Val
 force = \case

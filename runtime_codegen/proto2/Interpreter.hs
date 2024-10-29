@@ -49,6 +49,7 @@ data Open
   | ONatElim Open Open Open
   | OProj Open Name
   | ORec [(Name, Open)]
+  | OOpen [Name] Open (NoShow (C.Lvl -> Open))
   deriving Show
 
 def :: Name -> v -> (Env v => a) -> (Env v => a)
@@ -65,6 +66,9 @@ env e act = let ?env = e in act
 
 fresh :: (Lvl => Open -> a) -> Lvl => a
 fresh act = let v = OVar ?lvl in let ?lvl = ?lvl + 1 in act v
+
+freshes :: [Name] -> (Lvl => a) -> Lvl => a
+freshes xs act = let ?lvl = ?lvl + coerce (length xs) in seq ?lvl act
 
 closeEnv :: (OEnv => a) -> CEnv => a
 closeEnv act = let ?env = map (\(x, v) -> (x, OClosed (Just x) v)) ?env in act
@@ -107,6 +111,10 @@ cNatElim s z n =
     CNat n -> go n
     _      -> impossible
 
+cOpen :: [Name] -> Closed -> (CEnv => a) -> CEnv => a
+cOpen xs t u = let ?env = foldl' (\env x -> ((x,) $! cProj t x) : env) ?env xs
+               in seq ?env u
+
 oNatElim :: Lvl => Open -> Open -> Open -> Open
 oNatElim s z n =
   let go 0 = z
@@ -146,6 +154,7 @@ exec = \case
   Rec ts        -> impossible
   Proj t x      -> eRun (cProj (ceval t) x)
   CSP x t       -> eRun t
+  Open xs t u   -> cOpen xs (ceval t) (exec u)
 
 ceval :: CEnv => Tm -> Closed
 ceval = \case
@@ -169,6 +178,8 @@ ceval = \case
   Rec ts        -> CRec (fmap (fmap ceval) ts)
   Proj t x      -> cProj (ceval t) x
   CSP _ t       -> t
+  Open xs t u   -> cOpen xs (ceval t) (ceval u)
+
 
 oApp :: Lvl => Open -> Open -> Open
 oApp t u = case (t, u) of
@@ -187,6 +198,11 @@ oProj :: Open -> Name -> Open
 oProj t x = case t of
   ORec ts -> fromJust $ lookup x ts
   t       -> OProj t x
+
+oOpen :: [Name] -> Open -> (OEnv => a) -> OEnv => a
+oOpen xs t u =
+  let ?env = foldl' (\env x -> (x, oProj t x):env) ?env xs
+  in seq ?env u
 
 oeval :: OEnv => Lvl => Stage => Tm -> Open
 oeval = \case
@@ -207,6 +223,7 @@ oeval = \case
   t -> case ?stage of
     0 -> case t of
       Let x t u     -> def x (oeval t) (oeval u)
+      Open xs t u   -> oOpen xs (oeval t) (oeval u)
       App t u       -> oApp (oeval t) (oeval u)
       Splice t loc  -> case oeval t of
                          OClosed _ (CQuote t) -> env (idEnv ?lvl) $ oeval $ traceGen t loc
@@ -216,6 +233,7 @@ oeval = \case
       Proj t x      -> oProj (oeval t) x
     _ -> case t of
       Let x t u     -> OLet x (oeval t) (NoShow \l -> lvl l $ oeval u)
+      Open xs t u   -> OOpen xs (oeval t) (NoShow \l -> lvl l $ oeval u)
       App t u       -> OApp (oeval t) (oeval u)
       Splice t pos  -> oSplice $ stage (?stage - 1) $ oeval t
       NatElim s z n -> ONatElim (oeval s) (oeval z) (oeval n)
@@ -253,6 +271,7 @@ gen = \case
   ORec ts        -> Rec (fmap (fmap gen) ts)
   OProj t x      -> Proj (gen t) x
   OClosed x t    -> CSP x t
+  OOpen xs t u   -> Open xs (gen t) $ freshes xs $ gen (coerce u ?lvl)
 
 -- Only for pretty printing purposes
 readBackClosed :: Closed -> Tm

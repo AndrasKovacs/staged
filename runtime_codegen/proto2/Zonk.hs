@@ -36,6 +36,7 @@ data Tm a
   | NatElim (Tm a) (Tm a) (Tm a)
   | Rec [(Name, Tm a)]
   | Proj (Tm a) Name
+  | Open [Name] (Tm a) (Tm a)
   | CSP (Maybe Name) a
   deriving Show
 
@@ -90,6 +91,7 @@ zonk l e = go where
     t@S.PostponedCheck{} -> goSp t
     S.Quote t            -> Quote <$!> go t
     t@S.Splice{}         -> goSp t
+    S.Open xs t u        -> Open xs <$> go t <*> go u
 
     S.Return' _ t        -> Return <$!> go t
     S.Bind x t u         -> Bind x <$!> go t <*!> goBind u
@@ -144,3 +146,4 @@ unzonk = \case
   NatElim s z n -> S.NatElim' (S.Erased "⊘") (unzonk s) (unzonk z) (unzonk n)
   Rec ts        -> S.Rec (fmap (fmap unzonk) ts)
   Proj t x      -> S.Proj (unzonk t) x
+  Open xs t u   -> S.Open xs (unzonk t) (unzonk u)

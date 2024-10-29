@@ -55,6 +55,7 @@ data Tm
   | Let Name Ty Tm Tm
   | Meta MetaVar
   | PostponedCheck CheckVar
+  | Open [Name] Tm Tm
 
   | Box
   | Quote Tm

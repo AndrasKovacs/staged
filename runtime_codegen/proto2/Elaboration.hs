@@ -608,6 +608,12 @@ check cxt t a = do
       u <- check (define cxt x t vt a va) u a'
       pure (Let x a t u)
 
+    (P.Open t u, a) -> do
+      (t, tty) <- infer cxt t
+      fs@(RClosure _ (map fst -> xs)) <- ensureRecTy cxt tty
+      u <- check (bindRecTy cxt fs) u a
+      pure $ Open xs t u
+
     (P.NatElim `P.AppE` s `P.AppE` z, VPi x i a b) -> do
       unless (i == Expl) $
         throwIO $ Error cxt $ IcitMismatch i Expl
@@ -695,6 +701,11 @@ strengthen cxt t = do
   t <- psubst (PSub Nothing (lvl cxt) (lvl cxt + 1) sub) t
   pure $ eval (env cxt) t
 
+bindRecTy :: Cxt -> RecClosure -> Cxt
+bindRecTy cxt (RClosure e fs) = case fs of
+  []        -> cxt
+  (x, a):fs -> bindRecTy (bind cxt x (eval e a)) (RClosure (VVar (lvl cxt):e) fs)
+
 infer :: Dbg => Cxt -> P.Tm -> IO (Tm, VTy)
 infer cxt (P.SrcPos pos t) =
   -- we handle the SrcPos case here, because we do not want to
@@ -716,6 +727,12 @@ infer cxt t = do
 
     P.Zero -> do
       pure (NatLit 0, VNat)
+
+    P.Open t u -> do
+      (t, tty) <- infer cxt t
+      fs@(RClosure _ (map fst -> xs)) <- ensureRecTy cxt tty
+      (u, uty) <- infer (bindRecTy cxt fs) u
+      pure (Open xs t u, uty)
 
     P.Suc -> do
       pure (Suc, VNat ==> VNat)

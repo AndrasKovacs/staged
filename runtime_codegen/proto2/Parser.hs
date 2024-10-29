@@ -55,7 +55,6 @@ keywords = Set.fromList [
   , "Nat"
   , "NatElim"
   , "Ref"
-  , "Top"
   , "U"
   , "do"
   , "let"
@@ -70,6 +69,7 @@ keywords = Set.fromList [
   , "λ"
   , "ℕ"
   , "ℕElim"
+  , "open"
   ]
 
 isIdentRestChar :: Char -> Bool
@@ -229,11 +229,20 @@ pDo = do
       u <- lamLet
       pure $ Bind x t u
 
+open :: Parser Tm
+open = do
+  keyword "open"
+  t <- tm
+  char ';'
+  u <- lamLet
+  pure $ Open t u
+
 lamLet :: Parser Tm
 lamLet = do
   withPos (
        lam
    <|> pLet
+   <|> open
    <|> pDo
    <|> try pi
    <|> funOrApps)
@@ -289,8 +298,16 @@ topDo = do
       u <- top
       pure $ Bind x t u
 
+topen :: Parser Tm
+topen = do
+  keyword "open"
+  t <- tm
+  char ';'
+  u <- top
+  pure $ Open t u
+
 top :: Parser Tm
-top = withPos (topLet <|> topDo <|> tm)
+top = withPos (topLet <|> topDo <|> topen <|> tm)
 
 src :: Parser Tm
 src = ws *> top <* eof

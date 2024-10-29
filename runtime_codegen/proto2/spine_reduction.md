@@ -52,33 +52,33 @@ call it "spine reduction".
 Let's have `Bool`, and a simple case-splitting operation `case`, which
 we write in postfix spine form. For example,
 
-    f x .(case True False) .(case False True)
+    f x .(case true false) .(case false true)
 
 means the same as
 
-    case (case (f x) of True → True; False → False) of True → False; False → True
+    case (case (f x) of true → true; false → false) of true → false; false → true
 
 Consider now
 
-    α x .(case True True) =? β x .(case True True)
+    α x .(case true true) =? β x .(case true true)
 
-This clearly does not have a unique solution. We can set `α` to `λ _. True` or
-`λ _. False`, and independently `β` as well, and in each case the equation holds.
+This clearly does not have a unique solution. We can set `α` to `λ _. true` or
+`λ _. false`, and independently `β` as well, and in each case the equation holds.
 What about
 
-    α x .(case True True) =? x .(case True True)
+    α x .(case true true) =? x .(case true true)
 
 Now I claim that there is a unique solution:
 
     α := λ x. x
 
-To my knowledge, this has not been considered previously. This works because an
-eliminator that's blocked on a rigid variable in the scrutinee, is not so
-squishy and wobbly anymore; it's definitionally injective in the other
-arguments.
+To my knowledge, this kind of solution has not been considered in the
+literature, nor is it implemented in practice. This works because an eliminator
+that's blocked on a rigid variable in the scrutinee, is not so squishy and
+wobbly anymore; it's definitionally injective in the other arguments.
 
-Similarly, we may assume natural numbers and `_+_` defined by matching on the
-first argument, and consider
+Similarly, assume natural numbers and `_+_` defined by matching on the first
+argument, and consider
 
     α x + y =? x + y
 
@@ -93,7 +93,7 @@ there are again multiple solutions:
 We have to be a bit careful though; the positive eliminator whose scrutinee is
 blocked by a metavariable, is still rather squishy! Consider:
 
-    α x .(case (β x) True) =? x .(case True True)
+    α x .(case (β x) true) =? x .(case true true)
 
 This has multiple solutions. In one solution, we do the "obvious" thing:
 
@@ -101,9 +101,9 @@ This has multiple solutions. In one solution, we do the "obvious" thing:
 
 Here's a less obvious one:
 
-    α := λ _. true;   β := λ x. x .(case True True)
+    α := λ _. true;   β := λ x. x .(case true true)
 
-Here, the left hand side reduces to the `True` branch, and we put just the right
+Here, the left hand side reduces to the `true` branch, and we put just the right
 thing there to make the equation hold.
 
 Let's look at a basic specification of spine reduction which rules out cases like
@@ -113,11 +113,11 @@ the previous one.
 
 If we have an equation of the form
 
-    α spine .(case t₁ t₂) =? x spine .(case t₁ t₂)
+    α spine .(case t₁ t₂) =? x spine' .(case t₁ t₂)
 
 it's enough to solve
 
-    α spine =? x spine
+    α spine =? x spine'
 
 Here, by writing the same `t₁` and `t₂` on the two sides, I specified the `case`
 branches to be already definitionally equal.
@@ -127,54 +127,37 @@ equality *without* solving any metavariables in the process. This is fairly easy
 to implement: just pass a flag to unification which turns off metavariable
 solutions.
 
-However, we can make the rule a bit more liberal.
+But we can make the spine reduction a bit more liberal. We want to rule out the
+possibility of reducing the `case` in the LHS; if that's possible, we cannot hope
+to have a unique solution, since `Bool` has two defini
 
-**Spine reduction, version 2**
+<!-- **Spine reduction, version 2** -->
 
-If we have an equation of the form
+<!-- If we have an equation of the form -->
 
-    α spine .(case t₁ t₂) =? x spine .(case t₁' t₂')
+<!--     α spine .(case t₁ t₂) =? x spine' .(case t₁' t₂') -->
 
-if we can unify `t₁` and `t₁'`, and also `t₂` and `t₂'`, while *only solving
-metavariables occurring under a canonical constructor*, it becomes sufficient to
-solve
+<!-- and `t₁` and `t₂` are both definitionally distinct from `x spine' .(case t₁' t₂')` -->
+<!-- under any solution of metavariables, it suffices to solve -->
 
-    α spine =? x spine
+<!--     α spine =? x spine' -->
 
-<!-- What's a "strong rigid" (let's abbreviate to SR) occurrence? It's an occurrence -->
-<!-- that cannot be removed by any substitution of bound variables or metavariables. -->
-<!-- That is to say, it's an occurrence that's directly under some number of canonical -->
-<!-- type or term constructors. Examples: -->
+<!-- The disjointness condition -->
 
-<!-- - `α` occurs SR in `suc α` -->
-<!-- - `α` occurs SR in `α → ℕ` -->
-<!-- - `α` does not occur SR in `α` -->
-<!-- - `α` does not occur SR in `suc (β α)` -->
-<!-- - `α` does not occur SR in `f α` for `f` bound variable -->
 
-<!-- Let's go back to the previous example: -->
 
-<!--     α x .(case (β x) True) =? x .(case True True) -->
+<!-- Let's go back to the previous problematic example: -->
 
-<!-- The reduction fails here, because `β x =? True` would need to solve -->
-<!-- `β` which occurs non-SR in the left hand side. This works: -->
+<!--     α x .(case (β x) true) =? x .(case true true) -->
+
+<!-- Here, in the problem `β x =? true`, `β` does not occur under a canonical constructor, -->
+<!-- so we cannot proceed. This works: -->
 
 <!--     α x .(case (suc (β x)) zero) =? x .(case (suc zero) zero) -->
 
-<!-- Here, `suc (β x) =? suc zero` has `β` in SR position. -->
+<!-- Here, `suc (β x) =? suc zero` has `β` under `suc`. -->
 
-<!-- Intuitively, the SR condition prevents the "exotic" solutions for `α` which rely -->
-<!-- on `case` reduction in the left hand side. -->
-
-
-<!--     α x .(iter (λ n. β n) zero) =? x .(iter (λ n. suc n) zero) -->
-
-<!-- 	α x = suc x -->
-<!-- 	β x = x .(iter (λ m. suc m) zero) -->
-
-
-<!--     α x .(iter (λ n. suc (β n)) zero) =? x .(iter (λ n. suc n) zero) -->
-
-<!-- 	α x = suc x -->
-
-<!-- 	suc (β x) = x .(iter (λ n. suc n) zero) -->
+<!-- The restriction seems to be sufficient to rule out canonical solutions for `α`. -->
+<!-- If we had such a solution, the LHS `case` split would reduce to one branch. The -->
+<!-- equation on the whole could only possibly hold if that branch was convertible to -->
+<!-- the whole RHS (since the RHS is rigidly blocked and can't be reduced). -->

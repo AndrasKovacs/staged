@@ -20,13 +20,17 @@ fresh ns "_" = "_"
 fresh ns x | elem x ns = fresh ns (x ++ "'")
            | otherwise = x
 
+freshes :: [Name] -> [Name] -> [Name]
+freshes ns []     = ns
+freshes ns (x:xs) = let x' = fresh ns x in freshes (x':ns) xs
+
 -- printing precedences
 -- atomp   = 6  :: Int -- U, var
 splicep = 5  :: Int -- splice
 projp   = 4  :: Int -- field proj
 appp    = 3  :: Int -- application
 pip     = 2  :: Int -- pi
-letp    = 1  :: Int -- let, lambda
+letp    = 1  :: Int -- let, lambda, do
 tupp    = 0  :: Int -- record
 
 -- Wrap in parens if expression precedence is lower than
@@ -96,13 +100,13 @@ prettyTm prec i = goTop prec i where
     App t u Expl              -> par p appp $ go appp i ns t . (' ':) . go projp i ns u
     App t u Impl              -> par p appp $ go appp i ns t . (' ':) . bracket (go tupp i ns u)
 
-    Lam (fresh ns -> x) ic t  -> par p tupp $ ("λ "++) . lamBind x ic . goLam (ns:>x) t where
+    Lam (fresh ns -> x) ic t  -> par p letp $ ("λ "++) . lamBind x ic . goLam (ns:>x) t where
                                    goLam ns (Lam (fresh ns -> x) ic t) =
                                      (' ':) . lamBind x ic . goLam (ns:>x) t
                                    goLam ns t | lamNewl t =
-                                     (". "++) . newl (i + 2) . go tupp (i + 2) ns t
+                                     (". "++) . newl (i + 2) . go letp (i + 2) ns t
                                    goLam ns t =
-                                     (". "++) . go tupp i ns t
+                                     (". "++) . go letp i ns t
 
     U                         -> ("U"++)
 
@@ -114,8 +118,8 @@ prettyTm prec i = goTop prec i where
                                    goPi ns b = (" → "++) . go pip i ns b
 
     Let (fresh ns -> x) a t u -> let i' = i + 2 in
-                                 par p tupp $ ("let "++) . (x++) . (" : "++) . go tupp i' ns a
-                                 . (" = "++). newl i' . go tupp i' ns t . (";"++) . newl i . go tupp i (ns:>x) u
+                                 par p letp $ ("let "++) . (x++) . (" : "++) . go letp i' ns a
+                                 . (" = "++). newl i' . go tupp i' ns t . (";"++) . newl i . go letp i (ns:>x) u
 
     Meta m                    -> (("?"++show m)++)
     AppPruning t pr           -> goPr p i ns ns t pr
@@ -124,11 +128,11 @@ prettyTm prec i = goTop prec i where
     Quote t                   -> ('<':) . go tupp i ns t . ('>':)
     Splice t _                -> ('~':) . go splicep i ns t
     Seq t u                   -> let i' = i + 2 in
-                                 par p tupp $ ("do " ++) .  go tupp i' ns t
-                                 . (";"++) . newl i . go tupp i ns u
+                                 par p letp $ ("do " ++) .  go tupp i' ns t
+                                 . (";"++) . newl i . go letp i ns u
     Bind (fresh ns -> x) t u  -> let i' = i + 2 in
-                                 par p tupp $ ("do " ++) . (x++) . (" ← "++) . go tupp i' ns t
-                                 . (";"++) . newl i . go tupp i (ns:>x) u
+                                 par p letp $ ("do " ++) . (x++) . (" ← "++) . go tupp i' ns t
+                                 . (";"++) . newl i . go letp i (ns:>x) u
 
     Ref                       -> ("Ref"++)
     New                       -> ("new"++)
@@ -148,6 +152,8 @@ prettyTm prec i = goTop prec i where
     Rec fs                    -> ('(':) . goRec i ns fs . (')':)
     Proj t x                  -> par p projp $ go projp i ns t . ('.':) . (x++)
 
+    Open (freshes ns -> ns') t u  ->
+      let i' = i + 2 in par p letp $ ("open "++) . go tupp i' ns t . (";"++) . newl i . go letp i ns'  u
 
   goTop :: Int -> Int -> [Name] -> Tm -> ShowS
   goTop p i ns = \case
@@ -158,7 +164,7 @@ prettyTm prec i = goTop prec i where
                                  par p tupp $ ("do " ++) . (x++) . (" ← "++) . go tupp i' ns t
                                  . (";\n\n"++) . goTop tupp i (ns:>x) u
     Let (fresh ns -> x) a t u -> let i' = i + 2 in
-                                 (x++) . (" : "++) . go tupp i ns a
+                                 (x++) . (" : "++) . go letp i ns a
                                  . (" =\n  "++) . go tupp i' ns t . (";\n\n"++) . goTop tupp i (ns:>x) u
     t                         -> go p i ns t
 

@@ -37,6 +37,8 @@ data Tm
   | Rec [(Maybe Name, Tm)]                    -- (a = t, b = u, v, ...)
   | Proj Tm Name                              -- t.field
 
+  | Open Tm Tm                                -- open t; u
+
   | Hole                                      -- _
   deriving Show
 
@@ -73,3 +75,4 @@ stripPos = \case
   RecTy fs      -> RecTy ((stripPos <$>) <$> fs)
   Rec fs        -> Rec   ((stripPos <$>) <$> fs)
   Proj t x      -> Proj (stripPos t) x
+  Open t u      -> Open (stripPos t) (stripPos u)

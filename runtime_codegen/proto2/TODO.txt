@@ -1,20 +1,14 @@
 
 - Builtins:
-  - Builtin Nat, literals, induction, primitive arith
-  - Builtin String, conversion from Nat to String, basic primops
   - Reading a Nat from terminal
-  - Printing a String to terminal
+  - Printing a concrete String to terminal
 
 - JS RTS:
   - have basic pretty printer, print pretty non-closure code when doing codegen
     - Try to demangle names to get back to source code style
-    - Try to annotate CSP's with varnames, similarly as in Hs interp
 
 - Compilation:
   - more erasure in Zonk: pass/compute type, immediately erase things with U/Unit type
-
-- Type formers:
-  - Anonymous records
 
 - Elaboration
   - definitional monad laws

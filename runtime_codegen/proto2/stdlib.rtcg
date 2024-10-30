@@ -114,7 +114,7 @@ sum : List ℕ → ℕ =
 normalizeFun {A : U}{B : A → U}(f : (x : A) → B x) : □ ((x : A) → B x) =
   <λ a. ~(let b : B a = f a; <b>)>;
 
-bloo = normalizeFun {ℕ → ℕ}{λ _. ℕ → _}(λ (f : ℕ → ℕ) (x : ℕ). let g = f; g x);
+bloo = ~(normalizeFun {ℕ → ℕ}{λ _. ℕ → _}(λ (f : ℕ → ℕ) (x : ℕ). let g = f; g (g (g x))));
 
 -- -- why would I ever want to serialize?
 -- -- to compute under function or monad binders...
@@ -122,18 +122,8 @@ bloo = normalizeFun {ℕ → ℕ}{λ _. ℕ → _}(λ (f : ℕ → ℕ) (x : ℕ
 -- -- in memory in the correct form.
 -- -- for parameterized types, serialization is useful if they contain functions.
 
+sum' : List ℕ → ℕ = ~(normalizeFun (foldr' (λ _. add) 0));
 
--- sum' : List ℕ → ℕ =
---   ~<λ ns. ~(let x = foldr' (λ _. add) 0 ns; <x>)>;
-
--- -- LOL
--- sum'' : List ℕ → ℕ =
---   ~(serializeFun (foldr' (λ _. add) 0));
-
--- replicate {A}(n : ℕ)(a : □ A) : Builder A =
---   iter n (λ _. cons a) nil;
-
--- foo = ~(let x = add 200 200; build $ replicate 10 <x>);
 
 
 return ()

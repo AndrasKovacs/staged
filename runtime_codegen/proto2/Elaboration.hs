@@ -54,7 +54,7 @@ unifyPlaceholder cxt t m = case lookupMeta m of
 
 -- | Try to perform a delayed checking.
 retryCheck :: Dbg => CheckVar -> IO ()
-retryCheck c = case lookupCheck c of
+retryCheck c = readCheck c >>= \case
   Right (Unchecked cxt t a m) -> case force a of
     -- still blocked by another meta
     VFlex m' _ -> do
@@ -76,10 +76,16 @@ checkAllPostponed = do
   debug ["checkAllPostponed", show ucs]
   case IM.minViewWithKey ucs of
     Nothing -> pure ()
-    Just ((c, Unchecked cxt t a m), ucs') -> do
-      writeIORef uncheckedCxt ucs'
+    Just ((c, e@(Unchecked cxt t a m)), ucs') -> do
+
+      writeIORef  uncheckedCxt ucs'                  -- remove c from unchecked
+      modifyIORef activeCxt $ IM.insert (coerce c) e -- add it to active problems
+
       (t, tty) <- insert cxt $ infer cxt t
-      modifyIORef checkedCxt $ IM.insert (coerce c) t
+
+      modifyIORef activeCxt  $ IM.delete (coerce c)   -- remove from active
+      modifyIORef checkedCxt $ IM.insert (coerce c) t -- add to checked
+
       unifyCatch cxt a tty ExpectedInferred
       unifyPlaceholder cxt t m
       checkAllPostponed

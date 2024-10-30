@@ -1,6 +1,5 @@
 
-idFun {A : U}{B : A → U}(f : (x : A) → B x) : ((x : A) → B x) = f;
-
-bloo  = idFun {ℕ}{λ _. _}(λ x. let y = x; y);
+iter {A : U} (n : ℕ) (f : ℕ → A → A) (a : A) =
+  ℕElim (λ {n} a. f n a) a n;
 
 return ()

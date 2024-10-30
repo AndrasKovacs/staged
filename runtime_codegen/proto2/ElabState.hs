@@ -37,6 +37,11 @@ uncheckedCxt = unsafeDupablePerformIO $ newIORef mempty
 
 checkedCxt :: IORef CheckedCxt
 checkedCxt = unsafeDupablePerformIO $ newIORef mempty
+{-# noinline checkedCxt #-}
+
+activeCxt :: IORef UncheckedCxt
+activeCxt = unsafeDupablePerformIO $ newIORef mempty
+{-# noinline activeCxt #-}
 
 nextCheckVar :: IORef CheckVar
 nextCheckVar = unsafeDupablePerformIO $ newIORef 0
@@ -51,16 +56,22 @@ newCheck cxt t a m = do
 
 readCheck :: CheckVar -> IO (Either Tm Unchecked)
 readCheck c = do
+  debug ["readCheck", show c]
   ucs <- readIORef uncheckedCxt
   cs  <- readIORef checkedCxt
+  acs <- readIORef activeCxt
   case IM.lookup (coerce c) ucs of
     Just e -> pure (Right e)
     _      -> case IM.lookup (coerce c) cs of
       Just t -> pure $ Left t
-      _      -> impossible
+      _      -> case IM.lookup (coerce c) acs of
+        Just e -> pure (Right e)
+        _      -> impossible
 
 lookupCheck :: CheckVar -> Either Tm Unchecked
-lookupCheck = unsafeDupablePerformIO . readCheck
+lookupCheck c = unsafeDupablePerformIO $ do
+  debug ["lookupCheck", show c]
+  readCheck c
 
 writeChecked :: CheckVar -> Tm -> IO ()
 writeChecked c t = do

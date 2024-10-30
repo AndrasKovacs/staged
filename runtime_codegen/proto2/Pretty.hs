@@ -144,6 +144,10 @@ prettyTm top prec i = if top then goTop prec i else go prec i where
     Box                       -> ('□':)
     NatElim                   -> ("ℕElim"++)
 
+    PrintNat                  -> ("printℕ"++)
+    ReadNat                   -> ("readℕ"++)
+    Log s                     -> par p appp (("log "++) . (show s ++))
+
     Erased msg                -> (msg++)
     Nat                       -> ('ℕ':)
     NatLit n                  -> (show n ++)

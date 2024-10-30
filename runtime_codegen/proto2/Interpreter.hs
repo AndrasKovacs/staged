@@ -155,6 +155,13 @@ exec = \case
   Proj t x      -> eRun (cProj (ceval t) x)
   CSP x t       -> eRun t
   Open xs t u   -> cOpen xs (ceval t) (exec u)
+  ReadNat       -> do n <- read <$> getLine
+                      if n < 0 then error "negative integer"
+                               else pure $ CNat n
+  PrintNat t    -> case ceval t of
+                     CNat n -> print n >> pure (CRec [])
+                     _      -> impossible
+  Log s         -> putStrLn s >> pure (CRec [])
 
 ceval :: CEnv => Tm -> Closed
 ceval = \case
@@ -172,6 +179,9 @@ ceval = \case
   t@New{}       -> CAction (coerce (exec t))
   t@Write{}     -> CAction (coerce (exec t))
   t@Read{}      -> CAction (coerce (exec t))
+  t@ReadNat     -> CAction (coerce (exec t))
+  t@PrintNat{}  -> CAction (coerce (exec t))
+  t@Log{}       -> CAction (coerce (exec t))
   NatLit n      -> CNat n
   Suc t         -> cSuc (ceval t)
   NatElim s z n -> cNatElim (ceval s) (ceval z) (ceval n)

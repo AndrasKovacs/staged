@@ -55,12 +55,17 @@ keywords = Set.fromList [
   , "Nat"
   , "NatElim"
   , "Ref"
+  , "read"
   , "U"
   , "do"
   , "let"
   , "new"
   , "Rec"
-  , "read"
+  , "readℕ"
+  , "readNat"
+  , "printℕ"
+  , "printNat"
+  , "log"
   , "return"
   , "suc"
   , "write"
@@ -71,6 +76,9 @@ keywords = Set.fromList [
   , "ℕElim"
   , "open"
   ]
+
+stringLiteral :: Parser String
+stringLiteral = char '"' >> manyTill L.charLiteral (char '"')
 
 isIdentRestChar :: Char -> Bool
 isIdentRestChar c = c == '\'' || c == '-' || isAlphaNum c
@@ -96,24 +104,27 @@ recTy = do
 
 atom :: Parser Tm
 atom =
-      withPos (    (Var     <$> ident)
-               <|> (NatLit  <$> natural)
-               <|> (U       <$  char 'U')
-               <|> (Rec []  <$  try (char '(' *> char ')'))
-               <|> (Box     <$  ((() <$ char '□') <|> keyword "Code"))
-               <|> (Eff     <$  (keyword "Eff"    ))
-               <|> (Return  <$  (keyword "return" ))
-               <|> (Ref     <$  (keyword "Ref"    ))
-               <|> (New     <$  (keyword "new"    ))
-               <|> (Write   <$  (keyword "write"  ))
-               <|> (Read    <$  (keyword "read"   ))
-               <|> (Suc     <$  (keyword "suc"    ))
-               <|> (NatElim <$  (keyword "ℕElim" <|> keyword "NatElim"))
-               <|> (Nat     <$  (keyword "Nat" <|> keyword "ℕ"))
-               <|> (Zero    <$  keyword "zero")
-               <|> (Quote   <$> (char '<' *> tm <* char '>'))
-               <|> (RecTy   <$> recTy)
-               <|> (Hole    <$  char '_'))
+      withPos (    (Var      <$> ident)
+               <|> (NatLit   <$> natural)
+               <|> (U        <$  char 'U')
+               <|> (Rec []   <$  try (char '(' *> char ')'))
+               <|> (Box      <$  ((() <$ char '□') <|> keyword "Code"))
+               <|> (Eff      <$  (keyword "Eff"    ))
+               <|> (Return   <$  (keyword "return" ))
+               <|> (Ref      <$  (keyword "Ref"    ))
+               <|> (New      <$  (keyword "new"    ))
+               <|> (Write    <$  (keyword "write"  ))
+               <|> (Read     <$  (keyword "read"   ))
+               <|> (ReadNat  <$  (keyword "readNat" <|> keyword "readℕ"))
+               <|> (PrintNat <$ (keyword "printNat" <|> keyword "printℕ"))
+               <|> (Suc      <$  (keyword "suc"    ))
+               <|> (NatElim  <$  (keyword "ℕElim" <|> keyword "NatElim"))
+               <|> (Nat      <$  (keyword "Nat" <|> keyword "ℕ"))
+               <|> (Zero     <$  keyword "zero")
+               <|> (Quote    <$> (char '<' *> tm <* char '>'))
+               <|> (Log      <$> (keyword "log" *> stringLiteral))
+               <|> (RecTy    <$> recTy)
+               <|> (Hole     <$  char '_'))
   <|> parens tm
 
 splice :: Parser Tm
@@ -136,7 +147,7 @@ spine :: Parser Tm
 spine = do
   h <- proj
   args <- many arg
-  pure $ foldl' (\t (i, u) -> App t u i) h args
+  pure $! foldl' (\t (i, u) -> App t u i) h args
 
 lamBinder :: Parser (Name, Either Name Icit, Maybe Tm)
 lamBinder =

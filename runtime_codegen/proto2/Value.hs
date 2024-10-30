@@ -63,6 +63,10 @@ data Val
 
   | VRecTy {-# unpack #-} RecClosure
   | VRec [(Name, Val)]
+
+  | VReadNat
+  | VPrintNat Val
+  | VLog String
   deriving Show
 
 -- | Count number of applications in spine

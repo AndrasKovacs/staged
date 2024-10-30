@@ -297,6 +297,9 @@ psubst psub t = case force t of
   VNatLit n    -> pure $ NatLit n
   VRecTy fs    -> RecTy <$> psubstRecTy psub fs
   VRec ts      -> Rec <$> traverse (\(x, t) -> (x,) <$> psubst psub t) ts
+  VPrintNat t  -> PrintNat' <$> psubst psub t
+  VReadNat     -> pure ReadNat
+  VLog s       -> pure $ Log s
 
 -- | Wrap a term in Lvl number of lambdas. We get the domain info from the
 --   VTy argument.
@@ -585,6 +588,7 @@ check cxt t a = do
       pure (Var (lvl2Ix (lvl cxt) x))
 
     -- if checking a splice, we push checking in immediately
+    -- we don't want an inserted implicit lambda to silently block code generation
     (P.Splice t pos, a) -> do
       t <- check cxt t (VBox a)
       srcFile <- readIORef sourceCode
@@ -789,6 +793,19 @@ infer cxt t = do
     P.Lam x Left{} ma t ->
       throwIO $ Error cxt $ InferNamedLam
 
+    P.ReadNat -> do
+      pure (ReadNat, VEff VNat)
+
+    P.PrintNat -> do
+      pure (PrintNat, VNat ==> VEff (VRecTy (RClosure [] [])))
+
+    P.PrintNat `P.AppE` t -> do
+      t <- check cxt t VNat
+      pure (PrintNat' t, VEff (VRecTy (RClosure [] [])))
+
+    P.Log s -> do
+      pure (Log s, VEff (VRecTy (RClosure [] [])))
+
     P.App t u i -> do
 
       -- choose implicit insertion
@@ -837,14 +854,10 @@ infer cxt t = do
       pure (Let x a t u, b)
 
     P.Let x Nothing t u -> do
-      debug ["INFERLET"]
       (t, a) <- infer cxt t
-      debug ["INFERREDDEF"]
       checkAllPostponed
-      debug ["KUTYA"]
       let ~vt = eval (env cxt) t
       let qa = quote (lvl cxt) a
-      debug ["MALLAC"]
       (u, b) <- infer (define cxt x t vt qa a) u
       pure (Let x qa t u, b)
 
@@ -899,7 +912,7 @@ infer cxt t = do
       pure (New, VPiI "A" VU \a -> a ==> VEff (VRef a))
 
     P.Write -> do
-      pure (Write, VPiI "A" VU \a -> VRef a ==> a ==> VEff (VRecTy (RClosure [] []) ))
+      pure (Write, VPiI "A" VU \a -> VRef a ==> a ==> VEff (VRecTy (RClosure [] [])))
 
     P.Read -> do
       pure (Read, VPiI "A" VU \a -> VRef a ==> VEff a)

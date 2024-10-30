@@ -80,6 +80,10 @@ data Tm
   | RecTy [(Name, Tm)]
   | Rec [(Name, Tm)]
   | Proj Tm Name
+
+  | ReadNat
+  | PrintNat
+  | Log String
   deriving Show
 
 pattern LamI x t = Lam x Impl t
@@ -95,6 +99,7 @@ pattern Write' a t u = Write `AppI` a `AppE` t `AppE` u
 pattern Read' a t = Read `AppI` a `AppE` t
 pattern Suc' t = Suc `AppE` t
 pattern Box' t = Box `AppE` t
+pattern PrintNat' t = PrintNat `AppE` t
 
 
 -- | Unfold `AppPruning` to an iterated application to vars. This applies a term to all de Bruijn indices

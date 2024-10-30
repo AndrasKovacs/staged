@@ -39,6 +39,10 @@ data Tm
 
   | Open Tm Tm                                -- open t; u
 
+  | ReadNat                                   -- readℕ | readNat
+  | PrintNat                                  -- printℕ | printℕ
+  | Log String                                -- log "t"
+
   | Hole                                      -- _
   deriving Show
 
@@ -76,3 +80,9 @@ stripPos = \case
   Rec fs        -> Rec   ((stripPos <$>) <$> fs)
   Proj t x      -> Proj (stripPos t) x
   Open t u      -> Open (stripPos t) (stripPos u)
+  ReadNat       -> ReadNat
+  PrintNat      -> PrintNat
+  Log s         -> Log s
+
+
+--------------------------------------------------------------------------------

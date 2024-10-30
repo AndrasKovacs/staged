@@ -152,6 +152,9 @@ eval env = \case
   Rec t            -> VRec (evalFields env t)
   Proj t x         -> vProj (eval env t) x
   Open xs t u      -> vOpen env xs (eval env t) u
+  ReadNat          -> VReadNat
+  PrintNat         -> VLamE "n" VPrintNat
+  Log s            -> VLog s
 
 force :: Val -> Val
 force = \case
@@ -200,6 +203,9 @@ quote l t = case force t of
   VNatLit n    -> NatLit n
   VRecTy ts    -> RecTy (quoteRecClosure l ts)
   VRec ts      -> Rec (quoteRec l ts)
+  VReadNat     -> ReadNat
+  VPrintNat t  -> PrintNat' (quote l t)
+  VLog s       -> Log s
 
 nf :: Env -> Tm -> Tm
 nf env t = quote (Lvl (length env)) (eval env t)

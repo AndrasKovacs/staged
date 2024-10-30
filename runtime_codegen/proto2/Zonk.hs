@@ -37,6 +37,9 @@ data Tm a
   | Rec [(Name, Tm a)]
   | Proj (Tm a) Name
   | Open [Name] (Tm a) (Tm a)
+  | PrintNat (Tm a)
+  | ReadNat
+  | Log String
   | CSP (Maybe Name) a
   deriving Show
 
@@ -114,17 +117,21 @@ zonk l e = go where
     S.Proj t x           -> Proj <$!> go t <*!> pure x
     S.Box' _             -> pure $ Erased "⊘"
     S.Eff' _             -> pure $ Erased "⊘"
+    S.PrintNat' t        -> PrintNat <$> go t
+    S.ReadNat            -> pure ReadNat
+    S.Log s              -> pure $ Log s
 
     t@S.App{}            -> goSp t
 
-    S.Return  -> pure $! Lam "A" $ Lam "a" $ Return (Var 0)
-    S.New     -> pure $! Lam "A" $ Lam "a" $ New (Var 0)
-    S.Write   -> pure $! Lam "A" $ Lam "t" $ Lam "u" $ Write (Var 1) (Var 0)
-    S.Read    -> pure $! Lam "A" $ Lam "t" $ Read (Var 0)
-    S.Suc     -> pure $! Lam "n" $ Suc (Var 0)
-    S.NatElim -> pure $! Lam "P" $ Lam "s" $ Lam "z" $ Lam "n" $ NatElim (Var 2) (Var 1) (Var 0)
-    S.Eff     -> pure $! Lam "A" $ Erased "⊘"
-    S.Box     -> pure $! Lam "A" $ Erased "⊘"
+    S.Return   -> pure $! Lam "A" $ Lam "a" $ Return (Var 0)
+    S.New      -> pure $! Lam "A" $ Lam "a" $ New (Var 0)
+    S.Write    -> pure $! Lam "A" $ Lam "t" $ Lam "u" $ Write (Var 1) (Var 0)
+    S.Read     -> pure $! Lam "A" $ Lam "t" $ Read (Var 0)
+    S.Suc      -> pure $! Lam "n" $ Suc (Var 0)
+    S.NatElim  -> pure $! Lam "P" $ Lam "s" $ Lam "z" $ Lam "n" $ NatElim (Var 2) (Var 1) (Var 0)
+    S.Eff      -> pure $! Lam "A" $ Erased "⊘"
+    S.Box      -> pure $! Lam "A" $ Erased "⊘"
+    S.PrintNat -> pure $! Lam "n" $ PrintNat (Var 0)
 
 zonk0 :: S.Tm -> IO (Tm Void)
 zonk0 = zonk 0 []
@@ -151,3 +158,6 @@ unzonk = \case
   Rec ts        -> S.Rec (fmap (fmap unzonk) ts)
   Proj t x      -> S.Proj (unzonk t) x
   Open xs t u   -> S.Open xs (unzonk t) (unzonk u)
+  PrintNat t    -> S.PrintNat' (unzonk t)
+  ReadNat       -> S.ReadNat
+  Log s         -> S.Log s

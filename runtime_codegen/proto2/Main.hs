@@ -97,7 +97,7 @@ main' mode src = mainWith (pure [mode]) ((,src) <$> parseString src)
 
 test :: String ->  IO ()
 test cmd = do
-  src <- readFile "test3.rtcg"
+  src <- readFile "debug.rtcg"
   main' cmd src
   -- main' "elab" src
 

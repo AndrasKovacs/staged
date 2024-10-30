@@ -51,24 +51,28 @@ zonk l e = go where
 
     goSp' :: S.Tm -> IO (Either V.Val (Tm Void))
     goSp' = \case
-      S.Meta x           -> case lookupMeta x of
-                              Solved v _          ->
-                                pure $ Left v
-                              Unsolved _ cxt a _ p ->
-                                throwIO $ Error cxt $ UnsolvedMetaInZonk x (E.quote (lvl cxt) a)
-      S.PostponedCheck x -> case lookupCheck x of
-                              Left t -> Right <$!> go t
-                              _      -> impossible
-      S.App t u i        -> goSp' t >>= \case
-                              Left v  -> pure $! Left $! E.vApp v (E.eval e u) i
-                              Right t -> Right . App t <$!> go u
-      S.Splice t pos     -> goSp' t >>= \case
-                              Left v  -> pure $! Left $! E.vSplice v
-                              Right t -> pure $ Right $ Splice t pos
-      S.Proj t x         -> goSp' t >>= \case
-                              Left v  -> pure $! Left $! E.vProj v x
-                              Right t -> pure $ Right $ Proj t x
-      t                  -> Right <$!> go t
+      S.Meta x             -> case lookupMeta x of
+                                Solved v _          ->
+                                  pure $ Left v
+                                Unsolved _ cxt a _ p ->
+                                  throwIO $ Error cxt $ UnsolvedMetaInZonk x (E.quote (lvl cxt) a)
+      S.PostponedCheck x   -> case lookupCheck x of
+                                Left t -> Right <$!> go t
+                                _      -> impossible
+      S.NatElim' p s z n   -> goSp' n >>= \case
+                                Left v  -> pure $! Left $!
+                                           E.vNatElim (E.eval e p) (E.eval e s) (E.eval e z) v
+                                Right t -> Right <$> (NatElim <$> go s <*> go z <*> pure t)
+      S.App t u i          -> goSp' t >>= \case
+                                Left v  -> pure $! Left $! E.vApp v (E.eval e u) i
+                                Right t -> Right . App t <$!> go u
+      S.Splice t pos       -> goSp' t >>= \case
+                                Left v  -> pure $! Left $! E.vSplice v
+                                Right t -> pure $ Right $ Splice t pos
+      S.Proj t x           -> goSp' t >>= \case
+                                Left v  -> pure $! Left $! E.vProj v x
+                                Right t -> pure $ Right $ Proj t x
+      t                    -> Right <$!> go t
 
   goBind :: S.Tm -> IO (Tm Void)
   goBind t = zonk (l + 1) (V.VVar l : e) t

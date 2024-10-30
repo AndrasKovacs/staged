@@ -1,6 +1,7 @@
 
 module Evaluation (
-  ($$), quote, eval, nf, force, lvl2Ix, vApp, vAppSp, vAppPruning, vSplice, vAppI, vAppE, vSuc, vProj)
+  ($$), quote, eval, nf, force, lvl2Ix, vApp, vAppSp, vAppPruning, vSplice,
+  vAppI, vAppE, vSuc, vProj, vNatElim)
   where
 
 import Common

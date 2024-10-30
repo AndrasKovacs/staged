@@ -1,4 +1,8 @@
 
+id {A}(x : A) = x;
+const {A B}(x : A)(y : B) = x;
+comp {A B C}(f : B → C)(g : A → B)(a : A) = f (g a);
+
 iter {A} (n : ℕ) (f : ℕ → A → A) (a : A) =
   ℕElim (λ {n} a. f n a) a n;
 
@@ -63,42 +67,73 @@ vfoldr {A  : U}
         n ~as
     >;
 
+vfoldr' {A  : U}
+        (B  : ℕ → U)
+        (f  : {n} → Vec (suc n) A → A → B n → B (suc n))
+        (z  : B 0)
+        {n  : ℕ}
+        (as : Vec n A)
+       : B n
+  = ℕElim
+        {λ n. Vec n A → B n}
+        (λ {n} rec as. f as as.fst (rec as.snd))
+        (λ _. z)
+        n as;
+
 vappend : {n m A}(xs : Vec n A)(ys : Vec m A) → Vec (add n m) A =
   ~<λ {n}{m}{A} xs ys.
-     ~(vfoldr (λ n. Vec (add n m) A) (λ _ a as. <(~a, ~as)>) <ys> {n} <xs>)>;
+     ~(vfoldr (λ n. Vec (add n m) A) (λ _ a as. <(~a, ~as)>) <ys> <xs>)>;
+
+List A = Σ(length: ℕ, data: Vec length A);
+Builder A = Σ(length: ℕ, data : □ (Vec length A));
+
+build {A} (as : Builder A) : □ (List A) =
+  <as.length, ~(as.data)>;
+
+cons {A}(a : □ A)(as : Builder A) : Builder A =
+  (suc as.length, <~a, ~(as.data)>);
+
+nil {A} : Builder A =
+  (0, <()>);
+
+vecToList {n A}(as : Vec n A) : List A =
+  (length = n, data = as);
+
+foldr {A B} (f : □ (List A) → □ A → □ B → □ B) (b : □ B)(as : □ (List A)) : □ B =
+  vfoldr (λ _. B) (λ {n} as a b. f <(suc n, ~as)> a b) b <~as.data>;
+
+map {A B}(f : □ A → □ B)(as : □ (List A)) : □ (List B) =
+  foldr (λ _ a bs. <(suc ~bs.length, (~(f a), ~bs.data))>) <(0, ())> as;
+
+foldr' {A B} (f : List A → A → B → B) (b : B)(as : List A) : B =
+  vfoldr' (λ _. B) (λ {n} as a b. f (suc n, as) a b) b as.data;
+
+sum : List ℕ → ℕ =
+  ~<λ ns. ~(foldr (λ _ n acc. <add ~n ~acc>) <0> <ns>)>;
+
+normalizeFun {A : U}{B : A → U}(f : (x : A) → B x) : □ ((x : A) → B x) =
+  <λ a. ~(let b : B a = f a; <b>)>;
+
+bloo = normalizeFun {ℕ → ℕ}{λ _. ℕ → _}(λ (f : ℕ → ℕ) (x : ℕ). let g = f; g x);
+
+-- -- why would I ever want to serialize?
+-- -- to compute under function or monad binders...
+-- -- for base inductive types, serialization is pointless, it's already
+-- -- in memory in the correct form.
+-- -- for parameterized types, serialization is useful if they contain functions.
 
 
---   ℕElim {λ n. Vec n A → Vec (add n m) A}
---         (λ hyp xs. vcons xs.fst (hyp xs.snd))
--- 	(λ _. ys)
--- 	n xs;
+-- sum' : List ℕ → ℕ =
+--   ~<λ ns. ~(let x = foldr' (λ _. add) 0 ns; <x>)>;
 
--- -- vsum {n}(ns : Vec n ℕ) : ℕ
+-- -- LOL
+-- sum'' : List ℕ → ℕ =
+--   ~(serializeFun (foldr' (λ _. add) 0));
 
--- List A = Σ(length : ℕ, vec : Vec length A);
+-- replicate {A}(n : ℕ)(a : □ A) : Builder A =
+--   iter n (λ _. cons a) nil;
 
--- vToList {n A}(as : Vec n A) : List A =
---   (n, as);
-
--- nil {A} : List A =
---   (0, ());
-
--- cons {A}(a : A)(as : List A) : List A =
---   (suc as.length, (a, as.vec));
-
--- append {A}(xs ys : List A) : List A =
---   (add xs.length ys.length, vappend xs.vec ys.vec);
-
--- map {A B}(f : A → B)(as : List A) : List B =
---   (as.length, vmap f as.vec);
-
--- -- vconcatMap {n A B} (as : Vec n A)(f : A → List B) : Vec (sum (map (λ a. (f a).length)) B
-
-
-
--- return $
---   append (map (λ x. add x 20) $ cons 10 $ cons 20 $ cons 30 nil)
---          (map (λ x. add x 20) $ cons 10 $ cons 20 $ cons 30 nil)
+-- foo = ~(let x = add 200 200; build $ replicate 10 <x>);
 
 
 return ()

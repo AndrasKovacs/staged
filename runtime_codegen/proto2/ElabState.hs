@@ -25,6 +25,9 @@ import Syntax
 --   result with the placeholder.
 data Unchecked = Unchecked Cxt P.Tm VTy MetaVar
 
+instance Show Unchecked where
+  show (Unchecked _ t _ _) = show $ P.stripPos t
+
 type UncheckedCxt = IM.IntMap Unchecked
 type CheckedCxt   = IM.IntMap Tm
 

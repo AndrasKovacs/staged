@@ -73,11 +73,13 @@ retryCheck c = case lookupCheck c of
 checkAllPostponed :: IO ()
 checkAllPostponed = do
   ucs <- readIORef uncheckedCxt
+  debug ["checkAllPostponed", show ucs]
   case IM.minViewWithKey ucs of
     Nothing -> pure ()
     Just ((c, Unchecked cxt t a m), ucs') -> do
+      writeIORef uncheckedCxt ucs'
       (t, tty) <- insert cxt $ infer cxt t
-      writeChecked (coerce c) t
+      modifyIORef checkedCxt $ IM.insert (coerce c) t
       unifyCatch cxt a tty ExpectedInferred
       unifyPlaceholder cxt t m
       checkAllPostponed
@@ -829,10 +831,14 @@ infer cxt t = do
       pure (Let x a t u, b)
 
     P.Let x Nothing t u -> do
+      debug ["INFERLET"]
       (t, a) <- infer cxt t
+      debug ["INFERREDDEF"]
       checkAllPostponed
+      debug ["KUTYA"]
       let ~vt = eval (env cxt) t
       let qa = quote (lvl cxt) a
+      debug ["MALLAC"]
       (u, b) <- infer (define cxt x t vt qa a) u
       pure (Let x qa t u, b)
 

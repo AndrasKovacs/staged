@@ -30,14 +30,14 @@ import Text.Printf
 -- debug :: (Applicative f) => [String] -> f ()
 -- debug strs = traceM (intercalate " | " strs ++ " END")
 
-type Dbg :: Constraint
-type Dbg = HasCallStack
+-- type Dbg :: Constraint
+-- type Dbg = HasCallStack
 
 debug :: (Applicative f) => [String] -> f ()
 debug strs = pure ()
 
--- type Dbg :: Constraint
--- type Dbg = ()
+type Dbg :: Constraint
+type Dbg = ()
 
 debug2 :: (Applicative f) => [String] -> f ()
 debug2 strs = traceM (intercalate " | " strs ++ " END")

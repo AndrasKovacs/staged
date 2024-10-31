@@ -55,16 +55,21 @@ unifyPlaceholder cxt t m = case lookupMeta m of
 -- | Try to perform a delayed checking.
 retryCheck :: Dbg => CheckVar -> IO ()
 retryCheck c = readCheck c >>= \case
-  Right (Unchecked cxt t a m) -> case force a of
+  Right e@(Unchecked cxt t a m) -> case force a of
     -- still blocked by another meta
     VFlex m' _ -> do
       addBlocking c m'
 
     -- checking unblocked
     a -> do
+      modifyIORef uncheckedCxt $ IM.delete (coerce c) -- remove c from unchecked
+      modifyIORef activeCxt $ IM.insert (coerce c) e  -- add it to active problems
+
       t <- check cxt t a
       unifyPlaceholder cxt t m
-      writeChecked c t
+
+      modifyIORef activeCxt  $ IM.delete (coerce c)   -- remove from active
+      modifyIORef checkedCxt $ IM.insert (coerce c) t -- add to checked
   _ ->
     pure ()
 

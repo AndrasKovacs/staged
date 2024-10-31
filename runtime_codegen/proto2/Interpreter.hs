@@ -50,6 +50,9 @@ data Open
   | OProj Open Name
   | ORec [(Name, Open)]
   | OOpen [Name] Open (NoShow (C.Lvl -> Open))
+  | OReadNat
+  | OPrintNat Open
+  | OLog String
   deriving Show
 
 def :: Name -> v -> (Env v => a) -> (Env v => a)
@@ -232,6 +235,9 @@ oeval = \case
   New t      -> ONew (oeval t)
   Write t u  -> OWrite (oeval t) (oeval u)
   Read t     -> ORead (oeval t)
+  ReadNat    -> OReadNat
+  PrintNat t -> OPrintNat (oeval t)
+  Log s      -> OLog s
   CSP x t    -> OClosed x t
   Suc t      -> OSuc (oeval t)
   Rec ts     -> ORec (fmap (fmap oeval) ts)
@@ -289,6 +295,9 @@ gen = \case
   OProj t x      -> Proj (gen t) x
   OClosed x t    -> CSP x t
   OOpen xs t u   -> Open xs (gen t) $ freshes xs $ gen (coerce u ?lvl)
+  OPrintNat t    -> PrintNat (gen t)
+  OReadNat       -> ReadNat
+  OLog s         -> Log s
 
 -- Only for pretty printing purposes
 readBackClosed :: Closed -> Tm

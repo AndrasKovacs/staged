@@ -282,7 +282,7 @@ tm = do
 
 topLet :: Parser Tm
 topLet = do
-  (x, args, ann) <- do
+  (x, args, ann) <- try do
     x <- ident
     args <- many letArg
     ann  <- optional (char ':' *> lamLet)
@@ -318,7 +318,7 @@ topen = do
   pure $ Open t u
 
 top :: Parser Tm
-top = withPos (topLet <|> topDo <|> topen <|> tm)
+top = withPos (topLet <|> topDo <|> topen <|> lamLet)
 
 src :: Parser Tm
 src = ws *> top <* eof

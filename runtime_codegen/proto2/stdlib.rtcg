@@ -125,5 +125,13 @@ bloo = ~(normalizeFun {ℕ → ℕ}{λ _. ℕ → _}(λ (f : ℕ → ℕ) (x : �
 sum' : List ℕ → ℕ = ~(normalizeFun (foldr' (λ _. add) 0));
 
 
+readTest : Eff ℕ =
+  do n ← readℕ;
+  do log "mallac";
+  return n;
+
+
+
+
 
 return ()

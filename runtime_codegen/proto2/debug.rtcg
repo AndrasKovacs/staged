@@ -1,8 +1,11 @@
 
 
+foo : Eff Σ() =
+  do n ← readℕ;
+  do log "MALLAC";
+  return ();
 
-
-log "kkk"
+return ()
 
 
 

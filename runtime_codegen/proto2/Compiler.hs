@@ -254,6 +254,9 @@ jApp t args = jReturn $ t <> jTuple args
 cRun :: (IsTail => Out) -> (IsTail => Out)
 cRun t = jReturn $ t <> "()"
 
+cProj :: (IsTail => Out) -> Name -> (IsTail => Out)
+cProj t x = jReturn $ t <> "." <> str x
+
 jClosure :: [Name] -> Name -> Bool -> (Cxt => IsTail => Out) -> (Cxt => IsTail => Out)
 jClosure []  x closed t = jLam [x] closed t
 jClosure env x closed t = jLamExp env closed $ jLam [x] closed t
@@ -268,6 +271,11 @@ closeVar x = x ++ "c"
 
 openVar :: Name -> Name
 openVar x = x ++ "o"
+
+cRec :: Cxt => [(Name, Tm)] -> Out
+cRec []          = mempty
+cRec [(x, t)]    = "x: " <> nonTail (ceval t)
+cRec ((x, t):ts) = "x: " <> nonTail (ceval t) <> ", " <> cRec ts
 
 spliceLoc :: Maybe String -> Out
 spliceLoc = \case
@@ -299,29 +307,39 @@ execTop t = tail $ go t where
 
 exec :: IsTail => Cxt => Tm -> Out
 exec = \case
-  Var x        -> cRun (str x)
-  Let x t u    -> jLet x True (ceval t) (exec u)
-  LiftedLam{}  -> impossible
-  Lam{}        -> impossible
-  App t u      -> cRun (ceval t `cApp` ceval u)
-  Erased{}     -> impossible
-  Quote{}      -> impossible
-  Splice t loc -> jApp "codegenExec_" [ceval t, spliceLoc loc]
-  Return t     -> jReturn $ ceval t
-  Bind x t u   -> jLet x True (exec t) (exec u)
-  Seq t u      -> jSeq (exec t) (exec u)
-  New t        -> jReturn $ "{_1 : " <> ceval t <> "}"
-  Write t u    -> nonTail $ ceval t <> "._1 = " <> ceval u
-  Read t       -> jReturn $ ceval t <> "._1"
-  Log s        -> jApp "console.log" [strLit s]
-  ReadNat      -> jReturn "reader_.prompt()"
-  PrintNat t   -> jApp "console.log" [ceval t]
+  Var x         -> cRun (str x)
+  Let x t u     -> jLet x True (ceval t) (exec u)
+  LiftedLam{}   -> impossible
+  Lam{}         -> impossible
+  App t u       -> cRun (ceval t `cApp` ceval u)
+  Erased{}      -> impossible
+  Quote{}       -> impossible
+  Splice t loc  -> jApp "codegenExec_" [ceval t, spliceLoc loc]
+  Return t      -> jReturn $ ceval t
+  Bind x t u    -> jLet x True (exec t) (exec u)
+  Seq t u       -> jSeq (exec t) (exec u)
+  New t         -> jReturn $ "{_1 : " <> ceval t <> "}"
+  Write t u     -> nonTail $ ceval t <> "._1 = " <> ceval u
+  Read t        -> jReturn $ ceval t <> "._1"
+  Log s         -> jApp "console.log" [strLit s]
+  ReadNat       -> jReturn "reader_.prompt()"
+  PrintNat t    -> jApp "console.log" [ceval t]
+  Rec{}         -> impossible
+  Proj t x      -> cRun (cProj (ceval t) x)
+  Suc{}         -> impossible
+  NatLit{}      -> impossible
+  NatElim s z n -> cRun undefined
 
 oevalVar :: Cxt => IsTail => Name -> Out
 oevalVar x = case lookup x ?cxt of
   Nothing    -> impossible
   Just True  -> jApp "CSP_" [str x, strLit x]
   Just False -> jReturn (str x)
+
+oRec :: Cxt => [(Name, Tm)] -> Out
+oRec []         = mempty
+oRec [(x,t)]    = _
+oRec ((x,t):ts) = _
 
 ceval :: IsTail => Cxt => Tm -> Out
 ceval = \case
@@ -344,6 +362,11 @@ ceval = \case
   t@Log{}         -> jLam [] True $ exec t
   t@ReadNat{}     -> jLam [] True $ exec t
   t@PrintNat{}    -> jLam [] True $ exec t
+  Rec ts          -> jReturn $ "{" <> cRec ts <> "}"
+  Proj t x        -> cProj (ceval t) x
+  NatLit n        -> str (show n)
+  Suc t           -> jApp "suc_" [ceval t]
+  NatElim s z n   -> undefined
 
 oeval :: IsTail => Cxt => Stage => Tm -> Out
 oeval = \case
@@ -370,13 +393,14 @@ oeval = \case
   Log s             -> jApp "Log_" [strLit s]
   ReadNat           -> jReturn "ReadNat_"
   PrintNat t        -> jApp "PrintNat_" [oeval t]
+  Rec ts            -> jApp "Rec_" [ "[" <> oRec ts <> "]" ]
 
 genTop :: Z.Tm Void -> IO Out
 genTop t = do
   src <- do
     exec_path <- getDataFileName "rts.js"
     doesFileExist exec_path >>= \case
-      True -> readFile exec_path
+      -- True -> readFile exec_path
       _    -> readFile "rts.js"
   let ?cxt = []
   return $! str src <> newl <> newl <> execTop (runCConv t)

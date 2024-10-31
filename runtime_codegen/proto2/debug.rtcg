@@ -4,7 +4,7 @@ true  : Bool = λ _ t f. t;
 false : Bool = λ _ t f. f;
 if {A}(b : Bool)(t f : A) = b _ t f;
 
-fuel = 100000;
+fuel = 1000;
 
 caseℕ {A}(n : ℕ) (s : ℕ → A) (z : A) =
   ℕElim {λ _. A}(λ {n} _. s n) z n;

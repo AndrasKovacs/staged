@@ -1,5 +1,5 @@
 
-module Parser (parseString, parseStdin) where
+module Parser (parseString) where
 
 import Prelude hiding (pi)
 import Control.Applicative hiding (many, some)
@@ -332,9 +332,3 @@ parseString str =
     Right t -> do
       writeIORef sourceCode str
       pure t
-
-parseStdin :: IO (Tm, String)
-parseStdin = do
-  str <- getContents
-  t <- parseString str
-  pure (t, str)

@@ -152,5 +152,6 @@ reset = do
   writeIORef mcxt mempty
   writeIORef nextCheckVar 0
   writeIORef uncheckedCxt mempty
+  writeIORef activeCxt mempty
   writeIORef checkedCxt mempty
   writeIORef sourceCode ""

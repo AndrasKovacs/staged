@@ -19,13 +19,10 @@ import Zonk
 import qualified Interpreter
 import qualified Compiler
 
-import qualified Presyntax as P
-
 --------------------------------------------------------------------------------
 
 helpMsg = unlines [
-  "all input is read from stdin",
-  "usage: rtcg [--help|elab|zonk|interp|compile|run|nf|type]",
+  "usage: rtcg FILE [--help|elab|zonk|interp|compile|run|nf|type]",
   "  --help    : display this message",
   "  elab      : print elaboration output",
   "  zonk      : print zonking & erasure output",
@@ -35,18 +32,23 @@ helpMsg = unlines [
   "  nf        : print beta-normal form and beta-normal type",
   "  type      : print type of program"]
 
-mainWith :: IO [String] -> IO (P.Tm, String) -> IO ()
-mainWith getOpt getRaw = do
+mainWith :: IO [String] -> IO ()
+mainWith getOpt = do
+
+  (path, opts) <- getOpt >>= \case
+    path:opts -> pure (path, opts)
+    _         -> putStrLn helpMsg >> exitSuccess
 
   let handleErr file act = act `catch` \e -> displayError e >> exitSuccess
 
   let elab = do
-        (t, file) <- getRaw
-        res <- handleErr file (inferTop file t)
+        file <- readFile path
+        t    <- parseString file
+        res  <- handleErr file (inferTop file t)
         pure (res, file)
 
   reset
-  getOpt >>= \case
+  case opts of
     ["--help"] -> putStrLn helpMsg
     ["nf"]   -> do
       ((t, a), file) <- elab
@@ -89,17 +91,13 @@ mainWith getOpt getRaw = do
     _ -> putStrLn helpMsg
 
 main :: IO ()
-main = mainWith getArgs parseStdin
+main = mainWith getArgs
 
 -- | Run main with inputs as function arguments.
-main' :: String -> String -> IO ()
-main' mode src = mainWith (pure [mode]) ((,src) <$> parseString src)
+main' :: String -> IO ()
+main' opts = mainWith (pure $ words opts)
 
 test :: String ->  IO ()
-test cmd = do
-  src <- readFile "debug.rtcg"
-  main' cmd src
-  -- main' "elab" src
-
+test cmd = main' ("debug.rtcg " ++ cmd)
 
 ------------------------------------------------------------

@@ -1,6 +1,8 @@
 //@ts-check
 'use strict';
 
+const reader_ = require("readline-sync"); //npm install readline-sync
+
 /** @typedef {String} Name */
 
 // Closed and Open values
@@ -655,7 +657,7 @@ function exec_(top){
     case _New       : return jReturn_(() => {put_('{_1 : '); ceval_(top._1); put_('}')})()
     case _Write     : return nonTail_(() => {ceval_(top._1); put_('._1 = '); ceval_(top._2)})()
     case _Read      : return jReturn_(() => {ceval_(top._1); put_('._1')})()
-    case _CSP       : return jReturn_(() => {put_('csp_[' + top._1 + ']()/*'); strLit_(top._2); put_('*/')})()      
+    case _CSP       : return jReturn_(() => {put_('csp_[' + top._1 + ']()/*'); strLit_(top._2); put_('*/')})()
   }
 }
 
@@ -681,7 +683,7 @@ function ceval_(top){
     case _New       : return jLam_([], true, () => exec_(top))()
     case _Write     : return jLam_([], true, () => exec_(top))()
     case _Read      : return jLam_([], true, () => exec_(top))()
-    case _CSP       : return jReturn_(() => {put_('csp_[' + top._1 + ']/*'); str_(top._2)(); put_('*/')})()      
+    case _CSP       : return jReturn_(() => {put_('csp_[' + top._1 + ']/*'); str_(top._2)(); put_('*/')})()
   }
 }
 
@@ -690,10 +692,10 @@ const oevalVar_ = (x) => () => {
   const closed = cxt_.get(x)
   if (closed === true){
     jApp_(str_('CSP_'), [str_(x), strLit_(x)])();
-  } else if (closed == false) {  
+  } else if (closed == false) {
     jReturn_(str_(x))();
   } else {
-    throw new Error('impossible')  
+    throw new Error('impossible')
   }
 }
 
@@ -711,9 +713,9 @@ function oeval_(top){
       }
     }
     case _Lam : {
-      return jApp_(str_('Lam_'), [strLit_(top._1), jLam_([top._1], false, () => oeval_(top._2))])()      
+      return jApp_(str_('Lam_'), [strLit_(top._1), jLam_([top._1], false, () => oeval_(top._2))])()
     }
-    case _LiftedLam : 
+    case _LiftedLam :
       return jApp_(str_('Lam_'), [strLit_(top._2), jAppClosure_(str_(openVar_(top._1)), top._3.map(str_))])()
 
     case _App : {
@@ -832,8 +834,8 @@ function displayCode_(loc, code){
     console.log('CODE GENERATED:')
   }
   console.log('CODE:')
-  console.log(code) 
-  console.log('')   
+  console.log(code)
+  console.log('')
 }
 
 // Splicing in closed evaluation
@@ -868,7 +870,7 @@ function codegenOpen_(t_, loc_){
 
   put_('() => {\n')
   oevalTop_(t2_)
-  put_(';\n}')  
+  put_(';\n}')
 
   const csp_ = cspArray_
   const src_ = build_()
@@ -885,9 +887,9 @@ function codegenExec_(t_, loc_){
   isTail_         = true
   cxt_.clear()
 
-  put_('() => {\n')  
+  put_('() => {\n')
   execTop_(t2_)
-  put_(';\n}')    
+  put_(';\n}')
 
   const csp_ = cspArray_
   const src_ = build_()

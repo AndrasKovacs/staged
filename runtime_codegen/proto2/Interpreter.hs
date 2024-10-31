@@ -158,7 +158,8 @@ exec = \case
   Proj t x      -> eRun (cProj (ceval t) x)
   CSP x t       -> eRun t
   Open xs t u   -> cOpen xs (ceval t) (exec u)
-  ReadNat       -> do n <- read <$> getLine
+  ReadNat       -> do putStr "> "
+                      n <- read <$> getLine
                       if n < 0 then error "negative integer"
                                else pure $ CNat n
   PrintNat t    -> case ceval t of

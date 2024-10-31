@@ -1,5 +1,5 @@
 {-# language OverloadedStrings #-}
-{-# options_ghc -Wno-unused-imports -Wno-incomplete-patterns #-}
+{-# options_ghc -Wno-unused-imports  #-}
 
 module Compiler (genTop) where
 
@@ -52,6 +52,14 @@ data Tm
   | New Tm
   | Write Tm Tm
   | Read Tm
+  | Log String
+  | ReadNat
+  | PrintNat Tm
+  | Rec [(Name, Tm)]
+  | Proj Tm Name
+  | NatLit Integer
+  | Suc Tm
+  | NatElim Tm Tm Tm
   deriving Show
 
 type TopClosures = [(Name, [Name], Name, Tm)]
@@ -134,12 +142,22 @@ cconv = \case
                           Just s  -> Just $! s - 1
                      Splice <$> cconv t <*> pure p
 
-  Z.Return t   -> Return <$> cconv t
-  Z.Bind x t u -> do {t <- cconv t; bind x \x -> Bind x t <$> cconv u}
-  Z.Seq t u    -> Seq <$> cconv t <*> cconv u
-  Z.New t      -> New <$> cconv t
-  Z.Write t u  -> Write <$> cconv t <*> cconv u
-  Z.Read t     -> Read <$> cconv t
+  Z.Return t      -> Return <$> cconv t
+  Z.Bind x t u    -> do {t <- cconv t; bind x \x -> Bind x t <$> cconv u}
+  Z.Seq t u       -> Seq <$> cconv t <*> cconv u
+  Z.New t         -> New <$> cconv t
+  Z.Write t u     -> Write <$> cconv t <*> cconv u
+  Z.Read t        -> Read <$> cconv t
+  Z.NatLit n      -> pure $ NatLit n
+  Z.Suc t         -> Suc <$> cconv t
+  Z.NatElim s z n -> NatElim <$> cconv s <*> cconv z <*> cconv n
+  Z.Rec ts        -> Rec <$> traverse (traverse cconv) ts
+  Z.Proj t x      -> Proj <$> cconv t <*> pure x
+  Z.Open xs t u   -> undefined
+  Z.PrintNat t    -> PrintNat <$> cconv t
+  Z.ReadNat       -> pure ReadNat
+  Z.Log s         -> pure $ Log s
+
 
 cconv0 :: Env => Mode => Name -> ZTm -> (Tm, TopClosures)
 cconv0 x t =
@@ -295,6 +313,9 @@ exec = \case
   New t        -> jReturn $ "{_1 : " <> ceval t <> "}"
   Write t u    -> nonTail $ ceval t <> "._1 = " <> ceval u
   Read t       -> jReturn $ ceval t <> "._1"
+  Log s        -> jApp "console.log" [strLit s]
+  ReadNat      -> jReturn "reader_.prompt()"
+  PrintNat t   -> jApp "console.log" [ceval t]
 
 oevalVar :: Cxt => IsTail => Name -> Out
 oevalVar x = case lookup x ?cxt of
@@ -320,6 +341,9 @@ ceval = \case
   t@Write{}       -> jLam [] True $ exec t
   t@Read{}        -> jLam [] True $ exec t
   t@New{}         -> jLam [] True $ exec t
+  t@Log{}         -> jLam [] True $ exec t
+  t@ReadNat{}     -> jLam [] True $ exec t
+  t@PrintNat{}    -> jLam [] True $ exec t
 
 oeval :: IsTail => Cxt => Stage => Tm -> Out
 oeval = \case
@@ -343,13 +367,16 @@ oeval = \case
   New t             -> jApp "New_" [oeval t]
   Write t u         -> jApp "Write_" [oeval t, oeval u]
   Read t            -> jApp "Read_" [oeval t]
+  Log s             -> jApp "Log_" [strLit s]
+  ReadNat           -> jReturn "ReadNat_"
+  PrintNat t        -> jApp "PrintNat_" [oeval t]
 
 genTop :: Z.Tm Void -> IO Out
 genTop t = do
   src <- do
     exec_path <- getDataFileName "rts.js"
     doesFileExist exec_path >>= \case
-      -- True -> readFile exec_path
+      True -> readFile exec_path
       _    -> readFile "rts.js"
   let ?cxt = []
   return $! str src <> newl <> newl <> execTop (runCConv t)

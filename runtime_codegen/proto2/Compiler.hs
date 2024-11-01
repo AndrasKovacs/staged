@@ -213,7 +213,17 @@ jLet x closed t u = case ?isTail of
   Tail -> let u' = (let ?cxt = (x, closed): ?cxt in tail u) in
           "const " <> str x <> " = " <> indent (nonTail t) <> ";" <> newl <> u'
   _    -> let u' = (let ?cxt = (x, closed): ?cxt in nonTail u) in
-          "((" <> str x <> ") => " <> parens u' <> ")(" <> nonTail t <> ")"
+            "((" <> str x <> ") => " <> parens u' <> ")(" <> nonTail t <> ")"
+
+-- cOpen :: [Name] -> Bool -> (IsTail => Cxt => Out) -> (IsTail => Cxt => Out) -> (IsTail => Cxt => Out)
+-- cOpen xs closed t u = case ?isTail of
+--   Tail -> let u' = (let ?cxt = foldl' _ ?cxt xs in tail u) in
+--           "const " <> str x <> " = " <> indent (nonTail t) <> ";" <> newl <> u'
+--   _    -> _
+
+-- cOpen :: [Name] -> Closed -> (CEnv => a) -> CEnv => a
+-- cOpen xs t u = let ?env = foldl' (\env x -> ((x,) $! cProj t x) : env) ?env xs
+--                in seq ?env u
 
 jSeq :: IsTail => Cxt => (IsTail => Out) -> (IsTail => Out) -> Out
 jSeq t u = case ?isTail of
@@ -322,13 +332,13 @@ exec = \case
   Write t u     -> nonTail $ ceval t <> "._1 = " <> ceval u
   Read t        -> jReturn $ ceval t <> "._1"
   Log s         -> jApp "console.log" [strLit s]
-  ReadNat       -> jReturn "reader_.prompt()"
-  PrintNat t    -> jApp "console.log" [ceval t]
+  ReadNat       -> jApp "readNat_" []
+  PrintNat t    -> jApp "printNat_" [ceval t]
   Rec{}         -> impossible
   Proj t x      -> cRun (cProj (ceval t) x)
   Suc{}         -> impossible
   NatLit{}      -> impossible
-  NatElim s z n -> cRun undefined
+  NatElim s z n -> jApp "cNatElim_" [ceval s, ceval z, ceval n]
 
 oevalVar :: Cxt => IsTail => Name -> Out
 oevalVar x = case lookup x ?cxt of
@@ -336,10 +346,10 @@ oevalVar x = case lookup x ?cxt of
   Just True  -> jApp "CSP_" [str x, strLit x]
   Just False -> jReturn (str x)
 
-oRec :: Cxt => [(Name, Tm)] -> Out
+oRec :: Cxt => Stage => [(Name, Tm)] -> Out
 oRec []         = mempty
-oRec [(x,t)]    = _
-oRec ((x,t):ts) = _
+oRec [(x,t)]    = str x <> ": " <> nonTail (oeval t)
+oRec ((x,t):ts) = str x <> ": " <> nonTail (oeval t) <> ", " <> oRec ts
 
 ceval :: IsTail => Cxt => Tm -> Out
 ceval = \case
@@ -365,8 +375,8 @@ ceval = \case
   Rec ts          -> jReturn $ "{" <> cRec ts <> "}"
   Proj t x        -> cProj (ceval t) x
   NatLit n        -> str (show n)
-  Suc t           -> jApp "suc_" [ceval t]
-  NatElim s z n   -> undefined
+  Suc t           -> jApp "cSuc_" [ceval t]
+  NatElim s z n   -> jApp "cNatElim_" [ceval s, ceval z, ceval n]
 
 oeval :: IsTail => Cxt => Stage => Tm -> Out
 oeval = \case
@@ -394,6 +404,14 @@ oeval = \case
   ReadNat           -> jReturn "ReadNat_"
   PrintNat t        -> jApp "PrintNat_" [oeval t]
   Rec ts            -> jApp "Rec_" [ "[" <> oRec ts <> "]" ]
+  Proj t x          -> case ?stage of
+                         0 -> jApp "oProj_" [oeval t, strLit x]
+                         _ -> jApp "OProj_" [oeval t, strLit x]
+  NatLit n          -> jApp "Proj_" [strLit (show n)]
+  Suc t             -> jApp "Suc_" [oeval t]
+  NatElim s z n     -> case ?stage of
+                         0 -> jApp "natElim_" [ceval s, ceval z, ceval n]
+                         _ -> jApp "NatElim_" [ceval s, ceval z, ceval n]
 
 genTop :: Z.Tm Void -> IO Out
 genTop t = do

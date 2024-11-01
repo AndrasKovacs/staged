@@ -24,6 +24,14 @@ const _Closure   = 'Closure'
 const _CSP       = 'CSP'
 const _LiftedLam = 'LiftedLam'
 const _Body      = 'Body'
+const _NatElim   = 'NatElim'
+const _ReadNat   = 'ReadNat'
+const _PrintNat  = 'PrintNat'
+const _Open      = 'Open'
+const _Log       = 'Log'
+const _Rec       = 'Rec'
+const _NatLit    = 'NatLit'
+const _Suc       = 'Suc'
 
 /**
   @typedef {
@@ -39,15 +47,25 @@ const _Body      = 'Body'
   {tag: _New, _1: Open} |
   {tag: _Write, _1: Open, _2: Open} |
   {tag: _Read, _1: Open} |
-  {tag: _CSP, _1: Closed, _2: Name}
+  {tag: _CSP, _1: Closed, _2: Name} |
+
+  {tag: _NatElim, _1 : Open, _2: Open, _3: Open} |
+  {tag: _ReadNat} |
+  {tag: _PrintNat, _1: Open} |
+  {tag: _Open, _1: Array<Name>, _2: Open, _3: (v: Array<Open>) => Open} |
+  {tag: _Log, _1: String} |
+  {tag: _Rec, _1: Array<{_1: String, _2: Open}>} |
+  {tag: _NatLit, _1: Number} |
+  {tag: _Suc, _1: Open}
   } Open
 
   @typedef {
-  undefined |
-  {_1: (v:Closed) => Closed, _2: (v:Open) => Open} |
-  Open |
-  {_1 : Closed}
-  } Closed
+    undefined |
+    Object |
+    Number |
+    Open |
+    {_1 : Closed}
+    } Closed
 */
 
 /** @type {(x:Name, isTop:Boolean) => Open} */
@@ -76,6 +94,30 @@ function Write_  (t, u)    {return {tag: _Write, _1: t, _2: u}}
 function Read_   (t)       {return {tag: _Read, _1: t}}
 /** @type {(t: Closed, x:Name) => Open} */
 function CSP_ (t,x)        {return {tag: _CSP, _1: t, _2:x}}
+
+/** @type {(s: Open, z: Open, n: Open) => Open} */
+function NatElim_(s, z, n) {return {tag: _NatElim, _1: s, _2: z, _3: n}}
+
+/** @type {() => Open} */
+function ReadNat_() {return {tag: _ReadNat}}
+
+/** @type {(t: Open) => Open} */
+function PrintNat_(t) {return {tag: _PrintNat, _1: t}}
+
+/** @type {(xs: Array<Name>, t: Open, u: (x:Array<Open>) => Open) => Open} */
+function Open_(xs, t, u) {return {tag: _Open, _1:xs, _2: t, _3:u}}
+
+/** @type {(s:String) => Open} */
+function Log_(s) {return {tag: _Log, _1: s}}
+
+/** @type {(ts: Array<{_1:String, _2:Open}>) => Open} */
+function Rec_(ts) {return {tag: _Rec, _1: ts}}
+
+/** @type {(n:Number) => Open} */
+function NatLit_(n) {return {tag: _NatLit, _1: n}}
+
+/** @type {(n:Open) => Open} */
+function Suc_(n) {return {tag: _Suc, _1: n}}
 
 /** @type {Open} */
 const CSP_undefined_ = CSP_(undefined, 'undefined')
@@ -432,6 +474,28 @@ function quote_(t){
   }
 }
 
+// random crap
+//----------------------------------------------------------------------------------------------------
+
+function readNat_(){
+  const str = reader_.prompt()
+  const num = parseFloat(str)
+  const n   = Math.round(num)
+  if (!(num === n)){
+    throw new Error('Non-integral number')
+  } else if (num < 0) {
+    throw new Error('negative number')
+  } else {
+    return n
+  }
+}
+
+/** @type{(t:Closed) => {}} */
+function printNat_(n){
+  console.log(n)
+  return {}
+}
+
 // Code generation
 //----------------------------------------------------------------------------------------------------
 
@@ -655,7 +719,7 @@ function exec_(top){
     case _Bind      : return jLet_(top._1, true, () => exec_(top._2), () => exec_(top._3))()
     case _Seq       : return jSeq_(() => exec_(top._1), () => exec_(top._2))()
     case _New       : return jReturn_(() => {put_('{_1 : '); ceval_(top._1); put_('}')})()
-    case _Write     : return nonTail_(() => {ceval_(top._1); put_('._1 = '); ceval_(top._2)})()
+    case _Write     : return nonTail_(() => {ceval_(top._1); put_('._1 = '); ceval_(top._2); jReturn_(str_("{}"))() })()
     case _Read      : return jReturn_(() => {ceval_(top._1); put_('._1')})()
     case _CSP       : return jReturn_(() => {put_('csp_[' + top._1 + ']()/*'); strLit_(top._2); put_('*/')})()
   }

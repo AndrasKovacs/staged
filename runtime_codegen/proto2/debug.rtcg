@@ -1,9 +1,12 @@
 
 
-foo : Eff Σ() =
+foo : Eff ℕ =
   do n ← readℕ;
   do log "MALLAC";
-  return ();
+  return n;
+
+do n ← foo;
+do printℕ n;
 
 return ()
 

@@ -30,7 +30,6 @@ const _PrintNat  = 'PrintNat'
 const _Open      = 'Open'
 const _Log       = 'Log'
 const _Rec       = 'Rec'
-const _NatLit    = 'NatLit'
 const _Suc       = 'Suc'
 const _Proj      = 'Proj'
 
@@ -56,7 +55,6 @@ const _Proj      = 'Proj'
   {tag: _Open, _1: Array<Name>, _2: Open, _3: (v: Array<Open>) => Open} |
   {tag: _Log, _1: String} |
   {tag: _Rec, _1: Map<String, Open>} |
-  {tag: _NatLit, _1: Number} |
   {tag: _Suc, _1: Open} |
   {tag: _Proj, _1: Open, _2: Name}
   } Open
@@ -115,9 +113,6 @@ function Log_(s) {return {tag: _Log, _1: s}}
 /** @type {(ts: Map<String, Open>) => Open} */
 function Rec_(ts) {return {tag: _Rec, _1: ts}}
 
-/** @type {(n:Number) => Open} */
-function NatLit_(n) {return {tag: _NatLit, _1: n}}
-
 /** @type {(n:Open) => Open} */
 function Suc_(n) {return {tag: _Suc, _1: n}}
 
@@ -145,7 +140,15 @@ const CSP_undefined_ = CSP_(undefined, 'undefined')
    {tag: _Seq, _1: Tm, _2: Tm} |
    {tag: _New, _1: Tm} |
    {tag: _Write, _1: Tm, _2: Tm} |
-   {tag: _Read, _1: Tm}
+   {tag: _Read, _1: Tm} |
+   {tag: _Log, _1: String} |
+   {tag: _ReadNat} |
+   {tag: _PrintNat, _1: Tm} |
+   {tag: _Rec, _1: Map<Name, Tm>} |
+   {tag: _Proj, _1: Tm, _2: Name} |
+   {tag: _Suc, _1: Tm} |
+   {tag: _NatElim, _1: Tm, _2 : Tm, _3 : Tm}
+
    } Tm
 
    @typedef {
@@ -185,6 +188,25 @@ function TNew_       (t) {return {tag: _New, _1: t } }
 function TWrite_     (t, u) {return {tag: _Write, _1: t , _2: u } }
 /** @type {(t: Tm) => Tm} */
 function TRead_      (t) {return {tag: _Read, _1: t }}
+
+/** @type {() => Tm} */
+function TReadNat_() {return {tag: _ReadNat}}
+
+/** @type {(t:Tm) => Tm} */
+function TPrintNat_(t) {return {tag: _PrintNat, _1: t}}
+
+/** @type {(ts:Map<Name, Tm>) => Tm} */
+function TRec_(ts) {return {tag: _Rec, _1: ts}}
+
+/** @type {(t:Tm, x: Name) => Tm} */
+function TProj_(t, x) {return {tag: _Proj, _1: t, _2:x}}
+
+/** @type {(t:Tm) => Tm} */
+function TSuc_(t) {return {tag: _Suc, _1 : t}}
+
+/** @type {(s:Tm, z:Tm, n:Tm) => Tm} */
+function TSuc_(s,z,n) {return {tag: _NatElim, _1 : s, _2: z, _3 : n}}
+   
 
 /** @type {(x:Name, t:Tm, u:Top) => Top} */
 function TopLet_     (x, t, u) { return {tag: _Let, _1: x , _2: t, _3: u } }
@@ -267,6 +289,27 @@ const bind_ = (x, act) =>
     freeVars_.delete(x)
     return a
     })
+
+// desugar Open to iterated let
+/** @type{(xs: Array<Name>, t: Open, u : (x : Array<Open>) => Open) => Tm} */    
+function ccOpen(xs, t, u){
+  const t2 = cconv_(t)
+  return bind_('tmp', (tmp) => {    
+    let args = new Array()
+    /** @type{(x:Number) => Tm} */
+    function go(i){
+      if (i == xs.length){
+        return cconv_(u(args))
+      } else {
+        return bind_(xs[i], (x2) => {
+          args.push(Var_(x2, false));
+          const u = go(i+1)
+          return TLet_(x2, (TProj_(TVar_(tmp), xs[i])), u)})
+      }
+    }
+    return TLet_(tmp, t2, go(0))
+  })
+}    
 
 /** @type {(t: Open) => Tm} */
 function cconv_(top){
@@ -436,6 +479,30 @@ function runCConv_(t, m){
   return cconvTop_(t)
 }
 
+// closed computation
+//----------------------------------------------------------------------------------------------------
+
+/** @type{(t:Closed) => Closed} */
+function cSuc_(t){
+  if (typeof t === 'number'){
+    return t + 1
+  } else {
+    throw new Error('impossible')
+  }  
+}
+
+/** @type{(s : Closed, z: Closed, n:Closed) => Closed} */
+function cNatElim_(s, z, n) {
+  if (n === 0) {
+    return z;
+  } else if (n > 0) {
+    const m = n - 1;
+    return s._1(m)._1(cNatElim_(s, z, m))
+  } else {
+    throw new Error('impossible')
+  }
+}
+
 // open eliminators
 //----------------------------------------------------------------------------------------------------
 
@@ -488,6 +555,28 @@ function proj_(t, x){
     return /** @type{Open} */ (t._1.get(x))
   } else {
     return Proj_(t, x);
+  }
+}
+
+/** @type{(s : Open, z:Open, n:Open) => Open} */
+function natElim_(s, z, n){
+  /** @type{(n : Number) => Open} */
+  function go(n){
+    if (n === 0){
+      return z
+    } else if (n > 0) {
+      const m = n - 1
+      return app_(app_(s, CSP_(m, '')), go(m))
+    } else {
+      throw new Error('impossible')
+    }
+  }
+  if (n.tag === _CSP){
+    return go(n._1)
+  } else if (n.tag == _Suc){
+    return app_(app_(s, n._1), natElim_(s, z, n._1))
+  } else {
+    return NatElim_(s, z, n);
   }
 }
 

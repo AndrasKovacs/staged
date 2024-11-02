@@ -1,19 +1,9 @@
 
-Foo = Σ(fst : ℕ, snd : ℕ, majom : ℕ → ℕ, béka : ℕ → ℕ);
+add (n m : ℕ) : ℕ = ℕElim suc m n;
+foo = <λ x. ~(let y = add x x; <y>)>;
+bar = ~foo 10;
 
-foo : Foo = (10, 20, λ x. x, λ x. x);
-
-open foo;
-
-do printℕ (majom (béka fst));
-
-kek = <λ (x : Foo). x.majom (x.fst)>;
-
-kekaroo = <λ (x : Foo). ~(let y : Foo = (fst=10, snd=20, majom=λx.x, béka=λ x.x); <y>)>;
-
--- add (n m : ℕ) : ℕ = ℕElim suc m n;
-
-return ()
+return bar
 
 
 

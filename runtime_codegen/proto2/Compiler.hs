@@ -432,11 +432,12 @@ oeval = \case
   Proj t x          -> case ?stage of
                          0 -> jApp "proj_" [oeval t, strLit x]
                          _ -> jApp "Proj_" [oeval t, strLit x]
-  NatLit n          -> jApp "NatLit_" [str (show n)]
+  NatLit n          -> jApp "CSP_" [str (show n), strLit (show n)]
+
   Suc t             -> jApp "Suc_" [oeval t]
   NatElim s z n     -> case ?stage of
-                         0 -> jApp "natElim_" [ceval s, ceval z, ceval n]
-                         _ -> jApp "NatElim_" [ceval s, ceval z, ceval n]
+                         0 -> jApp "natElim_" [oeval s, oeval z, oeval n]
+                         _ -> jApp "NatElim_" [oeval s, oeval z, oeval n]
 
 genTop :: Z.Tm Void -> IO Out
 genTop t = do

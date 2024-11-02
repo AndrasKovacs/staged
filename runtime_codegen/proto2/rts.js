@@ -32,6 +32,7 @@ const _Log       = 'Log'
 const _Rec       = 'Rec'
 const _NatLit    = 'NatLit'
 const _Suc       = 'Suc'
+const _Proj      = 'Proj'
 
 /**
   @typedef {
@@ -54,9 +55,10 @@ const _Suc       = 'Suc'
   {tag: _PrintNat, _1: Open} |
   {tag: _Open, _1: Array<Name>, _2: Open, _3: (v: Array<Open>) => Open} |
   {tag: _Log, _1: String} |
-  {tag: _Rec, _1: Array<{_1: String, _2: Open}>} |
+  {tag: _Rec, _1: Map<String, Open>} |
   {tag: _NatLit, _1: Number} |
-  {tag: _Suc, _1: Open}
+  {tag: _Suc, _1: Open} |
+  {tag: _Proj, _1: Open, _2: Name}
   } Open
 
   @typedef {
@@ -110,7 +112,7 @@ function Open_(xs, t, u) {return {tag: _Open, _1:xs, _2: t, _3:u}}
 /** @type {(s:String) => Open} */
 function Log_(s) {return {tag: _Log, _1: s}}
 
-/** @type {(ts: Array<{_1:String, _2:Open}>) => Open} */
+/** @type {(ts: Map<String, Open>) => Open} */
 function Rec_(ts) {return {tag: _Rec, _1: ts}}
 
 /** @type {(n:Number) => Open} */
@@ -118,6 +120,9 @@ function NatLit_(n) {return {tag: _NatLit, _1: n}}
 
 /** @type {(n:Open) => Open} */
 function Suc_(n) {return {tag: _Suc, _1: n}}
+
+/** @type {(t:Open, x: Name) => Open} */
+function Proj_(t, x) {return {tag: _Proj, _1: t, _2: x}}
 
 /** @type {Open} */
 const CSP_undefined_ = CSP_(undefined, 'undefined')
@@ -471,6 +476,18 @@ function quote_(t){
     return t._1
   } else {
     return Quote_(t)
+  }
+}
+
+/** @type{(t:Open, x:Name) => Open} */
+function proj_(t, x){
+  if (t.tag === _CSP){
+    // must be a record
+    return CSP_((t._1)[x], '');
+  } else if (t.tag === _Rec) {
+    return /** @type{Open} */ (t._1.get(x))
+  } else {
+    return Proj_(t, x);
   }
 }
 

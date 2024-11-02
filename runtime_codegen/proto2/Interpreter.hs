@@ -44,7 +44,6 @@ data Open
   | OWrite Open Open
   | ORead Open
   | OClosed (Maybe Name) Closed
-  | ONatLit Integer
   | OSuc Open
   | ONatElim Open Open Open
   | OProj Open Name
@@ -121,11 +120,12 @@ cOpen xs t u = let ?env = foldl' (\env x -> ((x,) $! cProj t x) : env) ?env xs
 oNatElim :: Lvl => Open -> Open -> Open -> Open
 oNatElim s z n =
   let go 0 = z
-      go n = s `oApp` ONatLit (n - 1) `oApp` go (n - 1)
+      go n = s `oApp` OClosed Nothing (CNat n) `oApp` go (n - 1)
   in case n of
-    ONatLit n -> go n
-    OSuc n    -> s `oApp` n `oApp` oNatElim s z n
-    n         -> ONatElim s z n
+    OClosed _ (CNat n) -> go n
+    OClosed _ _        -> impossible
+    OSuc n             -> s `oApp` n `oApp` oNatElim s z n
+    n                  -> ONatElim s z n
 
 oQuote :: Open -> Open
 oQuote = \case
@@ -242,7 +242,7 @@ oeval = \case
   CSP x t    -> OClosed x t
   Suc t      -> OSuc (oeval t)
   Rec ts     -> ORec (fmap (fmap oeval) ts)
-  NatLit n   -> ONatLit n
+  NatLit n   -> OClosed Nothing (CNat n)
   t -> case ?stage of
     0 -> case t of
       Let x t u     -> def x (oeval t) (oeval u)
@@ -289,7 +289,6 @@ gen = \case
   ONew t         -> New (gen t)
   OWrite t u     -> Write (gen t) (gen u)
   ORead t        -> Read (gen t)
-  ONatLit n      -> NatLit n
   OSuc t         -> Suc (gen t)
   ONatElim s z n -> NatElim (gen s) (gen z) (gen n)
   ORec ts        -> Rec (fmap (fmap gen) ts)

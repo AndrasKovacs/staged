@@ -101,6 +101,16 @@ bind x act = fresh x \x -> do
   freeVars %= S.delete x
   pure a
 
+-- desugar Open to iterated Let
+ccOpen :: Env => Mode => TopName => [Name] -> ZTm -> ZTm -> State S Tm
+ccOpen xs t u = do
+  t <- cconv t
+  bind "tmp" \tmp -> do
+    let go :: Env => Mode => TopName => [Name] -> State S Tm
+        go []     = cconv u
+        go (x:xs) = bind x \x' -> Let x' (Proj (Var tmp) x) <$> go xs
+    Let tmp t <$> go xs
+
 cconv :: Env => Mode => TopName => ZTm -> State S Tm
 cconv = \case
   Z.Var x -> do
@@ -127,20 +137,20 @@ cconv = \case
     Just{} ->
       bind x \x -> Lam x <$> cconv t
 
-  Z.App t u    -> App <$> cconv t <*> cconv u
-  Z.Erased s   -> pure $ Erased s
-  Z.Quote t    -> case ?mode of
-                    Nothing -> do
-                      let ?mode = Just 1
-                      Quote <$> cconv t
-                    Just s -> do
-                      let ?mode = Just $! s + 1
-                      Quote <$> cconv t
-  Z.Splice t p -> do let ?mode = case ?mode of
-                          Nothing -> Nothing
-                          Just 0  -> Just 0
-                          Just s  -> Just $! s - 1
-                     Splice <$> cconv t <*> pure p
+  Z.App t u       -> App <$> cconv t <*> cconv u
+  Z.Erased s      -> pure $ Erased s
+  Z.Quote t       -> case ?mode of
+                       Nothing -> do
+                         let ?mode = Just 1
+                         Quote <$> cconv t
+                       Just s -> do
+                         let ?mode = Just $! s + 1
+                         Quote <$> cconv t
+  Z.Splice t p    -> do let ?mode = case ?mode of
+                              Nothing -> Nothing
+                              Just 0  -> Just 0
+                              Just s  -> Just $! s - 1
+                        Splice <$> cconv t <*> pure p
 
   Z.Return t      -> Return <$> cconv t
   Z.Bind x t u    -> do {t <- cconv t; bind x \x -> Bind x t <$> cconv u}
@@ -153,7 +163,7 @@ cconv = \case
   Z.NatElim s z n -> NatElim <$> cconv s <*> cconv z <*> cconv n
   Z.Rec ts        -> Rec <$> traverse (traverse cconv) ts
   Z.Proj t x      -> Proj <$> cconv t <*> pure x
-  Z.Open xs t u   -> undefined
+  Z.Open xs t u   -> ccOpen xs t u
   Z.PrintNat t    -> PrintNat <$> cconv t
   Z.ReadNat       -> pure ReadNat
   Z.Log s         -> pure $ Log s
@@ -169,6 +179,19 @@ addClosures :: TopClosures -> Top -> Top
 addClosures cs t =
   foldl' (\acc (x, env, arg, t) -> TClosure x env arg t acc) t cs
 
+-- desugar Open to iterated Let
+ccOpenTop :: Env => Mode => [Name] -> ZTm -> ZTm -> Top
+ccOpenTop xs t u =
+  let tmp = freshenName "tmp" in
+  let (t', cs) = cconv0 tmp t in
+  let ?env = (True, tmp) : ?env in
+
+  let go :: Env => Mode => [Name] -> Top
+      go []     = cconvTop u
+      go (x:xs) = fresh x \x' -> TLet x' (Proj (Var tmp) x) (go xs)
+
+  in addClosures cs $ TLet tmp t' $ go xs
+
 cconvTop :: Env => Mode => ZTm -> Top
 cconvTop = \case
   Z.Let (freshenName -> x) t u ->
@@ -182,6 +205,8 @@ cconvTop = \case
   Z.Seq t u ->
     let (t', cs) = cconv0 "$cl" t in
     addClosures cs $ TSeq t' (cconvTop u)
+  Z.Open xs t u ->
+    ccOpenTop xs t u
   t ->
     case cconv0 "$cl" t of
       (t', cs) -> addClosures cs (TBody t')
@@ -284,8 +309,8 @@ openVar x = x ++ "o"
 
 cRec :: Cxt => [(Name, Tm)] -> Out
 cRec []          = mempty
-cRec [(x, t)]    = "x: " <> nonTail (ceval t)
-cRec ((x, t):ts) = "x: " <> nonTail (ceval t) <> ", " <> cRec ts
+cRec [(x, t)]    = str x <> ": " <> nonTail (ceval t)
+cRec ((x, t):ts) = str x <> ": " <> nonTail (ceval t) <> ", " <> cRec ts
 
 spliceLoc :: Maybe String -> Out
 spliceLoc = \case
@@ -348,8 +373,8 @@ oevalVar x = case lookup x ?cxt of
 
 oRec :: Cxt => Stage => [(Name, Tm)] -> Out
 oRec []         = mempty
-oRec [(x,t)]    = str x <> ": " <> nonTail (oeval t)
-oRec ((x,t):ts) = str x <> ": " <> nonTail (oeval t) <> ", " <> oRec ts
+oRec [(x,t)]    = "[" <> strLit x <> ", " <> nonTail (oeval t) <> "]"
+oRec ((x,t):ts) = "[" <> strLit x <> ", " <> nonTail (oeval t) <> "], " <> oRec ts
 
 ceval :: IsTail => Cxt => Tm -> Out
 ceval = \case
@@ -403,11 +428,11 @@ oeval = \case
   Log s             -> jApp "Log_" [strLit s]
   ReadNat           -> jReturn "ReadNat_"
   PrintNat t        -> jApp "PrintNat_" [oeval t]
-  Rec ts            -> jApp "Rec_" [ "[" <> oRec ts <> "]" ]
+  Rec ts            -> jApp "Rec_" [ "new Map([" <> oRec ts <> "])" ]
   Proj t x          -> case ?stage of
-                         0 -> jApp "oProj_" [oeval t, strLit x]
-                         _ -> jApp "OProj_" [oeval t, strLit x]
-  NatLit n          -> jApp "Proj_" [strLit (show n)]
+                         0 -> jApp "proj_" [oeval t, strLit x]
+                         _ -> jApp "Proj_" [oeval t, strLit x]
+  NatLit n          -> jApp "NatLit_" [str (show n)]
   Suc t             -> jApp "Suc_" [oeval t]
   NatElim s z n     -> case ?stage of
                          0 -> jApp "natElim_" [ceval s, ceval z, ceval n]

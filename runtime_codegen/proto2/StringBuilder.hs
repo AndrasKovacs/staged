@@ -20,6 +20,8 @@ strLit s = "`" <> str s <> "`"
 
 instance IsString Out where fromString s = Out (\_ -> Chunk s)
 
+instance Show Out where show = build
+
 indent :: Out -> Out
 indent (Out f) = Out (\i -> f $! i + 4)
 

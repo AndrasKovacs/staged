@@ -1,12 +1,17 @@
 
+Foo = Σ(fst : ℕ, snd : ℕ, majom : ℕ → ℕ, béka : ℕ → ℕ);
 
-foo : Eff ℕ =
-  do n ← readℕ;
-  do log "MALLAC";
-  return n;
+foo : Foo = (10, 20, λ x. x, λ x. x);
 
-do n ← foo;
-do printℕ n;
+open foo;
+
+do printℕ (majom (béka fst));
+
+kek = <λ (x : Foo). x.majom (x.fst)>;
+
+kekaroo = <λ (x : Foo). ~(let y : Foo = (fst=10, snd=20, majom=λx.x, béka=λ x.x); <y>)>;
+
+-- add (n m : ℕ) : ℕ = ℕElim suc m n;
 
 return ()
 

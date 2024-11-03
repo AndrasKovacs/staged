@@ -7,10 +7,13 @@
 --     let g = ~<λ x. x>;
 --     <f, g>)>;
 
-do ref ← new 100;
-do n ← ~<do n ← read ref; return n>;
+id {A}(x : A) = x;
 
-return n
+foo = ~<λ (x : ℕ). ~(let y = ~(id <λ z. x>); <y x>)>;
+
+-- foo = ~(id <10>);
+
+return $ foo 100
 
 
 -- addcode : □ (ℕ → ℕ → ℕ) = <

@@ -898,8 +898,392 @@ function codegenClosed_(t, loc) {
 } // codegenClosed
 
 
-// CODE GENERATION CALLED FROM CLOSED EVALUATION
+// CODE GENERATION CALLED FROM OPEN EVALUATION
 // ----------------------------------------------------------------------------------------------------
+
+/** @type{(x: String, y: Array<Closed>, loc: undefined|Array<String>) => Open} */
+function evalCodeGenOpen_(src_, csp_, loc_) {
+  displayCode_(loc_, src_);
+  const res_ = eval(src_)();
+  return res_;
+}
+
+/** @type {(t:Open, loc: undefined|Array<String>) => Open} */
+function codegenOpen_(t, loc){
+
+  // CODE QUOTING
+  // ----------------------------------------------------------------------------------------------------
+  /** @type{(t : Open) => {_1: Tm, _2: Array<Closed>}} */
+  function quote(top){
+
+    /** @type {Array<Closed>} */
+    const cspArray = new Array();
+
+    /** @type{(x: Name, act : (x:Name) => Tm) => Tm} */
+    function bind(x, act){
+      const x2 = freshenName_(x);
+      boundVarSet_.add(x2);
+      const res = act(x2);
+      boundVarSet_.delete(x);
+      return res;
+    }
+
+    /** @type{(t : Open) => Tm} */    
+    function go(top){
+      switch (top.tag){
+        case _Var : return TVar_(top.name)
+        case _Let : {
+          const x = top._1
+          const t = top._2
+          const u = top._3
+          const t2 = go(t)
+          return bind(x, (x) => TLet_(x, t2, go(u(Var_(x)))))
+        }
+        case _Lam    : return bind(top._1, (x) => TLam_(x, go(top._2(Var_(x)))))
+        case _App    : return TApp_(go(top._1), go(top._2))
+        case _Quote  : return TQuote_(go(top._1))
+        case _Splice : return TSplice_(go(top._1))
+        case _Bind : {
+          const t2 = go(top._2)
+          return bind(top._1, (x) => TBind_(x, t2, go(top._3(Var_(x)))))
+        }
+        case _Return : return TReturn_(go(top._1))
+        case _Seq    : return TSeq_(go(top._1), go(top._2))
+        case _New    : return TNew_(go(top._1))
+        case _Write  : return TWrite_(go(top._1), go(top._2))
+        case _Read   : return TRead_(go(top._1))
+  
+        case _CSP : {
+          if (typeof top._1 === 'number'){  // inline closed numerals into source code
+            return TNatLit_(top._1)
+          } else {
+            const id = cspArray.length
+            cspArray.push(top._1)
+            return TCSP_(id, top._2)
+          }
+        }
+        case _Suc     : return TSuc_(go(top._1))
+        case _NatElim : return TNatElim_(go(top._1), go(top._2), go(top._3))
+  
+        case _Rec : {
+          const res = new Map()
+          top._1.forEach((t, x) => {res.set(x, go(t))})
+          return TRec_(res)
+        }
+        case _Proj     : return TProj_(go(top._1), top._2)
+        case _PrintNat : return TPrintNat_(go(top._1))
+        case _ReadNat  : return TReadNat_()
+        case _Log      : return TLog_(top._1)      
+      } // switch      
+    } // go
+
+    return {_1: go(top), _2: cspArray}
+  } // quote
+
+  // CODE EMISSION
+  //----------------------------------------------------------------------------------------------------
+
+  /** @type{(t:Tm) => String} */
+  function emitCode(t){
+
+    // code builder is simply an array of strings
+    /** @type {Array<String>} */
+    const builder = new Array()
+
+    /** @type {() => String} */
+    const build = () => {return builder.join('')}
+
+    /** @type {Set<Name>} */
+    const localVars = new Set()
+
+    /** @type {Number} */
+    let indentation = 0
+
+    /** @type {Boolean} */
+    let isTail = true
+
+    /** @type{Number} */
+    let stage = 0
+
+    /** @type {(s:String) => void} */
+    const put = (s) => {builder.push(s)}
+
+    /** @type {(s:String) => () => void} */
+    const str = (s) => () => put(s)
+
+    /** @type {(s:String) => () => void} */
+    const strLit = (s) => () => put("`" + s + "`")
+
+    /** @type {() => void} */
+    const newl = () => {put('\n' + ' '.repeat(indentation))}
+
+    /** @type{(s : Number, act: () => void) => (() => void)} */
+    const inStage = (s, act) => () => {
+      const backup = stage
+      stage = s
+      const res = act()
+      stage = backup
+      return res
+    }
+
+    /** @type{ (act: () => void) => (() => void) } */
+    const tail = (act) => () => {
+      const backup = isTail
+      isTail = true
+      const res = act()
+      isTail = backup
+      return res
+    }
+
+    /** @type{ (act: () => void) => (() => void) } */
+    const nonTail = (act) => () => {
+      const backup = isTail
+      isTail = false
+      const res = act()
+      isTail = backup
+      return res
+    }
+
+    /** @type{ (act: () => void) => (() => void) } */
+    const indent = (act) => () => {
+      const backup = indentation
+      indentation += 2
+      const res = act()
+      indentation = backup
+      return res
+    }
+
+    /** @type{ () => void } */
+    function semi(){put(';')}
+
+    /** @type{ (act: () => void) => (() => void) } */
+    const par = (act) => () => {put('('); act(); put(')')}
+
+    /** @type{ (x: Name, act: () => void) => () => void} */
+    const bind = (x, act) => () => {
+      if (closed) {localVars.add(x)};
+      const res = act();
+      if (closed) {localVars.delete(x)}
+      return res;
+    }
+
+    /** @type{ (x: Name, closed: Boolean, t: () => void, u: () => void) => (() => void) } */
+    const jLet = (x, closed, t, u) => () => {
+      if (isTail){
+        put('const ' + x + ' = '); indent(nonTail(t))(); semi(); newl(); tail(bind(x, u))()
+      } else {
+        put('((' + x + ') => ');
+        par(nonTail(bind(x, u)))(); put(')('); nonTail(t)(); put(')')
+      }
+    }
+
+    /** @type{ (t: () => void, u: () => void) => (() => void) } */
+    const jSeq = (t, u) => () => {
+      if (isTail){
+        indent(nonTail(t))(); semi(); newl(); tail(u)()
+      } else {
+        put('((_) => '); par(nonTail(u))(); put(')('); nonTail(t)(); put(')')
+      }
+    }
+
+    /** @type{(xs: Array<() => void>) => (() => void)} */
+    const jTuple = (xs) => () => {
+      if (xs.length === 0){
+        put('()')
+      } else {
+        put('('); xs[0](); xs.slice(1, xs.length).forEach((act) => {put(', '); act()}); put(')')
+      }
+    }
+
+    /** @type((t : () => void) => () => void)} */
+    const jReturn = (t) => () => {
+      if (isTail) { put('return '); nonTail(t)()
+      } else      { t() }
+    }
+
+    /** @type{(xs : Array<Name>, closed: Boolean, t: () => void) => () => void} */
+    const jLam = (xs, closed, t) => () => {
+      jReturn(() => {
+        jTuple(xs.map(str))();
+        put(' => {');
+        xs.forEach((x) => localVars.add(x))
+        tail(t)();
+        xs.forEach((x) => localVars.delete(x))        
+        put('}')
+      })()
+    }
+
+    /** @type{(xs: Array<Name>, closed:Boolean, t: () => void) => () => void} */
+    const jLamExp = (xs, closed, t) => () => {
+      jReturn(() => {
+        jTuple(xs.map(str))();
+        put(' => ')
+        nonTail(t)();
+      })()
+    }
+
+    /** @type{(t: () => void, u: () => void) => () => void} */
+    const cApp = (t, u) => () => {
+      jReturn(() => {par(t)(); put('._1'); par(u)()})()
+    }
+
+    /** @type{(t : () => void, args: Array<() => void>) => () => void} */
+    const jApp = (t, args) => () => {
+      jReturn(() => {t(); jTuple(args)() })()
+    }
+
+    /** @type{(t : () => void) => () => void} */
+    const cRun = (t) => () => {
+      jReturn(() => {t(); put('()') })()
+    }
+
+    /** @type{(env: Array<Name>, x: Name, closed:Boolean, t : () => void) => () => void} */
+    const jClosure = (env, x, closed, t) => () => {
+      if (env.length === 0){
+        jLam([x], closed, t)()
+      } else {
+        jLamExp(env, closed, jLam([x], closed, t))()
+      }
+    }
+
+    /** @type{(t: () => void, args: Array<() => void>) => () => void} */
+    const jAppClosure = (t, args) => () => {
+      if (args.length === 0){
+        t()
+      } else {
+        t(); jTuple(args)()
+      }
+    }
+
+    /** @type{(ts : Map<Name, Tm>) => () => void} */
+    const oRec = (ts) => () => {
+      const arr = Array.from(ts);
+      /** @type{(i:Number) => void} */
+      function go(i) {
+        if (i == arr.length){
+          return;
+        } else if (arr.length !== 0 && i == arr.length - 1){
+          put('['); put(arr[i][0]); put(', '); nonTail(() => oeval(arr[i][1]))(); put(']');
+        } else {
+          put('['); put(arr[i][0]); put(', '); nonTail(() => oeval(arr[i][1]))(); put('], ');
+          return go(i+1);
+        }
+      }
+      go(0)
+    }
+
+    /** @type{(x:Name) => Name} */
+    const openVar  = (x) => x + 'o'
+
+    //----------------------------------------------------------------------------------------------------
+
+    // Local variables are those bound within the currently generate code 
+    // Non-local vars are the bound vars floating around, bound upstream.
+
+    /** @type {(x:Name) => () => void} */
+    const oevalVar = (x) => () => {
+      if (localVars.has(x)) {
+        return jReturn(str(x))();  
+      } else {
+        return jApp(str('Var_'), [strLit(x)])();
+      }      
+    }
+
+    /** @type {(t:Tm) => void} */
+    function oeval(top){
+      switch (top.tag){
+        case _Var : return oevalVar(top._1)();
+        case _CSP : return jApp(str('CSP_'), [str('csp_[' + top._1 + ']'), strLit(top._2)])()
+
+        case _Let : {
+          if (stage === 0){
+            return jLet(top._1, false, () => oeval(top._2), () => oeval(top._3))()
+          } else {
+            return jApp(str('Let_'), [strLit(top._1), () => oeval(top._2), jLam([top._1], false, () => oeval(top._3))])()
+          }
+        }
+        case _Lam : {
+          return jApp(str('Lam_'), [strLit(top._1), jLam([top._1], false, () => oeval(top._2))])()
+        }
+        case _LiftedLam :
+          throw new Error('impossible')
+        case _App : {
+          if (stage === 0){
+            return jApp(str('app_'), [() => oeval(top._1), () => oeval(top._2)])()
+          } else {
+            return jApp(str('App_'), [() => oeval(top._1), () => oeval(top._2)])()
+          }
+        }
+        case _Quote : return jApp(str('quote_'), [inStage(stage + 1, () => oeval(top._1))])()
+        case _Splice : {
+          if (stage === 0){
+            return jApp(str('codegenOpen_'), [() => oeval(top._1)])()
+          } else {
+            return inStage(stage - 1, jApp(str('splice_'), [() => oeval(top._1)]))()
+          }
+        }
+
+        case _Return    : return jApp(str('Return_'), [() => oeval(top._1)])()
+        case _Bind      : return jApp(str('Bind_'), [strLit(top._1), () => oeval(top._2), jLam([top._1], false, () => oeval(top._3))])()
+        case _Seq       : return jApp(str('Seq_'), [() => oeval(top._1), () => oeval(top._2)])()
+        case _New       : return jApp(str('New_'), [() => oeval(top._1)])()
+        case _Write     : return jApp(str('Write_'), [() => oeval(top._1), () => oeval(top._2)])()
+        case _Read      : return jApp(str('Read_'), [() => oeval(top._1)])()
+        case _Log       : return jApp(str('Log_'), [strLit(top._1)])()
+        case _ReadNat   : return jApp(str('ReadNat_'), [])()
+        case _PrintNat  : return jApp(str('PrintNat_'), [() => oeval(top._1)])()
+        case _Rec       : return jApp(str('Rec_'), [ () => {put('new Map(['); oRec(top._1)(); put('])')}])()
+
+        case _Proj : {
+          if (stage === 0){
+            return jApp(str('proj_'), [() => oeval(top._1), strLit(top._2)])()
+          } else {
+            return jApp(str('Proj_'), [() => oeval(top._1), strLit(top._2)])()
+          }
+        }
+        case _Suc : {
+          if (stage === 0){
+            return jApp(str('suc_'), [() => oeval(top._1)])()
+          } else {
+            return jApp(str('Suc_'), [() => oeval(top._1)])()
+          }
+        }
+        case _NatElim : {
+          if (stage === 0){
+            return jApp(str('natElim_'), [() => oeval(top._1), () => oeval(top._2), () => oeval(top._3)])()
+          } else {
+            return jApp(str('NatElim_'), [() => oeval(top._1), () => oeval(top._2), () => oeval(top._3)])()
+          }
+        }
+        case _NatLit : {
+          const s = top._1.toString();
+          return jApp(str('CSP_'), [str(s), strLit(s)])()
+        }
+      } // switch
+    } // oeval
+
+    put('() => {\n');
+    oeval(t);
+    put(';\n}');
+    return build();
+
+  } // emitCode
+
+  switch (t.tag){
+    case _CSP : {
+      const res = codegenClosed_(t._1, loc);
+      return CSP_(res, '');
+    }
+    case _Quote : {
+      const {_1: t2, _2: cspArray} = quote(t._1);      
+      const source = emitCode(t2);
+      return evalCodeGenOpen_(source, cspArray, loc);      
+    }
+    default : {
+      return Splice_(t)
+    }
+  }
+} // codegenOpen_
 
 
 // CLOSED COMPUTATIONS

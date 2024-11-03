@@ -283,28 +283,29 @@ traceGen t loc =
 
 gen :: Lvl => Open -> Tm
 gen = \case
-  OVar x         -> Var (coerce (?lvl - x - 1))
-  OLet x t u     -> Let x (gen t) $ fresh \_ -> gen (coerce u ?lvl)
-  OLam x t       -> Lam x $ fresh \v -> gen (coerce t ?lvl v)
-  OApp t u       -> App (gen t) (gen u)
-  OErased s      -> Erased s
-  OQuote t       -> Quote (gen t)
-  OSplice t      -> Splice (gen t) Nothing
-  OReturn t      -> Return (gen t)
-  OBind x t u    -> Bind x (gen t) $ fresh \_ -> gen (coerce u ?lvl)
-  OSeq t u       -> Seq (gen t) (gen u)
-  ONew t         -> New (gen t)
-  OWrite t u     -> Write (gen t) (gen u)
-  ORead t        -> Read (gen t)
-  OSuc t         -> Suc (gen t)
-  ONatElim s z n -> NatElim (gen s) (gen z) (gen n)
-  ORec ts        -> Rec (fmap (fmap gen) ts)
-  OProj t x      -> Proj (gen t) x
-  OClosed x t    -> CSP x t
-  OOpen xs t u   -> Open xs (gen t) $ freshes xs $ gen (coerce u ?lvl)
-  OPrintNat t    -> PrintNat (gen t)
-  OReadNat       -> ReadNat
-  OLog s         -> Log s
+  OVar x             -> Var (coerce (?lvl - x - 1))
+  OLet x t u         -> Let x (gen t) $ fresh \_ -> gen (coerce u ?lvl)
+  OLam x t           -> Lam x $ fresh \v -> gen (coerce t ?lvl v)
+  OApp t u           -> App (gen t) (gen u)
+  OErased s          -> Erased s
+  OQuote t           -> Quote (gen t)
+  OSplice t          -> Splice (gen t) Nothing
+  OReturn t          -> Return (gen t)
+  OBind x t u        -> Bind x (gen t) $ fresh \_ -> gen (coerce u ?lvl)
+  OSeq t u           -> Seq (gen t) (gen u)
+  ONew t             -> New (gen t)
+  OWrite t u         -> Write (gen t) (gen u)
+  ORead t            -> Read (gen t)
+  OSuc t             -> Suc (gen t)
+  ONatElim s z n     -> NatElim (gen s) (gen z) (gen n)
+  ORec ts            -> Rec (fmap (fmap gen) ts)
+  OProj t x          -> Proj (gen t) x
+  OClosed x (CNat n) -> NatLit n -- inline closed numeral into code
+  OClosed x t        -> CSP x t
+  OOpen xs t u       -> Open xs (gen t) $ freshes xs $ gen (coerce u ?lvl)
+  OPrintNat t        -> PrintNat (gen t)
+  OReadNat           -> ReadNat
+  OLog s             -> Log s
 
 -- Only for pretty printing purposes
 readBackClosed :: Closed -> Tm

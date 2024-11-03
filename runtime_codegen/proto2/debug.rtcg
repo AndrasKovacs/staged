@@ -1,47 +1,20 @@
 
 -- testing free var shadowing in open codegen
 
-brekk = <λ (x : ℕ). x>;
-
 foo : ℕ → Σ(fst: ℕ → ℕ, snd : ℕ → ℕ) = ~<λ x.
-  ~(let kek = x;
-    let majom = ~<λ x. kek>;
-    let bruhh = ~brekk;
-    <majom, bruhh>)>;
+  ~(let y = x;
+    let f = ~<λ x. y>;
+    let g = ~<λ x. x>;
+    <f, g>)>;
 
--- res = ~<
---   ~(
---   let add (n m : ℕ) = ℕElim suc n m;
---   let mul (n m : ℕ) = ℕElim (add n) 0 m;
---   <mul 10 10>
---   )
---   >;
-
-return $ (foo 10).snd 20
+return ()
 
 
+-- addcode : □ (ℕ → ℕ → ℕ) = <
+--   λ x y. ℕElim suc x y>;
 
--- Bool = (B : U) → B → B → B;
--- true  : Bool = λ _ t f. t;
--- false : Bool = λ _ t f. f;
--- if {A}(b : Bool)(t f : A) = b _ t f;
+-- add = ~addcode;
 
--- --------------------------------------------------------------------------------
+-- nfadd : ℕ → ℕ → ℕ = ~<λ x y. ~(let y = add x y; <y>)>;
 
--- fuel = 1000;
-
--- caseℕ {A}(n : ℕ) (s : ℕ → A) (z : A) =
---   ℕElim {λ _. A}(λ {n} _. s n) z n;
-
--- loop (act : Eff Bool) : Eff Σ() =
---   ℕElim {λ _. Eff Σ()}
---         (λ rec. do b ← act; if b rec (return ()))
--- 	(return ()) fuel;
-
--- loop $
---   do log "Enter a number";
---   do n ← readℕ;
---   do printℕ n;
---   caseℕ n
---     (λ _. return true)
---     (do log "bye"; return false)
+-- return $ nfadd 100 100

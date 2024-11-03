@@ -98,6 +98,6 @@ main' :: String -> IO ()
 main' opts = mainWith (pure $ words opts)
 
 test :: String ->  IO ()
-test cmd = main' ("debug.rtcg " ++ cmd)
+test cmd = main' ("test.rtcg " ++ cmd)
 
 ------------------------------------------------------------

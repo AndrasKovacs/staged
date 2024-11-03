@@ -1,19 +1,21 @@
 
 -- testing free var shadowing in open codegen
 
--- foo : ℕ → Σ(fst: ℕ → ℕ, snd : ℕ → ℕ) = ~<λ x.
---   ~(let y = x;
---     let f = ~<λ x. y>;
---     let g = ~<λ x. x>;
---     <f, g>)>;
+foo : ℕ → Σ(fst: ℕ → ℕ, snd : ℕ → ℕ) = ~<λ x.
+  ~(let y = x;
+    let f = ~<λ x. y>;
+    let g = ~<λ x. x>;
+    <f, g>)>;
 
-id {A}(x : A) = x;
+return ()
 
-foo = ~<λ (x : ℕ). ~(let y = x; let f = ~(id <λ z. y>); <f x>)>;
+-- id {A}(x : A) = x;
+
+-- foo = ~<λ (x : ℕ). ~(let y = x; let f = ~(id <λ z. y>); <f x>)>;
 
 -- foo = ~(id <10>);
 
-return $ foo 100
+-- return $ foo 100
 
 
 -- addcode : □ (ℕ → ℕ → ℕ) = <

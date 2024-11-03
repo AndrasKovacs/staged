@@ -328,7 +328,7 @@ execTop t = tail $ go t where
     -- finalize
     TBody t ->
       "const main_ = () => {" <> exec t <> "};" <> newl <>
-      "console.log('RESULT:');console.log(main_())" <> newl
+      "console.log('RESULT:');console.log(util_.inspect(main_(), false, null, true))" <> newl
 
 exec :: IsTail => Cxt => Tm -> Out
 exec = \case
@@ -439,5 +439,4 @@ genTop t = do
       -- True -> readFile exec_path
       _    -> readFile "rts.js"
   let ?cxt = []
-  print $ runCConv t
   return $! str src <> newl <> newl <> execTop (runCConv t)

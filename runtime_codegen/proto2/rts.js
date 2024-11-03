@@ -1,6 +1,7 @@
 //@ts-check
 'use strict';
 
+const util_ = require('util');
 const reader_ = require("readline-sync"); //npm install readline-sync
 
 /** @typedef {String} Name */

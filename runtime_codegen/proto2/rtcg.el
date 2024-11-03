@@ -27,7 +27,7 @@
   "Keywords.")
 
 (defvar rtcg-operations
-  '("U" "Code" "Ref" "Eff" "read" "write" "new" "return" "ℕ" "Nat" "zero" "suc" "NatElim" "ℕElim" "log" "printℕ"
+  '("U" "Code" "Ref" "Eff" "read" "write" "new" "return" "ℕ" "Nat" "zero" "suc" "NatElim" "ℕElim" "log" "printℕ" "open"
     "printNat" "readℕ" "readNat" )
   "Operations.")
 

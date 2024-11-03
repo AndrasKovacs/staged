@@ -635,7 +635,8 @@ check cxt t a = do
     (P.Open t u, a) -> do
       (t, tty) <- infer cxt t
       fs@(RClosure _ (map fst -> xs)) <- ensureRecTy cxt tty
-      u <- check (bindRecTy cxt fs) u a
+      let ~vt = eval (env cxt) t
+      u <- check (bindRecTy cxt fs t vt) u a
       pure $ Open xs t u
 
     (P.NatElim `P.AppE` s `P.AppE` z, VPi x i a b) -> do
@@ -725,10 +726,13 @@ strengthen cxt t = do
   t <- psubst (PSub Nothing (lvl cxt) (lvl cxt + 1) sub) t
   pure $ eval (env cxt) t
 
-bindRecTy :: Cxt -> RecClosure -> Cxt
-bindRecTy cxt (RClosure e fs) = case fs of
+bindRecTy :: Cxt -> RecClosure -> Tm -> Val -> Cxt
+bindRecTy cxt (RClosure e fs) t ~vt = case fs of
   []        -> cxt
-  (x, a):fs -> bindRecTy (bind cxt x (eval e a)) (RClosure (VVar (lvl cxt):e) fs)
+  (x, a):fs ->
+    let ~va = eval e a in
+    bindRecTy (define cxt x (Proj t x) (vProj vt x) (quote (lvl cxt) va) va)
+              (RClosure (VVar (lvl cxt):e) fs) t vt
 
 infer :: Dbg => Cxt -> P.Tm -> IO (Tm, VTy)
 infer cxt (P.SrcPos pos t) =
@@ -755,7 +759,8 @@ infer cxt t = do
     P.Open t u -> do
       (t, tty) <- infer cxt t
       fs@(RClosure _ (map fst -> xs)) <- ensureRecTy cxt tty
-      (u, uty) <- infer (bindRecTy cxt fs) u
+      let ~vt = eval (env cxt) t
+      (u, uty) <- infer (bindRecTy cxt fs t vt) u
       pure (Open xs t u, uty)
 
     P.Suc -> do

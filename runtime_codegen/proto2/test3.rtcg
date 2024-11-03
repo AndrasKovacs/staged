@@ -87,6 +87,8 @@ map {A B}(f : A → B)(as : List A) : List B =
 
 
 
+
+
 return $
   append (map (λ x. add x 20) $ cons 10 $ cons 20 $ cons 30 nil)
          (map (λ x. add x 20) $ cons 10 $ cons 20 $ cons 30 nil)

@@ -116,12 +116,6 @@ normalizeFun {A : U}{B : A → U}(f : (x : A) → B x) : □ ((x : A) → B x) =
 
 bloo = ~(normalizeFun {ℕ → ℕ}{λ _. ℕ → _}(λ (f : ℕ → ℕ) (x : ℕ). let g = f; g (g (g x))));
 
--- -- why would I ever want to serialize?
--- -- to compute under function or monad binders...
--- -- for base inductive types, serialization is pointless, it's already
--- -- in memory in the correct form.
--- -- for parameterized types, serialization is useful if they contain functions.
-
 sum' : List ℕ → ℕ = ~(normalizeFun (foldr' (λ _. add) 0));
 
 
@@ -130,8 +124,6 @@ readTest : Eff ℕ =
   do log "mallac";
   return n;
 
-
-
-
+blabar : Σ(x : ℕ, y : ℕ, z : ℕ) → ℕ = ~<λ foo. add foo.x (add foo.y foo.z)>;
 
 return ()

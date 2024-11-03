@@ -1,0 +1,69 @@
+
+
+-- Gen : U → U
+--    = λ A. {R : U} → (A → □ R) → □ R;
+
+-- ret : {A} → A → Gen A
+--   = λ a k. k a;
+
+-- bind : {A B} → Gen A → (A → Gen B) → Gen B
+--   = λ ga f k. ga λ a. (f a) k;
+
+-- runGen : {A} → Gen (□ A) → □ A
+--   = λ ga. ga (λ x. x);
+
+-- ℕ : U = (N : U) → (N → N) → N → N;
+
+-- id  : □ (ℕ → ℕ) = <λ x. x>;
+-- id2 : □ (ℕ → ℕ) = <λ x. ~(let y = ~id x; <y>)>;
+
+iterate {A}(n : ℕ) (f : A → A) (a : A) : A =
+  ℕElim f a n;
+
+add (n m : ℕ) = iterate n suc m;
+mul (n m : ℕ) = iterate m (add n) 0;
+
+n0   = zero;
+n1   = suc zero;
+n2   = suc $ suc zero;
+n3   = suc $ suc $ suc zero;
+n5   = suc $ suc $ suc $ suc $ suc zero;
+n10  = add n5 n5;
+n100 = mul n10 n10;
+n1k  = mul n100 n10;
+n10k = mul n100 n100;
+
+return n1k
+
+-- mkExp : ℕ → □ (ℕ → ℕ)
+--   = λ x. <λ y. ~(x _ (λ f. <mul ~f y>) <n1>)>;
+
+-- -- exp5 = ~(mkExp n5);
+-- return <λ (x : ℕ). suc x>
+
+
+-- let List : U → U =
+--   λ A. (L : U) → (A → L → L) → L → L;
+
+-- let nil : {A} → List A =
+--   λ L c n. n;
+
+-- let cons : {A} → A → List A → List A =
+--   λ a as L c n. c a (as L c n);
+
+-- do ref ← new (nil {⊤});
+
+-- let id : {A} → □ A → □ A =
+--   λ x. x;
+
+-- let majom : Eff (⊤ → ⊤) =
+--   do x ← return (λ (y : ⊤). y);
+--   let kek =
+--     let bar =
+--       (λ (y : ⊤). y);
+--     bar;
+--   return kek;
+
+-- return id
+
+-- return (cons tt (cons tt (cons tt nil)))

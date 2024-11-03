@@ -1,0 +1,83 @@
+
+iter {A} (n : ℕ) (f : ℕ → A → A) (a : A) =
+  ℕElim (λ {n} a. f n a) a n;
+
+add (n m : ℕ) : ℕ = iter n (λ _. suc) m;
+mul (n m : ℕ) : ℕ = iter n (λ _ y. add y m) 0;
+
+Monad (M : U → U) = Σ(
+  ret  : {A} → A → M A
+, bind : {A B} → M A → (A → M B) → M B
+);
+
+Identity (A : U) = A;
+
+MIdentity : Monad Identity = (
+  ret  = λ a. a
+, bind = λ a f. f a
+);
+
+Gen A = (R : U) → (A → □ R) → □ R;
+
+MonadGen (M : U → U) = Σ(
+  gen : {A} → □ A → M (□ A)
+, liftGen : {A} → Gen A → M A
+);
+
+runGen {A} (ga : Gen (□ A)) : □ A =
+  ga _ (λ x. x);
+
+MGen : Monad Gen = (
+  ret  = λ a R k. k a
+, bind = λ ga f R k. ga R λ a. f a R k
+);
+
+MGenGen : MonadGen Gen = (
+  gen     = λ a R k. <let x = ~a; ~(k <x>)>
+, liftGen = λ ma. ma
+);
+
+StateT (S : U) (M : U → U) (A : U) =
+  S → M Σ(fst: A, snd: S);
+
+MStateT S {M} (MM : Monad M) : Monad (StateT S M) = (
+  ret  = λ a s. MM.ret (a, s)
+, bind = λ ma f s. MM.bind (ma s) λ as. f as.fst as.snd
+);
+
+MonadState (S : U) (M : U → U) = Σ(
+  get : M S
+, put : S → M Σ()
+);
+
+MStateStateT S {M} (MM : Monad M) : MonadState S (StateT S M) = (
+  get = λ s. MM.ret (s, s)
+, put = λ s _. MM.ret ((), s)
+);
+
+MGenStateT S {M} (MM : Monad M) (MGM : MonadGen M) : MonadGen (StateT S M) = (
+  gen     = λ a s. MM.bind (MGM.gen a) λ a. MM.ret (a, s)
+, liftGen = λ ga s. MM.bind (MGM.liftGen ga) λ a. MM.ret (a, s)
+);
+
+modify {M S}(MM : Monad M) (MS : MonadState S M) (f : S → S) : M Σ() =
+  open MM; open MS;
+  bind get λ s.
+  put (f s);
+
+
+open MStateT (□ ℕ) MGen;
+open MStateStateT (□ ℕ) MGen;
+open MGenStateT (□ ℕ) MGen MGenGen;
+
+test : StateT (□ ℕ) Gen (□ Σ()) =
+  bind get λ n.
+  bind (gen <add ~n 100>) λ n.
+  bind (gen <mul ~n 100>) λ n.
+  bind (put n) λ _.
+  ret <()>;
+
+down (m : StateT (□ ℕ) Gen (□ Σ())) : StateT ℕ Identity Σ() =
+  _;
+
+return ()

@@ -27,11 +27,11 @@ const _Body      = 'Body'
 const _NatElim   = 'NatElim'
 const _ReadNat   = 'ReadNat'
 const _PrintNat  = 'PrintNat'
-const _Open      = 'Open'
 const _Log       = 'Log'
 const _Rec       = 'Rec'
 const _Suc       = 'Suc'
 const _Proj      = 'Proj'
+const _NatLit    = 'NatLit'
 
 /**
   @typedef {
@@ -52,7 +52,6 @@ const _Proj      = 'Proj'
   {tag: _NatElim, _1 : Open, _2: Open, _3: Open} |
   {tag: _ReadNat} |
   {tag: _PrintNat, _1: Open} |
-  {tag: _Open, _1: Array<Name>, _2: Open, _3: (v: Array<Open>) => Open} |
   {tag: _Log, _1: String} |
   {tag: _Rec, _1: Map<String, Open>} |
   {tag: _Suc, _1: Open} |
@@ -104,9 +103,6 @@ function ReadNat_() {return {tag: _ReadNat}}
 /** @type {(t: Open) => Open} */
 function PrintNat_(t) {return {tag: _PrintNat, _1: t}}
 
-/** @type {(xs: Array<Name>, t: Open, u: (x:Array<Open>) => Open) => Open} */
-function Open_(xs, t, u) {return {tag: _Open, _1:xs, _2: t, _3:u}}
-
 /** @type {(s:String) => Open} */
 function Log_(s) {return {tag: _Log, _1: s}}
 
@@ -147,7 +143,8 @@ const CSP_undefined_ = CSP_(undefined, 'undefined')
    {tag: _Rec, _1: Map<Name, Tm>} |
    {tag: _Proj, _1: Tm, _2: Name} |
    {tag: _Suc, _1: Tm} |
-   {tag: _NatElim, _1: Tm, _2 : Tm, _3 : Tm}
+   {tag: _NatElim, _1: Tm, _2 : Tm, _3 : Tm} |
+   {tag: _NatLit, _1: Number}
 
    } Tm
 
@@ -189,6 +186,9 @@ function TWrite_     (t, u) {return {tag: _Write, _1: t , _2: u } }
 /** @type {(t: Tm) => Tm} */
 function TRead_      (t) {return {tag: _Read, _1: t }}
 
+/** @type {(t: Number) => Tm} */
+function TNatLit_      (t) {return {tag: _NatLit, _1: t }}
+
 /** @type {() => Tm} */
 function TReadNat_() {return {tag: _ReadNat}}
 
@@ -205,7 +205,10 @@ function TProj_(t, x) {return {tag: _Proj, _1: t, _2:x}}
 function TSuc_(t) {return {tag: _Suc, _1 : t}}
 
 /** @type {(s:Tm, z:Tm, n:Tm) => Tm} */
-function TSuc_(s,z,n) {return {tag: _NatElim, _1 : s, _2: z, _3 : n}}
+function TNatElim_(s,z,n) {return {tag: _NatElim, _1 : s, _2: z, _3 : n}}
+
+/** @type {(x:String) => Tm} */
+function TLog_(x) {return {tag: _Log, _1 : x}}
    
 
 /** @type {(x:Name, t:Tm, u:Top) => Top} */
@@ -290,121 +293,117 @@ const bind_ = (x, act) =>
     return a
     })
 
-// desugar Open to iterated let
-/** @type{(xs: Array<Name>, t: Open, u : (x : Array<Open>) => Open) => Tm} */    
-function ccOpen(xs, t, u){
-  const t2 = cconv_(t)
-  return bind_('tmp', (tmp) => {    
-    let args = new Array()
-    /** @type{(x:Number) => Tm} */
-    function go(i){
-      if (i == xs.length){
-        return cconv_(u(args))
-      } else {
-        return bind_(xs[i], (x2) => {
-          args.push(Var_(x2, false));
-          const u = go(i+1)
-          return TLet_(x2, (TProj_(TVar_(tmp), xs[i])), u)})
-      }
-    }
-    return TLet_(tmp, t2, go(0))
-  })
-}    
-
 /** @type {(t: Open) => Tm} */
 function cconv_(top){
-   switch (top.tag){
-
-     case _Var : {
+    switch (top.tag){
+    case _Var : {
        if (!top.isTop) {
          freeVars_.add(top.name)
        }
        return TVar_(top.name)
      }
-
-     case _Let : {
-       const x = top._1
-       const t = top._2
-       const u = top._3
-       const t2 = cconv_(t)
-       return bind_(x, (x) =>
-         TLet_(x, t2, cconv_(u(Var_(x, false)))))
-     }
-
-     case _Lam : {
-       const x = top._1
-       const t = top._2
-       if (mode_ === undefined) {
-         return fresh_(x, (x) => {
-           let old_freeVars = freeVars_
-           freeVars_ = new Set()
-           const t2 = cconv_(t(Var_(x, false)))
-           freeVars_.delete(x)
-           const capture = Array.from(freeVars_.values())
-           const clName = currentTopName_ + nextClosureId_ + '_'
-           nextClosureId_ += 1
-           closures_.push({name: clName, env: capture, arg: x, body: t2})
-           freeVars_.forEach((x) => old_freeVars.add(x))
-           freeVars_ = old_freeVars
-           return TLiftedLam_(clName, x, capture)
-         })
-       } else {
-         return bind_(x, (x) => TLam_(x, cconv_(t(Var_(x, false)))))
-       }
-     }
-
-     case _App : {
-       return TApp_(cconv_(top._1), cconv_(top._2))
-     }
-
-     case _Quote : {
-       if (mode_ === undefined){
-         mode_ = 1
-       } else {
-         mode_ += 1
-       }
-       return TQuote_(cconv_(top._1))
-     }
-
-     case _Splice : {
-       if (mode_ && mode_ > 0) {
-         mode_ -= 1
-       }
-       return TSplice_(cconv_(top._1))
-     }
-
-     case _Return : {
-       return TReturn_(cconv_(top._1))
-     }
-
-     case _Bind : {
-       const t2 = cconv_(top._2)
-       return bind_(top._1, (x) =>
-         TBind_(x, t2, cconv_(top._3(Var_(x, false)))))
-     }
-
-     case _Seq : {
-       return TSeq_(cconv_(top._1), cconv_(top._2))
-     }
-
-     case _New : {
-       return TNew_(cconv_(top._1))
-     }
-
-     case _Write : {
-       return TWrite_(cconv_(top._1), cconv_(top._2))
-     }
-
-     case _Read : {
-       return TRead_(cconv_(top._1))
-     }
-
-     case _CSP : {
-       const id = cspArray_.length
-       cspArray_.push(top._1)
-       return TCSP_(id, top._2)
-     }
-   }
+    case _Let : {
+      const x = top._1
+      const t = top._2
+      const u = top._3
+      const t2 = cconv_(t)
+      return bind_(x, (x) =>
+        TLet_(x, t2, cconv_(u(Var_(x, false)))))
+    }
+    case _Lam : {
+      const x = top._1
+      const t = top._2
+      if (mode_ === undefined) {
+        return fresh_(x, (x) => {
+          let old_freeVars = freeVars_
+          freeVars_ = new Set()
+          const t2 = cconv_(t(Var_(x, false)))
+          freeVars_.delete(x)
+          const capture = Array.from(freeVars_.values())
+          const clName = currentTopName_ + nextClosureId_ + '_'
+          nextClosureId_ += 1
+          closures_.push({name: clName, env: capture, arg: x, body: t2})
+          freeVars_.forEach((x) => old_freeVars.add(x))
+          freeVars_ = old_freeVars
+          return TLiftedLam_(clName, x, capture)
+        })
+      } else {
+        return bind_(x, (x) => TLam_(x, cconv_(t(Var_(x, false)))))
+      }
+    }
+    case _App : {
+      return TApp_(cconv_(top._1), cconv_(top._2))
+    }
+    case _Quote : {
+      if (mode_ === undefined){
+        mode_ = 1
+      } else {
+        mode_ += 1
+      }
+      return TQuote_(cconv_(top._1))
+    }
+    case _Splice : {
+      if (mode_ && mode_ > 0) {
+        mode_ -= 1
+      }
+      return TSplice_(cconv_(top._1))
+    }
+    case _Return : {
+      return TReturn_(cconv_(top._1))
+    }
+    case _Bind : {
+      const t2 = cconv_(top._2)
+      return bind_(top._1, (x) =>
+        TBind_(x, t2, cconv_(top._3(Var_(x, false)))))
+    }
+    case _Seq : {
+      return TSeq_(cconv_(top._1), cconv_(top._2))
+    }
+    case _New : {
+      return TNew_(cconv_(top._1))
+    }
+    case _Write : {
+      return TWrite_(cconv_(top._1), cconv_(top._2))
+    }
+    case _Read : {
+      return TRead_(cconv_(top._1))
+    }
+    case _CSP : {
+      if (typeof top._1 === 'number'){
+        return TNatLit_(top._1)
+      } else {
+        const id = cspArray_.length
+        cspArray_.push(top._1)
+        return TCSP_(id, top._2)        
+      }
+    }
+    case _Suc : {
+      return TSuc_(cconv_(top._1))
+    }
+    case _NatElim : {
+      const s = top._1
+      const z = top._2
+      const n = top._3 
+      return TNatElim_(cconv_(s), cconv_(z), cconv_(n))
+    }
+    case _Rec : {
+      const res = new Map()
+      top._1.forEach((t, x) => {res.set(x, cconv_(t))})
+      return TRec_(res)
+    }
+    case _Proj : {
+      return TProj_(cconv_(top._1), top._2)
+    }
+    case _PrintNat : {
+      return TPrintNat_(cconv_(top._1))
+    }
+    case _ReadNat : {
+      return TReadNat_()
+    }
+    case _Log : {
+      return TLog_(top._1)
+    }
+  }
 }
 
 /** @type {(t:Open) => Top} */
@@ -437,7 +436,7 @@ function cconvTop_(top){
       const t2 = cconv_(t)
       const new_closures = closures_
       cxtNames_.add(x)
-      const u2 = cconvTop_(u(Var_(x, false)))
+      const u2 = cconvTop_(u(Var_(x, true)))
       return addClosures(new_closures, TopLet_(x, t2, u2))
     }
     case _Bind : {
@@ -449,7 +448,7 @@ function cconvTop_(top){
       const t2 = cconv_(t)
       const new_closures = closures_
       cxtNames_.add(x)
-      const u2 = cconvTop_(u(Var_(x, false)))
+      const u2 = cconvTop_(u(Var_(x, true)))
       return addClosures(new_closures, TopBind_(x, t2, u2))
     }
 
@@ -503,7 +502,7 @@ function cNatElim_(s, z, n) {
   }
 }
 
-// open eliminators
+// open computation
 //----------------------------------------------------------------------------------------------------
 
 /** @type {(t:Open, u:Open) => Open} */
@@ -580,8 +579,22 @@ function natElim_(s, z, n){
   }
 }
 
-// random crap
+/** @type{(t:Open) => Open} */
+function suc_(t){
+  if (t.tag === _CSP) {
+    return CSP_(t._1 + 1, '')
+  } else {
+    return Suc_(t)
+  }
+}
+
+// IO
 //----------------------------------------------------------------------------------------------------
+
+function log_(s){
+  console.log(s)
+  return {}
+}
 
 function readNat_(){
   const str = reader_.prompt()
@@ -623,6 +636,8 @@ let stage_ = 0
 
 /** @type{Map<Name,Boolean>} */
 const cxt_ = new Map()
+
+const resetCxt_ = () => {cxt_.clear()}
 
 //----------------------------------------------------------------------------------------------------
 
@@ -693,10 +708,22 @@ const jLet_ = (x, closed, t, u) => () => {
     indent_(nonTail_(t))()
     semi_()
     newl_()
-    tail_(() => {cxt_.set(x, closed); u(); cxt_.delete(x)})()
+    tail_(() => {
+      const old = cxt_.get(x);
+      cxt_.set(x, closed); 
+      u(); 
+      cxt_.delete(x);
+      if (old) {cxt_.set(x, old)}
+    })()
   } else {
     put_('((' + x + ') => ')
-    par_(nonTail_(() => {cxt_.set(x, closed); u(); cxt_.delete(x)}))()
+    par_(nonTail_(() => {
+      const old = cxt_.get(x);
+      cxt_.set(x, closed);
+      u(); 
+      cxt_.delete(x);
+      if (old) {cxt_.set(x, old)}
+    }))()
     put_(')(')
     nonTail_(t)()
     put_(')')
@@ -746,7 +773,14 @@ const jLam_ = (xs, closed, t) => () => {
   jReturn_(() => {
     jTuple_(xs.map(str_))();
     put_(' => {')
-    tail_(() => {xs.forEach((x) => cxt_.set(x, closed)); t(); xs.forEach((x) => cxt_.delete(x))})()
+    tail_(() => {
+      const restore = new Array();
+      xs.forEach((x) => {const e = cxt_.get(x); if (e) {restore.push([x, e])}});
+      xs.forEach((x) => cxt_.set(x, closed)); 
+      t(); 
+      xs.forEach((x) => cxt_.delete(x));
+      restore.forEach((x) => cxt_.set(x[0], x[1]));
+    })()
     put_('}')
   })()
 }
@@ -756,7 +790,14 @@ const jLamExp_ = (xs, closed, t) => () => {
   jReturn_(() => {
     jTuple_(xs.map(str_))();
     put_(' => ')
-    nonTail_(() => {xs.forEach((x) => cxt_.set(x, closed)); t(); xs.forEach((x) => cxt_.delete(x))})()
+    nonTail_(() => {
+      const restore = new Array();
+      xs.forEach((x) => {const e = cxt_.get(x); if (e) {restore.push([x, e])}});
+      xs.forEach((x) => cxt_.set(x, closed)); 
+      t(); 
+      xs.forEach((x) => cxt_.delete(x));
+      restore.forEach((x) => cxt_.set(x[0], x[1]));
+      })()
   })()
 }
 
@@ -767,6 +808,28 @@ const cApp_ = (t, u) => () => {
     put_('._1')
     par_(u)()
   })()
+}
+
+/** @type{(ts : Map<Name, Tm>) => () => void} */
+const cRec_ = (ts) => () => {
+  const arr = Array.from(ts);
+  /** @type{(i:Number) => void} */
+  function go(i) {
+    if (i == arr.length){
+      return;
+    } else if (arr.length !== 0 && i == arr.length - 1){
+      put_(arr[i][0]);
+      put_(': ');
+      return nonTail_(() => ceval_(arr[i][1]))();
+    } else {
+      put_(arr[i][0]);
+      put_(': ');
+      nonTail_(() => ceval_(arr[i][1]))();      
+      put_(', ');
+      return go(i+1);
+    }
+  }
+  go(0)
 }
 
 /** @type{(t : () => void, args: Array<() => void>) => () => void} */
@@ -804,6 +867,31 @@ const jAppClosure_ = (t, args) => () => {
   }
 }
 
+/** @type{(ts : Map<Name, Tm>) => () => void} */
+const oRec_ = (ts) => () => {
+  const arr = Array.from(ts);
+  /** @type{(i:Number) => void} */
+  function go(i) {
+    if (i == arr.length){
+      return;
+    } else if (arr.length !== 0 && i == arr.length - 1){
+      put_('[');
+      put_(arr[i][0]);
+      put_(', ');
+      nonTail_(() => oeval_(arr[i][1]))();
+      put_(']');      
+    } else {
+      put_('[');      
+      put_(arr[i][0]);
+      put_(', ');
+      nonTail_(() => oeval_(arr[i][1]))();      
+      put_('], ');
+      return go(i+1);
+    }
+  }
+  go(0)
+}
+
 /** @type{(x:Name) => Name} */
 const closeVar_ = (x) => x + 'c'
 /** @type{(x:Name) => Name} */
@@ -828,6 +916,15 @@ function exec_(top){
     case _Write     : return nonTail_(() => {ceval_(top._1); put_('._1 = '); ceval_(top._2); jReturn_(str_("{}"))() })()
     case _Read      : return jReturn_(() => {ceval_(top._1); put_('._1')})()
     case _CSP       : return jReturn_(() => {put_('csp_[' + top._1 + ']()/*'); strLit_(top._2); put_('*/')})()
+    case _Log       : return jApp_(str_('log_'), [])()
+    case _ReadNat   : return jApp_(str_('readNat_'), [])()
+    case _PrintNat  : return jApp_(str_('printNat_'), [() => ceval_(top._1)])()
+    case _Rec       : throw new Error('impossible')
+    case _Proj      : return cRun_(() => {ceval_(top._1); put_('.'); put_(top._2)})()
+    case _Suc       : throw new Error('impossible')
+    case _NatElim   : return cRun_(jApp_(str_('cNatElim_'), 
+                              [() => ceval_(top._1), () => ceval_(top._2), () => ceval_(top._3)]))()
+    case _NatLit    : throw new Error('impossible')                              
   }
 }
 
@@ -845,7 +942,7 @@ function ceval_(top){
                         put_('}')
                         })()
     case _App       : return cApp_(() => ceval_(top._1), () => ceval_(top._2))()
-    case _Quote     : return inStage_(1, () => oeval_(top._1))()
+    case _Quote     : return inStage_(1, () => {return oeval_(top._1)})()
     case _Splice    : return jApp_(str_('codegenClosed_'), [() => ceval_(top._1)])()
     case _Return    : return jLam_([], true, () => exec_(top))()
     case _Bind      : return jLam_([], true, () => exec_(top))()
@@ -853,12 +950,23 @@ function ceval_(top){
     case _New       : return jLam_([], true, () => exec_(top))()
     case _Write     : return jLam_([], true, () => exec_(top))()
     case _Read      : return jLam_([], true, () => exec_(top))()
-    case _CSP       : return jReturn_(() => {put_('csp_[' + top._1 + ']/*'); str_(top._2)(); put_('*/')})()
+    case _CSP       : return jReturn_(() => {put_('csp_[' + top._1 + ']/*'); put_(top._2); put_('*/')})()
+
+    case _Log       : return jLam_([], true, () => exec_(top))()
+    case _ReadNat   : return jLam_([], true, () => exec_(top))()
+    case _PrintNat  : return jLam_([], true, () => exec_(top))()
+    case _Rec       : return jReturn_(() => {put_('{'); cRec_(top._1)(); put_('}')})()
+    case _Proj      : return jReturn_(() => {ceval_(top._1); put_('.'); put_(top._2) })()
+    case _Suc       : return jApp_(str_('cSuc_'), [() => ceval_(top._1)])()
+    case _NatElim   : return jApp_(str_('cNatElim_'), [() => ceval_(top._1), () => ceval_(top._2), () => ceval_(top._3)])()                      
+    case _NatLit    : return jReturn_(str_(top._1.toString()))()
   }
 }
 
+
 /** @type {(x:Name) => () => void} */
 const oevalVar_ = (x) => () => {
+  console.log('oevalVar', cxt_, x);
   const closed = cxt_.get(x)
   if (closed === true){
     jApp_(str_('CSP_'), [str_(x), strLit_(x)])();
@@ -912,6 +1020,38 @@ function oeval_(top){
     case _New       : return jApp_(str_('New_'), [() => oeval_(top._1)])()
     case _Write     : return jApp_(str_('Write_'), [() => oeval_(top._1), () => oeval_(top._2)])()
     case _Read      : return jApp_(str_('Read_'), [() => oeval_(top._1)])()
+    case _Log       : return jApp_(str_('Log_'), [strLit_(top._1)])()
+    case _ReadNat   : return jApp_(str_('ReadNat_'), [])()
+    case _PrintNat  : return jApp_(str_('PrintNat_'), [() => oeval_(top._1)])()
+    case _Rec       : return jApp_(str_('Rec_'), [ () => {put_('new Map(['); oRec_(top._1)(); put_('])')}])()
+
+    case _Proj : {
+      if (stage_ === 0){
+        return jApp_(str_('proj_'), [() => oeval_(top._1), strLit_(top._2)])()
+      } else {
+        return jApp_(str_('Proj_'), [() => oeval_(top._1), strLit_(top._2)])()
+      }
+    }
+
+    case _Suc : {
+      if (stage_ === 0){
+        return jApp_(str_('suc_'), [() => oeval_(top._1)])()
+      } else {
+        return jApp_(str_('Suc_'), [() => oeval_(top._1)])()
+      }
+    }
+
+    case _NatElim : {
+      if (stage_ === 0){
+        return jApp_(str_('natElim_'), [() => oeval_(top._1), () => oeval_(top._2), () => oeval_(top._3)])()                      
+      } else {
+        return jApp_(str_('NatElim_'), [() => oeval_(top._1), () => oeval_(top._2), () => oeval_(top._3)])()                      
+      }
+    }
+
+    case _NatLit : {
+      return jApp_(str_('CSP_'), [str_(top._1.toString()), strLit_('')])()
+    }
   }
 }
 
@@ -935,7 +1075,7 @@ function execTop_(top){
         const body = top._4
         const t    = top._5
         return jLet_(closeVar_(x), true, jClosure_(env, arg, true, () => ceval_(body)),
-               jLet_(openVar_(x), true, jClosure_(env, arg, false, inStage_(0, () => oeval_(body))), () =>
+               jLet_(openVar_(x), true, jClosure_(env, arg, false, inStage_(0, () => {return oeval_(body)})), () =>
                execTop_(t)))()
       }
       case _Body : {
@@ -964,7 +1104,7 @@ function cevalTop_(top){
       const body = top._4
       const t    = top._5
       return jLet_(closeVar_(x), true, jClosure_(env, arg, true, () => ceval_(body)),
-             jLet_(openVar_(x), true, jClosure_(env, arg, false, inStage_(0, () => oeval_(body))), () =>
+             jLet_(openVar_(x), true, jClosure_(env, arg, false, inStage_(0, () => {return oeval_(body)})), () =>
              cevalTop_(t)))()
     }
     case _Body:
@@ -1036,7 +1176,6 @@ function codegenOpen_(t_, loc_){
   indentation_    = 0
   stage_          = 0
   isTail_         = true
-  cxt_.clear()
 
   put_('() => {\n')
   oevalTop_(t2_)
@@ -1067,3 +1206,6 @@ function codegenExec_(t_, loc_){
   const res_ = eval(src_)() // run the resulting action
   return res_
 }
+
+// BEGIN CODE
+// ----------------------------------------------------------------------------------------------------

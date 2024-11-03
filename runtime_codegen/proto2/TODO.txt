@@ -17,5 +17,57 @@
 
 
 - PROBLEM:
-  open eval JS should need a fresh var supply being passed!!!
-  we need to ensure that open codegen doesn't shadow open free vars!!!
+  - JS open codegen is kinda broken!!
+  - Rethink stuff
+
+1. CConv should *never* produce shadowed names!!!
+
+  - closed codegen:
+    - closed cconv:
+       - actually performs cconv, needs to mark variables as top or local
+       - needs to compute free var sets
+       - needs to track closed/open stages
+       - STATE: freeVarSet, cspArray, Map<Name, Top/Local>, stage (Maybe Nat)
+
+    - closed code emission:
+       - needs to mark vars as open or closed, to be able to insert CSP boxes
+       - assumes no shadowing
+       - STATE: builder, indentation, isTail, stage, Map<Name, Closed/Open>
+
+  - open codegen:
+    - open cconv
+      - simply quotes stuff and collects CSP-s!
+        only needs a set of names for fresh renaming
+      - STATE: nameSet, cspArray
+
+    - open emission:
+      - never inserts CSP boxes
+      - assumes no shadowing
+      - STATE: builder, indentation, isTail, stage (Nat)
+
+  - open evaluation:
+     - NO STATE NEEDED
+     - because cconv handles namesets independently!!
+
+  - nested open codegen:
+     - REINITIALIZED: cspArray for cconv
+                      builder, indentation, isTail, stage, Map<Name, CO> for emission
+     - SHARED: nameSet for cconv
+
+     - where does nameSet come from? it comes from the enclosing cconv computation
+       - closed cconv --> oeval --> open codegen --> ... -> oeval -> open codegen
+
+Which code should be duplicated, and which shared?
+
+  - shared code emission:
+     if we always use the closed version, all that happens
+     in the open version is that we don't use the Map<Name, ...> and the closed stage
+
+MAXIMIZING SHARED CODE:
+
+  single emission impl
+  single cconv impl
+
+  data Info = Top | Local (Closed | Open)        -- Top is closed
+
+  universal context   Map<Name, Info>

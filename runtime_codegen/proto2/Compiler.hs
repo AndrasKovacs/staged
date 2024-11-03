@@ -77,16 +77,16 @@ type Mode    = (?mode    :: Maybe Int)
 type TopName = (?topName :: String)
 
 mangle :: Name -> Name
-mangle = concatMap \case
+mangle x = '$' : concatMap (\case
   '\'' -> "__"
-  c    -> [c]
+  c    -> [c]) x
 
 freshenName :: Env => Name -> Name
 freshenName x = go (mangle x) where
   go :: Env => Name -> Name
   go x | any ((==x).(\(_, x) -> x)) ?env =
          go $ x ++ show (length ?env)
-       | otherwise = "$" ++ x
+       | otherwise = x
 
 fresh :: Name -> (Env => Name -> a) -> Env => a
 fresh x act = let x' = freshenName x in
@@ -240,16 +240,6 @@ jLet x closed t u = case ?isTail of
   _    -> let u' = (let ?cxt = (x, closed): ?cxt in nonTail u) in
             "((" <> str x <> ") => " <> parens u' <> ")(" <> nonTail t <> ")"
 
--- cOpen :: [Name] -> Bool -> (IsTail => Cxt => Out) -> (IsTail => Cxt => Out) -> (IsTail => Cxt => Out)
--- cOpen xs closed t u = case ?isTail of
---   Tail -> let u' = (let ?cxt = foldl' _ ?cxt xs in tail u) in
---           "const " <> str x <> " = " <> indent (nonTail t) <> ";" <> newl <> u'
---   _    -> _
-
--- cOpen :: [Name] -> Closed -> (CEnv => a) -> CEnv => a
--- cOpen xs t u = let ?env = foldl' (\env x -> ((x,) $! cProj t x) : env) ?env xs
---                in seq ?env u
-
 jSeq :: IsTail => Cxt => (IsTail => Out) -> (IsTail => Out) -> Out
 jSeq t u = case ?isTail of
   Tail -> indent (nonTail t) <> ";" <> newl <> tail u
@@ -356,14 +346,14 @@ exec = \case
   New t         -> jReturn $ "{_1 : " <> ceval t <> "}"
   Write t u     -> nonTail $ ceval t <> "._1 = " <> ceval u
   Read t        -> jReturn $ ceval t <> "._1"
-  Log s         -> jApp "console.log" [strLit s]
+  Log s         -> jApp "log_" [strLit s]
   ReadNat       -> jApp "readNat_" []
   PrintNat t    -> jApp "printNat_" [ceval t]
   Rec{}         -> impossible
   Proj t x      -> cRun (cProj (ceval t) x)
   Suc{}         -> impossible
   NatLit{}      -> impossible
-  NatElim s z n -> jApp "cNatElim_" [ceval s, ceval z, ceval n]
+  NatElim s z n -> cRun (jApp "cNatElim_" [ceval s, ceval z, ceval n])
 
 oevalVar :: Cxt => IsTail => Name -> Out
 oevalVar x = case lookup x ?cxt of
@@ -434,7 +424,9 @@ oeval = \case
                          _ -> jApp "Proj_" [oeval t, strLit x]
   NatLit n          -> jApp "CSP_" [str (show n), strLit (show n)]
 
-  Suc t             -> jApp "Suc_" [oeval t]
+  Suc t             -> case ?stage of
+                         0 -> jApp "suc_" [oeval t]
+                         _ -> jApp "Suc_" [oeval t]
   NatElim s z n     -> case ?stage of
                          0 -> jApp "natElim_" [oeval s, oeval z, oeval n]
                          _ -> jApp "NatElim_" [oeval s, oeval z, oeval n]
@@ -447,4 +439,5 @@ genTop t = do
       -- True -> readFile exec_path
       _    -> readFile "rts.js"
   let ?cxt = []
+  print $ runCConv t
   return $! str src <> newl <> newl <> execTop (runCConv t)

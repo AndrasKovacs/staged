@@ -1,9 +1,23 @@
 
-add (n m : ℕ) : ℕ = ℕElim suc m n;
-foo = <λ x. ~(let y = add x x; <y>)>;
-bar = ~foo 10;
+-- testing free var shadowing in open codegen
 
-return bar
+brekk = <λ (x : ℕ). x>;
+
+foo : ℕ → Σ(fst: ℕ → ℕ, snd : ℕ → ℕ) = ~<λ x.
+  ~(let kek = x;
+    let majom = ~<λ x. kek>;
+    let bruhh = ~brekk;
+    <majom, bruhh>)>;
+
+-- res = ~<
+--   ~(
+--   let add (n m : ℕ) = ℕElim suc n m;
+--   let mul (n m : ℕ) = ℕElim (add n) 0 m;
+--   <mul 10 10>
+--   )
+--   >;
+
+return $ (foo 10).snd 20
 
 
 

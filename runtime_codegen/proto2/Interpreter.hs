@@ -120,7 +120,8 @@ cOpen xs t u = let ?env = foldl' (\env x -> ((x,) $! cProj t x) : env) ?env xs
 oNatElim :: Lvl => Open -> Open -> Open -> Open
 oNatElim s z n =
   let go 0 = z
-      go n = s `oApp` OClosed Nothing (CNat n) `oApp` go (n - 1)
+      go n = let m = n - 1 in
+             s `oApp` OClosed Nothing (CNat m) `oApp` go m
   in case n of
     OClosed _ (CNat n) -> go n
     OClosed _ _        -> impossible
@@ -219,6 +220,11 @@ oOpen xs t u =
   let ?env = foldl' (\env x -> (x, oProj t x):env) ?env xs
   in seq ?env u
 
+oSuc :: Open -> Open
+oSuc = \case
+  OClosed _ (CNat n) -> OClosed Nothing (CNat (n + 1))
+  t                  -> OSuc t
+
 defs :: [Name] -> C.Lvl -> (OEnv => a) -> (OEnv => a)
 defs xs l act =
   let ?env = snd $ foldl' (\(l, env) x -> (l+1, (x, OVar l):env)) (l-coerce (length xs), ?env) xs in
@@ -240,7 +246,6 @@ oeval = \case
   PrintNat t -> OPrintNat (oeval t)
   Log s      -> OLog s
   CSP x t    -> OClosed x t
-  Suc t      -> OSuc (oeval t)
   Rec ts     -> ORec (fmap (fmap oeval) ts)
   NatLit n   -> OClosed Nothing (CNat n)
   t -> case ?stage of
@@ -249,11 +254,12 @@ oeval = \case
       Open xs t u   -> oOpen xs (oeval t) (oeval u)
       App t u       -> oApp (oeval t) (oeval u)
       Splice t loc  -> case oeval t of
-                         OClosed _ (CQuote t) -> env (idEnv ?lvl) $ oeval $ traceGen t loc
+                         OClosed _ (CQuote t) -> OClosed Nothing $ lvl 0 $ env [] $ ceval $ traceGen t loc
                          OQuote t             -> env (idEnv ?lvl) $ oeval $ traceGen t loc
                          t                    -> OSplice t
       NatElim s z n -> oNatElim (oeval s) (oeval z) (oeval n)
       Proj t x      -> oProj (oeval t) x
+      Suc t         -> oSuc (oeval t)
     _ -> case t of
       Let x t u     -> OLet x (oeval t) (NoShow \l -> lvl l $ def x (OVar (l-1)) $ oeval u)
       Open xs t u   -> OOpen xs (oeval t) (NoShow \l -> lvl l $ defs xs l $ oeval u)
@@ -261,11 +267,12 @@ oeval = \case
       Splice t pos  -> oSplice $ stage (?stage - 1) $ oeval t
       NatElim s z n -> ONatElim (oeval s) (oeval z) (oeval n)
       Proj t x      -> OProj (oeval t) x
+      Suc t         -> OSuc (oeval t)
 
 traceGen :: Lvl => Open -> Maybe String -> Tm
 traceGen t loc =
   let t' = gen t
-      freevars = map (\l -> "x" ++ show l) [0.. ?lvl - 1]
+      freevars = map (\l -> "fv" ++ show l) [0.. ?lvl - 1]
       displayCode  = prettyTm False 0 0 freevars (Z.unzonk t') ""
       -- displayCode = show t' ++ " | " ++ (show $ Z.unzonk t')
   in case loc of

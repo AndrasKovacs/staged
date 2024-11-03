@@ -339,7 +339,7 @@ exec = \case
   App t u       -> cRun (ceval t `cApp` ceval u)
   Erased{}      -> impossible
   Quote{}       -> impossible
-  Splice t loc  -> jApp "codegenExec_" [ceval t, spliceLoc loc]
+  Splice t loc  -> cRun (jApp "codegenClosed_" [ceval t, spliceLoc loc])
   Return t      -> jReturn $ ceval t
   Bind x t u    -> jLet x True (exec t) (exec u)
   Seq t u       -> jSeq (exec t) (exec u)

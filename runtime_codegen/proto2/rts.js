@@ -253,7 +253,6 @@ function evalCodeGenClosed_(src_, csp_, loc_) {
 /** @type {(t:Open, loc: undefined|Array<String>) => Closed} */
 function codegenClosed_(t, loc) {
 
-
   // CLOSURE CONVERSION
   // ----------------------------------------------------------------------------------------------------
   /** @type {(t:Open) => {_1 : Top, _2 : Array<Closed>}} */
@@ -679,7 +678,7 @@ function codegenClosed_(t, loc) {
         case _LiftedLam : throw new Error('impossible')
         case _App       : return cRun(cApp(() => ceval(top._1), () => ceval(top._2)))()
         case _Quote     : throw new Error('impossible')
-        case _Splice    : return jApp(str('codegenExec_'), [() => ceval(top._1)])()
+        case _Splice    : return jApp(str('codegen'), [() => ceval(top._1)])()
         case _Return    : return jReturn(() => ceval(top._1))()
         case _Bind      : return jLet(top._1, true, () => exec(top._2), () => exec(top._3))()
         case _Seq       : return jSeq(() => exec(top._1), () => exec(top._2))()

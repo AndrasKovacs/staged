@@ -272,7 +272,7 @@ oeval = \case
 traceGen :: Lvl => Open -> Maybe String -> Tm
 traceGen t loc =
   let t' = gen t
-      freevars = map (\l -> "fv" ++ show l) [0.. ?lvl - 1]
+      freevars = map (\l -> "@" ++ show (?lvl - l - 1)) [0.. ?lvl - 1]
       displayCode  = prettyTm False 0 0 freevars (Z.unzonk t') ""
       -- displayCode = show t' ++ " | " ++ (show $ Z.unzonk t')
   in case loc of

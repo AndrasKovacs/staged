@@ -9,7 +9,7 @@
 
 id {A}(x : A) = x;
 
-foo = ~<λ (x : ℕ). ~(let y = ~(id <λ z. x>); <y x>)>;
+foo = ~<λ (x : ℕ). ~(let y = x; let f = ~(id <λ z. y>); <f x>)>;
 
 -- foo = ~(id <10>);
 

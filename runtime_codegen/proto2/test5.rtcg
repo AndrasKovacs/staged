@@ -65,19 +65,37 @@ modify {M S}(MM : Monad M) (MS : MonadState S M) (f : S → S) : M Σ() =
   bind get λ s.
   put (f s);
 
+inst1 = MStateT (□ ℕ) MGen;
+inst2 = MStateStateT (□ ℕ) MGen;
+inst3 = MGenStateT (□ ℕ) MGen MGenGen;
 
-open MStateT (□ ℕ) MGen;
-open MStateStateT (□ ℕ) MGen;
-open MGenStateT (□ ℕ) MGen MGenGen;
-
-test : StateT (□ ℕ) Gen (□ Σ()) =
+testPoly {M}(MM : Monad M) (MS : MonadState (□ ℕ) M) (MG : MonadGen M) : M (□ Σ()) =
+  open MM; open MS; open MG;
   bind get λ n.
   bind (gen <add ~n 100>) λ n.
   bind (gen <mul ~n 100>) λ n.
   bind (put n) λ _.
   ret <()>;
 
-down (m : StateT (□ ℕ) Gen (□ Σ())) : StateT ℕ Identity Σ() =
-  _;
+testMono : StateT (□ ℕ) Gen (□ Σ()) =
+  open inst1; open inst2; open inst3;
+  bind get λ n.
+  bind (gen <add ~n 100>) λ n.
+  bind (gen <mul ~n 100>) λ n.
+  bind (put n) λ _.
+  ret <()>;
+
+-- down (m : StateT (□ ℕ) Gen (□ Σ())) : □ (StateT ℕ Identity Σ()) =
+--   <λ s. ~(m <s> _ λ as. <(~(as.fst), ~(as.snd))>)>;
+
+-- testMonoObj : StateT ℕ Identity Σ() = ~(down $
+--   open inst1; open inst2; open inst3;
+--   bind get                λ n.
+--   bind (gen <add ~n 100>) λ n.
+--   bind (gen <mul ~n 100>) λ n.
+--   bind (put n)            λ _.
+--   ret <()>
+-- );
+
 
 return ()

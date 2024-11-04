@@ -1,23 +1,16 @@
 {-# language OverloadedStrings #-}
-{-# options_ghc -Wno-unused-imports  #-}
 
 module Compiler (genTop) where
 
 import Common hiding (Lvl)
-import ElabState
-import Errors
-import Pretty
 import StringBuilder
-import qualified Common as C
 import qualified Zonk   as Z
 
 import Control.Monad.State.Strict
-import Data.IORef
 import Data.String
 import Data.Void
 import Lens.Micro.Platform
 import Prelude hiding (const, tail)
-import System.IO.Unsafe
 import qualified Data.Set as S
 import System.Directory
 
@@ -105,11 +98,11 @@ bind x act = fresh x \x -> do
 ccOpen :: Env => Mode => TopName => [Name] -> ZTm -> ZTm -> State S Tm
 ccOpen xs t u = do
   t <- cconv t
-  bind "tmp" \tmp -> do
-    let go :: Env => Mode => TopName => [Name] -> State S Tm
-        go []     = cconv u
-        go (x:xs) = bind x \x' -> Let x' (Proj (Var tmp) x) <$> go xs
-    Let tmp t <$> go xs
+  let tmp = "$tmp" ++ show (length ?env)
+  let go :: Env => Mode => TopName => [Name] -> State S Tm
+      go []     = cconv u
+      go (x:xs) = bind x \x' -> Let x' (Proj (Var tmp) x) <$> go xs
+  Let tmp t <$> go xs
 
 cconv :: Env => Mode => TopName => ZTm -> State S Tm
 cconv = \case
@@ -182,15 +175,14 @@ addClosures cs t =
 -- desugar Open to iterated Let
 ccOpenTop :: Env => Mode => [Name] -> ZTm -> ZTm -> Top
 ccOpenTop xs t u =
-  let tmp = freshenName "tmp" in
+  let tmp = "$tmp" ++ show (length ?env) in
   let (t', cs) = cconv0 tmp t in
-  let ?env = (True, tmp) : ?env in
 
   let go :: Env => Mode => [Name] -> Top
       go []     = cconvTop u
-      go (x:xs) = fresh x \x' -> TLet x' (Proj (Var tmp) x) (go xs)
+      go (x:xs) = fresh x \x' -> TLet x' (Proj (Var tmp) x) (go xs) in
 
-  in addClosures cs $ TLet tmp t' $ go xs
+  addClosures cs $ TLet tmp t' $ go xs
 
 cconvTop :: Env => Mode => ZTm -> Top
 cconvTop = \case
@@ -328,7 +320,7 @@ execTop t = tail $ go t where
     -- finalize
     TBody t ->
       "const main_ = () => {" <> exec t <> "};" <> newl <>
-      "console.log('RESULT:');console.log(util_.inspect(main_(), false, null, true))" <> newl
+      "console.log('RESULT:');console.log(util_.inspect(main_(), false, null))" <> newl
 
 exec :: IsTail => Cxt => Tm -> Out
 exec = \case

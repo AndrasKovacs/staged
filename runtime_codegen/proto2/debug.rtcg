@@ -1,36 +1,6 @@
 
--- testing free var shadowing in open codegen
+foo : Σ(field1 : ℕ) = (field1 = 100);
+bar = 100;
+baz = open foo; foo.field1;
 
--- foo : ℕ → Σ(fst: ℕ → ℕ, snd : ℕ → ℕ) = ~<λ x.
---   ~(let y = x;
---     let f = ~<λ x. y>;
---     let g = ~<λ x. x>;
---     <f, g>)>;
-
--- return ()
-
-id {A}(x : A) = x;
-
-foo : Σ(fst : ℕ, snd : ℕ) = (100, 200);
-
-open foo;
-
-bar : {A} → A → A = λ x. id x;
-
-return ()
-
--- foo = ~<λ (x : ℕ). ~(let y = x; let f = ~(id <λ z. y>); <f x>)>;
-
--- foo = ~(id <10>);
-
--- return $ foo 100
-
-
--- addcode : □ (ℕ → ℕ → ℕ) = <
---   λ x y. ℕElim suc x y>;
-
--- add = ~addcode;
-
--- nfadd : ℕ → ℕ → ℕ = ~<λ x y. ~(let y = add x y; <y>)>;
-
--- return $ nfadd 100 100
+return baz

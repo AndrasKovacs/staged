@@ -702,7 +702,7 @@ function codegenClosed_(t, loc) {
     function ceval(top){
       switch (top.tag){
         case _Var       : return jReturn(str(top._1))()
-        case _Let       : return jLet(top._1, true, () => ceval(top._2), () => exec(top._3))()
+        case _Let       : return jLet(top._1, true, () => ceval(top._2), () => ceval(top._3))()
         case _Lam       : throw new Error('impossible')
         case _LiftedLam : return jReturn(() => {
                             put('{_1 : ');
@@ -893,7 +893,7 @@ function codegenClosed_(t, loc) {
 
   } // emitCode
 
-  const {_1: t2, _2: cspArray} = closureConvert(t);  
+  const {_1: t2, _2: cspArray} = closureConvert(t);
   const source = emitCode(t2);
   return evalCodeGenClosed_(source, cspArray, loc)
 } // codegenClosed
@@ -929,7 +929,7 @@ function codegenOpen_(t, loc){
       return res;
     }
 
-    /** @type{(t : Open) => Tm} */    
+    /** @type{(t : Open) => Tm} */
     function go(top){
       switch (top.tag){
         case _Var : return TVar_(top.name)
@@ -953,7 +953,7 @@ function codegenOpen_(t, loc){
         case _New    : return TNew_(go(top._1))
         case _Write  : return TWrite_(go(top._1), go(top._2))
         case _Read   : return TRead_(go(top._1))
-  
+
         case _CSP : {
           if (typeof top._1 === 'number'){  // inline closed numerals into source code
             return TNatLit_(top._1)
@@ -965,7 +965,7 @@ function codegenOpen_(t, loc){
         }
         case _Suc     : return TSuc_(go(top._1))
         case _NatElim : return TNatElim_(go(top._1), go(top._2), go(top._3))
-  
+
         case _Rec : {
           const res = new Map()
           top._1.forEach((t, x) => {res.set(x, go(t))})
@@ -974,8 +974,8 @@ function codegenOpen_(t, loc){
         case _Proj     : return TProj_(go(top._1), top._2)
         case _PrintNat : return TPrintNat_(go(top._1))
         case _ReadNat  : return TReadNat_()
-        case _Log      : return TLog_(top._1)      
-      } // switch      
+        case _Log      : return TLog_(top._1)
+      } // switch
     } // go
 
     return {_1: go(top), _2: cspArray}
@@ -1109,7 +1109,7 @@ function codegenOpen_(t, loc){
         put(' => {');
         xs.forEach((x) => localVars.add(x))
         tail(t)();
-        xs.forEach((x) => localVars.delete(x))        
+        xs.forEach((x) => localVars.delete(x))
         put('}')
       })()
     }
@@ -1178,16 +1178,16 @@ function codegenOpen_(t, loc){
 
     //----------------------------------------------------------------------------------------------------
 
-    // Local variables are those bound within the currently generate code 
+    // Local variables are those bound within the currently generate code
     // Non-local vars are the bound vars floating around, bound upstream.
 
     /** @type {(x:Name) => () => void} */
     const oevalVar = (x) => () => {
       if (localVars.has(x)) {
-        return jReturn(str(x))();  
+        return jReturn(str(x))();
       } else {
         return jApp(str('Var_'), [strLit(x)])();
-      }      
+      }
     }
 
     /** @type {(t:Tm) => void} */
@@ -1276,9 +1276,9 @@ function codegenOpen_(t, loc){
       return CSP_(res, '');
     }
     case _Quote : {
-      const {_1: t2, _2: cspArray} = quote(t._1);      
+      const {_1: t2, _2: cspArray} = quote(t._1);
       const source = emitCode(t2);
-      return evalCodeGenOpen_(source, cspArray, loc);      
+      return evalCodeGenOpen_(source, cspArray, loc);
     }
     default : {
       return Splice_(t)

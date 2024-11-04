@@ -381,7 +381,7 @@ ceval = \case
   t@PrintNat{}    -> jLam [] True $ exec t
   Rec ts          -> jReturn $ "{" <> cRec ts <> "}"
   Proj t x        -> cProj (ceval t) x
-  NatLit n        -> str (show n)
+  NatLit n        -> jReturn $ str (show n)
   Suc t           -> jApp "cSuc_" [ceval t]
   NatElim s z n   -> jApp "cNatElim_" [ceval s, ceval z, ceval n]
 

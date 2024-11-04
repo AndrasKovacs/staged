@@ -157,7 +157,7 @@ function TVar_       (x) {return {tag: _Var, _1: x } }
 /** @type {(x:Number, y:Name) => Tm} */
 function TCSP_       (i, x) {return {tag: _CSP, _1: i, _2:x} }
 /** @type {(x:Name, t:Tm, u:Tm) => Tm} */
-function TLet_       (x,t,u) {return {tag: _Let, _1:x , _2:u , _3:u } }
+function TLet_       (x,t,u) {return {tag: _Let, _1:x , _2:t , _3:u } }
 /** @type {(x:Name, t:Tm) => Tm} */
 function TLam_       (x,t) {return {tag: _Lam, _1:x , _2: t } }
 /** @type {(f:Name, x:Name, args:Array<Name>) => Tm} */

@@ -1,6 +1,4 @@
 
-foo : Σ(field1 : ℕ) = (field1 = 100);
-bar = 100;
-baz = open foo; foo.field1;
+FOO (x : ℕ) = 200;
 
-return baz
+return $ FOO 10

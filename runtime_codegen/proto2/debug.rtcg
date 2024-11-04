@@ -1,4 +1,28 @@
 
-FOO (x : ℕ) = 200;
+Vec (n : ℕ) A : U =
+  ℕElim (λ B. Σ(fst : A, snd : B)) Σ() n;
 
-return $ FOO 10
+foldr {A  : U}
+      (B  : ℕ → U)
+      (f  : {n} → □ (Vec (suc n) A) → □ A → □ (B n) → □ (B (suc n)))
+      (z  : □ (B 0))
+      {n  : ℕ}
+      (as : □ (Vec n A))
+          : □ (B n)
+  = < ℕElim
+        {λ n. Vec n A → B n}
+        (λ {n} rec as. ~(f <as> <as.fst> <rec as.snd>))
+        (λ _. ~z)
+        n ~as
+    >;
+
+down : {A n} → Vec n (□ A) → □ (Vec n A) =    -- TODO: JS DEBUG
+  ~<λ {A} {n} as. ~(foldr (λ n. □ (Vec n A))
+                   (λ _ a res. <<~~a, ~~res>>)
+                   <<()>>
+                   <as>)
+  >;
+
+--------------------------------------------------------------------------------
+
+return ()

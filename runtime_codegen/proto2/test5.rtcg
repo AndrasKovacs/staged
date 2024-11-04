@@ -1,9 +1,19 @@
 
+-- Basics
+--------------------------------------------------------------------------------
+
 iter {A} (n : ℕ) (f : ℕ → A → A) (a : A) =
   ℕElim (λ {n} a. f n a) a n;
 
 add (n m : ℕ) : ℕ = iter n (λ _. suc) m;
 mul (n m : ℕ) : ℕ = iter n (λ _ y. add y m) 0;
+
+Pair A B = Σ(fst : A, snd : B);
+
+id {A}(x : A) = x;
+const {A B}(x : A)(y : B) = x;
+
+--------------------------------------------------------------------------------
 
 Monad (M : U → U) = Σ(
   ret  : {A} → A → M A
@@ -60,41 +70,114 @@ MGenStateT S {M} (MM : Monad M) (MGM : MonadGen M) : MonadGen (StateT S M) = (
 , liftGen = λ ga s. MM.bind (MGM.liftGen ga) λ a. MM.ret (a, s)
 );
 
-modify {M S}(MM : Monad M) (MS : MonadState S M) (f : S → S) : M Σ() =
-  open MM; open MS;
-  bind get λ s.
-  put (f s);
+--------------------------------------------------------------------------------
 
-inst1 = MStateT (□ ℕ) MGen;
-inst2 = MStateStateT (□ ℕ) MGen;
-inst3 = MGenStateT (□ ℕ) MGen MGenGen;
+testMonads : ℕ =
 
-testPoly {M}(MM : Monad M) (MS : MonadState (□ ℕ) M) (MG : MonadGen M) : M (□ Σ()) =
-  open MM; open MS; open MG;
-  bind get λ n.
-  bind (gen <add ~n 100>) λ n.
-  bind (gen <mul ~n 100>) λ n.
-  bind (put n) λ _.
-  ret <()>;
+  let modify {M S}(MM : Monad M) (MS : MonadState S M) (f : S → S) : M Σ() =
+    open MM; open MS;
+    bind get λ s.
+    put (f s);
 
-testMono : StateT (□ ℕ) Gen (□ Σ()) =
-  open inst1; open inst2; open inst3;
-  bind get λ n.
-  bind (gen <add ~n 100>) λ n.
-  bind (gen <mul ~n 100>) λ n.
-  bind (put n) λ _.
-  ret <()>;
+  let inst1 = MStateT (□ ℕ) MGen;
+  let inst2 = MStateStateT (□ ℕ) MGen;
+  let inst3 = MGenStateT (□ ℕ) MGen MGenGen;
 
-down (m : StateT (□ ℕ) Gen (□ Σ())) : □ (StateT ℕ Identity Σ()) =
-  <λ s. ~(m <s> _ λ as. <(~(as.fst), ~(as.snd))>)>;
+  let testPoly {M}(MM : Monad M) (MS : MonadState (□ ℕ) M) (MG : MonadGen M) : M (□ Σ()) =
+    open MM; open MS; open MG;
+    bind get λ n.
+    bind (gen <add ~n 100>) λ n.
+    bind (gen <mul ~n 100>) λ n.
+    bind (put n) λ _.
+    ret <()>;
 
-testMonoObj : StateT ℕ Identity Σ() = ~(down $
-  open inst1; open inst2; open inst3;
-  bind get               λ n.
-  bind (gen <add ~n 10>) λ n.
-  bind (gen <mul ~n 10>) λ n.
-  bind (put n)           λ _.
-  ret <()>
-);
+  let down (m : StateT (□ ℕ) Gen (□ Σ())) : □ (StateT ℕ Identity Σ()) =
+    <λ s. ~(m <s> _ λ as. <(~(as.fst), ~(as.snd))>)>;
 
-return $ testMonoObj 100
+  let testMonoObj : StateT ℕ Identity Σ() = ~(down $
+    open inst1; open inst2; open inst3;
+    bind get               λ n.
+    bind (gen <add ~n 10>) λ n.
+    bind (gen <mul ~n 10>) λ n.
+    bind (put n)           λ _.
+    ret <()>
+  );
+
+  (testMonoObj 10).snd;
+
+-- Vectors
+--------------------------------------------------------------------------------
+
+Vec (n : ℕ) A : U =
+  iter n (λ _ B. Pair A B) Σ();
+
+nil {A} : Vec 0 A = ();
+
+cons {A n} (a : A)(as : Vec n A) : Vec (suc n) A = (a, as);
+
+map {A B n} (f : A → B) (as : Vec n A) : Vec n B =
+  ℕElim {λ n. Vec n A → Vec n B}
+    (λ rec acc. (f acc.fst, rec acc.snd))
+    (λ _. ())
+    n as;
+
+foldl {A : U}(B : ℕ → U) (f : {n} → B n → A → B (suc n))(z : B 0){n}(as : Vec n A) : B n
+  = ℕElim
+      {λ n. (B : ℕ → U) → ({n} → B n → A → B (suc n)) → B 0 → Vec n A → B n}
+      (λ {n} rec B f z as. rec (λ x. B (suc x)) f (f z as.fst) as.snd)
+      (λ B f z as. z)
+      n B f z as;
+
+-- foldr where the folding function is inlined, but we have a runtime loop over the length.
+foldr {A  : U}
+      (B  : ℕ → U)
+      (f  : {n} → □ (Vec (suc n) A) → □ A → □ (B n) → □ (B (suc n)))
+      (z  : □ (B 0))
+      {n  : ℕ}
+      (as : □ (Vec n A))
+          : □ (B n)
+  = < ℕElim
+        {λ n. Vec n A → B n}
+        (λ {n} rec as. ~(f <as> <as.fst> <rec as.snd>))
+        (λ _. ~z)
+        n ~as
+    >;
+
+up {A n}(as : □ (Vec n A)) : Gen (Vec n (□ A)) =
+  open MGen; open MGenGen;
+  ℕElim {λ n. □ (Vec n A) → Gen (Vec n (□ A))}
+        (λ rec as. bind (gen <~as.fst>) λ a.
+                   bind (gen <~as.snd>) λ as.
+                   bind (rec as) λ as.
+                   ret (a, as))
+        (λ as. ret ())
+        n as;
+
+down : {A n} → Vec n (□ A) → □ (Vec n A) =    -- TODO: JS DEBUG
+  ~<λ {A} {n} as. ~(foldr (λ n. □ (Vec n A))
+                   (λ _ a res. <<~~a, ~~res>>)
+                   <<()>>
+                   <as>)
+  >;
+
+append {n m A}(xs : Vec n A)(ys : Vec m A) : Vec (add n m) A =
+  ℕElim {λ n. Vec n A → Vec (add n m) A}
+        (λ hyp xs. (xs.fst, hyp xs.snd))
+	(λ _. ys)
+	n xs;
+
+replicate {A}(n : ℕ) (a : A) : Vec n A =
+  ℕElim {λ n. Vec n A} (λ as. (a, as)) () n;
+
+unrolledMap {A B n}(f : □ A → □ B)(as : □ (Vec n A)) : □ (Vec n B) =
+  open MGen;
+  runGen $
+    bind (up as) λ as.
+    ret $ down {n = n} $ map f as;
+
+test : Vec 5 ℕ → Vec 5 ℕ =
+  ~<λ ns. ~(unrolledMap {n = 5} (λ x. <add ~x 10>) <ns>)>;
+
+--------------------------------------------------------------------------------
+
+return testMonads

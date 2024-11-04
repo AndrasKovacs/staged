@@ -17,8 +17,15 @@ import Cxt.Type
 
 fresh :: [Name] -> Name -> Name
 fresh ns "_" = "_"
-fresh ns x | elem x ns = fresh ns (x ++ "'")
-           | otherwise = x
+fresh ns topx = ticks topx 0 where
+  ticks :: Name -> Int -> Name
+  ticks x n | n > 2     = nums 4
+            | elem x ns = ticks (x ++ "'") (n + 1)
+            | otherwise = x
+  nums :: Int -> Name
+  nums n = let x = topx ++ show n in
+           if elem x ns then nums (n + 1)
+                        else x
 
 freshes :: [Name] -> [Name] -> [Name]
 freshes ns []     = ns

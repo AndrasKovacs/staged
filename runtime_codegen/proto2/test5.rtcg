@@ -90,10 +90,10 @@ down (m : StateT (□ ℕ) Gen (□ Σ())) : □ (StateT ℕ Identity Σ()) =
 
 testMonoObj : StateT ℕ Identity Σ() = ~(down $
   open inst1; open inst2; open inst3;
-  bind get                λ n.
+  bind get               λ n.
   bind (gen <add ~n 10>) λ n.
   bind (gen <mul ~n 10>) λ n.
-  bind (put n)            λ _.
+  bind (put n)           λ _.
   ret <()>
 );
 

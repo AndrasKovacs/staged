@@ -23,11 +23,11 @@
 ;;;; Syntax
 
 (defvar rtcg-keywords
-  '("let" "do")
+  '("let" "do" "open")
   "Keywords.")
 
 (defvar rtcg-operations
-  '("U" "Code" "Ref" "Eff" "read" "write" "new" "return" "ℕ" "Nat" "zero" "suc" "NatElim" "ℕElim" "log" "printℕ" "open"
+  '("U" "Code" "Ref" "Eff" "read" "write" "new" "return" "ℕ" "Nat" "zero" "suc" "NatElim" "ℕElim" "log" "printℕ"
     "printNat" "readℕ" "readNat" )
   "Operations.")
 

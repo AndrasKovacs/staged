@@ -654,9 +654,9 @@ function codegenClosed_(t, loc) {
         if (i == arr.length){
           return;
         } else if (arr.length !== 0 && i == arr.length - 1){
-          put('['); put(arr[i][0]); put(', '); nonTail(() => oeval(arr[i][1]))(); put(']');
+          put('['); strLit(arr[i][0])(); put(', '); nonTail(() => oeval(arr[i][1]))(); put(']');
         } else {
-          put('['); put(arr[i][0]); put(', '); nonTail(() => oeval(arr[i][1]))(); put('], ');
+          put('['); strLit(arr[i][0])(); put(', '); nonTail(() => oeval(arr[i][1]))(); put('], ');
           return go(i+1);
         }
       }

@@ -105,10 +105,16 @@ pattern xs :> x <- x:xs where (:>) xs ~x = x:xs
 
 displayLocation :: SourcePos -> String -> String
 displayLocation (SourcePos path (unPos -> linum) (unPos -> colnum)) file =
-  let lnum = show linum
+  let ls   = lines file
+      len  = length ls
+      lnum = show linum
       lpad = map (const ' ') lnum
+      line n | n < len && 0 <= n = ls !! n
+             | otherwise = ""
   in
      printf "%s:%d:%d:\n" path linum colnum ++
      printf "%s |\n"    lpad ++
-     printf "%s | %s\n" lnum (lines file !! (linum - 1)) ++
-     printf "%s | %s" lpad (replicate (colnum - 1) ' ' ++ "^")
+     printf "%s | %s\n" lpad (line (linum - 2)) ++
+     printf "%s | %s\n" lnum (line (linum - 1)) ++
+     printf "%s | %s\n" lpad (replicate (colnum - 1) ' ' ++ "^") ++
+     printf "%s | %s\n" lpad (line linum)

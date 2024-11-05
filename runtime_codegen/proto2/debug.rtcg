@@ -16,7 +16,7 @@ foldr {A  : U}
         n ~as
     >;
 
-down : {A n} → Vec n (□ A) → □ (Vec n A) =    -- TODO: JS DEBUG
+down : {A n} → Vec n (□ A) → □ (Vec n A) =
   ~<λ {A} {n} as. ~(foldr (λ n. □ (Vec n A))
                    (λ _ a res. <<~~a, ~~res>>)
                    <<()>>

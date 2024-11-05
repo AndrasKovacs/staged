@@ -7,6 +7,7 @@ import System.Exit
 import System.Directory
 import System.FilePath
 import System.Process
+import System.IO
 
 import Errors
 import Evaluation
@@ -34,6 +35,7 @@ helpMsg = unlines [
 
 mainWith :: IO [String] -> IO ()
 mainWith getOpt = do
+  hSetBuffering stdout NoBuffering
 
   (path, opts) <- getOpt >>= \case
     path:opts -> pure (path, opts)

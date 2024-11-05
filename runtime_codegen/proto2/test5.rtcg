@@ -176,8 +176,23 @@ unrolledMap n {A B}(f : □ A → □ B) : □ (Vec n A → Vec n B) =
            ret $ down n $ map f as
   )>;
 
-test = ~(unrolledMap 5 (λ x. <add ~x 10>));
+replicateEff {A}(n : ℕ) (act : Eff A) : Eff (Vec n A) =
+  ℕElim {λ n. Eff (Vec n A)}
+        (λ rec. do a ← act; do as ← rec; return (a, as))
+        (return ())
+        n;
+
+test : Eff Σ(fst : ℕ, snd : Vec fst ℕ) =
+  do n ← readℕ;
+  do ref ← new 0;
+  let f = ~(unrolledMap n (λ x. <add ~x 10>));
+  do ns ← replicateEff n (do n ← readℕ; do write ref n; return n);
+  do m ← read ref;
+  do printℕ m;
+  return (n, f ns);
 
 --------------------------------------------------------------------------------
 
-return ()
+do res ← test;
+
+return res

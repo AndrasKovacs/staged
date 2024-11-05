@@ -1,11 +1,12 @@
 
 - Builtins:
-  - Reading a Nat from terminal
-  - Printing a concrete String to terminal
+  - Printing any object to terminal (best effort)
+  - Printing concrete string to terminal
+
+- Interaction
+  - Print 2 more lines from original src for codegen message
 
 - JS RTS:
-  - have basic pretty printer, print pretty non-closure code when doing codegen
-    - Try to demangle names to get back to source code style
 
 - Compilation:
   - more erasure in Zonk: pass/compute type, immediately erase things with U/Unit type
@@ -14,29 +15,3 @@
   - definitional monad laws
   - more Code unification
   - (record unification)
-
-
-- PROBLEM:
-  - JS open codegen is kinda broken!!
-  - Rethink stuff
-
-
-RETHINK STUFF
-
-- closed codegen is THE SAME SHIT AS THE HASKELL JS COMPILER
-  - cconv:
-    STATE: boundVarSet, cspArray, closureArray, fvSet, Top/Local, stage, currentTopName
-  - emission:
-    STATE: Open/Closed, stage, builder, indentation
-
-- open codegen is COMPLETELY SEPARATELY IMPLEMENTED
-  - quote:
-    no cconv; only reads back and fills csvArray!
-    STATE: boundVarSet   INHERITED from caller
-           cspArray      initialized and RESTORED to caller
-
-  - emission:
-    only open emission
-    STATE: stage         initialized
-           builder       initialized
-           indentation   initialized

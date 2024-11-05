@@ -153,8 +153,8 @@ up {A n}(as : □ (Vec n A)) : Gen (Vec n (□ A)) =
         (λ as. ret ())
         n as;
 
-down : {A n} → Vec n (□ A) → □ (Vec n A) =    -- TODO: JS DEBUG
-  ~<λ {A} {n} as. ~(foldr (λ n. □ (Vec n A))
+down : (n : ℕ) → {A} → Vec n (□ A) → □ (Vec n A) =
+  ~<λ n {A} as. ~(foldr (λ n. □ (Vec n A))
                    (λ _ a res. <<~~a, ~~res>>)
                    <<()>>
                    <as>)
@@ -169,15 +169,15 @@ append {n m A}(xs : Vec n A)(ys : Vec m A) : Vec (add n m) A =
 replicate {A}(n : ℕ) (a : A) : Vec n A =
   ℕElim {λ n. Vec n A} (λ as. (a, as)) () n;
 
-unrolledMap {A B n}(f : □ A → □ B)(as : □ (Vec n A)) : □ (Vec n B) =
+unrolledMap n {A B}(f : □ A → □ B) : □ (Vec n A → Vec n B) =
+  <λ as. ~(
   open MGen;
-  runGen $
-    bind (up as) λ as.
-    ret $ down {n = n} $ map f as;
+  runGen $ bind (up <as>) λ as.
+           ret $ down n $ map f as
+  )>;
 
-test : Vec 5 ℕ → Vec 5 ℕ =
-  ~<λ ns. ~(unrolledMap {n = 5} (λ x. <add ~x 10>) <ns>)>;
+test = ~(unrolledMap 5 (λ x. <add ~x 10>));
 
 --------------------------------------------------------------------------------
 
-return testMonads
+return ()

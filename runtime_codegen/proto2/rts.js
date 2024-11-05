@@ -3,6 +3,9 @@
 
 const util_ = require('util');
 const reader_ = require("readline-sync"); //npm install readline-sync
+const debug_ = (x) => {
+  console.log(util_.inspect(x, false, null))
+}
 
 /** @typedef {String} Name */
 
@@ -264,6 +267,15 @@ function codegenClosed_(t, loc) {
     /** @type {undefined|Number} */
     let stage = undefined
 
+    /** @type{(s : Number, act: () => Tm) => Tm} */
+    const inStage = (s, act) => {
+      const backup = stage
+      stage = s
+      const res = act()
+      stage = backup
+      return res
+    }
+
     /** @type {Set<Name>} */
     let freeVars = new Set()
 
@@ -397,12 +409,18 @@ function codegenClosed_(t, loc) {
         }
         case _App : return TApp_(go(top._1), go(top._2))
         case _Quote : {
-          if (stage === undefined) { stage = 1 } else { stage += 1 }
-          return TQuote_(go(top._1))
+          if (stage === undefined) {
+            return inStage(1, () => TQuote_(go(top._1)))
+          } else {
+            return inStage(stage + 1, () => TQuote_(go(top._1)))
+          }
         }
         case _Splice : {
-          if (stage && stage > 0) { stage -= 1 }
-          return TSplice_(go(top._1))
+          if (stage && stage > 0){
+            return inStage(stage - 1, () => TSplice_(go(top._1)))
+          } else {
+            return TSplice_(go(top._1))
+          }
         }
         case _Bind : {
           const t2 = go(top._2)

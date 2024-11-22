@@ -1,10 +1,6 @@
 
 module Examples where
 
-{-
-Examples. You can use Agda's normalization command (C-c-n in Emacs) to print object code output.
--}
-
 open import Lib
 open import Object
 open import Gen
@@ -13,6 +9,7 @@ open import Join
 open import Split
 open import SOP
 open import Pull
+
 
 -- Customizing printing
 --------------------------------------------------------------------------------
@@ -39,7 +36,7 @@ open import Pull
 -- Comment out to get the projections in all their glory.
 postulate
   CALL : {A : Set} → A
-{-# DISPLAY fst∘ _ = CALL #-}
+-- {-# DISPLAY fst∘ x = CALL #-}
 
 -- Basics
 --------------------------------------------------------------------------------
@@ -73,22 +70,35 @@ map∘ f as = LetRec
                       (λ a as → cons∘ (f a) (go ∙ as)))
   λ go → go ∙ as
 
+exG1 : ↑V ℕ∘  -- "Gen" monad
+exG1 = runGen do
+  x ← genLet (10 +∘ 20)
+  y ← genLet (10 +∘ 10)
+  pure (x +∘ y +∘ x)
+
 
 -- Monads
 --------------------------------------------------------------------------------
 
--- exM1 : Nat -> StateT Nat (MaybeT Identity) ()
--- exM1 x = do
---   case (x == 10) of
---     True -> modify' (+10)
---     False -> modify' (+20)
---   case
+exState1 : ↑ (StateT∘ ℕ∘ Identity∘ ⊤∘)
+exState1 = down do
+  modify (λ x → x +∘ x)
+  modify (λ x → x +∘ x)
+  modify (λ x → x +∘ x)
+  pure tt∘
 
--- GHC's -O0 output:
+--
+exState2' : StateT (↑V ℕ∘) Gen (↑V ⊤∘)
+exState2' = do
+  modify' (λ x → x +∘ x)
+  modify' (λ x → x +∘ x)
+  modify' (λ x → x +∘ x)
 
---    (>>=) dict (...) (\x -> ....
---      (>>=) dict (...) (\x -> ...)
---    return dict (...)
+exState2 : ↑ (StateT∘ ℕ∘ Identity∘ ⊤∘)
+exState2 = down do
+  modify' (λ x → x +∘ x)
+  modify' (λ x → x +∘ x)
+  modify' (λ x → x +∘ x)
 
 
 -- Code size exponential in the number of caseM-s here, because
@@ -99,7 +109,7 @@ exM1 = Λ λ x → down do
     true  → modify' (_+∘_ 10)
     false → modify' (_+∘_ 20)
   caseM (x ==∘ 10) λ where
-    true  → modify' (_+∘_ 10)
+    true  → fail
     false → modify' (_+∘_ 20)
   caseM (x ==∘ 10) λ where
     true  → modify' (_+∘_ 10)
@@ -115,7 +125,7 @@ exM2 = Λ λ x → down do
     true  → modify (_+∘_ 10)
     false → modify (_+∘_ 20)
   join $ caseM (x ==∘ 10) λ where
-    true  → modify (_+∘_ 10)
+    true  → fail
     false → modify (_+∘_ 20)
   join $ caseM (x ==∘ 10) λ where
     true  → modify (_+∘_ 10)
@@ -136,9 +146,10 @@ exM3 = Λ λ x → down $
       false → fail)
     (do modify' (_+∘_ 11))
 
+
 -- Section 3.6. example from the paper
-exM4 : ↑C (Tree∘ ℕ∘ ⇒ StateT∘ (List∘ ℕ∘) (MaybeT∘ Identity∘) (Tree∘ ℕ∘))
-exM4 = DefRec λ f → Λ λ t → down $ do
+exM5 : ↑C (Tree∘ ℕ∘ ⇒ StateT∘ (List∘ ℕ∘) (MaybeT∘ Identity∘) (Tree∘ ℕ∘))
+exM5 = DefRec λ f → Λ λ t → down $
   caseM t λ where
     leaf         → pure leaf∘
     (node n l r) → do
@@ -163,11 +174,11 @@ filterM f = DefRec λ rec → Λ λ as → down $ caseM as λ where
       true  → pure (cons∘ a as)
       false → pure as
 
-exM5 : ↑C (List∘ ℕ∘ ⇒ StateT∘ ℕ∘ (MaybeT∘ Identity∘) (List∘ ℕ∘))
-exM5 = filterM λ n → caseM (n ==∘ 0) λ where
+
+exM7 : ↑C (List∘ ℕ∘ ⇒ StateT∘ ℕ∘ (MaybeT∘ Identity∘) (List∘ ℕ∘))
+exM7 = filterM λ n → caseM (n ==∘ 0) λ where
   true  → fail
   false → split (n <∘ 20)
-
 
 -- Streams
 --------------------------------------------------------------------------------
@@ -198,7 +209,7 @@ exS5 = _*∘_ <$>ₚ take 10 count <*>ₚ take 10 (countFrom 20)
 exS6 : Pull (↑ (V ℕ∘))
 exS6 = _+∘_ <$>ₚ exS2 <*>ₚ count
 
--- paper 4.4 example
+-- Section 4.4 example in paper:
 exS7 : Pull (↑ (V ℕ∘))
 exS7 = forEach (take 100 (countFrom 0)) λ x →
        genLetₚ (x *∘ 2) λ y →

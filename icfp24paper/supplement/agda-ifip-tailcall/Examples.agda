@@ -12,7 +12,10 @@ open import Improve
 open import Join
 open import Split
 open import SOP
-open import Pull
+open import PullM renaming (Pull to PullM)
+
+Pull : Set → Set → Set
+Pull E A = PullM (Gen E) A
 
 -- Customizing printing
 --------------------------------------------------------------------------------
@@ -25,8 +28,10 @@ open import Pull
 {-# DISPLAY maybeT∘ x = x #-}
 {-# DISPLAY identity∘ x = x #-}
 {-# DISPLAY runIdentity∘ x = x #-}
+{-# DISPLAY runReaderT∘ x = x #-}
 {-# DISPLAY runMaybeT∘ x = x #-}
 {-# DISPLAY runStateT∘ x = x #-}
+{-# DISPLAY readerT∘ x = x #-}
 {-# DISPLAY _∙_ f x = f x #-}
 {-# DISPLAY lit∘ x = x #-}
 {-# DISPLAY C x = x #-}
@@ -39,6 +44,7 @@ open import Pull
 -- Comment out to get the projections in all their glory.
 postulate
   CALL : {A : Set} → A
+
 {-# DISPLAY fst∘ _ = CALL #-}
 
 -- Basics
@@ -58,6 +64,7 @@ add = LetRec
   (λ go → Λ λ n → Λ λ m → caseBool∘ (n ==∘ 0) m (1 +∘ go ∙ (n -∘ 1) ∙ m))
   λ go → go
 
+
 {-
 map f as =
   <letrec go as := case as of
@@ -66,30 +73,16 @@ map f as =
    go ~as>
 -}
 map∘ : {A B : VTy} → (↑V A → ↑V B) → ↑V (List∘ A) → ↑V (List∘ B)
-map∘ f as = LetRec
-  _
+map∘ f as = LetRec _
   (λ go → Λ λ as → caseList∘ as
                       nil∘
                       (λ a as → cons∘ (f a) (go ∙ as)))
   λ go → go ∙ as
 
 
+
 -- Monads
 --------------------------------------------------------------------------------
-
--- exM1 : Nat -> StateT Nat (MaybeT Identity) ()
--- exM1 x = do
---   case (x == 10) of
---     True -> modify' (+10)
---     False -> modify' (+20)
---   case
-
--- GHC's -O0 output:
-
---    (>>=) dict (...) (\x -> ....
---      (>>=) dict (...) (\x -> ...)
---    return dict (...)
-
 
 -- Code size exponential in the number of caseM-s here, because
 -- everything gets inlined in case branches.
@@ -124,6 +117,7 @@ exM2 = Λ λ x → down do
     true  → modify' (_+∘_ 10)
     false → modify' (_+∘_ 20)
 
+
 -- The "fail" branches jump immediately to the "catch" clause
 exM3 : ↑C (ℕ∘ ⇒ StateT∘ ℕ∘ (MaybeT∘ Identity∘) ⊤∘)
 exM3 = Λ λ x → down $
@@ -136,9 +130,18 @@ exM3 = Λ λ x → down $
       false → fail)
     (do modify' (_+∘_ 11))
 
+-- Monadic tail recursion on lists, the "tailcall1" result does not get matched.
+exM4 : ↑C (List∘ ℕ∘ ⇒ StateT∘ ℕ∘ (MaybeT∘ Identity∘) ⊤∘)
+exM4 = DefRec λ rec → Λ λ ns → down do
+  caseM ns λ where
+    nil         → pure tt∘
+    (cons n ns) → caseM (n ==∘ 10) λ where
+      true  → fail
+      false → do modify' (_+∘_ 20); tailcall (rec ∙ ns)
+
 -- Section 3.6. example from the paper
-exM4 : ↑C (Tree∘ ℕ∘ ⇒ StateT∘ (List∘ ℕ∘) (MaybeT∘ Identity∘) (Tree∘ ℕ∘))
-exM4 = DefRec λ f → Λ λ t → down $ do
+exM5 : ↑C (Tree∘ ℕ∘ ⇒ StateT∘ (List∘ ℕ∘) (MaybeT∘ Identity∘) (Tree∘ ℕ∘))
+exM5 = DefRec λ f → Λ λ t → down $
   caseM t λ where
     leaf         → pure leaf∘
     (node n l r) → do
@@ -149,12 +152,11 @@ exM4 = DefRec λ f → Λ λ t → down $ do
       n  ← join $ caseM ns λ where
              nil         → pure n
              (cons n ns) → do put ns; pure n
-      l ← up (f ∙ l)
-      r ← up (f ∙ r)
-      pure (node∘ n l r)
+      node∘ n <$> up (f ∙ l) <*> up (f ∙ r)
+
 
 -- filterM where the recursive call is performed first
-filterM : ∀ {F M A}⦃ _ : Improve F M ⦄ → (↑V A → M Bool) → ↑C (List∘ A ⇒ F (List∘ A))
+filterM : ∀ {F M A}⦃ _ : Improve F (List∘ A) M ⦄ → (↑V A → M Bool) → ↑C (List∘ A ⇒ F (List∘ A))
 filterM f = DefRec λ rec → Λ λ as → down $ caseM as λ where
   nil         → pure nil∘
   (cons a as) → do
@@ -163,11 +165,23 @@ filterM f = DefRec λ rec → Λ λ as → down $ caseM as λ where
       true  → pure (cons∘ a as)
       false → pure as
 
-exM5 : ↑C (List∘ ℕ∘ ⇒ StateT∘ ℕ∘ (MaybeT∘ Identity∘) (List∘ ℕ∘))
-exM5 = filterM λ n → caseM (n ==∘ 0) λ where
+-- filterM where we make a tail call in the false case
+filterM' : ∀ {F M A}⦃ _ : Improve F (List∘ A)  M ⦄ → (↑V A → M Bool) → ↑C (List∘ A ⇒ F (List∘ A))
+filterM' f = DefRec λ rec → Λ λ as → down $ caseM as λ where
+  nil         → pure nil∘
+  (cons a as) → f a >>= λ where
+      true  → cons∘ a <$> up (rec ∙ as)
+      false → tailcall (rec ∙ as)
+
+exM6 : ↑C (List∘ ℕ∘ ⇒ StateT∘ ℕ∘ (MaybeT∘ Identity∘) (List∘ ℕ∘))
+exM6 = filterM' λ n → caseM (n ==∘ 0) λ where
   true  → fail
   false → split (n <∘ 20)
 
+exM7 : ↑C (List∘ ℕ∘ ⇒ StateT∘ ℕ∘ (MaybeT∘ Identity∘) (List∘ ℕ∘))
+exM7 = filterM λ n → caseM (n ==∘ 0) λ where
+  true  → fail
+  false → split (n <∘ 20)
 
 -- Streams
 --------------------------------------------------------------------------------
@@ -175,31 +189,35 @@ exM5 = filterM λ n → caseM (n ==∘ 0) λ where
 -- To print stream code, it is usally the clearest to use "toList", e.g.
 -- "toList exS1".
 
-exS1 : Pull (↑V ℕ∘)
+variable
+  E : Set
+
+exS0 : Pull E (↑V ℕ∘)
+exS0 = empty
+
+exS1 : Pull E (↑V ℕ∘)
 exS1 = consₚ 10 $ consₚ 20 empty
 
-exS2 : Pull (↑V ℕ∘)
-exS2 = forEach (take 20 count) λ x →
-       take 20 count <&>ₚ λ y →
-       x +∘ y
+exS2 : Pull E (↑V ℕ∘)
+exS2 = forEach (take 20 count) λ x → (take 20 count) <&>ₚ (λ y → x +∘ y)
 
-exS3 : Pull (↑V ℕ∘)
+exS3 : Pull E (↑V ℕ∘)
 exS3 = forEach (take 10 count) λ x →
        forEach (take 20 count) λ y →
        forEach (take 30 count) λ z →
        single (x +∘ y +∘ z)
 
-exS4 : ↑V (List∘ (ℕ∘ ×∘ ℕ∘))
+exS4 : ↑ (Identity∘ (List∘ (ℕ∘ ×∘ ℕ∘)))
 exS4 = toList (zip count exS2)
 
-exS5 : Pull (↑ (V ℕ∘))
+exS5 : Pull E (↑ (V ℕ∘))
 exS5 = _*∘_ <$>ₚ take 10 count <*>ₚ take 10 (countFrom 20)
 
-exS6 : Pull (↑ (V ℕ∘))
+exS6 : Pull E (↑ (V ℕ∘))
 exS6 = _+∘_ <$>ₚ exS2 <*>ₚ count
 
--- paper 4.4 example
-exS7 : Pull (↑ (V ℕ∘))
+-- Section 4.4 example in paper:
+exS7 : Pull E (↑ (V ℕ∘))
 exS7 = forEach (take 100 (countFrom 0)) λ x →
        genLetₚ (x *∘ 2) λ y →
        caseₚ (x <∘ 50) λ where
@@ -207,4 +225,20 @@ exS7 = forEach (take 100 (countFrom 0)) λ x →
          false → single y
 
 -- Medium-sized zip
+exS8 : Pull E (↑V (ℕ∘ ×∘ ℕ∘))
 exS8 = zip exS7 exS2
+
+exS9 : PullM (MaybeT (Gen E)) (↑V ℕ∘)
+exS9 = forEach (take 100 (countFrom 0)) λ x →
+       caseₚ (x ==∘ 30) λ where
+         true  → failₚ
+         false → single 10
+
+exS10 : PullM (MaybeT (StateT (↑V ℕ∘) (Gen E))) (↑V ℕ∘)
+exS10 = forEach (take 100 (countFrom 0)) λ x →
+        caseₚ (x ==∘ 30) λ where
+          true  → failₚ
+          false →
+            forEach (take x (countFrom x)) λ y →
+            bindM (modify (_+∘_ 5)) λ _ →
+            single y

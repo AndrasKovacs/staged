@@ -10,6 +10,7 @@ This supplement consists of three separate artifacts:
    track computation and value types.
 - `agda-opsem`: formalizes a syntax and operational semantics for the object
    theory and develops some basic metatheory for it.
+- `agda-ifip-tailcall`: not discussed in the paper. Extends `agda-cftt` with monadic tail calls and effectful streams.
 
 In each folder, build instructions and further documentation can be found in the
 local README-s and the source files.

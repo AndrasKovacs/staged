@@ -45,7 +45,7 @@ Pull E A = PullM (Gen E) A
 postulate
   CALL : {A : Set} → A
 
-{-# DISPLAY fst∘ _ = CALL #-}
+-- {-# DISPLAY fst∘ _ = CALL #-}
 
 -- Basics
 --------------------------------------------------------------------------------

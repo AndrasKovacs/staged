@@ -141,7 +141,6 @@
 \newcommand{\whset}{\wh{\Set}}
 \newcommand{\rexti}{\re_{\ext_1}^{-1}}
 \newcommand{\rextizero}{\re_{\ext_0}^{-1}}
-\newcommand{\whset}{\wh{\Set}}
 
 \newcommand{\rel}{^{\approx}}
 \newcommand{\yon}{\msf{y}}
@@ -423,7 +422,7 @@ over $\mit{id}_1$, but in some cases we really have to quantify over
 $\Lift\U_0$. This brings us to the next example.
 
 Assume $\List_0 : \U_0 \to \U_0$ with $\nil_0 : (A : \U_0) \to \List_0\,A$,
-$\cons_0 : (A : \U_0) \to A \to \List_0\,A$ and $\msf{foldr}_0 : (A\,B : \U_0)
+$\cons_0 : (A : \U_0) \to A \to \List_0\,A \to \List_0\,A$ and $\msf{foldr}_0 : (A\,B : \U_0)
 \to (A \to B \to B) \to B \to \List_0\,A \to B$. We define a mapping function which
 inlines its function argument:
 \begin{alignat*}{3}
@@ -1683,7 +1682,7 @@ For $\Con$, $\Sub$ and meta-level types and terms, this is a fairly standard
 logical relation interpretation: contexts are mapped to relations, types to
 dependent relations, and substitutions and terms respect relations. We will only have
 modest complications in meta-level type formers because we will sometimes need to use
-the lax/oplax preservations properties of $\re$. For object-level types and
+the lax/oplax preservation properties of $\re$. For object-level types and
 terms, we get soundness statements: evaluation via $\ev$ followed by embedding
 back to 2LTT is the same as restriction to object-level contexts. We describe
 the $\blank\rel$ interpretation in the following.

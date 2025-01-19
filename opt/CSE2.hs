@@ -14,7 +14,6 @@ import Debug.Trace
 
 -- dead value elimination is "fast and loose", it can convert infinite loops
 -- to non-loops
-
 -- pedantic optimization would only delete dead total code
 
 -- Raw terms

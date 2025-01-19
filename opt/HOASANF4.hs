@@ -1,7 +1,7 @@
 {-# language Strict, LambdaCase, BlockArguments #-}
 {-# options_ghc -Wincomplete-patterns #-}
 
--- Full defunctionalization is hard to read...
+-- Defunctionalized ANF conversion (hard to read...)
 
 type Ix  = Int
 type Lvl = Int

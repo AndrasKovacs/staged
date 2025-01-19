@@ -1,0 +1,149 @@
+
+-- objects
+Con := (C : Cat) × (Γ : Ĉ)
+
+-- types: displayed psh
+Ty (C, Γ) := TyĈ Γ
+
+   A : TyĈ Γ
+   A : (c : C) → Γ c → Set
+   _<_> : A c γ → (f : c'→c) → A c' γ<f>
+
+-- terms: psh section
+Tm (C, Γ) A := TmĈ Γ A
+
+-- morphisms
+(σ : Sub (C, Γ) (D, Δ)) :=
+   (σ  : C → D)
+   (σ  : Γ → σ*Δ)
+
+(Π A B) : Ty (C, Γ) :=
+   ΠĈ A B
+
+   where
+
+   ΠĈ A B : TyĈ Γ
+
+     if γ : Γ C then γ<_> : SubĈ Yc Γ
+
+   |ΠĈ A B| (c : C) (γ : Γ c) := TmĈ (Yc ▶ A[γ<_>]) (B[γ<_>∘p, q])
+   t<f>                       := t[Yf∘p, q]
+
+-- type subst:
+(A : Ty (D, Δ))[σ : Sub (C, Γ) (D, Δ)] :=
+   (σ*A)[σ]
+
+-- Problem: σ*_   doesn't preserve Π!
+-- Let's see
+
+-- Restriction: assume σ : C → D functor
+
+σ* : ConD̂ → ConĈ
+|σ*Γ|c := Γ (σ c)
+(γ : Γ (σ c))<f : c'→c> := γ<σ f>
+
+  γ   : Γ (σ c)
+  f   : c'→c
+  σ f : σ c' → σ c
+  γ<σ f> : Γ (σ c')
+
+σ* : TyD̂ Γ → TyĈ (σ*Γ)
+|σ*A|(c : C) (γ : Γ (σ c)) := A (σ c) γ
+(α : A (σ c) γ)<f : c'→c> := α<σ f>
+
+σ* : SubD̂ Γ Δ → SubĈ σ*Γ σ*Δ
+|σ* (δ : SubĈ Γ Δ)| c (γ : Γ (σ c)) := δ (σ c) γ
+
+σ* : TmD̂ Γ A → TmĈ σ*Γ σ*A
+|σ* t| c γ := t (σ c) γ
+
+-- action on ▶
+σ*(Γ ▶ A) = σ*Γ ▶ σ*A
+
+
+
+------------------------------------------------------------
+
+want to have
+   A : TyD̂ Γ
+   B : TyD̂ (Γ ▶ A)
+
+   Π A B : TyD̂ Γ
+
+   σ*A : TyĈ σ*Γ
+   σ*B : TyĈ (σ*(Γ ▶ A))
+       : TyĈ (σ*Γ ▶ σ*A)
+
+   σ*(ΠD̂ A B) = ΠĈ σ*A σ*B
+
+   -- LHS
+   |σ*(ΠD̂ A B)| (c : C) (γ : Γ (σ c)) = TmĈ (Y(σ c) ▶ A[γ<_>]) (B[γ<_>∘p, q])
+
+      ∀ c' (f : c' → σ c) → (α : A c' γ<f>) → B c' (γ<f>, α)
+
+   t<f> = t[Y(σ f)∘p, q]
+
+  -- RHS
+   |ΠĈ σ*A σ*B| (c : C) (γ : Γ (σ c)) = TmĈ (Yc ▶ (σ*A)[γ<_>]) ((σ*B)[γ<_>∘p, q])
+
+      ∀ c' (f : c'→c) → (α : A (σ c') γ<σ f>) → B (σ c') (γ<σ f>, α)
+
+   t<f> = t[f∘p, q]
+
+for exponentials:
+
+   |Γ ⇒ Δ|c = SubĈ (Yc × Γ) Δ
+   t<f>     = t∘(Yf∘p, q)
+
+   σ  : C → D
+   σ* : D̂ → Ĉ
+
+   LHS:
+     |σ*(Γ ⇒ Δ)| c = SubD̂ (Y(σ c) × Γ) Δ
+     t<f>          = t∘(Y(σ f)∘p, q)
+
+   ∀ (d : D) (f : d → σ c) → Γ d → Δ d
+
+   RHS:
+     |σ*Γ ⇒ σ*Δ| c = SubĈ (Yc × σ*Γ) (σ*Δ)
+     t<f>          = t∘(Yf∘p, q)
+
+   ∀ c' (f : c' → c) → Γ (σ c') → Δ (σ c')
+
+
+   σ is a projection  π₁ : C × C → C
+
+   ∀ (c' : C) (f : c' → c₀) → Γ c' → Δ c'
+
+   ∀ (c0,c1) (f : (c0',c1') → (c0,c1)) → Γ c0' → Δ c0'     seems OK up to iso, need strictification
+
+
+   σ is diagonal di : C → C × C
+
+      ∀ (d0, d1) (f : (d0, d1) → (c, c)) → Γ (d0, d1) → Δ (d0, d1)
+      ∀ c' (f : c' → c) → Γ (c', c') → Δ (c', c')
+
+representable exponentials
+
+   |c ⇒ Δ| c' = |Δ| (c' × c)
+
+   |σ*(d ⇒ Δ)| c = |Δ|(σ c × d)
+
+   |c ⇒ σ*Δ| c' = |σ*Δ| (c' × c) = |Δ| (σ (c' × c))
+                                   |Δ| (σ c' × σ c)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+------------------------------------------------------------

@@ -22,7 +22,7 @@ anf e t l k = case t of
                 Let (App (Var t) (Var u)) (k l (l + 1))
   Lam t      -> Let (Lam (anf (l:e) t (l+1) (const . Var))) (k l (l + 1))
   Let t u    -> anf e t l \t l -> anf (t:e) u l k
-  Inl t      -> anf e t l \t l -> Let (Inl (Va t)) (k l (l + 1))
+  Inl t      -> anf e t l \t l -> Let (Inl (Var t)) (k l (l + 1))
   Inr t      -> anf e t l \t l -> Let (Inr (Var t)) (k l (l + 1))
   Case t u v -> anf e t l \t l -> Case (Var t) (anf (l:e) u (l+1) k)
                                                (anf (l:e) v (l+1) k)

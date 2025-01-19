@@ -1,0 +1,248 @@
+
+SPEC OF YLF
+------------------------------------------------------------
+
+ETT:
+  Ty : Set
+  Tm : Ty → Set⁺
+  U  : Ty
+  Tm U = Ty
+  ...
+
+------------------------------------------------------------
+
+We leave Tm-s implicit in the following
+
+If T : SOGAT (closed, external)
+- FMODᵀ : Ty is the type of first-order models
+- SMODᵀ : Ty is the type of second-order models
+
+We implicitly cast M : FMODᵀ to M : Cat
+
+------------------------------------------------------------
+
+Extra:
+  In : {T} → FMODᵀ → Set⁺
+  S  : {x : Inᵀ M} → SMODᵀ
+  Y  : {x : Inᵀ M} → M.Con → Ty
+  _  : Y M.∙ ≃ ⊤
+  Y  : {x : Inᵀ M} → M.Sub Γ Δ → Y Γ → Y Δ
+
+  + Y for every sort in T for {x : Inᵀ M}
+    with inverse Λ
+
+  + preservation of context extension up to iso by Y for
+    every representable sort
+
+  + strict preservation of all structure by Y
+
+  for example, if T is a type theory with Ty and representable Tm:
+
+  (Y,Λ) : M.Ty Γ      ≃ ({x : Inᵀ M} → Y Γ → S.Ty)
+  (Y,Λ) : M.Tm Γ A    ≃ ({x : Inᵀ M} → (γ : Y Γ) → S.Tm (Y A γ))
+  _     : Y (Γ M.▶ A) ≃ ((γ : Y Γ) × Y A γ)
+
+  + preservation of all structure by Y, e.g.
+
+        Y M.Bool    = Λₓ λ _. Sₓ.Bool
+	Y (M.Π A B) = Λₓ λ γ. Sₓ.Pi (Y A γ) λ α. Y B (γ, α)
+
+------------------------------------------------------------
+
+Syntactic sugars that we use:
+
+  - Skip double lambda for Λ
+  - Make x : Inᵀ M implicit both in binding and application, when obvious
+  - Use ordinary TT syntax for Sₓ components
+  - Use pattern matching on Y Γ
+
+  E.g:
+    Y (M.Π A B) = λ γ. (α : Y A γ) → Y B (γ, α)
+
+    p : M.Sub (Γ ▶ A) Γ
+    p = Λ (γ, _). γ
+
+
+STANDARD MODEL
+------------------------------------------------------------
+
+base cwf
+------------------------------------------------------------
+
+(_→_ is overloaded to means morphisms in 1-categories)
+
+-- objects
+Con := (C : Cat) × (Γ : Ĉ)
+
+-- types: displayed psh
+Ty (C, Γ) := TyĈ Γ
+
+-- terms: psh section
+Tm (C, Γ) A := TmĈ Γ A
+
+-- morphisms
+(σ : Sub (C, Γ) (D, Δ)) :=
+   (σ  : C → D)
+   (σ← : D → C)
+   (_  : σ ∘ σ← = id)
+   (σ  : Γ → σ*Δ)
+
+  precomposition functor:
+    σ* : D̂ → Ĉ
+    σ* extends to morphism between ETT models
+
+    moreover _*_ is functorial in first arg:
+    id*_ = id
+    (σ ∘ δ)*_ = δ*_ ∘ σ*_
+
+(id : Sub (C, Γ) (C, Γ)) :=
+  id  : C → C    := id
+  id← : C → C    := id
+  id  : Γ → id*Γ := id
+
+((σ : Sub (D,Δ) (E,Σ)) ∘ (δ : Sub (C, Γ) (D, Δ))) : Sub (C, Γ) (E, Σ) :=
+
+  (σ ∘ δ)  : C → E := σ ∘ δ
+  (σ ∘ δ)← : E → C := δ← ∘ σ←
+  _ : σ ∘ δ ∘ δ← ∘ σ← = id OK
+
+  (σ ∘ δ) : Γ → (σ ∘ δ)* Σ
+          : Γ → δ* (σ* Σ)
+    := δ*σ ∘ δ
+
+idl : id ∘ σ = σ
+  OK
+
+idr OK
+
+ass : (σ ∘ δ) ∘ ν = σ ∘ (δ ∘ ν)
+  ν*(δ*σ ∘ δ) ∘ ν =
+  ν*(δ*σ) ∘ ν*δ ∘ ν
+
+  (δ ∘ ν)*σ ∘ (ν*δ ∘ ν) =
+  ν* (δ*σ) ∘ ν*δ ∘ ν
+  OK
+
+(A : Ty (D, Δ)) (σ : Sub (C, Γ) (D, Δ)) : Ty (C, Γ)
+
+    A : TyD̂ Δ
+    σ : Γ → σ*D
+    σ*A : TyĈ (σ*Δ)
+
+    := (σ*A)[σ] : TyĈ Γ
+
+A[id] = A
+  (id*A)[id] = A
+
+A[σ∘δ] = A[σ][δ]
+
+  ((σ∘δ)*A)[σ∘δ]
+  (δ*(σ*A))[δ*σ][δ]
+
+  (δ*((σ*A)[σ]))[δ]
+  (δ*(σ*A))[δ*σ][δ]
+  OK
+
+(t : Tm (D, Δ) A)(σ : Sub (C, Γ) (D, Δ)) : Tm (C, Γ) A[σ] :=
+  t : TmD̂ Δ A
+  σ*t : TmĈ (σ*Δ) (σ*A)
+  := (σ*t)[σ] : TmĈ (C, Γ) (σ*A)[σ] OK
+
+∙ : Con :=
+  C := 1_Cat
+  Γ := ⊤_Ĉ
+
+((C, Γ) ▶ (A : Ty (C, Γ))) :=
+  C := C
+  Γ := Γ ▶Ĉ A
+
+p : Sub ((C, Γ) ▶ A) (C, Γ)
+  p  : C → C := id
+  p← : C → C := id
+  p  : SubĈ (Γ ▶Ĉ A) Γ := pĈ
+
+q : Tm ((C, Γ) ▶ A) A[p]
+  : TmĈ (Γ ▶Ĉ A) (p*A)[p]
+  : TmĈ (Γ ▶Ĉ A) (A[p])
+  := qĈ
+
+((σ : Sub (C, Γ) (D, Δ)) , (t : Tm (C, Γ) A[σ])) : Sub (C, Γ) ((D, Δ) ▶ A)
+
+  (σ,t)  : C → D := σ
+  (σ,t)← : D → C := σ←
+
+  (σ,t)  : Γ → σ*(Δ ▶D̂ A)
+         : Γ → σ*Δ ▶Ĉ σ*A
+	 := (σ ,Ĉ t)
+
+(p,q) = id
+  OK
+
+p∘(σ,t) = σ
+  OK
+
+q[σ,t] = t
+  OK
+
+ETT type formers all obvious (σ* preserves everything)
+
+
+-- YONEDA
+------------------------------------------------------------
+
+
+preliminaries
+------------------------------------------------------------
+for T : SOGAT sig,
+FMODᵀ : Ty (C, Γ)
+SMODᵀ : Ty (C, Γ)
+s.t.
+FMODᵀ has an underlying category with a terminal object
+
+displayed presheaf
+  A : TyĈ Γ
+
+A    : ∀ c. Γ c → Set
+_<_> : A γ → (f : C(i, j)) → A (γ<f>)
+
+
+
+internally in Ĉ
+
+  M : Γ →Ĉ Cat
+
+that's the same as
+
+  M.Con  : TyĈ Γ
+  M.Sub  : TyĈ (Γ, M.Con, M.Con[p])
+  M.id   : TmĈ (Γ, M.Con) (M.Sub q q)
+  M.comp : ...
+
+or more unfolded and a bit informal:
+
+  M.Con  : ∀ c. Γ c → Set,  with functorial _<_> operation
+  M.Sub  : ∀ c. {γ : Γ c} → M.Con γ → M.Con γ → Set,  with functorial _<_> operation
+  M.id   : {Γ* : M.Con {c} γ} → M.Sub Γ* Γ*, natural in c
+  M.comp : -||- similarly
+  + equations
+
+displayed category M* : DispCat Cᵒᵖ, from M : Γ →Ĉ Cat
+
+  M*.Con c := (γ : Γ c) → M.Con {c} γ
+  M*.Sub c* c*' (f : C(c, c')) := (γ : Γ c) → M.Sub (c* γ) (c*' γ)<f>
+
+
+
+
+------------------------------------------------------------
+((C, Γ) ▶ In M) :=
+
+  Γ : Ĉ
+  M : Γ →Ĉ CatĈ
+
+  C := C × (Γ →
+
+
+
+In : (Γ : Con) → Tm Γ FMODᵀ → Set
+In (C, Γ) M :=

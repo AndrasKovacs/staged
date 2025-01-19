@@ -201,7 +201,7 @@ exS6 = _+∘_ <$>ₚ exS2 <*>ₚ count
 -- paper 4.4 example
 exS7 : Pull (↑ (V ℕ∘))
 exS7 = forEach (take 100 (countFrom 0)) λ x →
-       genLetₚ (x *∘ 2) λ y →
+       genLetₚ (x *∘ 2) λ y →  -- let y = x * 2
        caseₚ (x <∘ 50) λ where
          true  → take y (countFrom x)
          false → single y

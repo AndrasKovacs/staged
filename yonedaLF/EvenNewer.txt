@@ -1,0 +1,65 @@
+
+-- base theory
+------------------------------------------------------------
+
+  Base : Set
+  _≤_  : Base → Base → Prop
+  _≤_ preorder with least element 1
+
+  Cat  : Set
+  Fun  : Cat → Set⁺
+  _    : Fun F → Base    (implicit coercion)
+
+  Ty   : Base → Set
+  Tm   : Ty b → Set⁺
+
+  Lift   : b ≤ b' → Ty b → Ty b'
+  (↑, ↓) : Tm A ≃ Tm (Lift A)
+
+  (Ty b, Tm) closed under all ETT type formers
+             where we can eliminate from (Ty b) to (Ty b') when b ≤ b'
+
+  let (CatI : Ty) b be the internal type of categories in (Ty b, Tm)
+     i.e.
+          (Ob : U b) × (Hom : Ob → Ob → U b) × ...
+
+  _ : Tm CatI = Cat     (Russell-style categories)
+
+-- Yoneda
+------------------------------------------------------------
+
+  For T : SOGAT (externally),
+  let (FMod(T, b) : Ty b) be the type of first-order  models of T, where sorts are in (Ty b)
+  let (SMod(T, b) : Ty b) be the type of second-order models of T, where sorts are in (Ty b)
+
+  For example, if T =
+      Tm         : Set⁺
+      (app, lam) : Tm ≃ (Tm → Tm)
+
+  Then FMod(T, b) =
+     (C : CwF b) × untyped LC structure on C
+
+  And SMod(T, b) =
+     (Tm : U b) × (Tm ≃ (Tm → Tm))
+
+  -- for every M a first-order model of T, there's a second order model
+  -- of T internally to presheaves over M
+
+  S : {T : SOGAT}{b : Base}{M : Tm FMod(T, b)} → (b' : Fun M) → Tm SMod(T, b')
+
+  -- action of Yoneda embedding
+  -- example let M : Tm FMod(untypedLC, b)
+
+  Y      : Tm M.Con → (b' : Fun M) → Ty b'
+  (Y, Λ) : Tm (M.Sub Γ Δ) ≃ ((b' : Fun M) → Tm (Y Γ b') → Tm (Y Δ b'))
+  (Y, Λ) : Tm (M.Tm Γ)    ≃ ((b' : Fun M) → Tm (Y Γ b') → Tm (S b'.Tm))
+
+  -- Yoneda weakly preserves empty cxt and context extensions
+  ∀ b' → Tm (Y M.∙ b')     ≃ Tm (⊤ b')
+  ∀ b' → Tm (Y (Γ M.▶) b') ≃ ((γ : Tm (Y Γ b')) × Tm (S b'.Tm))
+
+  -- strictly preserves all other structure
+  Y M.id      = λ _ γ. γ
+  Y (σ M.∘ δ) = λ _ γ. Y σ (Y δ γ)
+  Y (M.lam t) = λ _ γ. S.lam α. Y t (γ, α)
+  Y (M.app t) = λ _ (γ, α). S.app (Y t) γ α

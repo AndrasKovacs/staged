@@ -240,12 +240,12 @@ instance Eval Comp OComp where
 
 instance Eval Tm OTm where
 
-  eval cxt = \case
-    Ret t -> do
-      t <- eval cxt t
-      case M.lookup (Right t) (_memo cxt) of
-        Nothing -> _
-        Just id -> _
+  -- eval cxt = \case
+  --   Ret t -> do
+  --     t <- eval cxt t
+  --     case M.lookup (Right t) (_memo cxt) of
+  --       Nothing -> _
+  --       Just id -> _
 
 
 -- eval :: Lvl -> [Lvl] -> Map Val Lvl -> Tm -> State Store (OTm, LvlSet)

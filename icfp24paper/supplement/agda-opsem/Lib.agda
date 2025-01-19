@@ -12,7 +12,7 @@ open import Data.Product
   hiding (_<*>_)
   public
 
-open import Data.Maybe hiding (ap; map; zip) public
+open import Data.Maybe hiding (ap; map; zip; zipWith) public
 open import Data.Nat hiding (_+_; _*_) public
 open import Data.Nat.Properties public
 open import Data.Nat.Induction public

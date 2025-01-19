@@ -1,4 +1,4 @@
 name: agda-cftt-opsem
 include: .
-depend: standard-library-2.0
+depend: standard-library-2.2
 flags:

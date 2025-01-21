@@ -1,0 +1,7 @@
+
+- Present polarized src language in Agda, Haskell
+  (Agda: type system)
+
+- Present ANF translation variants (higher-level, lower-level) for LC+sums
+  - Explain various goals of ANF representation
+  - Low-level ANF

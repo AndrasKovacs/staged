@@ -196,8 +196,9 @@ eval l env memo t = do
 
 --------------------------------------------------------------------------------
 
+run :: RTm -> (Store, CTm)
 run t = case runState (eval 0 [] mempty (elab0 t)) mempty of
-  (!(!t, !_), !s) -> pure (s, rename (0, 0, mempty) t)
+  (!(!t, !_), !s) -> (s, rename (0, 0, mempty) t)
 
 --------------------------------------------------------------------------------
 

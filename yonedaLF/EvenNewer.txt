@@ -63,3 +63,32 @@
   Y (σ M.∘ δ) = λ _ γ. Y σ (Y δ γ)
   Y (M.lam t) = λ _ γ. S.lam α. Y t (γ, α)
   Y (M.app t) = λ _ (γ, α). S.app (Y t) γ α
+
+
+-- NEW VERSION
+--------------------------------------------------------------------------------
+
+  Cat : Set
+  Fun : Cat → Set⁺
+  1   : Cat
+  !   : Fun 1
+
+  ΣFun := (C : Cat) × Fun C
+
+  Ty  : ΣFun → Set
+  Tm  : Ty i → Set⁺
+
+  (Ty i, Tm) supports ETT type formers (we don't specify inductive eliminators yet)
+
+  Cat i : Ty i := <internal type of categories>
+
+  cat : {i} → Tm (Cat i) → Cat
+
+  _≤_ : ΣFun → ΣFun → Set
+  (i ≤ j) : = (c : Tm (Cat i)) × (fst j = cat c)
+
+  Lift : i ≤ j → Ty i → Ty j
+
+
+  -- Lift   : ∀ {i C F} → Ty i → Ty (cat i C, F)
+  -- (↑, ↓) : Tm A ≃ Tm (Lift {i}{C}{F} A)

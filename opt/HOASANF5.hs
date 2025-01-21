@@ -6,6 +6,9 @@ type Ix    = Int
 type Lvl   = Int
 type Arity = Int
 
+-- polarized non-ANF syntax
+------------------------------------------------------------
+
 data Tm
   = Var Ix
   | App Tm Tm
@@ -16,6 +19,9 @@ data Tm
   | Inr Tm
   | Case Tm Tm Tm
   deriving Show
+
+-- semantic values
+------------------------------------------------------------
 
 data SAtom
   = SApply Lvl [Lvl]
@@ -32,6 +38,9 @@ data SANF
   | SLetC SComp (Lvl -> SANF)
   | SRet Lvl
   | SCase Lvl (Lvl -> SANF) (Lvl -> SANF)
+
+-- ANF syntax
+------------------------------------------------------------
 
 data AComp
   = ALam AComp

@@ -35,7 +35,7 @@ quote l = \case
   VLet t u    -> Let (quote l t) (quote (l + 1) (u l))
   VInl t      -> Inl (quoteVar l t)
   VInr t      -> Inr (quoteVar l t)
-  VCase t u v -> let l' = l + 1; x = VVar l in
+  VCase t u v -> let l' = l + 1 in
                  Case (quoteVar l t) (quote l' (u l)) (quote l' (v l))
 
 anf :: [Lvl] -> Tm -> (Lvl -> Val) -> Val

@@ -1,0 +1,359 @@
+
+Simply-typed category family structure on categories.
+PSh universes indexed by functors.
+
+----------------------------------------------------------------------------------------------------
+
+Model structure of categories
+
+Sub                 = functor
+Ty Γ                = disp cat overΓ
+Tm Γ A              = section of disp cat
+Setᵒᵖ : Ty Γ        = opposite category of sets
+El (A : Tm Γ Setᵒᵖ) = discrete disp cat from a presheaf
+
+Π : (A : Tm Γ Setᵒᵖ) → Ty (Γ ▶ El A) → Ty Γ  = presheaf-indexed product of displayed categories
+_→_ : Tm Γ Setᵒᵖ → Tm Γ Setᵒᵖ → Tm Γ Setᵒᵖ
+A → B = Π A (B[p])
+
+Yoneda
+------------------------------------------------------------
+
+i : Γ          Y i : Tm Γ Setᵒᵖ
+f : i → j      Y f : Tm (Γ ▶ El (Y i)) (El (Y j))
+
+Y id : Tm (Γ ▶ El (Y i)) (El (Y i))
+     = id -- in the category of types in Γ
+     = q
+
+Y (f ∘ g) : Tm (Γ ▶ El (Y i)) (El (Y k))
+     = Y f ∘ Y g                         -- in the category of types in Γ
+     = (Y f)[p, Y g]
+
+(Y i) j = (j → i)
+(Y i) (f : j → k) (g : k → i) = g ∘ f
+
+
+(Y (f : i → j)) (k, (g : k → i)) = f ∘ g   -- obj action
+(Y (f : i → j)) {k₀, g₀ : k₀ → i} {k₁, g₁ : k₁ → i} (k₂ : k₀ → k₁, g₂ : g₁ ∘ k₂ = g₀) -- hom action
+  : (El (Y j)) (f ∘ g₀) (f ∘ g₁) k₂
+  : (Y j) k₂ (f ∘ g₁) = f ∘ g₀
+  : f ∘ g₁ ∘ k₂ = f ∘ g₀
+  OK by g₂
+
+Hofmann-Streicher universe
+------------------------------------------------------------
+
+HSU : (Γ : Cat) → Tm Γ Setᵒᵖ
+(HSU Γ) (i : Γ) := Tm (Γ ▶ El (Y i)) Setᵒᵖ
+t <f : j → i>   := t[p, Y f]
+
+
+Tm (Γ ▶ El A) (El (HSU Γ)[p])  ~   Tm (Γ ▶ El A) Setᵒᵖ
+Tm Γ (Π A (El (HSU Γ)[p]))     ~  Tm Γ (Π A Setᵒᵖ)
+
+
+----------------------------------------------------------------------------------------------------
+
+
+Con : Set
+Con := Cat
+
+_▶_ : Con → Cat → Con
+_▶_ = _×_
+
+Fun : Con → Cat → Set
+Fun Γ Δ = Sub Γ Δ
+
+-- + comprehension for _▶_, Fun
+
+PSh : (Γ : Con)(C : Cat)(F : Fun Γ C) → Set
+PSh Γ C F = Tm Γ (El (HSU C)[F])
+
+_[_] : PSh Γ C F → (σ : Sub Δ Γ) → PSh Δ C (F ∘ σ)
+t[σ] = t[σ]
+
+Unbase : PSh Γ C F → Tm Γ Setᵒᵖ
+(Unbase A) (i : Γ) =     -- object action
+  A i : (El (HSU C)[F]) i
+      : (HSU C)[F] i
+      : (HSU C) (F i)
+      : Tm (C ▶ El (Y (F i))) Setᵒᵖ
+
+  A i (F i, id) : Set
+
+  := A i (F i, id)
+
+(Unbase A) (f : i → j) (α : A j (F j, id)) : A i (F i, id)
+
+  A f : (A j)[p, Y (F f)] = A i
+
+  goal : A i (F i, id)
+       : (A j)[p, Y (F f)] (F i, id)
+       : (A j) (F i, Y (F f) (F i, id))
+       : (A j) (F i, F f)
+
+  need morphism:
+      Hom(C ▶ El (Y (F i))) (F i, F f) (F j, id)
+
+      F f : Hom(C) (F i) (F j)
+
+      _ :  Hom(El (Y (F i))) (F f) id (F f)
+        :  Y (F i) (F f) id = F f
+        :  id ∘ F f = F f
+        : F f = F f OK
+
+  := (A j) (F f, _) α
+
+  stability OK
+
+(Unbase (A : PSh Δ C F))[σ : Sub Γ Δ] = Unbase (A[σ])
+  obj action
+    (Unbase A)[σ] i =
+    (Unbase A) (σ i) =
+    A (σ i) (F (σ i), id)
+
+    (Unbase A[σ]) i =
+    A[σ] i ((F ∘ σ) i, id) =
+    A (σ i) (F (σ i), id) OK
+    OK
+
+  hom action
+    (Unbase A)[σ] f =
+    (Unbase A) (σ f) =
+    A (σ f) (F (σ f), _)
+
+    (Unbase A[σ]) f =
+    A[σ] f ((F ∘ σ) f, _)
+    A (σ f) (F (σ f), _)
+    OK
+
+PEl : PSh Γ C F → Ty Γ
+PEl A = El (Unbase A)
+
+_▶_ : ∀ Γ → PSh Γ C F → Con
+Γ ▶ A = Γ ▶ PEl A
+
+
+-- Unstable type formers
+----------------------------------------------------------------------------------------------------
+
+_=>_ : Tm Γ Setᵒᵖ → Tm Γ Setᵒᵖ → Tm Γ Setᵒᵖ
+(A => B) i = Tm (Γ ▶ El (Y i) ▶ El A) (El B)
+
+           = Tm (γ : Γ, i : El (Y i) γ, a : El A γ) (El B γ)
+
+(A => B) (f : i → j) (t : Tm (Γ ▶ El (Y j) ▶ El A) (El B)) : Tm (Γ ▶ El (Y i) ▶ El A) (El B)
+   =  t[p², (Y f)[p], q]
+   = Λ (γ, i, a). t (γ, (Y f)(γ, i), a)
+
+
+
+(A => B) id t = t OK
+t<f∘g> = t<f><g> OK
+
+-- it's unstable
+-- but it's stable under discrete substitution at the end of the cxt!!!
+
+U : Tm Γ Setᵒᵖ
+U i           = Tm (Γ ▶ El (Y i)) Setᵒᵖ
+U (f : i → j) (t : Tm (Γ ▶ El (Y j)) Setᵒᵖ) : Tm (Γ ▶ El (Y i)) Setᵒᵖ
+   = t ∘ Y f  -- in the type category
+
+
+revisit exponentials:
+
+(A => B) i   = Tm (Γ ▶ El (Y i)) (A => El B[p])
+(A => B) f t = t ∘ Y f
+
+suspicious that the same pattern is used for both! Can we do it generically?
+
+basically: something in Ty is getting internalized into presheaves, but over a fixed category
+
+
+A : ∀ Γ → Ty Γ         -- stably exists in every context, but which doesn't land in presheaves
+(A Δ)[σ] = A Γ
+
+A* : ∀ Γ → Tm Γ Setᵒᵖ                   -- lands in presheaves, but only stable over fixed category
+(A* Γ) i   = Tm (Γ ▶ El (Y i)) (A Γ)
+(A* Γ) f t = t ∘ Y f
+
+
+
+
+
+conv : Tm Γ (El (A* Γ)) ≃ Tm Γ (A Γ)
+
+  t : Tm Γ (El (A* Γ))
+
+  t i : A* Γ i
+      : Tm (Γ ▶ El (Y i)) (A Γ)
+
+
+  goal : Tm Γ (A Γ)
+
+   i           ↦ t i (i, id) OK
+
+   (f : i → j) ↦ : (A Γ) (t i (i, id))  (t j (j, id)) f
+                   (A Γ) (t j (i, Y f)) (t j (j, id)) f
+
+     t f : (t j)[p, Y f] = t i
+
+     t j : Tm (Γ ▶ El (Y i)) (A Γ)
+
+     t j (f, _) OK
+
+  backwards
+
+
+
+
+-- type formers
+----------------------------------------------------------------------------------------------------
+
+SIMPLE FUNCTION
+
+_=>_ : PSh Γ C F → PSh Γ C F → PSh Γ C F
+(A => B) : Tm Γ (El (HSU C)[F])
+
+  A : Tm Γ (El (HSU C)[F])
+  B : Tm Γ (El (HSU C)[F])
+
+  A i : Tm (C ▶ El (Y (F i))) Setᵒᵖ
+  B i : Tm (C ▶ El (Y (F i))) Setᵒᵖ
+
+  A f : (A j)[p, Y (F f)] = A i
+  B f : (B j)[p, Y (F f)] = A i
+
+  objects
+  (A => B) i : (El (HSU C)[F]) i
+             : (HSU C) (F i)
+             : Tm (C ▶ El (Y (F i))) Setᵒᵖ
+           = (A i => B i)
+
+  morphisms
+  (A => B) (f : i → j) : (El (HSU C)[F]) (A i => B i) (A j => B j) f
+                       : (HSU C)[F] f (A j => B j) = (A i => B i)
+                       : (HSU C) (F f) (A j => B j) = (A i => B i)
+                       : (A j => B j)[p, Y (F f)] = (A i => B i)
+
+    (A j => B j)[p, Y (F f)] =                 -- stability of discrete substitution
+    (A j)[p, Y (F f)] => (B j)[p, Y (F f)]     -- by (A f) and (B f)
+    (A i => B i)                               OK (nice!)
+
+  Stability follows from discrete stability of unstable _=>_!
+
+
+Other:
+
+(A => B)[σ : Sub Γ Δ] = (A[σ] => B[σ]) : PSh Γ C (F ∘ σ)
+
+  (A => B)[σ] i =
+  (A => B)(σ i) =
+  (A (σ i) => B (σ i))
+
+  (A[σ] => B[σ]) i =
+  (A[σ] i => B[σ] i) =
+  (A (σ i) => B (σ i)) OK
+
+app : Tm Γ (PEl (A => B)) → Tm (Γ, PEl A) (PEl B)
+(app t) (i, α)
+  A i : Tm (C ▶ El (Y (F i))) Setᵒᵖ
+  B i : Tm (C ▶ El (Y (F i))) Setᵒᵖ
+  i   : Γ
+  α   : PEl A i
+      : A i (F i, id)
+
+
+  t i : PEl (A => B) i
+      : El (Unbase (A => B)) i
+      : Unbase (A => B) i
+      : (A => B) i (F i, id)
+      : (A i => B i) (F i, id)
+      : Tm (C ▶ El (Y (F i)) ▶ El (Y (F i, id)) ▶ El (A i)) (El (B i))  -- doubly Yoneda-d!!
+
+  t i (F i, id, id, α) : B i (F i, id) OK
+  := t i (F i, id, id, α)
+
+ACTION on morphism TODO
+
+
+stability
+
+  app t (σ i, α) = t (σ i) (F (σ i), id, id, α)
+  app (t[σ]) (i, α) = t[σ] i (F i, id, id, α) = t (σ i) (F (σ i), id, id, α)
+
+
+UNIVERSE
+
+PShU : PSh Γ C F
+PShU : Tm Γ (El (HSU C)[F])
+
+  objects
+  PShU i : Tm (C ▶ El (Y (F i))) Setᵒᵖ
+         = U
+
+  morphisms
+  PShU (f : i → j) : U [p, Y (F f)] = U   OK by stability under discrete subst
+
+TODO
+
+
+
+How to set up external sets to get categories which don't depend on presheaves?
+--------------------------------------------------------------------------------
+
+Example for stratification in SOGAT: System F
+
+Ty  : Set⁺
+_→_ : Ty → Ty → Ty
+∀   : (Ty → Ty) → Ty
+Tm  : Ty → Set⁺
+Tm (∀ B) ≃ ((A : Ty) → Tm (B A))
+Tm (A → B) ≃ (Tm A → Tm B)
+
+In the standard impredicative Set model, separate ty & tm context
+
+Con          = (Γ : Set₁, Δ : Γ → Set)
+Ty (Γ, Δ)    = Γ → Set
+(Γ, Δ) ▶*    = (Γ × Set, Δ)
+Tm (Γ, Δ) A  = ∀ γ. Δ γ → A γ
+(Γ, Δ) ▶ A   = (Γ, λ γ. Δ γ × A γ)
+...
+
+
+
+New syntax
+----------------------------------------------------------------------------------------------------
+
+MetaTy closed under ETT types
+
+Set : MetaTy, Set ⊆ MetaTy, closed under ETT types
+Cat : Set := <type of cats>
+In  : Cat → MetaTy
+PSh : In C → MetaTy, PSh X ⊆ MetaTy, closed under ETT types
+
+Lift : Set → PSh x
+Lift A ≃ A
+Lift preserves inductive types
+
++ Yoneda
+S : {C : FMod(T, Set)}{X : In C} → SMod(T, PSh X)
+Y : FModHom(C, Π (ext ∘ S))
+weakly preserves contexts
+on everything else: bijection, preserves everything strictly
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+----------------------------------------------------------------------------------------------------

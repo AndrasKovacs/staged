@@ -1,0 +1,400 @@
+
+
+SYNTAX
+----------------------------------------------------------------------------------------------------
+
+MetaTy               (supports ETT)
+
+Set : MetaTy         (supports ETT)
+El  : Set → MetaTy
+
+In  : Catₛₑₜ → MetaTy
+
+PSh : In C → MetaTy  (supports ETT)
+El  : PSh i → MetaTy
+
+Lift : Set → PSh i
+↑    : El A → El (Lift A)
+
+s.t. inductive types are oplax preserved:
+  El (Lift ℕ) → El ℕ
+  El (List A) → El (List (Lift A))
+  etc.
+
+Yoneda embeddings:
+Assume T : SOGAT, M : FMod(T, Set)
+
+S : {i : In M} → SMod(T, PSh i)
+
+  define the (PSh i)-contextualization
+    cxt : SMod(T, PSh i) → FMod(T, PSh i)
+  then
+    (cxt ∘ S) : {i : In M} → FMod(T, PSh i)
+
+  take the indexed product of FMod-s:
+
+    Prod (cxt ∘ S) : FMod(T, MetaTy)
+
+  we can also lift (M : Set) to (M : MetaTy) by distributing El
+
+Yoneda embedding is
+
+  Y : (FMod(T, MetaTy))(M, Prod (cxt ∘ S))
+  s.t. Y preserves objects up to iso and Y is a structure-preserving bijection
+  on every other sort.
+
+
+SEMANTICS
+----------------------------------------------------------------------------------------------------
+
+1. Build PSh C model with sub-universes for F : C → D for PSh D, assuming F is a fibration
+2. Assuming cats are products of cats, F : C → D is a variable (projection) and σ : C' → C is
+   a renaming, show stability of PSh sub-universes under base change.
+3. Now we have ((C : Prod(Cat)) × (Γ : PSh C)) as a model which supports
+   supports simply-typed Cat extension.
+4. Extend to (I : Set) × (C : I → Prod(Cat)) × ((i : I) → PSh (C i))
+   to support the Set universe.
+5. The whole thing is 2LTT over this model.
+
+
+
+1. PSh model with sub-universes
+----------------------------------------------------------------------------------------------------
+
+Assume F : C → D is a split fibration
+Assume Con, Ty, Tm, etc for PSh model.
+
+Notation for lifting:
+
+  i      : D
+  j      : C
+  f      : i → F j
+  j[f]   : D
+  lift f : j[f] → j
+
+  F (j[f])   = i
+  F (lift f) = f
+
+
+-- Ordinary Π type in psh
+------------------------------------------------------------
+
+Π : (A : Ty Γ) → Ty (Γ, A) → Ty Γ
+(Π A B) {i} γ = Tm (Yi, A[γ<_>]) (B[γ<_>∘p, q])
+t<f>          = t[Y f ∘ p, q]
+
+
+-- SUB-UNIVERSE
+------------------------------------------------------------
+
+U : Con
+U i  = Ty(Y(F i))
+α<f> = α[Y(F f)]
+
+El : Tm Γ U → Ty Γ
+(El A) {i} γ = A {i} γ {F i} id
+α<f>         = α<F f>
+
+   α      : A γ {F i} id
+   α<F f> : A γ {F i'} (id ∘ F f)
+          : A γ {F i'} (F f ∘ id)
+	  : A γ {F i'} (F f ∘ id)
+	  : (A γ)[Y (F f)] id
+	  : A γ<f> id
+   OK
+
+(El A)[σ] = El A[σ]
+  (El A)(σ γ) = A (σ γ) id
+  (El A[σ]) γ = A[σ] γ id = A (σ γ) id
+  -- same for morphism
+
+
+ADJUSTMENT FOR TYPE FAMILIES
+------------------------------------------------------------
+
+B : Tm (Γ, El A) U
+i : C
+
+B* : (γ : Γ i) → Ty (Y (F i), A γ)
+B* γ {j} (g, α) = B {i[g]} (γ<lift g>, α) {F j} id
+
+(β : B (γ<lift g>, α) {j} id)<f : j' → j> : B (γ<lift (g∘f)>, α<f>) {j'} id
+
+   g      : j → F i
+   f      : j' → j
+   lift g : i[g] → i
+
+   B {i[g]} (γ<lift g>, α) : Ty (Y(F (i[g])))
+                           : Ty (Y j)
+
+   lift f : j[f] → j
+   F (lift f) = f
+
+   β<f> :  B (γ<lift g>, α) {j'} (id<f>)
+        :  B (γ<lift g>, α) {j'} (id ∘ f)
+        :  B (γ<lift g>, α) {j'} (f ∘ id)
+        :  B (γ<lift g>, α) {j'} (F (lift f) ∘ id)
+        : (B (γ<lift g>, α))[Y(F (lift f)))] id
+	: (B (γ<lift g ∘ lift f>, α<lift f>)) id
+	: (B (γ<lift (g ∘ f)>, α<F (lift f)>)) id
+	: (B (γ<lift (g ∘ f)>, α<f>)) id OK
+
+β<f> = β<f>
+
+-- naturality:
+
+B* γ<f> (g, α) = B* γ (F f ∘ g, α)
+
+  B* γ<f> (g, α) =
+  B (γ<f ∘ lift g>, α) id
+
+  B* γ (F f ∘ g, α) =
+  B* (γ<lift (F f ∘ g)>, α) id =
+  B (γ<f ∘ lift g>, α) id
+  OK
+
+-- substitution:
+(B[σ∘p, q])* γ = B* (σ γ)
+
+  (B[σ∘p, q])* γ (g, α) = B[σ∘p, q] (γ<lift g>, α) = B (γ<lift (σ g)>, α)
+  β<f>                  = β<σ f>
+
+
+PI TYPE
+------------------------------------------------------------
+
+
+Π (A : Tm Γ U) → Tm (Γ, El A) U → Tm Γ U
+(Π A B) {i} γ : Ty (Y(F i))
+              := Π (A γ) (B* γ)
+
+  naturality:
+
+    (Π A B) γ<f> = ((Π A B) γ)[f] = ((Π A B) γ)[Y (F f)]
+
+    Π (A γ<f>) (B* γ<f>) =
+      ΠD̂ (A γ<f>) (B (γ<f ∘ lift _> ∘ p, q)) =
+      ΠD̂ ((A γ)[Y(F f)]) (B (γ<f ∘ lift _> ∘ p, q))
+
+    ((Π A B) γ)[Y(F f)] =
+      (ΠD̂ (A γ) (B[γ<lift _>∘p, q])) [Y(F f)]
+      ΠD̂ ((A γ)[Y(F f)]) (B[γ<lift _>∘p, q][Y(F f)∘p, q])
+      ΠD̂ ((A γ)[Y(F f)]) (B[γ<lift _>∘Y(F f)∘p, q])
+      ΠD̂ ((A γ)[Y(F f)]) (B (γ<f ∘ lift _> ∘ p, q))
+
+Π[] : (Π A B)[σ] = Π A[σ] B[σ∘p, q]
+    (Π A B) (σ γ) = Π (A (σ γ)) (B* (σ γ))
+    (Π A[σ] B[σ∘p, q] = Π (A (σ γ)) (B[σ∘p, q]* γ) = Π (A (σ γ)) (B* (σ γ))
+
+
+app : Tm Γ (El (Π A B)) → Tm (Γ, El A) (El B)
+app t {i} (γ, α) : B (γ, α) id
+
+   α   : A γ id
+
+   t γ : (El (Π A B)) γ
+       : (Π A B) γ id
+       : (Π (A γ) (B* γ)) id
+       : Tm (Y(F i), (A γ)[id<_>]) ((B* γ)[id<_>∘p, q])
+       : Tm (Y(F i), A γ) (B* γ)
+
+   t γ (id, α) : B* γ (id, α)
+               : B (γ, α) id OK
+
+   := t γ (id, α)
+
+   naturality:
+    we have by naturality of t
+
+      t γ<f> = (t γ)<f> = (t γ)<F f> = (t γ)[Y (F f)∘p, q]
+
+      t γ<f> (x, y) = t γ (F f ∘ x, y)
+
+    app t (γ, α)<f> =
+    app t (γ<f>, α<F f>) =
+    t γ<f> (id, α)
+
+    (app t (γ, α))<f> =
+    (app t (γ, α))<F f> =
+    (t γ (id, α))<F f> =
+    t γ (id, α)<F f> =
+    t γ<f> (id, α) OK
+
+
+(app t)[σ∘p,q] = app (t[σ])
+
+  (app t)[σ∘p,q] (γ, α) =
+  (app t)(σ γ, α) =
+  t (σ γ) (id, α)
+
+  app (t[σ]) =
+  t[σ] γ (id, α) =
+  t (σ γ) (id, α)
+  OK
+
+
+lam : Tm (Γ, El A) (El B) → Tm Γ (El (Π A B))
+lam t {i} γ : (El (Π A B)) γ
+            : (Π A B) γ id
+	    : ΠD̂ (A γ) (B* γ) id
+	    : Tm (Y(F i), A γ) (B* γ)
+
+  lam t {i} γ {j} (g : j → F i, α : A γ g) : B* γ (g, α)
+                                           : B (γ<lift g>, α) id
+
+  t (γ<lift g>, α) : (El B) (γ<lift g>, α)
+                   : B (γ<lift g>, α) id  OK
+
+  lam t γ = λ (g, α). t (γ<lift g>, α)
+
+  naturality
+
+    t (γ<lift (g∘f)>, α<f>) = (t (γ<lift g>, α))<f>
+
+      t (γ<lift (g∘f)>, α<f>) =
+      t (γ<lift g><lift f>, α<F (lift f)>) =
+      t (γ<lift g><lift f>, α<lift f>) =
+      t (γ<lift g>, α)<lift f> =
+      (t (γ<lift g>, α))<f>
+      OK
+
+
+app (lam t) = t
+  app (lam t) (γ, α) =
+  (lam t) γ (id, α) =
+  t (γ<lift id>, α) =
+  t (γ, α) OK
+
+lam (app t) γ (g, α) = t γ (g, α)
+
+  t : Tm Γ (El (Π A B))
+
+    t γ<lift g> =
+    (t γ)<lift g> =
+    (t γ)<g> =
+    (t γ)[Y g ∘ p, q]
+
+  (app t) (γ<lift g>, α) =
+  t γ<lift g> (id, α) =
+  t γ (g, α) OK
+
+
+
+
+UNIT TYPE
+----------------------------------------------------------------------------------------------------
+
+⊤ : Tm Γ U
+⊤ {i} γ : Ty (Y (F i))
+        := ⊤
+  -- is natural, subst OK
+
+tt : Tm Γ (El ⊤)
+tt γ = tt
+
+-- subst OK, uniqueness OK
+
+
+EMPTY TYPE
+----------------------------------------------------------------------------------------------------
+
+⊥ : Tm Γ U
+⊥ {i} γ : Ty (Y (F i))
+        := ⊥
+  -- is natural, subst OK
+
+⊥-elim : (A : Tm Γ U) → Tm Γ (El ⊥) → Tm Γ (El A)
+⊥-elim A t γ {i} : A γ id
+   t γ : ⊥ γ id
+       : ⊥ OK
+   := exfalso (t γ)
+-- subst OK
+
+
+NAT
+----------------------------------------------------------------------------------------------------
+
+Nat : Tm Γ U
+Nat {i} γ : Ty (Y (F i))
+          := NatD̂
+  -- subst, naturality OK
+
+zero : Tm Γ (El Nat)
+zero γ := zero
+
+suc : Tm Γ (El Nat) → Tm Γ (El Nat)
+suc t := suc (t γ)
+
+-- natural, stable
+
+NatElim : (P : Tm (Γ, El Nat) U)
+        → Tm Γ (El (P[id, zero]))
+	→ Tm (Γ, El Nat, El P) (El P[p², suc (q[p]]))
+	→ (n : Tm Γ (El Nat))
+	→ Tm Γ (El (P[id, n]))
+NatElim P z s n {i} γ : P[id, n] γ id
+                      : P (γ, n γ) id
+
+  n γ : ℕ
+  z γ : P (γ, 0) id
+
+  if x : ℕ, xᴾ : P (γ, x) id, then
+   s (γ, x, xᴾ) : P (γ, suc x)
+
+  by induction on n
+    n = 0     --> z γ
+    n = suc x --> s (γ, x, hyp x)
+
+etc.
+
+
+SIGMA
+----------------------------------------------------------------------------------------------------
+
+Σ : (A : Tm Γ U) → Tm (Γ, El A) U → Tm Γ U
+Σ A B {i} γ : Ty (Y (F i))
+            := ΣD̂ (A γ) (B* γ)
+  naturality
+
+  (Σ A B γ<f>) = (Σ A B γ)<f> = (Σ A B γ)[Y(F f)]
+
+  Σ A B γ<f> g =
+  ΣD̂ (A γ<f>) (B* γ<f>) g =
+  Σ (α : A γ<f> g) (B* γ<f> (g, α)) =
+
+  (Σ A B γ)[Y(F f)] g =
+  (Σ A B γ) (F f ∘ g)
+  Σ (α : A γ (F f ∘ g)) (B* γ (F f ∘ g, α)) =
+  Σ (α : A γ<f> g) (B* γ (F f ∘ g, α)) =
+  Σ (α : A γ<f> g) (B* γ<f> (g, α)) OK
+
+-- subst OK
+
+pair : (t : Tm Γ (El A)) → Tm Γ (El B[id, t]) → Tm Γ (Σ A B)
+pair t u {i} γ : (Σ A B) γ id
+               : ΣD̂ (A γ) (B* γ) id
+	       : (α : A γ id) × (B* γ (id, α))
+	       : (α : A γ id) × B (γ, α) id
+	       := (t γ, u γ)
+
+-- etc
+
+fst
+snd
+TODO
+
+
+EXTENSIONAL IDENTITY
+----------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+INTERNAL UNIVERSE
+----------------------------------------------------------------------------------------------------

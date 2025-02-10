@@ -1,0 +1,505 @@
+
+New organization:
+
+1. Build PSh C model with sub-universes for F : C → D for PSh D.
+2. Show that sub-universes are stable under base reindexing
+3. Now we have ((C : Cat) × (Γ : PSh C)) as a model, which additionally
+   has simply typed Cat-extension with external cats and a sort of functors
+4. Extend model to (I : Set) × (I → ((C : Cat) × PSh C))
+
+SYNTAX
+----------------------------------------------------------------------------------------------------
+MetaTy               supports ETT
+Set : MetaTy
+El  : Set → MetaTy   supports ETT
+
+In  : Catₛₑₜ → MetaTy
+
+PSh : In C → MetaTy
+El  : PSh i → MetaTy supports ETT
+
+Lift : Set → PSh i
+↑    : El A → El (Lift A)
+s.t. inductive types oplax preserved
+      El (Lift ℕ) → El ℕ
+      El (List A) → El (List (Lift A))
+      etc.
+
+Yoneda
+Assume T : SOGAT, M : FMod(T, Set)
+
+S : {i : In M} → SMod(T, PSh i)
+
+  define the (PSh i)-contextualization
+    cxt : SMod(T, PSh i) → FMod(T, PSh i)
+  then
+    (cxt ∘ S) : {i : In M} → FMod(T, PSh i)
+
+  take the indexed product of FMod-s:
+
+    Prod (cxt ∘ S) : FMod(T, MetaTy)
+
+  we can also lift M to MetaTy by distributing El
+
+Yoneda embedding is
+
+  Y : HomT(lift M, Prod (cxt ∘ S))
+  s.t. Y preserves objects up to iso, is a structure-preserving bijection on everything else
+
+EXAMPLE for System F
+
+T := {
+  Ty  : Set⁺
+  Tm  : Ty → Set⁺
+  ∀   : (Ty → Ty) → Ty
+  _⇒_ : Ty → Ty → Ty
+  (App,Lam) : Tm (∀ B)   ≃ ((A : Ty) → Tm (B A))
+  (app,lam) : Tm (A ⇒ B) ≃ (Tm A → Tm B)
+}
+
+● : (In C → MetaTy) → MetaTy
+● A := (i : In C) → A i
+
+Y     : M.Con     → ● S.Con
+(Y,Λ) : M.Sub Γ Δ ≃ ● (Y Γ → Y Δ)
+(Y,Λ) : M.Ty Γ    ≃ ● (Y Γ → S.Ty)
+(Y,Λ) : M.Tm Γ A  ≃ ● ((γ : Y Γ) → S.Tm (Y A γ))
+
+
+
+
+
+
+----------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+-- PSh model with sub-universes
+----------------------------------------------------------------------------------------------------
+
+Assume C : Cat, we have Ĉ a model of ETT
+Let's call the universe HSU for Hofmann-Streicher universe, to distinguish from the indexed universes
+
+If F : C → D, then F* : D̂ → Ĉ strictly preserves all ETT structure except for HSU and Π
+
+We implicitly treat contexts as closed types
+
+Y : C → ConĈ
+Y i j = j → i
+γ<f>  = γ ∘ f
+
+Y : (i → j) → SubĈ (Yi) (Yj)
+Y f g = f ∘ g
+
+for γ : Γ i, we have γ<_> : Sub Yi Γ
+
+HSU C : PSh C
+HSU C i = TyĈ (Yi)
+α<f>    = α[Yf]
+
+exponential:
+
+_→_ : Ty Γ → Ty Γ → Ty Γ
+(A → B) {i} (γ : Γ i) = Tm (Yi, A[γ<_>]) (B[γ<_>])
+t<f>                  = t[Yf ∘ p, q]
+
+----------------------------------------------------------------------------------------------------
+
+Fix D : Cat, F : C → D
+
+U : Con
+U = F*(HSU D)
+
+i.e.
+  U    i = Ty (Y(F i))
+  α<f>   = α[Y(F f)]
+
+El : Tm Γ U → Ty Γ
+(El A) γ = A {i} γ {F i} id
+α<f>     = α<F f>
+
+    α : A {j} γ {F j} id
+    f : i → j
+
+    goal : A {i} γ<f> {F i} id
+
+    A γ<f> = (A γ)<f>
+
+    goal : (A γ)[Y(F f)] id           A γ<f> id = A γ f
+         : A γ (F f)
+
+    α<F f> : A γ (F f)
+
+
+Π : (A : Tm Γ U) → Tm (Γ, El A) U → Tm Γ U
+(Π A B) {i} γ : Ty (Y (F i))
+
+  A γ : Ty (Y(F i))
+
+  B : Tm (Γ, El A) U
+
+  B* : Ty (Y(F i), A γ)
+  B* {j} (f : j → F i, A {i} γ {j} f) = B {i} (γ, ? : (El A) {i} γ)
+
+    ? : (El A) {i} γ
+      : A {i} γ {F i} id
+
+    Or
+
+  B* {j} (f : j → F i, α : A {i} γ {j} f) = B {F← j}(γ<f←>, ? : (El A) γ<f←>)
+
+    f     : j → F i
+    f←    : F← j → i
+    F f←  : F (F← j) → F i = f
+
+    γ<f←> : Γ (F← j)
+
+    ?     : (El A) γ<f←>
+          : A γ<f←> id
+	  : (A γ) (Y (F f←) id)
+	  : (A γ) (F f← ∘ id)
+	  : (A γ) (F f←)
+	  : A γ f
+	  := α
+
+  B* (f, α) = B (γ<f←>, α)      -- SUSSY
+  Or, if F : C → D is an adjunction  with F← ⊣ F
+
+
+
+
+SUSPICIOUS
+
+TODO to try:
+
+   universe of sets in Ĉ, supporting Π !!
+   if that doesn't work without terminal object in C, that's suspicious!
+
+
+              = ΠD̂ (A γ) (B*
+
+   A γ   : Ty (Y(F i))
+   B     : TmĈ (Γ, El A) U
+
+   lam B   : TmĈ Γ (El A → U)
+
+   lam B γ : (El A → U) γ
+           : Tm (Yi, (El A)[γ<_>]) U[γ<_>]
+
+   B* : Ty (Y(F i), A γ)
+   B* {j} (f : j → F i, α : A γ f) = (lam B γ) {i} (id, ? : A γ id)
+
+   -- adjunction?
+           j → F i
+	   F← j → i
+
+
+   A   : Tm Γ U
+   A f : (A γ)<f> = A γ<f>
+       : (A γ)[Y(F f)] = A γ<f>
+
+     so (A γ)[Y(F f)] g = (A γ<f>) g
+        (A γ) (F f ∘ g) = (A γ<f>) g
+
+
+   -- B*  : Ty (Y(F i), A γ)
+   -- B* {j} (f : j → F i, α : A γ {j} f) = B {i} (γ, ? : A γ {F i} id)
+
+   --     α : A γ f
+   --     ? : A γ id
+   --     A γ f
+
+   ΠD̂ : (A : TyD̂ Γ) → TyD̂ (Γ, A) → TyD̂ Γ
+   ΠD̂ (A γ) : TyD̂ (Y(F i), A γ) → TyD̂ (Y(F i))
+
+   Somehow Π doesn't work the same way as _=>_
+
+_→_ : Tm Γ U → Tm Γ U → Tm Γ U
+(A → B) {i} γ = A γ → B γ OK
+
+
+-- Experiment: universe of sets in Ĉ, supporting Π and U
+----------------------------------------------------------------------------------------------------
+
+U : Con
+U _  = Set
+α<f> = α
+
+El : Tm Γ U → Ty Γ
+(El A) {i} γ = A γ
+α<f> = α
+
+Π : (A : Tm Γ U) → Tm (Γ, El A) U → Tm Γ U
+Π A B {i} γ : (α : A γ) → B (γ, α) OK
+
+  A γ : Set
+  B   : Tm (Γ, El A) U
+
+  B {i} (γ, ?) : Set
+
+    ? : El A γ
+
+This works; a bit too trivial
+
+
+-- Experiment: universe of PSh C in PSh(C×D)
+----------------------------------------------------------------------------------------------------
+
+let F : C × D → C    (fst)
+
+(A γ<f>) = (A γ)[Y(F f)]
+
+
+
+U : Con
+U i  = Ty (Y(F i))
+α<f> = α[Y(F f)]
+
+El : Tm Γ U → Ty Γ
+(El A) {i} γ = A γ id
+α<f>         = α<F f>
+
+Π : (A : Tm Γ U) → Tm (Γ, El A) U → Tm Γ U             -- what if I don't have the "full" presheaves??
+(Π A B) {i} γ : Ty (Y(F i))                            -- just different family structures
+              = Π (A γ) (? : Ty (Y(F i), A γ))
+
+  A γ : Ty (Y(F i))
+
+  f : j → F i
+
+  probl: have A γ {j} f, need A γ {F i} id
+
+  A γ<f> = (A γ)[Y(F f)]
+  A γ<f> g = A γ (F f ∘ g)
+
+
+Π : (A : Tm Γ U) → Tm (Γ, El A) U → Tm Γ U
+(Π A B) {i} γ : Ty (Y(F i))
+(Π A B) {i} γ {j} (f : j → F i) : Set := Tm
+
+-- Tm Γ (El (Π A B)) ≃ Tm (Γ, El A) (El B)
+-- (El (Π A B)) {i} γ
+
+
+-- Experiment just plain fuckin ordinary Π in Ĉ, but as an element of U
+----------------------------------------------------------------------------------------------------
+
+U : Con
+U i  = Ty (Y i)
+α<f> = α[Y f]
+
+El : Tm Γ Con → Ty Γ
+(El A) {i} γ = A γ id
+α<f>         = α<f>
+
+code : Ty Γ → Tm Γ Con
+(code A) {i} γ : Ty (Yi)
+     λ {j} (f : j → i). A γ<f>
+     λ {j j'}(f : j → j')(g : j' → i)(x : A γ<g>) : A γ<g ∘ f> := x<f>
+
+(El (code A)) {i} γ = (code A) γ id = A γ<id> = A γ
+(code (El A)) {i} γ {j} f = (El A) γ<f> = A γ<f> id = A γ (id ∘ f) = A γ f
+
+
+
+Π : (A : Tm Γ U) → Tm (Γ, El A) U → Tm Γ U
+(Π A B) {i} γ : Ty (Yi)
+
+  (Π A B) {i} γ {j} g : Set
+  (Π A B) {i} γ {j} g = Tm (Yj, A[γ<g><_>]) (B[γ<g><_>∘p, q])   -- double yoneda
+
+  (Π A B) {i} γ {j} {j'} (f : j → j') (g : j' → i) (t : Tm (Yj', A[γ<g><_>]) (B[γ<g><_>∘p, q]) : Tm (Yj, A[γ<g∘f><_>]) (B[γ<g∘f><_>∘p, q])
+
+      need : Sub (Yj, A[γ<g∘f><_>]) (Yj', A[γ<g><_>])
+
+        Yf∘p : Sub (Yj, A[γ<g∘f><_>]) Yj'
+        q    : Tm  (Yj, A[γ<g∘f><_>]) A[γ<g><_>][Yf∘p]
+             : Tm  (Yj, A[γ<g∘f><_>]) A[γ<g∘f><_>]
+        Yf∘p, q : Sub (Yj, A[γ<g∘f><_>]) (Yj', A[γ<g><_>])
+
+
+      t          : Tm (Yj', A[γ<g><_>]) (B[γ<g><_>∘p, q])
+      t[Yf∘p, q] : Tm (Yj , A[γ<g><_>]) (B[γ<g><_>∘p, q][Yf∘p, q])
+                 : Tm (Yj , A[γ<g><_>]) (B[γ<g∘f><_>∘p, q]   OK  (UUUUHHH)
+
+  t<f> = t[Yf∘p, q]
+
+  IN SHORT:
+
+  (Π A B) {i} γ {j} g = Tm (Yj, A[γ<g><_>]) (B[γ<g><_>∘p, q])
+  t<f> = t[Yf∘p, q]
+
+  AND THIS IS JUST THE FKIN ACTION ON OBJECTS
+  WE NEED NATURALITY TOO
+
+  (Π A B) γ<f> = ((Π A B) γ)<f>
+
+    (Π A B) γ<f> g = Tm (Yj, A[γ<f∘g><_>]) (B[γ<f∘g><_>∘p, q])
+    ((Π A B) γ)<f> g = ((Π A B) γ)[Yf] g = (Π A B) γ (f ∘ g) = Tm (Yj, A[γ<f∘g><_>]) (B[γ<f∘g><_>∘p, q]) OK
+
+  (Π A B γ<h>) f {g} t = (Π A B) γ)<h> f {g} t
+    TODO
+
+  AND I FUCKED UP THE TYPE
+
+----------------------------------------------------------------------------------------------------
+
+Π : (A : Ty Γ) → Ty (Γ, A) → Ty Γ
+(Π A B) {i} γ = Tm (Yi, A[γ<_>]) (B[γ<_>∘p, q])
+
+Π : (A : Tm Γ U) → Tm (Γ, El A) U → Tm Γ U
+(Π A B) {i} γ {j} g = code (Π (El A) (El B)) {i} γ {j} g
+                    = (Π (El A) (El B)) {j} γ<g>
+                    = Tm (Yj, (El A)[γ<g><_>]) ((El B)[γ<g><_>∘p, q])   CORRECTION
+                    = Tm (Yj, El A[γ<g><_>]) (El B[γ<g><_>∘p, q])   CORRECTION
+
+                     ∀ k (h : k → j)(α : A γ<g∘h> id) → B (γ<g∘h>, α) id
+
+
+
+----------------------------------------------------------------------------------------------------
+
+F : C → D
+
+U : Con
+U i  = Ty(Y(F i))
+α<f> = α[Y(F f)]
+
+El : Tm Γ U → Ty Γ
+(El A) {i} γ = A {i} γ {F i} id              -- (El A) γ = A γ id
+α<f> = α<F f>
+
+Π : (A : Tm Γ U) → Tm (Γ, El A) U → Tm Γ U
+(Π A B) {i} γ : Ty (Y(F i))
+
+(Π A B) {i} (γ : Γ i) {j} (g : j → F i) : Set
+(Π A B) {i} γ {j} g = TmD̂ (Yj, A[γ<g><_>]) (B[γ<g><_>∘p, q])
+
+         ∀ k (h : k → j) (α : A γ<g∘h> id) → B (γ<g∘h>, α) id
+
+         A γ : Ty (Y(F i))
+
+         γ : Γ i
+         g : j → F i
+
+         ∀ k (h : F k →
+
+
+_→_ : Tm Γ U → Tm Γ U → Tm Γ U
+(A → B) {i} γ = A γ → B γ       OK
+
+
+TRYING TO DERIVE FROM PSH EXP doesn't work, because there's no Code op (presumably)
+TRYING TO DIRECTLY GET PI doesn't work
+
+TRYING TO USE OPERATIONAL INTUITION??
+GIMME CLOSURES
+
+Π (A : Tm Γ U) → Tm (Γ, El A) U → Tm Γ U
+(Π A B) {i} (γ : Γ i) {j} (g : j → F i) : Set
+
+    ∀ k (h : k → j). (α : A γ {k} (g ∘ h)) → B (γ, ?)
+
+    A γ : Ty (Y(F i))
+
+    A γ<f> g = A γ (F f ∘ g)
+
+
+
+    need : Ty (Y (F i), A γ)
+    have : Tm (Γ, El A) U
+
+        (j, 1) → (F i, 1)    -- padding the substitution
+
+        pad : (j → F i) → ((j,1) → (F i, 1))
+
+        A {j,1} γ<f,id> {F i, 1} id = A γ (Fst(f, id)) = A γ f  NOT OK
+
+        Γ (i0, i1)
+
+
+        ∀ j (f : j → F i, α : A {i} γ {j} f)           A {i} γ {F i} id
+
+
+TRY AGAIN, NOW EXPLOIT PROJECTIONS BEING FIBRATIONS
+----------------------------------------------------------------------------------------------------
+
+projections are fibrations
+
+assume F : C → D a fibration
+
+notation for lifting
+   i : D
+   j : C
+   f : i → F j
+
+   j{f}   : D
+   F (j{f}) = i
+
+   lift f : j{f} → j
+   F (lift f) = f
+
+
+U : Con
+U i  = Ty(Y(F i))
+α<f> = α[Y(F f)]
+
+El : Tm Γ U → Ty Γ
+(El A) {i} γ = A {i} γ {F i} id
+α<f> = α<F f>
+
+
+Π : (A : Tm Γ U) → Tm (Γ, El A) U → Tm Γ U
+(Π A B) {i} γ : Ty (Y(F i))
+
+-- easy mode?
+
+   A γ : Ty (Y(F i))
+
+   -- B restriction?
+   (β : B (γ, α))<f : j' → j> : B (γ<f>, α<F f>)
+
+
+   γ : Γ i
+   g : j → F i
+   lift g : j{g} → i
+   γ<lift g> : Γ j{g}
+   f : j' → j
+
+   B*  : Ty (Y(F i), A γ)
+   B* {j} (g : j → F i, α : A γ g) = B {j{g}} (γ<lift g>, α)
+   (β : B* {j} (g, α))          <f : j' → j> : B* {j'} (g<f>, α<f>)
+   (β : B {j{g}} (γ<lift g>, α))<f : j' → j> : B {j'{g∘f}} (γ<lift (g∘f)>, α<f>)
+
+     g      : j → F i
+     lift g : j{g} → i
+     f      : j' → j
+     f      : j' → F j{g}
+     lift f : j'{f} → j{g}
+
+     β <lift f> : B {j'{f}} (γ<lift g ∘ lift f>, α<f>)
+                : B (γ<lift (g ∘ f)>, α<f>) OK
+
+     IN SHORT
+      B* : Ty (Y(F i), A γ)
+      B* (g, α) = B (γ<lift g>, α)
+      β<f>      = β<lift f>
+
+  "intuitive" notation: B* = (B[γ<lift _>∘p, q])
+
+  (Π A B) {i} γ = ΠD̂ (A γ) (B[γ<lift _>∘p, q])
+
+naturality
+
+  (Π A B) γ<f> = ((Π A B) γ)[Y(F f)]
+
+  (Π A B) γ<f> =
+    ΠD̂ (A γ<f>) (B[γ<f∘lift _>∘p, q]) =
+    ΠD̂ ((A γ)[Y(F f)]) (B[γ<f∘lift _>∘p, q])
+
+  ((Π A B) γ)[Y(F f)] =
+  (ΠD̂ (A γ) (B[γ<lift _>∘p, q])) [Y(F f)]
+  ΠD̂ ((A γ)[Y(F f)]) B*

@@ -1,0 +1,313 @@
+
+cwf of categories and displayed categories, let's call it "C"
+------------------------------------------------------------
+
+Con    := Cat
+Ty Γ   := displayed Cat over Γ
+Tm Γ A := section of displayed cat
+
+-- constant families
+K : Con → Ty Γ
+Tm Γ (K Δ) = Sub Γ Δ
+
+-- category of sets
+Set : Con
+
+PSh : Ty Γ
+PSh := K Setᵒᵖ
+
+⊤  : Ty Γ
+Σ  : (A : Ty Γ) → Ty (Γ, A) → Ty Γ
+Id : Tm Γ A → Tm Γ A → Ty Γ
+
+-- formation of discrete displayed categories
+El : Tm Γ PSh → Ty Γ
+
+-- discrete indexed product
+Π : (A : Tm Γ PSh) → Ty (Γ, El A) → Ty Γ
+
+-- + (PSh, El) closed under ⊤, Σ, extensional Id, inductive types
+
+
+Category of categories with 2 family structures
+----------------------------------------------------------------------------------------------------
+
+Con : Set
+Con := C.Con
+
+DTy : Con → Set
+DTy Γ := C.Sub Γ Setᵒᵖ
+
+DTm : ∀ Γ → Ty Γ → Set
+DTm Γ A := C.Tm Γ (C.El A)
+
+CTy Γ   := C.Ty Γ
+CTm Γ A := C.Tm Γ A
+
+----------------------------------------------------------------------------------------------------
+
+Now let's take the Tm-renaming category from the above category, call it M
+
+Concretely in M
+  - contexts are telescopes of DTy-s and Ty-s
+  - substitutions are lists of DTm-s and variables for Tm-s (necessarily, because of the cxt telescope restriction)
+  - Ty, DTy, DTm are the same as in the prev model
+
+one way to define M:
+
+  data isTel : Con → Set
+    is-∙  : isTel ∙
+    is-▶D : isTel Γ → isTel (Γ ▶D A)
+    is-▶C : isTel Γ → isTel (Γ ▶C A)
+
+  data isVar : {Γ : Con}{A : CTy Γ} → CTm Γ A → Set where
+    is-zero : isVar (Γ ▶C A) A[p] q
+    is-sucC : isVar Γ A t → isVar (Γ ▶D B) A[p] t[p]
+    is-sucD : isVar Γ A t → isVar (Γ ▶C B) A[p] t[p]
+
+  data isSub : Sub Γ Δ → Set where
+    is-ε : isSub ε
+    is,C : isSub σ → isVar t → isSub (σ ,C t)
+    is,D : isSub σ → isSub (σ ,D t)
+
+  M.Con     := (Γ : Con) × isTel Γ       -- implicit coercion to Con
+  M.Sub Γ Δ := (σ : Sub Γ Δ) × isSub σ
+  M.CTy Γ A := Ty Γ A
+  M.CTm Γ A := (t : CTm Γ A) × isVar t
+  M.DTy Γ A := DTy Γ A
+  M.DTm Γ A := DTm Γ A
+
+  -- TODO to show: cwf structure for M.Sub, M.Tm (obvious)
+
+----------------------------------------------------------------------------------------------------
+
+Con := M.Con
+Sub Γ Δ := M.Sub Γ Δ
+
+Cat : Con → Set
+Cat Γ := M.Ty Γ      -- subst OK
+
+1 : Cat Γ
+1 := K ⊤             -- subst OK
+
+In : ∀ Γ → Cat Γ → Set
+In Γ A := (A = 1) + M.CTm Γ A   -- subst OK
+
+In⁺ : ∀ Γ → Cat Γ → Set
+In⁺ Γ A := M.CTm Γ A   -- subst OK
+
+! : In Γ A
+! = ... -- subst OK
+
+Proj : {Γ} → In⁺ Γ A → Con
+Proj {Γ ▶c A} q    := Γ ▶C A
+Proj {Γ ▶c A} x[p] := Proj {Γ} x
+Proj {Γ ▶d A} x[p] := Proj {Γ} x
+
+Proj : {Γ} → (x : In⁺ Γ A) → Sub Γ (Proj x)
+Proj {Γ ▶c A} q    := id
+Proj {Γ ▶c A} x[p] := p ∘ Proj {Γ} x
+Proj {Γ ▶d A} x[p] := p ∘ Proj {Γ} x
+
+Proj : {Γ} → In Γ A → Con
+Proj ! = 1
+Proj x = Proj x
+
+Proj : {Γ}(x : Int Γ A) → Sub Γ (Proj x)
+Proj ! = !
+Proj x = Proj x
+
+
+--------------------------------------------------------------------------------
+
+first let's only look at (PSh!), i.e. universe of sets
+
+PSh! : Tm Γ Set
+PSh! = K Set         -- presheaf which is constantly Set
+
+El! : Tm Γ (El PSh!) → Tm Γ Set
+(El! A) (i : Γ)     := A i
+(El! A) (f : i → j) := λ x. x
+
+Nat! : Tm Γ (El PSh!)
+Nat! (i : Γ)     := ℕ
+Nat! (f : i → j) : Nat! i = Nat! j    OK
+
+zero! : Tm Γ (El (El! Nat!))
+zero! (i : Γ)     = 0
+zero! (f : i → j) = refl
+
+suc! : Tm Γ (El (El! Nat!)) → Tm Γ (El (El! Nat))
+(suc! n) (i : Γ)     := suc (n i)
+(suc! n) (f : i → j) := ap suc (n f)    -- hmm
+
+Elel! : Tm Γ (El PSh!) → Ty Γ       -- El ∘ El!
+(Elel! A) (i : Γ) := A i
+(Elel! A) (i* : A i)(j* : A j)(f : i → j) := (i* = j*)
+
+_=>_ : Tm Γ (El PSh!) → Tm Γ (El PSh!) → Tm Γ (El PSh!)
+(A => B) (i : Γ)     := (A i → B i)
+(A => B) (f : i → j) :  (A i → B i) = (A j → B j)   OK
+
+lam : Tm (Γ ▶ Elel! A) (Elel! B) → Tm Γ (Elel! (A => B))
+(lam t) (i : Γ)     : λ α. t (i, α)
+(lam t) (f : i → j) : (λ α. t (i, α)) = (λ α. t (j, α)) OK
+
+app : Tm Γ (Elel! (A => B)) → Tm (Γ ▶ Elel! A) (Elel! B)
+(app t) (i, α) := t i α
+(app t) (f : (i, α) → (j, α)) := OK
+
+(lam t)[σ] = lam (t[σ∘p, q])
+  ((lam t)[σ]) i    = lam (t[σ∘p, q]) i
+  λ α. t (σ i, α)   = λ α. t (σ i, α)
+  OK
+
+universe: any constant set is in PSh!
+          so constant Set itself is in PSh! (up to size)
+
+OK
+
+--------------------------------------------------------------------------------
+
+second, let's try to real thing
+
+Hofmann-Streicher universe: takes a category, returns a presheaf over that cat
+
+HSU : (Γ : Cat) → Tm Γ Set
+
+Tm (Γ ▶ El A) (El (HSU Γ)[p])  ~   Tm (Γ ▶ El A) Set
+
+Tm Γ (Π A (El (HSU Γ)[p]))  ~  Tm Γ (Π A Set)
+
+
+Yoneda
+------------------------------------------------------------
+
+i : Γ          Y i : Tm Γ Set
+f : i → j      Y f : Tm (Γ ▶ El (Y i)) (El (Y j))
+
+(Y i) j = (j → i)
+(Y i) (f : j → k) (g : k → i) = g ∘ f
+
+
+(Y (f : i → j)) (k, (g : k → i)) = f ∘ g   -- obj action
+(Y (f : i → j)) {k₀, g₀ : k₀ → i} {k₁, g₁ : k₁ → i} (k₂ : k₀ → k₁, g₂ : g₁ ∘ k₂ = g₀) -- hom action
+  : (El (Y j)) (f ∘ g₀) (f ∘ g₁) k₂
+  : (Y j) k₂ (f ∘ g₁) = f ∘ g₀
+  : f ∘ g₁ ∘ k₂ = f ∘ g₀
+  OK by g₂
+------------------------------------------------------------
+
+
+HSU Γ : Tm Γ Set
+(HSU Γ) (i : Γ) := Tm (Γ ▶ El (Y i)) Setᵒᵖ
+t <f : j → i>   := t[p, Y f]
+
+variable notation
+
+  X : In⁺ Γ C
+  ------------------
+  X↓ : Con := Proj X
+  X↑ : Sub Γ X↓ := Proj X
+
+PSh : (Γ : Con)(C : Cat Γ)(X : In⁺ Γ C) → Set
+PSh Γ C X = Tm Γ (El (HSU X↓)[X↑])
+
+(A : PSh Δ C X)[σ : Sub Γ Δ] : PSh Γ C[σ] X[σ]
+(A[σ]) : Tm Γ (El (HSU (X[σ])↓)[(X[σ])↑])
+
+   A : Tm Δ (El (HSU X↓)[X↑])
+
+   A[σ] : Tm Γ (El (HSU X↓)[X↑])[σ]
+
+        : Tm Γ (El (HSU X↓)[X↑∘σ])
+
+   goal : Tm Γ (El (HSU (X[σ])↓)[(X[σ])↑])
+
+(A[σ]) {i} γ : Tm (Γ ▶ El (Y (X[σ]↓ i))) Setᵒᵖ
+
+      γ : Γ i
+      A (σ i) : (El (HSU X↓)[X↑]) (σ i)
+              : Tm (X↓ ▶ El (Y (X↑ (σ i)))) Setᵒᵖ
+
+      goal : Tm (X[σ]↓ ▶ El (Y (X[σ]↓ i))) Setᵒᵖ
+
+  is there Sub X[σ]↓ X↓
+
+
+ElP* (A : PSh Γ C X) : Tm Γ Set
+(ElP* A) (i : Γ) : Set               -- obj action
+
+  A i : (El (HSU X↓)[X↑]) i
+      : (HSU X↓)[X↑] i
+      : (HSU X↓) (X↑ i)
+      : Tm (X↓ ▶ El (Y (X↑ i))) Set
+
+  (A i) (X↑ i, id) : Set
+
+  := (A i) (X↑ i, id)
+
+(ElP* A) (f : i → j) (α : A j (X↑ j, id)) : A i (X↑ i, id)         -- hom action
+
+  A f : (El (HSU X↓)[X↑])(A j, A i, f)       -- displayed Hom
+      : ((HSU X↓)[X↑]) f (A j) = A i
+      : (HSU X↓) (X↑ f) (A j) = A i
+      : (A j)<X↑ f> = A i
+      : (A j)[p, Y (X↑ f)] = A i
+
+  goal :  A i (X↑ i, id)
+       : ((A j)[p, Y (X↑ f)]) (X↑ i, id)
+       : (A j) (X↑ i, Y (X↑ f) (X↑ i, id))
+       : (A j) (X↑ i, X↑ f)                -- X↑ i : X↓     X↑ f : X↑ i → X↑ j OK
+
+  A j : Tm (X↓ ▶ El (Y (X↑ j))) Set  -- has an action on morphisms
+
+    need morphism (X↑ i, X↑ f) → (X↑ j, id)
+      X↑ f : X↑ i → X↑ j
+
+      _ : (El (Y (X↑ j))) (X↑ f) id (X↑ f)
+        : Y(X↑ j) (X↑ f) id = X↑ f
+        : id ∘ X↑ f = X↑ f  OK
+
+  := (A j) (X↑ f, _) α
+
+  stability
+    (A i) (X↑ id, _) α = (A i) id α = α OK
+    (A k) (X↑ (f ∘ g), _) α = (A k) ((X↑ f, _) ∘ (X↑ g, _)) α = (A k) (X↑ f, _) ((A j) (X↑ g, _) α) OK
+
+(ElP* (A : PSh Δ C X)) [σ : Sub Γ Δ] = ElP* (A[σ])
+
+  X    : Fun Δ C
+  X[σ] : Fun Γ C[σ]
+  A[σ] : PSh Γ C[σ] X[σ]
+
+
+  obj action
+    ((ElP* A) [σ]) i =
+    (ElP* A) (σ i) =
+    (A (σ i)) (X↑(σ i), id)
+
+    (ElP* (A[σ])) (i : Γ) =
+
+      (A[σ] i) ((X[σ])↑ i
+
+    --   A[σ] : PSh Γ C[σ] X[σ]
+    --        : Tm Γ (El (HSU (X[σ])↓)[(X[σ])↑])
+
+    -- (A[σ] i)  ((X[σ])↑ i, id) =
+    -- (A (σ i)) ((X[σ])↑ i, id) =
+
+    --   need : (X[σ])↑ i = X↑ (σ i)   not even well-typed?
+
+
+
+
+
+
+
+ElP : ∀ Γ C X (A : PSh Γ C X) → Set
+ElP Γ C X A = Tm Γ (El (ElP* A))
+
+
+
+----------------------------------------------------------------------------------------------------

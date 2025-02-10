@@ -1,0 +1,142 @@
+
+In the paper:
+
+1. Informal spec, examples, notation, sugar
+
+  - 2LTT-based surface syntax, informal notation with Set meta-universe
+  - basic examples
+  - Yoneda examples for concrete object theories
+  - more and more sugar
+  - example for model construction/syntactic translation
+
+2. - Formal base syntax as SOGAT
+   - standard model of base syntax
+   - generic syntax and semantics of Yoneda (bleehhh)
+
+
+--------------------------------------------------------------------------------
+2LTT-based surface syntax
+--------------------------------------------------------------------------------
+
+Set  : closed under ETT type formers
+Cat  : Set
+Fun  : Cat → Set                                    (TODO: potentially rename to "In" or "Over" or smth)
+Fun⁺ : Cat → Set
+_    : Fun⁺ C → Fun C      (implicit coercion)
+1    : Cat
+!    : Fun 1
+
+PSh  : {C} → Fun C → Set     each (PSh F) is a Russell-style universe closed under ETT types
+_    : PSh F → Set           (implicit coercion)
+
+define CatI : ∀{C}(F : Fun C) → PSh F as
+    Ob  : PSh F
+    Hom : Ob → Ob → PSh F
+    id  : Hom i i
+    ...
+
+_ : CatI F → Cat  (implicit coercion)
+
+Lift  : {C : Cat}{F : Fun C}{D : CatI F}{G : Fun⁺ D} → PSh F → PSh G
+(↑,↓) : A ≃ Lift A
+
++ Lift preserves all inductive types
+  e.g. Lift ⊥       ≃ ⊥
+       Lift 2       ≃ 2
+       Lift (W A B) ≃ W (Lift A) (λ a. Lift (B ↓a))
+  (⊤, Π, Σ, extensional Id already preserved)
+
+Yoneda:
+  SOGAT is an externally defined set of signatures (closed signatures!)
+  we can talk about models of T : SOGAT internally to any model of ETT
+
+  FMod(T, U) : first-order models of T in U
+  SMod(T, U) : second-order models of T in U
+
+Untyped LC example
+
+  T :=
+    Tm : Set⁺
+    (app, lam) : Tm ≃ (Tm → Tm)
+
+  FMod(T, U) : U =
+    - category with Ob, Hom in U, with terminal object
+    - Tm : Ob → U   a presheaf over Ob
+    - context extension:
+       _+ : Ob → Ob
+       s.t. Hom(Γ, Δ+) ≃ ((σ : Hom Γ Δ) × Tm Γ) natural in Γ
+    - iso natural in Γ:
+        Tm Γ ≃ Tm (Γ+)
+
+  SMod(T, U) : U =
+    Tm : U
+    (app, lam) : Tm ≃ (Tm → Tm)
+
+  implicit coercion
+  _ : FMod(T, PSh F) → CatI F
+
+  Sᵀ : {C : FMod(T, PSh F)}{G : Fun⁺ C} → SMod(T, PSh G)
+  Y  : C.Ob      → {G : Fun⁺ C} → PSh G
+  Y  : C.Hom Γ Δ ≃ ({G : Fun⁺ C} → Y Γ {G} → Y Δ {G})
+  Y  : C.Tm Γ    ≃ ({G : Fun⁺ C} → Y Γ {G} → (Sᵀ {C}{G}).Tm)
+
+  -- more implicitly written, assuming C : FMod(T, PSh F)
+  S  : {G : Fun⁺ C} → SMod(T, PSh G)
+  Y  : C.Ob      → {G : Fun⁺ C} → PSh G
+  Y  : C.Hom Γ Δ ≃ ({G : Fun⁺ C} → Y Γ → Y Δ)
+  Y  : C.Tm Γ    ≃ ({G : Fun⁺ C} → Y Γ → S.Tm)
+
+  Y ∙    {G}  ≃ ⊤
+  Y (Γ+) {G}  ≃ (γ : Y Γ {G}) × S.Tm
+  Y id        = λ {G} γ. γ
+  Y (σ ∘ δ)   = λ {G} γ. Y σ (Y δ γ)
+  Y ε         = λ {G} γ. tt
+  Y p         = λ {G} (γ, _). γ
+  Y q         = λ {G} (γ, x). x
+  Y (σ, t)    = λ {G} γ. (Y σ γ, Y t γ)
+  Y (t[σ])    = λ {G} γ. Y t (Y σ γ)
+  Y (C.lam t) = λ {G} γ. S.lam x. Y t (γ, x)
+  Y (C.app t) = λ {G} (γ, x). S.app (Y t γ) x
+
+Dep TT example: (U, El), U closed under Bool, Pi, elim from Bool to Ty
+
+  T :=
+    Ty         : Set
+    Tm         : Ty → Set⁺
+    U          : Ty
+    El         : Tm U → Ty
+    Bool       : Tm U
+    true false : Tm (El Bool)
+    Elim       : (B : Tm (El Bool) → Ty) → Tm (B true) → Tm (B false) → ∀ b → Tm (B b)
+                 Elim B t f true  = t
+		 Elim B t f false = f
+    Π          : (A : Tm U) → (Tm (El A) → Tm U) → Tm U
+    (app, lam) : Tm (El (Π A B)) ≃ ((x : Tm (El A)) → Tm (El (B a)))
+
+  Assuming C : FMod(T, PSh F)
+
+  S : {G : Fun⁺ F} → SMod(T, PSh G)
+  Y : C.Ob      → ∀ G. PSh G
+  Y : C.Hom Γ Δ ≃ (∀ G. Y Γ → Y Δ)
+  Y : C.Ty Γ    ≃ (∀ G. Y Γ → S.Ty)
+  Y : C.Tm Γ A  ≃ (∀ G. (γ : Y Γ) → S.Tm (Y A γ))
+
+  Y preserves ∙ and _▶_ up to iso
+  Y preserves all other structure strictly
+
+  Sugar for contexts and first-order sorts
+
+  (Γ, U, U, Π (El q[p]) (El q[p]))
+
+  =
+
+  Γ , (Λ γ. S.U)
+    , (Λ (γ, A). S.U)
+    , (Λ ((γ, A), B). S.Π (S.El A) (λ α. S.El B))
+
+ sugar
+
+  (γ : Γ,
+   A : S.U,
+   B : S.U,
+   f : S.Π (_ : El A) (El B))

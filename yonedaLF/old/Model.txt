@@ -1,0 +1,346 @@
+
+VERSION WHICH DOESN'T WORK BECAUSE I ONLY TAKE RENAMINGS OF CATS
+
+----------------------------------------------------------------------------------------------------
+
+QUESTIONS:
+
+  - in the non-ren cwf of categories, should we use the
+    explicit FamCat for types, or just fibrations, or just displayed categories?
+    where do we need fibrancy of types? (in Yoneda e.g.?)
+
+    For now, we use displayed categories
+
+----------------------------------------------------------------------------------------------------
+
+Notation :
+  - Ĉ means PSh C
+  - _→_ means morphism in whatever category (overloaded)
+  - for σ : C → D (in Cat), σ* : D̂ → Ĉ is the restriction functor
+    - restriction also has action on morphisms, types and terms in cwfs
+    - restriction is functorial in the first arg
+    - restriction strictly preserves everything except Π and U
+
+
+-- Internal family of categories
+----------------------------------------------------------------------------------------------------
+
+In any cwf, assuming Γ : Con, a Γ-indexed family of categories is
+
+   Ob   : Ty Γ
+   Hom  : Ty (Γ, Ob, Ob[p])
+   id   : Tm (Γ, Ob) (Hom[p, 0, 0])
+   comp : Tm (Γ, Ob, Ob[p], Ob[p²], Hom[p³, 1, 0], Hom[p⁴, 4, 3]) Hom[p⁵, 5, 3]
+   - idl, idr, and assoc are kinda ugly
+   - in any case, I will only need this when the cwf is of the form Ĉ
+
+Explicit spec of FamCat Γ in Ĉ:
+
+    Ob :   Ob   : ∀ {c} → Γ c → Set
+           _<_> : Ob c γ → (f : c' → c) → Ob c' γ<f>
+	   i<id>  = i
+	   i<f∘g> = i<f><g>
+
+    Hom :   Hom  : ∀ {c}(γ : Γ c) → Ob γ → Ob γ → Set
+            _<_> : Hom c γ i j → (f : c' → c) → Hom c' γ<f> i<f> j<f>
+	    σ<id>  = σ
+	    σ<f∘g> = σ<f><g>
+
+    id  :  ∀ {c}(γ : Γ c) (i : Ob γ) → Hom c γ i i
+           (id {c} γ i)<f> = id {c'} γ<f> i<f>
+
+    _∘_ : ∀ {c}(γ : Γ c)(i j k : Ob γ) → Hom c γ j k → Hom c γ i j → Hom c γ i k
+           (_∘_ γ i j k σ δ)<f> = _∘_ γ<f> i<f> j<f> k<f> σ<f> δ<f>
+
+    idl : id ∘ σ = σ
+    idr : σ ∘ id = σ
+    ass : σ ∘ (δ ∘ ν) = (σ ∘ δ) ∘ ν
+
+    D : FamCat Γ is a Γ-indexed family of split indexed categories (Jacobs)
+      something like (c : Cᵒᵖ) → Γ c → Cat
+
+
+Taking the product of a (D : FamCat Γ) yields a displayed cat (Π Γ Δ):
+
+   Ob : C → Set
+   Ob i := (γ : Γ i) → D.Ob i γ
+
+   Hom : (i* : Ob i)(j* : Ob j) → Hom i j → Set
+   Hom i* j* f = (γ : Γ j) → D.Hom γ<f> (i* γ<f>) (j* γ)<f>
+
+   id : {i* : Ob i} → Hom i* i* id
+      : {i* : ∀ γ → D.Ob i γ} → (∀ γ → D.Hom γ (i* γ) (i* γ))
+   id {i*} γ = D.id γ (i* γ)
+
+   comp : (i* : Ob i)(j* : Ob j)(k* : Ob k)(σ : Hom j* k* f)(δ : Hom i* j* g) → Hom i* k* (f ∘ g)
+
+        : (i* : ∀ γ → D.Ob γ i)(j* : ∀ γ → D.Ob γ j)(k* : ∀ γ → D.ob γ k)
+	  (σ : (γ : Γ k) → D.Hom γ<f> (j* γ<f>) (k* γ)<f>)
+	  (δ : (γ : Γ j) → D.Hom γ<g> (i* γ<g>) (j* γ)<g>)
+
+        →  (γ : Γ k) → D.Hom γ<f∘g> (i* γ<f∘g>) (k* γ)<f∘g>
+
+
+   comp i* j* k* σ δ γ
+
+     σ γ      : D.Hom γ<f> (j* γ<f>) (k* γ)<f>)
+     (σ γ)<g> : D.Hom γ<f∘g> (j* γ<f>)<g> (k* γ)<f∘g>
+     δ γ<f>   : D.Hom γ<f∘g> (i* γ<f∘g>) (j* γ<f>)<g>)    ACTUALLY OK AND LINES UP (NICE)
+
+    := D.comp (σ γ)<g> (δ γ<f>)
+
+   comp σ id γ = σ γ
+
+     γ    : Γ j
+     γ<f> : Γ i
+     σ    : Hom i* j* f
+     σ γ  : D.Hom γ<f> (i* γ<f>) (j* γ)<f>
+
+     D.id γ<f> (i* γ<f>) : D.Hom γ<f> (i* γ<f>) (i* γ<f>)
+
+     comp σ id γ =
+     D.comp (σ γ) (id γ<f>) =
+     D.comp (σ γ) (D.id γ<f> (i* γ<f>))
+     σ γ
+     OK
+
+   comp id σ γ = σ γ
+
+     comp id σ γ =
+     D.comp (id γ)<g> (δ γ) =
+     D.comp (id γ<g>) (δ γ) =
+     δ γ
+     OK
+
+   comp (comp σ δ) ν γ = comp σ (comp δ ν) γ
+
+     comp (comp σ δ) ν γ =
+     D.comp (comp σ δ γ)<h> (ν γ<f∘g>) =
+     D.comp (D.comp (σ γ)<g> (δ γ<f>))<h> (ν γ<f∘g>) =
+     D.comp (D.comp (σ γ)<g∘h> (δ γ<f>)<h>) (ν γ<f∘g>) =
+     D.comp ((σ γ)<g∘h>) (D.comp ((δ γ<f>)<h>) (ν γ<f∘g>))
+
+     comp σ (comp δ ν) γ =
+     D.comp (σ γ)<g∘h> (comp δ ν γ<f>) =
+     D.comp ((σ γ)<g∘h>) (D.comp (δ γ<f>)<h> (ν γ<f∘g>))
+     OK
+
+-- Renamings of categories
+----------------------------------------------------------------------------------------------------
+
+- Define a CwF of categories, called CatCwf
+
+Con      := Cat
+Sub C D  := Γ → Δ
+Ty C     := DispCat C
+Tm C D   := Section C D
+(C ▶ D)  := Total D
+
+Ren := Cwf of renamings from CatCwf
+
+- the initial CwF equipped with a morphism to CatCwf, where
+  types are the same as types of CatCwf
+
+- I will generally leave the morphism from RenCat to CatCwf implicit
+
+- More concretely in RenCat, contexts are telescopes, terms are variables, substitutions
+  are renamings
+
+
+-- Model of base MTLF
+----------------------------------------------------------------------------------------------------
+
+Con : Set
+Cat : Con → Set
+In  : ∀ Γ → Cat Γ → Set
+In⁺ : ∀ Γ → Cat Γ → Set
+_   : In⁺ Γ C → In Γ C
+
+
+
+Base category
+--------------------------------------------------------------------------------
+
+Con : Set
+Con := (C : Ren) × (Γ : Ĉ)         -- implicit coercion from C : Ren to C : Cat
+
+Sub (C, Γ) (D, Δ) : Set :=
+  σ : C → D
+  σ : Γ → σ*Δ
+
+∙ : Con
+∙ = (1, 1)  -- terminal cat (which is the empty telescope) and terminal PSh
+
+ε : Sub (C, Γ) ∙
+  := (!, !)
+  -- obviously unique
+
+(σ : Sub (D, Δ) (E, Ξ)) ∘ (δ : Sub (C, Γ) (D, Δ)) : Sub (C, Γ) (E, Ξ) :=
+
+  σ : C → E
+    := σ ∘ δ
+
+  σ : Γ → (σ ∘ δ)* Ξ
+    := δ*σ ∘ δ
+
+σ∘id = σ
+  σ∘id=σ OK
+  id*σ ∘ id = σ OK
+
+id∘σ = σ
+  OK
+
+(σ ∘ δ) ∘ ν = σ ∘ (δ ∘ ν)
+
+  functor part OK
+
+  ν*(δ*σ ∘ δ) ∘ ν = ν*δ*σ ∘ ν*δ ∘ ν
+  (δ∘ν)*σ ∘ (ν*δ ∘ ν) = ν*δ*σ ∘ ν*δ ∘ ν
+  OK
+
+Internal Cat & In
+--------------------------------------------------------------------------------
+
+Cat : Con → Set
+Cat (C, Γ) := FamCat C Γ
+
+(A : FamCat D Δ) [ σ : Sub (C,Γ) (D,Δ) ] : FamCat C Γ
+
+    σ : C → D
+    σ : Γ → σ*Δ
+
+    ------------------------------------------------------------
+
+    Ob : ∀ {c} → Γ c → Set
+    Ob c γ := A.Ob (σ c) (σ γ)
+
+    _<_> : Ob c γ → (f : c' → c) → Ob c' γ<f>
+         : A.Ob (σ c) (σ γ) → (f : c' → c) → A.Ob (σ c') (σ γ<f>)
+    i<f> := i<σ f>
+
+      σ f : σ c' → σ c
+      i<σ f> : A.Ob (σ c') (σ γ)<σ f>
+             : A.Ob (σ c') (σ γ<f>)
+
+      := i<σ f>
+
+    clearly OK
+    i<id>  = i<σ id> = i<id> = i
+    i<f∘g> = i<σ (f ∘ g)> = i<σ f ∘ σ g> = i<σ f><σ g> = i<f><g>
+
+    Hom  : ∀ {c}(γ : Γ c) → Ob γ → Ob γ → Set
+    Hom {c} γ i j := A.Hom {σ c} (σ γ) i j
+
+    morph<f> := morph<σ f>
+    laws OK
+
+    id  :  ∀ {c}(γ : Γ c) (i : Ob γ) → Hom c γ i i
+    id {c} {γ} i := A.id {σ c} {σ γ} i
+
+    laws OK
+
+    _∘_ : ∀ {c}(γ : Γ c)(i j k : Ob γ) → Hom c γ j k → Hom c γ i j → Hom c γ i k
+    _∘_ m1 m2 := m1 ∘ m2
+
+    laws OK
+
+Functoriality of Cat substitution OK
+
+
+1 : Cat (C, Γ)
+  : FamCat C Γ
+  := Ob γ      := ⊤
+     Hom γ i j := ⊤
+     ...
+
+In⁺ : ∀ Γ → Cat Γ → Set
+In⁺ (C, Γ) (A : FamCat C Γ) := Var C (Π Γ A)
+
+_[_] : In⁺ Δ D → (σ : Sub Γ Δ) → In⁺ Γ (D[σ])
+     : (X : Var D (Π Δ A)) (σ : Sub (C,Γ) (D,Δ)) → Var C (Π Γ (A[σ]))
+
+   σ           : C → D
+   Π Δ A       : DispCat D
+   (Π Δ A)[σ]) : DispCat C
+   A           : FamCat D Δ
+   A[σ]        : FamCat C Γ
+   Π Γ A[σ]    : DispCat C
+
+   X[σ] : Var C ((Π Δ A)[σ])
+
+   we need adjustment:
+     (Π Δ A)[σ]  to  Π Γ A[σ]
+
+
+   -- todo CHECK this
+   -- can we simply fix by just using FamCat in renamings?
+   -- (X : Var D (Δ, A))   →    Var C (Γ, A[(σ,σ)])
+
+   -- A : FamCat D Δ
+   --     FamCat C (σ*Δ)
+
+   -- Var D (Δ, A) → Var C (σ*Δ, A[σ])
+   -- X[σ] : Var C (σ*Δ, A[(σ,id)])
+
+   -- (
+
+   -- Var C (Γ, A)  -->
+
+
+Extension
+
+(C, Γ) ▶ (A : FamCat Γ) :=
+C := C ▶ (Γ, A)
+Γ := π₁*Γ
+
+PROBLEM!
+
+Let's give another try, probably fail though
+
+In⁺ (C, Γ) (A : FamCat C Γ) := Σ Γ' A' (σ : Γ → Γ') × A'[σ] = A × Var C (Γ', A')
+
+_[_] : (X : In⁺ (D, Δ) A)(σ : Sub (C, Γ) (D, Δ)) → In⁺ (C, Γ) A[σ]
+  unpack X
+  Δ', A', δ : Δ → Δ', A'[(id, δ)] = A, X : Var D (Δ', A')
+
+  σ : C → D
+  σ : Γ → σ*Δ
+
+  X[σ] : Var C (σ*Δ', A'[(σ,id)])
+
+  σ*δ : σ*Δ → σ*Δ'
+  σ*δ ∘ σ : Γ → σ*Δ'
+
+  σ*Δ', A'[(σ,id)], σ*δ ∘ σ, (? : A'[(σ,id)][(id, σ*δ ∘ σ)] = A[σ,σ]), X[σ]
+
+     ? : A'[(σ,id)][(id, σ*δ ∘ σ)] = A[σ,σ])
+       : A'[(id, δ)][σ] = A[σ]
+       : A[σ] = A[σ] OK
+
+p : Sub ((C, Γ) ▶ A) (C, Γ) := (p, id)
+
+  σ : Ren (C ▶ (Γ, A)) C := p
+  σ : π₁*Γ → π₁*Γ := id
+
+q : In⁺ (C ▶ (Γ, A), p*Γ) A[(p, id)]
+  := (p*Γ, A[(p, id)], id, refl, q)
+
+_,_ : (σ : Sub (C, Γ) (D, Δ)) → In⁺ (C, Γ) A[σ] → Sub (C, Γ) (D ▶ (Δ, A), p*Δ)
+
+  Γ', A', f : Γ → Γ', A'[id,f] = A[σ], X : Var C (Γ', A')
+
+  σ : C → D
+  σ : Γ → σ*Δ
+
+  goal:
+
+  σ* : Ren C (D ▶ (Δ, A))
+
+     fst : Ren C D := σ
+
+     snd : Var C ((Δ, A)[σ])
+         : Var C (σ*Δ, A[σ,id])
+
+         σ*f : σ*Γ → σ*Γ'
+
+  Doesn't work

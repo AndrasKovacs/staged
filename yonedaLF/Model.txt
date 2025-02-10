@@ -1,0 +1,458 @@
+
+cwf of categories and displayed categories, let's call it "C"
+------------------------------------------------------------
+
+Con    := Cat
+Ty Γ   := displayed Cat over Γ
+Tm Γ A := section of displayed cat
+
+-- constant families
+K : Con → Ty Γ
+Tm Γ (K Δ) = Sub Γ Δ
+
+-- category of sets
+Set : Con
+
+PSh : Ty Γ
+PSh := K Setᵒᵖ
+
+⊤  : Ty Γ
+Σ  : (A : Ty Γ) → Ty (Γ, A) → Ty Γ
+Id : Tm Γ A → Tm Γ A → Ty Γ
+
+-- formation of discrete displayed categories
+El : Tm Γ PSh → Ty Γ
+
+-- discrete indexed product
+Π : (A : Tm Γ PSh) → Ty (Γ, El A) → Ty Γ
+
+-- + (PSh, El) closed under ⊤, Σ, extensional Id, inductive types
+
+
+Category of categories with 2 family structures
+----------------------------------------------------------------------------------------------------
+
+Con : Set
+Con := C.Con
+
+DTy : Con → Set
+DTy Γ := C.Sub Γ Setᵒᵖ
+
+DTm : ∀ Γ → Ty Γ → Set
+DTm Γ A := C.Tm Γ (C.El A)
+
+CTy Γ   := C.Ty Γ
+CTm Γ A := C.Tm Γ A
+
+----------------------------------------------------------------------------------------------------
+
+Now let's take the Tm-renaming category from the above category, call it M
+
+Concretely in M
+  - contexts are telescopes of DTy-s and Ty-s
+  - substitutions are lists of DTm-s and variables for Tm-s (necessarily, because of the cxt telescope restriction)
+  - Ty, DTy, DTm are the same as in the prev model
+
+one way to define M:
+
+  data isTel : Con → Set
+    is-∙  : isTel ∙
+    is-▶D : isTel Γ → isTel (Γ ▶D A)
+    is-▶C : isTel Γ → isTel (Γ ▶C A)
+
+  data isVar : {Γ : Con}{A : CTy Γ} → CTm Γ A → Set where
+    is-zero : isVar (Γ ▶C A) A[p] q
+    is-sucC : isVar Γ A t → isVar (Γ ▶D B) A[p] t[p]
+    is-sucD : isVar Γ A t → isVar (Γ ▶C B) A[p] t[p]
+
+  data isSub : Sub Γ Δ → Set where
+    is-ε : isSub ε
+    is,C : isSub σ → isVar t → isSub (σ ,C t)
+    is,D : isSub σ → isSub (σ ,D t)
+
+  M.Con     := (Γ : Con) × isTel Γ       -- implicit coercion to Con
+  M.Sub Γ Δ := (σ : Sub Γ Δ) × isSub σ
+  M.CTy Γ A := Ty Γ A
+  M.CTm Γ A := (t : CTm Γ A) × isVar t
+  M.DTy Γ A := DTy Γ A
+  M.DTm Γ A := DTm Γ A
+
+  -- TODO to show: cwf structure for M.Sub, M.Tm (obvious)
+
+----------------------------------------------------------------------------------------------------
+
+Con := M.Con
+Sub Γ Δ := M.Sub Γ Δ
+
+Cat : Con → Set
+Cat Γ := M.Ty Γ      -- subst OK
+
+1 : Cat Γ
+1 := K ⊤             -- subst OK
+
+In : ∀ Γ → Cat Γ → Set
+In Γ A := (A = 1) + M.CTm Γ A   -- subst OK
+
+In⁺ : ∀ Γ → Cat Γ → Set
+In⁺ Γ A := M.CTm Γ A   -- subst OK
+
+! : In Γ A
+! = ... -- subst OK
+
+Proj : {Γ} → In⁺ Γ A → Con
+Proj {Γ ▶c A} q    := Γ ▶C A
+Proj {Γ ▶c A} x[p] := Proj {Γ} x
+Proj {Γ ▶d A} x[p] := Proj {Γ} x
+
+Proj : {Γ} → (x : In⁺ Γ A) → Sub Γ (Proj x)
+Proj {Γ ▶c A} q    := id
+Proj {Γ ▶c A} x[p] := p ∘ Proj {Γ} x
+Proj {Γ ▶d A} x[p] := p ∘ Proj {Γ} x
+
+Proj : {Γ} → In Γ A → Con
+Proj ! = 1
+Proj x = Proj x
+
+Proj : {Γ}(x : Int Γ A) → Sub Γ (Proj x)
+Proj ! = !
+Proj x = Proj x
+
+
+DTy* Γ                 is the category of presheaves over Γ
+(KDTy* Γ) : CTy Δ     is the same thing but as a type in the current M model (because of contextuality, DTy Γ can't be a context)
+
+Y : Tm Γ (KDTy* Γ)    -- functor from Γ to presheaves over Γ
+                      -- because KDTy* Γ is constant, it's stable under subst
+
+PSh : ∀ Γ (A : Cat Γ) → In Γ A → Set
+PSh Γ A x := M.CTm Γ (KDTy* (Proj x))
+
+
+   Proj x : Γ'
+   Proj x : Sub Γ Γ'
+
+   KDTy* Γ' : M.CTy
+
+
+
+
+-- Sub C (
+
+-- Y : C → PSh C
+
+--   Γ → DTy
+
+
+
+U : {Γ} → DTy Γ
+(U Γ) γ :=
+
+
+
+-- Project : Fun Γ A → (Γ' : Con) × (Γ → Γ')
+-- U : Tm Γ' (K Setᵒᵖ)
+-- U[Proj X] : Tm Γ (K Setᵒᴾ)
+-- U := Hoffmann-Streicher universe
+-- PSh : ∀ Γ (A : Cat Γ) → Fun A → Set
+-- PSh Γ ⊤ (left refl) := TmC Γ (Const Set)
+-- PSh Γ A (right X) := TmC Γ (HSU[proj X])
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+----------------------------------------------------------------------------------------------------
+1. We define the "raw" base category of "variable PSh-s", i.e. (C : Cat) × Ĉ.
+   We call it ΣPSh. Has two family structures:
+     - Cat (C, Γ)                  := Γ-indexed family of fibrations over C
+     - Fun (C, Γ) (A : Cat (C, Γ)) := sections of A
+     - PSh (C, Γ)                  := TyĈ Γ
+     - El  (C, Γ) (A : PSh (C, Γ)) := TmĈ Γ A
+
+2. We take the category where we keep as much stuff from ΣPSh as possible but
+   replace Fun with variables. More concretely:
+
+     - Contexts are telescopes
+     - Substitutions are lists (follows from contexts being telescopes)
+     - Cat, PSh, El are the same
+     - Fun are variables
+
+   This can be defined with a universal property:
+
+     A Fun-renaming algebra consists of:
+       - A cat C with two families, with a morphism F to ΣPSh preserving everything
+       - such that F is a bijection on Cat, PSh, El
+       + optionally strictified:
+           C.Cat Γ = Cat (F Γ), C.PSh Γ A = PSh (F Γ) (F A), C.El Γ A = El (F Γ) (F A)
+           and F's action on Cat, PSh, El are identity functions
+
+     The category of Fun-renamings is the initial Fun-renaming algebra
+
+
+----------------------------------------------------------------------------------------------------
+
+Notation :
+  - Ĉ means PSh C
+  - _→_ means morphism in whatever category (overloaded)
+  - for σ : C → D (in Cat), σ* : D̂ → Ĉ is the restriction functor
+    - restriction also has action on morphisms, types and terms in cwfs
+    - restriction is functorial in the first arg
+    - restriction strictly preserves everything except Π and U
+
+
+-- Internal family of categories
+----------------------------------------------------------------------------------------------------
+
+In any cwf, assuming Γ : Con, a Γ-indexed family of categories is
+
+   Ob   : Ty Γ
+   Hom  : Ty (Γ, Ob, Ob[p])
+   id   : Tm (Γ, Ob) (Hom[p, 0, 0])
+   comp : Tm (Γ, Ob, Ob[p], Ob[p²], Hom[p³, 1, 0], Hom[p⁴, 4, 3]) Hom[p⁵, 5, 3]
+   - idl, idr, and assoc are kinda ugly
+   - in any case, I will only need this when the cwf is of the form Ĉ
+
+Explicit spec of FamCat Γ in Ĉ:
+
+    Ob :   Ob   : ∀ {c} → Γ c → Set
+           _<_> : Ob c γ → (f : c' → c) → Ob c' γ<f>
+	   i<id>  = i
+	   i<f∘g> = i<f><g>
+
+    Hom :   Hom  : ∀ {c}(γ : Γ c) → Ob γ → Ob γ → Set
+            _<_> : Hom c γ i j → (f : c' → c) → Hom c' γ<f> i<f> j<f>
+	    σ<id>  = σ
+	    σ<f∘g> = σ<f><g>
+
+    id  :  ∀ {c}(γ : Γ c) (i : Ob γ) → Hom c γ i i
+           (id {c} γ i)<f> = id {c'} γ<f> i<f>
+
+    _∘_ : ∀ {c}(γ : Γ c)(i j k : Ob γ) → Hom c γ j k → Hom c γ i j → Hom c γ i k
+           (_∘_ γ i j k σ δ)<f> = _∘_ γ<f> i<f> j<f> k<f> σ<f> δ<f>
+
+    idl : id ∘ σ = σ
+    idr : σ ∘ id = σ
+    ass : σ ∘ (δ ∘ ν) = (σ ∘ δ) ∘ ν
+
+    D : FamCat Γ is a Γ-indexed family of split indexed categories (Jacobs)
+      something like (c : Cᵒᵖ) → Γ c → Cat
+
+Taking the product of a (D : FamCat Γ) yields a displayed cat (Π Γ Δ):
+
+   Ob : C → Set
+   Ob i := (γ : Γ i) → D.Ob i γ
+
+   Hom : (i* : Ob i)(j* : Ob j) → Hom i j → Set
+   Hom i* j* f = (γ : Γ j) → D.Hom γ<f> (i* γ<f>) (j* γ)<f>
+
+   id : {i* : Ob i} → Hom i* i* id
+      : {i* : ∀ γ → D.Ob i γ} → (∀ γ → D.Hom γ (i* γ) (i* γ))
+   id {i*} γ = D.id γ (i* γ)
+
+   comp : (i* : Ob i)(j* : Ob j)(k* : Ob k)(σ : Hom j* k* f)(δ : Hom i* j* g) → Hom i* k* (f ∘ g)
+
+        : (i* : ∀ γ → D.Ob γ i)(j* : ∀ γ → D.Ob γ j)(k* : ∀ γ → D.ob γ k)
+	  (σ : (γ : Γ k) → D.Hom γ<f> (j* γ<f>) (k* γ)<f>)
+	  (δ : (γ : Γ j) → D.Hom γ<g> (i* γ<g>) (j* γ)<g>)
+
+        →  (γ : Γ k) → D.Hom γ<f∘g> (i* γ<f∘g>) (k* γ)<f∘g>
+
+
+   comp i* j* k* σ δ γ
+
+     σ γ      : D.Hom γ<f> (j* γ<f>) (k* γ)<f>)
+     (σ γ)<g> : D.Hom γ<f∘g> (j* γ<f>)<g> (k* γ)<f∘g>
+     δ γ<f>   : D.Hom γ<f∘g> (i* γ<f∘g>) (j* γ<f>)<g>)    ACTUALLY OK AND LINES UP (NICE)
+
+    := D.comp (σ γ)<g> (δ γ<f>)
+
+   comp σ id γ = σ γ
+
+     γ    : Γ j
+     γ<f> : Γ i
+     σ    : Hom i* j* f
+     σ γ  : D.Hom γ<f> (i* γ<f>) (j* γ)<f>
+
+     D.id γ<f> (i* γ<f>) : D.Hom γ<f> (i* γ<f>) (i* γ<f>)
+
+     comp σ id γ =
+     D.comp (σ γ) (id γ<f>) =
+     D.comp (σ γ) (D.id γ<f> (i* γ<f>))
+     σ γ
+     OK
+
+   comp id σ γ = σ γ
+
+     comp id σ γ =
+     D.comp (id γ)<g> (δ γ) =
+     D.comp (id γ<g>) (δ γ) =
+     δ γ
+     OK
+
+   comp (comp σ δ) ν γ = comp σ (comp δ ν) γ
+
+     comp (comp σ δ) ν γ =
+     D.comp (comp σ δ γ)<h> (ν γ<f∘g>) =
+     D.comp (D.comp (σ γ)<g> (δ γ<f>))<h> (ν γ<f∘g>) =
+     D.comp (D.comp (σ γ)<g∘h> (δ γ<f>)<h>) (ν γ<f∘g>) =
+     D.comp ((σ γ)<g∘h>) (D.comp ((δ γ<f>)<h>) (ν γ<f∘g>))
+
+     comp σ (comp δ ν) γ =
+     D.comp (σ γ)<g∘h> (comp δ ν γ<f>) =
+     D.comp ((σ γ)<g∘h>) (D.comp (δ γ<f>)<h> (ν γ<f∘g>))
+     OK
+
+Sections of FamCat-s
+
+  Assuming A : FamCat {C} Γ, Section A : Set is defined to be
+  the set of sections of (Π Γ A)
+
+  (which we automatically get from Cat being algebraic and having a cwf of
+   cats and displayed cats)
+
+
+-- Raw base category
+----------------------------------------------------------------------------------------------------
+
+Con : Set := (C : Cat) × (Γ : Ĉ)
+
+Sub (C, Γ) (D, Δ) : Set :=
+  σ : C → D
+  σ : Γ → σ*Δ
+
+∙ : Con
+∙ = (1, 1)
+
+ε : Sub (C, Γ) ∙
+ε = (!, !)
+
+(σ : Sub (D, Δ) (E, Ξ)) ∘ (δ : Sub (C, Γ) (D, Δ)) : Sub (C, Γ) (E, Ξ) :=
+
+  σ : C → E
+    := σ ∘ δ
+
+  σ : Γ → (σ ∘ δ)* Ξ
+    := δ*σ ∘ δ
+
+σ∘id = σ
+  σ∘id=σ OK
+  id*σ ∘ id = σ OK
+
+id∘σ = σ
+  OK
+
+(σ ∘ δ) ∘ ν = σ ∘ (δ ∘ ν)
+
+  functor part OK
+  ν*(δ*σ ∘ δ) ∘ ν = ν*δ*σ ∘ ν*δ ∘ ν
+  (δ∘ν)*σ ∘ (ν*δ ∘ ν) = ν*δ*σ ∘ ν*δ ∘ ν
+  OK
+
+------------------------------------------------------------
+
+Cat : Con → Set
+Cat (C, Γ) := FamCat Γ
+
+(A : Cat (D, Δ)) [ σ : Sub (C, Γ) (D, Δ) ] : Cat (C, Γ) :=
+
+   In short: for each component, restrict by (σ* : D̂ → Ĉ) then
+   substitute in Ĉ by (σ : Γ → σ*Δ)
+   Restriction and substitution both preserve all structure involved
+   in FamCat (types, terms, extensional identity)
+
+   More explicitly:
+
+     Ob {c} γ := A.Ob {σ c} (σ γ)
+     Hom {c} γ i j := A.Hom {σ c} (σ γ) i j
+     id γ i := A.id (σ γ) i
+     comp γ f g := A.comp (σ γ) f g
+
+
+Fun : (Γ : Con) → Cat Γ → Set
+Fun (C, Γ) A := TmCat C (Π Γ A)
+
+(C, Γ) ▶ (A : Cat Γ) :=
+  C' := C ▶ Π Γ A         (_▶_, "p" in the cwf of categories and disp categories)
+  Γ' := p*Γ
+
+
+(F : Fun (D, Δ) A) [ σ : Sub (C, Γ) (D, Δ) ] : Fun (C, Γ) A[σ]
+                                             : TmCat C (Π Γ A[σ])
+
+   σ : C → D
+   F : TmCat D (Π Δ A)
+
+   F[σ] : TmCat C (Π Δ A)[(σ,id)]
+
+   wait a min
+
+
+p : Sub (C ▶ Π Γ A, p*Γ) (C, Γ) := (p, id)
+
+q : Fun (C ▶ Π Γ A, p*Γ) A[p]
+  : TmCat (C ▶ Π Γ A) (Π (p*Γ) (A[(p, id)]))
+
+   We need to check: taking Π of FamCat is stable under restriction
+
+     Π (p*Γ) A[(p,id)] = (Π Γ A)[p]
+
+   LHS:
+    Ob : (C ▶ Π Γ A) → Set
+    Ob (i,_) := (γ : Γ i) → A.Ob i γ
+
+   RHS:
+    Ob : (C ▶ Π Γ A) → Set
+    Ob (i,_) = (γ : Γ i) → A.Ob i γ
+
+   looks good
+   (pointwise precomposition in both cases, nothing special is going on)
+
+  q : TmCat (C ▶ Π Γ A) (Π Γ A)[p]
+    : TmCat (C ▶ Π Γ A) (Π p*Γ A[p]) OK
+
+  := q
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+----------------------------------------------------------------------------------------------------

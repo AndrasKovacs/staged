@@ -1,0 +1,35 @@
+
+-- U0 is the type of object types, U0 : U0
+-- U1 is the type of metatypes, U1 : U1
+
+--  U1 → U1 : U1
+--  {A : U1} → A → A : U1
+
+{-
+Staging operations:
+
+- A : U0       then   ↑A   : U1      ("lift", the type of metaprograms that generate A-typed expressions)
+- t : A : U0   then   <t>  : ↑A     ("quotation", metaprogram which immediately returns an expression)
+- t : ↑A       then   [t]  : A      ("splice", run metaprogram, insert output into expression)
+- [<t>] ≡ t
+- <[t]> ≡ t
+-}
+
+-- let typeInType0 : U0 := U0;
+
+let typeInType1 : U1 = U1;
+
+let typeInType0 : U0 := U0;
+
+-- let three := suc0 (suc0 (suc0 zero0));
+
+let three = suc0 (suc0 (suc0 zero0));  -- inline definition
+
+
+let id : {A : U1} → A → A = λ x. x;
+
+let four := id (id three);
+
+
+
+U0

@@ -1,0 +1,140 @@
+
+cwf of categories and displayed categories, let's call it "C"
+------------------------------------------------------------
+
+Con    := Cat
+Ty Γ   := displayed Cat over Γ
+Tm Γ A := section of displayed cat
+
+-- constant families
+K : Con → Ty Γ
+Tm Γ (K Δ) = Sub Γ Δ
+
+Setᵒᵖ : Con
+
+⊤  : Ty Γ
+Σ  : (A : Ty Γ) → Ty (Γ, A) → Ty Γ
+Id : Tm Γ A → Tm Γ A → Ty Γ
+
+-- formation of discrete displayed categories
+El : Tm Γ Setᵒᵖ → Ty Γ
+
+
+Π : (A : Ty Γ) → Tm (Γ, A) Setᵒᵖ → Ty Γ
+Π A B =
+
+  _<_>    : A.Ob i → Hom j i → A.Ob j
+  lift    : {α : A.Ob j}(f : Hom i j) → A.Hom α<f> α f
+  liftrec : (φ : Hom α α' (f ∘ g)) → Hom α α'<f> g
+  β       : lift f ∘ liftrec φ = φ
+  η       : ∀ foo. lift f ∘ foo = φ → foo = liftrec φ
+
+  Ob : Γ.Ob → Set
+  Ob i =
+      (i* : (α : A.Ob i) → B (i, α))
+    × (i* : ∀ {α α'} (φ : A.Hom α α' id) → i* α = (i* α')<id, φ>)
+
+  Hom : (i* : Ob i)(j* : Ob j) → F.Hom i j → Set
+  Hom i* j* f = {α : A.Ob i}{α' : A.Ob j}(φ : A.Hom α α' f) → i* α = (j* α')<f, φ>
+
+  id : (i* : Ob i) → Hom i* i* id
+     : (i* : Ob i) → {α : A.Ob i} {α' : A.Ob i}(φ : A.Hom α α' id) → i* α = (i* α')<id, φ>
+  id i* φ = i* φ
+
+  comp : (f* : Hom j* k* f)(g* : Hom i* j* g) → Hom i* k* (f ∘ g)
+       : (f* : Hom j* k* f)(g* : Hom i* j* g) → {α : A.Ob i}{α' : A.Ob k}(φ : A.Hom α α' (f ∘ g)) → i* α = (k* α')<f∘g, φ>
+  comp f* g* {α}{α'} φ
+
+      f* : Hom j* k* f
+         : {α : A.Ob j}{α' : A.Ob k}(φ : A.Hom α α' f) → j* α = (k* α')<f, φ>
+
+      f* {α'<f>} {α'} (lift f) : j* α'<f> = (k* α')<f, lift f>
+                               : (El B).Hom (j* α'<f>) (k* α') (f, lift f)
+
+      g* {α} {α'<f>} (liftrec φ) : (i* α) = (j* α'<f>)<g, liftrec φ>
+                                 : (El B).Hom (i* α) (j* α'<f>) (g, liftrec φ)
+
+            φ : Hom α α' (f ∘ g)
+            liftrec φ : Hom α α'<f> g
+
+      f* (lift f) ∘ g* (liftrec φ) : (El B).Hom (i* α) (k* α') (f ∘ g, lift f ∘ liftrec φ)
+                                   : (El B).Hom (i* α) (k* α') (f ∘ g, φ) -- OK (works fine without using discreteness)
+                                   : i* α = (k* α')<f ∘ g, φ>
+
+      := f* (lift f) ∘ g* (liftrec φ)
+
+  idl by UIP
+  idr by UIP
+  ass by UIP
+
+  cartesian lift fails:
+    _<_> : (j* : Ob j)(f : Γ.Hom i j) → Ob i
+         : (j* : (α : A.Ob j) → B (j, α)) → (α : A.Ob i) → B (i, α)
+	 -- variance issue, can't make A.Ob j out of A.Ob i
+
+
+
+
+------------------------------------------------------------
+
+
+Con : Set
+Con = C.Con
+
+Cat : Con → Set
+Cat Γ = C.Ty Γ
+
+Fun : (Γ : Con) → Cat Γ → Set
+Fun Γ C = C.Tm Γ C
+
+_▶_ : (Γ : Con) → Cat Γ → Con
+Γ ▶ C := Γ ▶ C
+
+PSh : (Γ : Con) → Cat Γ → Set
+PSh Γ C = C.Sub (Γ ▶ C) Setᵒᵖ
+
+_[_] : PSh Γ C → (σ : Sub Δ Γ) → PSh Δ C[σ]
+A[σ] := A[σ ∘ p, q]
+
+El Γ {C} (A : PSh Γ C) : Set :=
+  C.Tm (Γ ▶ C) (C.El A)
+
+_[_] : (t : El Γ C A) → (σ : Sub Δ Γ) → El Δ {C[σ]} A[σ]
+t[σ] : C.Tm (Δ ▶ C[σ]) (C.El A[σ∘p, q])
+
+   t : C.Tm (Γ ▶ C) (C.El A)
+   σ : C.Sub Δ Γ
+   := t[σ∘p, q] : C.Tm (Δ ▶ C[σ]) (C.El A[σ∘p, q])
+
+_▶_ : (Γ : Con) → PSh Γ C → Con
+Γ ▶ (A : C.Sub (Γ ▶ C) Setᵒᵖ) =
+
+   Ob : Γ.Ob → Set
+   Ob i                  = (c : C.Ob i)      → A.Ob (i, c)
+   Hom i* j* (f : i → j) = (g : C.Hom i j f) → i*<(f, g)> = j*
+
+
+(σ : C.Sub Γ Δ) × C.Tm (Γ ▶ C[σ]) (C.El A[σ])
+
+-- C.Sub Γ (Δ ▶ A)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+----------------------------------------------------------------------------------------------------

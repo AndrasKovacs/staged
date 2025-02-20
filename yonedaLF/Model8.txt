@@ -1,0 +1,175 @@
+
+Christian's version rephrased inductively
+
+_▶_  : (C : Cat) → Fib C → Cat
+Disc : PSh C → Fib C
+
+data Tree (C : Cat) where
+  node : (Γ : PSh C)
+         (n : ℕ)
+         (D : Fin n → Fib (C ▶ Disc Γ))
+         (f : (i : Fin n) → Tree (C ▶ Disc Γ ▶ D i))
+       → Tree C
+
+-- reindex Tree, assuming F discrete fibration
+(t : Tree C) [F : D → C] : Tree D
+
+-- C~ is discrete fibration
+data Hom (C~ : C → C') (node Γ n D f : Tree C) (node Γ' n' D' f' : Tree C') where
+  node~ :
+    (Γ~ : Tm (C ▶ El Γ) (El Γ'[C~ ∘ p]))
+    (n~ : Fin n' → Fin n)
+    (D~ : ∀ i. D (n~ i) = (D' i)[C~ ∘ p, Γ~])
+    (f~ : ∀ i. Hom (C~ ∘ p², Γ~[p], q) (f (n~ i)) (f' i))
+    → Hom C~ (node Γ n D f) (node Γ' n' D' f')
+
+-- homogeneous Hom
+
+data Hom (node Γ n D f : Tree C) (node Γ' n' D' f' : Tree C) where
+  node~ :
+    Γ~ : Tm (C ▶ Disc Γ) (Disc Γ'[p])
+    n~ : Fin n' → Fin n
+    D~ : ∀ i. D (n~ i) = (D' i)[p, Γ~]
+
+              D (n~ i) : Fib (C ▶ Disc Γ)
+              D' i     : Fib (C ▶ Disc Γ')
+
+              f (n~ i) : Fib (C ▶ Disc Γ  ▶ (D' i)[p, Γ~])
+              f' i     : Fib (C ▶ Disc Γ' ▶ D' i)
+
+    f~ : ∀ i. Hom (f (n~ i)) ((f' i)[p², Γ~[p], q])
+
+subtree relation:
+
+  _<_ : Tree C → Tree C' → Set
+  t < node Γ' n' D' f' = (i : Fin n') × (t <= f' i)
+
+  _<=_ : Tree C → Tree C' → Set
+  t <= t' : ((C = C') × (t = t')) + (t < t')
+
+
+Con := Tree 1
+Sub Γ Δ := Hom id Γ Δ
+∙ := node ⊤ 0 _ _
+
+Base : Con → Set
+Base Γ := (C : Cat) × (Γ' : Tree C) × (Γ' <= Γ)
+
+-- + subst for Base
+
+1 : Base Γ
+1 := Γ as a subtree of Γ
+
+PSh (Γ : Con) (i : Base Γ) : Set
+  from i we get: (node Γ' n D f : Tree C) is a subtree of Γ
+  := PSh (C ▶ Disc Γ')
+
+-- + substitution
+
+El (Γ : Con) (i : Base Γ)(A : PSh Γ i) : Set
+  := Section of A
+
+-- + substitution
+extension
+Γ ▶ (A : PSh Γ i) :=
+  add A to Γ' in i, weaken rest of stuff in that node
+
+p : Sub (Γ ▶ A) Γ
+q : El (Γ ▶ A) A[p]
+
+Var Γ (i : Base Γ) (C : El Γ Catᵢ) : Set
+  := <there's an immediate subtree of i labelled with C as the (D i) fibration>
+
+var : Var Γ i C → Base Γ
+    := get the subtree from Var
+
+Γ ▶ (j : Var Γ i C) :=
+  insert C and (node 1 0 _ _) as new subtree at i
+
+
+SYNTAX
+----------------------------------------------------------------------------------------------------
+
+MetaTy                  -- supports ETT
+Base : MetaTy
+1    : Base
+
+PSh  : Base → MetaTy    -- supports ETT
+El   : PSh i → MetaTy
+
+Var  : {i : Base} → El Catᵢ → MetaTy
+var  : Var C → Base
+
++ Yoneda embeddings
++ Lift (where we can only compute in the external-internal direction)
+
+
+
+TRUNCATED VERSION
+----------------------------------------------------------------------------------------------------
+
+MetaTy                     -- has ETT
+
+Set : MetaTy               -- has ETT
+El  : Set → MetaTy
+
+Var : El Catₛₑₜ → MetaTy
+
+PSh : Var C → MetaTy       -- has ETT
+El  : PSh i → MetaTy
+
++ Yoneda
++ Set→PSh Lift
+
+
+Con := (Γ : Set, n : ℕ, C : Fin n → Γ → Cat, Δ : ∀ i γ. PSh (C i γ))
+
+Sub (Γ, n, C, Δ) (Γ', n', C', Δ') :=
+  Γ~ : Γ → Γ'
+  n~ : Fin n' → Fin n
+  C~ : ∀ i γ. C (n~ i) γ = C' i (Γ~ γ)
+  Δ~ : ∀ i γ. Nat (Δ (n~ i) γ) (Δ' i (Γ~ γ))
+
+TyS (Γ, _, _)    = Γ → Set
+TmS (Γ, _, _) A  = (γ : Γ) → A γ
+(Γ, n, C, Δ) ▶ A = (Σ Γ A, n, wk C, wk Δ)
+
+
+Var (Γ, n, C, Δ) (C : Γ → Cat) := Σ (i : Fin n) × (fst ∘ f i) = C
+
+
+PSh (Γ, n, f) (i : Var Γ C) :=
+ (γ : Γ) → PSh (∫(snd (f i γ))))
+
+TmP (Γ, n, f) (A : PSh (Γ, n, f) i) :=
+  (γ : Γ) → Section (A γ)
+
+
+------------------------------------------------------------
+
+↑ : TmS Γ A → TmP Γ (Lift A) OK
+TmP Γ (Lift A) → TmS Γ A NOT OK
+
+-- oplax for simple ind types
+-- oplax for simply-typed function
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+----------------------------------------------------------------------------------------------------

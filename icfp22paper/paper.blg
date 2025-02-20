@@ -1,0 +1,84 @@
+This is BibTeX, Version 0.99d (TeX Live 2022/dev/Debian)
+Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
+The top-level auxiliary file: paper.aux
+The style file: ACM-Reference-Format.bst
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Reallocated wiz_functions (elt_size=4) to 6000 items from 3000.
+Database file #1: references.bib
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Reallocated glb_str_ptr (elt_size=4) to 20 items from 10.
+Reallocated global_strs (elt_size=200001) to 20 items from 10.
+Reallocated glb_str_end (elt_size=4) to 20 items from 10.
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Warning--page numbers missing in both pages and numpages fields in modulartc
+Warning--empty address in ttintt
+Warning--page numbers missing in both pages and numpages fields in kaposinbe
+Warning--no number and no volume in twolevel
+Warning--page numbers missing in both pages and numpages fields in twolevel
+Warning--no number and no volume in bocquet2021relative
+Warning--page numbers missing in both pages and numpages fields in bocquet2021relative
+Warning--empty address in scrap-your-inefficient-engine
+Warning--no number and no volume in capriotti2017models
+Warning--page numbers missing in both pages and numpages fields in capriotti2017models
+Warning--page numbers missing in both pages and numpages fields in cwfs
+Warning--empty address in DBLP:conf/csl/CavalloMS20
+Warning--empty address in stream-fusion
+Warning--empty address in short-cut
+Warning--empty address in gratzer20multimodal
+Warning--empty address in hofmann95extensional
+Warning--empty address in Hofmann97syntaxand
+Warning--empty address in DBLP:conf/lics/Hofmann99
+Warning--page numbers missing in both pages and numpages fields in DBLP:journals/corr/abs-2206-02831
+Warning--empty address in partial-evaluation
+Warning--empty address in gluing
+Warning--empty address in multi-stage-calculus
+Warning--empty address in kiselyov14metaocaml
+Warning--page numbers missing in both pages and numpages fields in DBLP:journals/corr/abs-2201-00495
+Warning--empty address in licata2018internal
+Warning--empty address in loh11generic
+Warning--empty address in maclane98categories
+Warning--empty address in cubicalnbe
+Warning--empty address in DBLP:conf/cpp/WinterhalterST19
+You've used 52 entries,
+            5981 wiz_defined-function locations,
+            1878 strings with 30240 characters,
+and the built_in function-call counts, 58509 in all, are:
+= -- 8149
+> -- 1559
+< -- 0
++ -- 517
+- -- 566
+* -- 3917
+:= -- 5421
+add.period$ -- 268
+call.type$ -- 52
+change.case$ -- 327
+chr.to.int$ -- 51
+cite$ -- 81
+duplicate$ -- 5194
+empty$ -- 3666
+format.name$ -- 713
+if$ -- 14594
+int.to.chr$ -- 3
+int.to.str$ -- 1
+missing$ -- 194
+newline$ -- 581
+num.names$ -- 389
+pop$ -- 1849
+preamble$ -- 1
+purify$ -- 740
+quote$ -- 0
+skip$ -- 1875
+stack$ -- 0
+substring$ -- 4557
+swap$ -- 507
+text.length$ -- 0
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 1134
+warning$ -- 29
+while$ -- 396
+width$ -- 0
+write$ -- 1178
+(There were 29 warnings)

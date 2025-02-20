@@ -1,0 +1,320 @@
+
+
+cwf of categories and displayed categories, let's call it "C"
+------------------------------------------------------------
+
+Con     := Cat
+Ty Γ    := displayed Cat over Γ
+Tm Γ A  := section of A
+TyF Γ   := fibration over Γ
+TmF Γ A = Tm Γ A  (sort equality)
+
+El : Tm Γ Setᵒᵖ → TyF Γ   -- discrete fibration
+
+
+(A : TyF Γ) has
+  -- displayed category over Γ
+  _<_>    : A.Ob i → Γ.Hom j i → A.Ob j
+  lift    : {α : A.Ob j}(f : Γ.Hom i j) → A.Hom α<f> α f
+  !       : (φ : A.Hom α α' (f ∘ g)) → A.Hom α α'<f> g
+  β       : lift f ∘ !φ = φ
+  η       : ∀ φ'. lift f ∘ φ' = φ → φ' = !φ
+
+(A : TyF Δ)[σ : Sub Γ Δ] : TyF Γ
+
+  Ob i        = A.Ob (σ i)
+  Hom i* j* f = A.Hom i* j* (σ f)
+
+  _<_> : A[σ].Ob i → Γ.Hom j i → A[σ].Ob j
+       : A.Ob (σ i) → F.Hom j i → A.Ob (σ j)
+  α<f> = α<σ f>
+
+  lift : {α : A.Ob (σ j)}(f : Γ.Hom i j) → A.Hom α<σ f> α (σ f)
+  lift f = A.lift (σ f)
+
+  ! : (φ : A.Hom α α' (σ f ∘ σ g)) → A.Hom α α'<σ f> (σ g)
+  ! φ = ! φ
+
+  β : A.lift (σ f) ∘ !φ = φ OK
+  η : ∀ φ'. A.lift (σ f) ∘ φ' = φ → φ' = !φ OK
+
+  functoriality of substitution:
+
+    A[id] = A OK
+    A[f ∘ g] = A[f][g] OK
+
+
+TmF Γ A := section of A
+
+-- constant families
+K : Con → Ty Γ
+Tm Γ (K Δ) = Sub Γ Δ
+
+K : Con → TyF Γ
+TmF Γ (K Δ) = Sub Γ Δ
+
+
+----------------------------------------------------------------------------------------------------
+
+Setᵒᵖ : Con
+
+⊤  : Ty Γ
+Σ  : (A : Ty Γ) → Ty (Γ, A) → Ty Γ
+Id : Tm Γ A → Tm Γ A → Ty Γ
+
+-- discrete fibration formation
+El : Tm Γ Setᵒᵖ → Ty Γ
+
+Christian
+  - this Π works fine (which is more general than the one just below)
+    Π : (A : TyF Γ) → Ty (Γ, A) → Ty Γ
+  - most general case: domain Conduché fibration, codomain is displayed cat, Π itself is displayed cat
+  - cofree generation of DiscFib Γ from DisplCat Γ : do the yoneda trick
+    gets us things in presheaves, but result is not stable anymore!
+    psh exponential and universe arises from cofree DiscFib of a) Π with discrete domain, b) Setᵒᵖ
+
+
+-- Π with discrete codomain
+Π : (A : TyF Γ) → Tm (Γ, A) Setᵒᵖ → Ty Γ  -- output is not a fibration!
+Π A B =
+
+  Ob : Γ.Ob → Set
+  Ob i =
+      (i* : (α : A.Ob i) → B (i, α))
+    × (i* : ∀ {α α'} (φ : A.Hom α α' id) → i* α = (i* α')<id, φ>)
+
+  Hom : (i* : Ob i)(j* : Ob j) → F.Hom i j → Set
+  Hom i* j* f = {α : A.Ob i}{α' : A.Ob j}(φ : A.Hom α α' f) → i* α = (j* α')<f, φ>
+
+                                                           (→ (El B).Hom (i* α) (j* α') (f, φ))
+
+  id : (i* : Ob i) → Hom i* i* id
+     : (i* : Ob i) → {α : A.Ob i} {α' : A.Ob i}(φ : A.Hom α α' id) → i* α = (i* α')<id, φ>
+  id i* φ = i* φ
+
+  comp : (f* : Hom j* k* f)(g* : Hom i* j* g) → Hom i* k* (f ∘ g)
+       : (f* : Hom j* k* f)(g* : Hom i* j* g) → {α : A.Ob i}{α' : A.Ob k}(φ : A.Hom α α' (f ∘ g)) → i* α = (k* α')<f∘g, φ>
+  comp f* g* {α}{α'} φ
+
+      f* : Hom j* k* f
+         : {α : A.Ob j}{α' : A.Ob k}(φ : A.Hom α α' f) → j* α = (k* α')<f, φ>
+
+      f* {α'<f>} {α'} (lift f) : j* α'<f> = (k* α')<f, lift f>
+                               : (El B).Hom (j* α'<f>) (k* α') (f, lift f)
+
+      g* {α} {α'<f>} (! φ) : (i* α) = (j* α'<f>)<g, !φ>
+                           : (El B).Hom (i* α) (j* α'<f>) (g, !φ)
+
+            φ : Hom α α' (f ∘ g)
+            liftrec φ : Hom α α'<f> g
+
+      f* (lift f) ∘ g* (! φ) : (El B).Hom (i* α) (k* α') (f ∘ g, lift f ∘ !φ)
+                             : (El B).Hom (i* α) (k* α') (f ∘ g, φ)
+                             : i* α = (k* α')<f ∘ g, φ>
+
+      := f* (lift f) ∘ g* (! φ)
+
+  idl by UIP
+  idr by UIP
+  ass by UIP
+
+  cartesian lift fails:
+    _<_> : (j* : (α : A.Ob j) → B (j, α)) → (α : A.Ob i) → B (i, α)
+	 -- variance issue, can't make A.Ob j out of A.Ob i
+
+(Π A B)[σ] = Π A[σ] B[σ∘p, q] OK
+
+
+app : Tm Γ (Π A B) → Tm (Γ ▶ A) (El B)
+app t :=
+
+  t i : (α : A.Ob i) → B (i, α)
+  t i : ∀ {α α'} (φ : A.Hom α α' id) → t i α = (t i α')<id, φ>
+
+  t (f : Γ.Hom i j) : (Π A B).Hom (t i) (t j) f
+                    : ∀ {α α'} (φ : A.Hom α α' f). t i α = (t j α')<f, φ>
+
+  Ob : (i : Γ.Ob, α : A.Ob i) → B (i, α)
+  Ob (i, α) := t i α
+
+  Hom : (f : Γ.Hom i j, f* : A.Hom i* j* f) → (El B).Hom (t i i*) (t j j*) (f, f*)
+      : (f : Γ.Hom i j, f* : A.Hom i* j* f) → t i i* = (t j j*)<f, f*>
+
+      t f f* : t i i* = (t j j*)<f, f*> OK
+      := t f f*
+
+  id, comp pres by UIP
+
+lam : Tm (Γ ▶ A) (El B) → Tm Γ (Π A B)
+lam t :=
+
+  t : (i : Γ.Ob, α : A.Ob i) → B (i, α)
+  t : (f : Γ.Hom i j, φ : A.Hom i* j* f) → t (i, i*) = (t (j, j*))<f, φ>
+
+  Ob : (i : Γ.Ob) → (Π A B).Ob i
+
+  Ob i : (α : A.Ob i) → B (i, α)
+  Ob i α := t (i, α)
+
+  Ob i : ∀ {α α'}(φ : A.Hom α α' id) → t (i, α) = (t (i, α'))<id, φ>
+  Ob i φ := t (id, φ)
+
+  Hom : (f : Γ.Hom i j) → (Π A B).Hom (Ob i) (Ob j) f
+      : (f : Γ.Hom i j) → ∀ {α α'}(φ : A.Hom α α' f) → t (i, α) = (t (j, α'))<f, φ>
+  Hom f φ := t (f, φ)
+
+  id, comp pres by UIP
+
+  (we didn't need to use uniqueness of cartesian lifts)
+
+
+-- operations for going between different fibrations
+------------------------------------------------------------
+forgetful : DiscFib Γ --> DisplayedCat Γ
+has both a left and right adjoint
+the right adjoint is used to reproduce Π and U in presheaves (but they're not stable)
+
+Π : (A : TyF Γ) → Ty (Γ, A) → Ty Γ
+
+special case:
+
+Π : (A : TyF Γ) → Tm (Γ, A) Setᵒᵖ → Ty Γ
+
+general case: domain is Conduché fibration, codomain Ty, output Ty
+
+
+-- ordinary unstable PSh type formers
+----------------------------------------------------------------------------------------------------
+
+Π : (A : Tm Γ Setᵒᵖ) → Tm (Γ, El A) Setᵒᵖ → Tm Γ Setᵒᵖ
+Tm Γ (Π A B) ≃ Tm (Γ, El A) (El B)
+
+
+----------------------------------------------------------------------------------------------------
+
+Con : Set
+Con = C.Con
+
+Sub : Con → Con → Set
+Sub = C.Sub
+
+Cat : Con → Set
+Cat Γ = C.TyF Γ
+
+Fun : ∀ Γ → Cat Γ → Set
+Fun Γ C = C.TmF Γ C
+
+_▶_ : (Γ : Con) → Cat Γ → Con
+Γ ▶ C := Γ ▶ C
+
+1 : Cat Γ
+1 = C.1
+
+! : Fun Γ 1
+! = !
+
+--------------------------------------------------------------------------------
+
+PSh : ∀ Γ → Cat Γ → Set
+PSh Γ C = C.Tm (Γ ▶ C) Setᵒᵖ                    -- or: C.Tm Γ (C ⇒ Setᵒᵖ)
+
+_[_] : PSh Γ C → (σ : Sub Δ Γ) → PSh Δ C[σ]
+A[σ] := A[σ ∘ p, q]
+
+El : PSh Γ C → Set
+El {Γ}{C} A := C.Tm (Γ ▶ C) (C.El A)
+
+_[_] : (t : El Γ C A) → (σ : Sub Δ Γ) → El Δ {C[σ]} A[σ]
+t[σ] := t[σ∘p, q]
+
+_▶_ : (Γ : Con) → PSh Γ C → Con
+Γ ▶ A := Γ ▶ Π C A
+
+p : Sub (Γ ▶ A) Γ
+p = C.p
+
+q : {A : PSh Γ C} → El (Γ ▶ A) {C[p]} A[p]
+q : C.Tm (Γ ▶ Π C A ▶ C[p]) (El A[p², q])
+  := app q
+
+_,_ : (σ : Sub Γ Δ) → El Γ {C[σ]} A[σ] → Sub Γ (Δ ▶ A)
+σ,t := σ, lam t
+
+  t : C.Tm (Γ ▶ C[σ]) (C.El A[σ∘p, q])
+  lam t : C.Tm Γ (Π C[σ] A[σ∘p, q])
+
+(p, q) = id
+  (p, lam (app q)) = (p, q) = id OK
+
+p∘(σ,t) = p∘(σ,lam t) = σ OK
+q[σ,t] = (app q) [(σ, lam t)∘p, q] = app (q[σ, lam t]) = app (lam t) = t OK
+
+
+Type formers in PSh
+----------------------------------------------------------------------------------------------------
+
+Π : (A : PSh Γ C) → PSh (Γ, A) C[p] → PSh Γ C
+Π A B : C.Tm (Γ ▶ C) Setᵒᵖ                          C.Tm Γ (HSU C)
+
+  A : C.Tm (Γ ▶ C) Setᵒᵖ
+  B : C.Tm (Γ ▶ Π C A ▶ C[p]) Setᵒᵖ
+
+  λ (γ, c). Π (A (γ, c)) (λ α. B (γ, λ_. α, c))
+
+  := Π~ A (B[p², lam 1, 1])
+
+_⇒_ : PSh Γ C → PSh Γ C → PSh Γ C
+A ⇒ B := A ⇒~ B
+  A : C.Tm (Γ ▶ C) Setᵒᵖ
+
+(A ⇒ B)[σ] = A[σ]
+
+
+(A ⇒ B)[σ] = (A ⇒~ B)[σ∘p, q]
+
+
+U Γ C : PSh Γ C
+U Γ C : C.Tm (Γ ▶ C) Setᵒᵖ
+  := Uₕₛ (Γ ▶ C)
+
+Uₕₛ Γ i = Tm (Γ ▶ El (Y i)) Setᵒᵖ
+t<f>    = t[p, Y f]
+
+(U Δ C)[σ : Sub Γ Δ] = (Uₕₛ (Δ ▶ C))[σ∘p, q]
+
+    (Uₕₛ (Δ ▶ C))[σ∘p, q] (i, c) =
+    (Uₕₛ (Δ ▶ C)) (σ i, c) =
+    Tm (Δ ▶ C ▶ El (Y (σ i, c))) Setᵒᵖ
+
+(U Γ C[σ]) = (Uₕₛ (Γ ▶ C[σ]))
+   (Uₕₛ (Γ ▶ C[σ])) (i, c) =
+   Tm (Γ ▶ C[σ] ▶ El (Y (i, c))) Setᵒᵖ
+
+Not stable
+
+----------------------------------------------------------------------------------------------------
+
+
+Setᵒᵖ : Fib
+C : Fib
+C → Setᵒᵖ : Cat
+ℕ : Fun (C ⇒ Setᵒᵖ)
+_⇒_ : Fun (C → Setᵒᵖ) → Fun (C → Setᵒᵖ) → Fun (C → Setᵒᵖ)
+    : C → Setᵒᵖ → Setᵒᵖ → Setᵒᵖ
+
+what if I just close Setᵒᵖ under shit?
+
+
+Fib  : MetaTy
+El   : Fib → MetaTy
+DCat : MetaTy
+El   : DCat → MetaTy
+_    : Fib → DCat
+Π    : (A : Fib) → (El A → DCat) → DCat
+       El (Π A B) ≃ ((a : El A) → El (B a))
+
+Setᵒᵖ : Fib
+El    : El Setᵒᵖ → Fib
+
+
+El² Nat : MetaTy

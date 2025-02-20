@@ -1,0 +1,119 @@
+
+Here is an attempt at semantics for the "iterated internal presheaves" type theory proposed by András.
+
+We have the graph ω of finite ordinals.
+Its morphisms are
+  step_n : n → n+1
+for n ∈ ℕ.
+
+Below, we consider presheaves Psh(ω) over the graph ω.
+For certain constructions, we may have to restrict the values to sets with decidable equality.
+
+Remark.
+If we want to mirror the syntax, we can restrict to finite sets.
+Note that Psh_fin(ω)^op is the free category with:
+* a sort Var,
+* a locally representable sort T(v) for v : 1 ⊔ Var,
+* an operation T(v) → Var.
+[Can this be simplified?]
+∎
+
+We write
+  Dep : Psh(ω) → Graph
+for the graph of elements functor.
+Explicitly, Dep(V) has:
+* objects given by n ∈ ℕ (implicit) and v ∈ V(n),
+* for each v ∈ V_{n+1}, a map step_v : v → v step_n.
+
+Remark.
+We can describe Dep also in terms of the category ω.
+We have a functor Lin : ω → Graph:
+* sending n to the linear graph [n] = {0 → … → n},
+* with functorial action given by initial segment inclusions.
+Then Dep is the cocontinuous extension of Lin.
+∎
+
+A context is a pair (V, D) of:
+* a presheaf V : Psh(ω) of category-level variables,
+* a diagram D : Dep(V)^op → Cat
+such that:
+* for v ∈ V_{n+1}, the functor D_v → D_{v step} is a cartesian fibration.
+
+A context morphism from (V', D') to (V, D) is a pair (f, u) of:
+* a map f : V → V',
+* a natural transformation u : D' → D Dep(f) in [Dep(V), Cat]
+such that:
+* for v ∈ V_n, the map u_v : D'_v → D_{Dep(f)(v)} is a discrete fibration.
+
+These compose in the evident way.
+To do this formally, we consider
+  [Dep(-)^op, Cat] : Psh(ω)^op → Cat.
+The category of contexts is defined as a subcategory of the category of elements of this covariant functor.
+Note that D is equivalently limit over ω of Cat with Graph-weight Lin.
+That is, the previous operation is Lin-weighted limit:
+  lim_ω^Lin : Psh(ω)^op → Cat.
+
+The category of contexts interprets the following:
+* a sort Var of category-level variables:
+    Var(V, D) = obj(Dep(V)),
+* for a category level v : Var, a sort Psh(v) of presheaves:
+    Psh(V, D, v) = Psh(D(v)),
+* for such a presheaf A : Psh(v), a locally representable sort El(A) of elements:
+    El(V, D, v, A) = Section(A) (*),
+* extensional type formers for level v as usual,
+* for a level-v category D, a locally representable sort Internally(D):
+    Internally(V, D, v ∈ V(n))
+  is the set of v' with a map f : v → v' in Dep(V) such that D(f) : D(v') → D(v)
+  is strictly equal to the cartesian fibration corresponding to the category D
+  internal to Psh(D(v)),
+* for x : Internally(D), a category-level variable var(x) : Var:
+    var(V, D, v, D, v') = v'.
+
+We justify local representability of El.
+At context (V, D) and v ∈ V(n) and A ∈ Psh(D(v)), the local representation of El(A) is given by
+  (id, u) : (V, D') → (V, D).
+Here, u : D' → D is obtained from D by extending with weakenings of A at all variables reachable from v.
+
+More systematically, this goes as follows.
+Write Cat_df for the restriction of Cat to discrete fibrations.
+We have a functor
+  U : ∫ Var ---> Cat_df
+sending a context (V, D) with v ∈ V(n) to D(v).
+The category Cat_df interprets extensional type theory (up to issues of splitting type formers up to isomorphism, see remark below).
+The sort Psh(v) and locally representable sort El(A) for A : Psh(v) and extensional type formers at level v are all created by U.
+To see this, we note that U is a cartesian fibration.
+Cartesian lifts are given by not touching the variables component and:
+* keeping D(v') unchanged if v does not reach v',
+* otherwise using iterated cartesian lifting using the cartesian fibrations of D.
+
+We justify local representability of Internally.
+At context (V, D) and v ∈ V(n) and D a category internal to Psh(D(v)), the local representation of Internally(D) is given by
+  (f, u) : (V', D') → (V, D)
+where f : V → V' is the extension of V with a new variable v' over v.
+Then D' is D with D'(v') → D'(v) the cartesian fibration corresponding to D.
+[TODO: do formally.]
+
+Remark.
+We have a splitting issue in Cat_df.
+Type formers such as Π and U are stable under base change along a discrete fibration only up to isomorphism.
+To fix this without resorting to a coherence method, it seems we need to keep track separately of element extension and category extension.
+So we would separate the category D(v) (standing for a category of elements) into a category D(v) and a presheaf X(v) ∈ Psh(D(v)).
+The step maps become cartesian fibrations D(v') → ∫ X.
+For splitting purposes, these need to be strictly presented by pseudofunctors Y(v') : (∫ X)^op → Cat.
+[TODO: I don't see why these have to be strict functors?]
+The morphisms in Ctx are rectified so that they are identities instead of just isomorphisms on Y, only acting on X.
+
+For a path
+  v_0 → v_1 → … → v_n
+for v_n ∈ V(n), we can then interpret for example the universe in level v as follows.
+Fix A_k ∈ D(v_k) with x_k ∈ X(A_k) for k ≤ n.
+Let B_{k+1} ∈ Y(v_k)(A_k, x_k) correspond to A_{k+1}.
+We define
+  U(A_0, x_0, A_1, x_1, …, A_n, x_n)
+using the following quantifications:
+* over f_0 : A_0' → A_0 in D(v_0),
+* for k < n, over g_{k+1} : B_{k+1}' → Y(v_k)(f_k)(B_{k+1}) in Y(v_k)(A_k', x_k f_k)
+* where f_{k+1} : A_{k+1}' → A_{k+1} is the map in D(v_{k+1}) corresponding to the map (f_k, g_{k+1}) in ∫ Y(v_{k+1)).
+This only depends on X and Y, not on D.
+Since the quantifications are over Y and morphisms leave Y alone, everything is strictly stable.
+∎

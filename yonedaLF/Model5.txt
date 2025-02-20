@@ -83,6 +83,12 @@ Notation for lifting:
 (Π A B) {i} γ = Tm (Yi, A[γ<_>]) (B[γ<_>∘p, q])
 t<f>          = t[Y f ∘ p, q]
 
+-- Ordinary H-S universe
+------------------------------------------------------------
+
+U : Ty Γ
+U {i} _ = Ty (Y i)
+a<f>    = a<Y f>
 
 -- SUB-UNIVERSE
 ------------------------------------------------------------
@@ -158,6 +164,52 @@ B* γ<f> (g, α) = B* γ (F f ∘ g, α)
 
   (B[σ∘p, q])* γ (g, α) = B[σ∘p, q] (γ<lift g>, α) = B (γ<lift (σ g)>, α)
   β<f>                  = β<σ f>
+
+-- base change
+B   : TmC  (Γ, El A) (U F)
+G*B : TmC' (G*Γ, El (G*A)) (U (F ∘ G))
+
+(G*B)* : (γ : Γ (G i)) → TyC' (Y (F (G i)), A γ)
+(G*B)* γ {j} (g, α) = G*B {(G i)[g]} (γ<lift g>, α) {F j} id
+
+  i : C'
+  G i : C
+  g : j → F (G i)
+
+  (G i)[g] : C
+  lift g : (G i)[g] → G i
+  γ : Γ (G i)
+  γ<lift g> : Γ ((G i)[g])
+
+
+
+
+
+
+
+  B* {G j} γ (g, α) =
+  B (γ<lift g>, α) {F (G j)} id
+
+
+
+
+
+
+ADJUSTMENT FOR TERMS
+------------------------------------------------------------
+
+t  : Tm Γ (El A)
+
+t* : (γ : Γ i) → Tm (Y (F i)) (A γ)
+t* γ {j} g = t γ<lift g>
+
+  -- naturality
+  t* g<f> = t* (g ∘ f) = t γ<lift (g ∘ f)>
+
+  (t* g)<f> = (t γ<lift g>)<f>
+            = (t γ<lift g>)<F (lift f)>
+	    = t γ<lift g><lift f>
+	    = t γ<lift (g ∘ f)> OK
 
 
 PI TYPE
@@ -387,14 +439,105 @@ TODO
 EXTENSIONAL IDENTITY
 ----------------------------------------------------------------------------------------------------
 
+Id : (A : Tm Γ U) → Tm Γ (El A) → Tm Γ (El A) → Tm Γ U
+Id A t u {i} γ : Ty (Y (F i))
+               := IdD̂ (A γ) (t* γ) (u* γ)
+
+        A γ  : Ty (Y (F i))
+	t* γ : Tm (Y (F i)) (A γ)
+	u* γ : Tm (Y (F i)) (A γ)
+
+refl : Tm Γ (El (Id A t t))
+refl {i} γ : (Id A t t) γ id
+           : (IdD̂ (A γ) (t* γ) (t* γ)) id
+	   : t* γ id = t* γ id
+	   : t γ = t γ
+	   := refl OK
+
+reflect : Tm Γ (El A t u) → t = u
+reflect e
+   t γ : A γ id
+   u γ : A γ id
+   e γ : t γ = u γ OK
 
 
 
+UNIVERSE
+----------------------------------------------------------------------------------------------------
+
+U' : Tm Γ U
+U' {i} γ : Ty (Y (F i))
+         := UD̂
+
+code : Tm Γ U → Tm Γ (El U')
+code t {i} γ : U' γ id
+             : UD̂ {F i} id
+	     : Ty (Y (F i))
+	     := t γ          -- we get Russell-style just from the representation (nice)
+
+el : Tm Γ (El U') → Tm Γ U
+el t = t
+
+etc TODO
+
+
+W-TYPE
+----------------------------------------------------------------------------------------------------
+
+W : (A : Tm Γ U) → Tm (Γ, El A) U → Tm Γ U
+W A B {i} γ : Ty (Y (F i))
+            := WD̂ (A γ) (B* γ)
+
+TODO
 
 
 
+-- STABILITY UNDER BASE CHANGE
+----------------------------------------------------------------------------------------------------
+
+F : C → D is the original fibration
+G : C' → C is the base change
+
+F ∘ G is also a fibration
+cartesian lifts are preserved (are they automatically preserved? probably yes, bc lifts are unique)
+
+    f               : i → F (G j)
+    liftF f         : (G j)[f] → G j
+    liftG (liftF f) : j[liftF f] → j
+    lift (F ∘ G) f  : j[f]       → j
+
+    j[liftF f] = j[f]
+    lift(F∘G) f = liftF (liftG f)
+
+Action of G*:
+
+  G* : ConC → ConC'
+  G* Γ {i} = Γ {G i}
+  γ<f>     = γ<G f>
+
+  G* : Ty Γ → Ty (G*Γ)
+  G* A {i} γ = A {G i} γ
+  α<f>       = α<G f>
+
+  G* : TmC Γ A → TmC' (G*Γ) (G*A)
+  G* t {i} γ = t {G i} γ
+
+
+G*(U F) = U (F ∘ G) OK
+  but TODO
+
+G*(El A) = El (G*A)
+
+  G*(El A) {i} γ = El A {G i} γ = A {G i} γ {F (G i)} id
+  El (G*A) {i} γ = G*A {i} γ {F∘G i} id = A {G i} γ {F (G i)} id OK
+  morphism OK
+
+
+G*(Π A B) = Π (G*A) (G*B)
+
+G*(Π A B) {i} γ = Π A B {G i} γ = Π (A {G i} γ) (B* {G i} γ)
+Π (G*A) (G*B) {i} γ = Π (G*A {i} γ) ((G*B)* {i} γ)
 
 
 
-INTERNAL UNIVERSE
 ----------------------------------------------------------------------------------------------------

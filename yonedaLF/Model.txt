@@ -456,3 +456,20 @@ q : Fun (C ▶ Π Γ A, p*Γ) A[p]
 
 
 ----------------------------------------------------------------------------------------------------
+
+
+I have done so as well, but IMO the lack of join points or second-class continuations is an issue that prevents me from directly using CBPV
+as an IR. For example, commuting a case in CBPV requires either naively inlining code into case branches, which causes exponential blowup,
+or creating a let-bound closure for a join point, but that requires an actual closure in the runtime operational semantics. So I've been
+using a polarized ANF IR with a somewhat different structure than CBPV.
+
+In a 2LTT we can have both meta-level and object-level dictionaries, where the meta-dictionaries get compiled away like any other meta-level
+construction, and the object-level dictionaries don't. In my eventual 2LTT implementation I'll only have Rust-style meta-dictionaries.
+
+Code duplication across stages is indeed a potential problem. For starters, I have two different Bool types, an object and a meta-level one,
+and I have to pick one of them in the return type of `eq`. So even if I have no object-level dictionaries at all, I get some duplication
+between `eq : Code A -> Code A -> Code Bool` and `eq : A -> A -> MetaBool`. Now, this is not super hard to abstract, by using an associated
+type, or an `M : MetaTy -> MetaTy` modality on the return type, but I haven't yet though about it in detail.  If I wanted both object and
+meta-level classes though in a single declaration, I'd need actual stage polymorphism as a language feature.  But generally, the bigger the
+difference between meta and object languages is, the less likely it is that stage polymorphism works or makes sense. To be honest, the
+advantages of heterogeneous staging are so big that I wouldn't mind code duplication as a trade-off.

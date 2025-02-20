@@ -1,0 +1,220 @@
+
+A structural TT (SOGAT) such that
+  - 2LTT-s are all syntactic fragments
+  - supports
+     - external reasoning about first-order models
+     - internal reasoning about second-order models
+     - switching between the two by Yoneda embedding
+  - Provides rigorous justification for handwavy nameful notations, like
+      "Tm (∙, A : U, B : U) (El A)"
+
+Several different versions, current one is based on Christian's suggestion
+
+
+Basic syntax
+--------------------------------------------------------------------------------
+
+MetaTy : MetaTy  -- supports ETT
+
+Base : MetaTy
+1    : Base
+
+PSh : Base → MetaTy            -- supports ETT
+El  : PSh i → MetaTy
+
+-- define Catᵢ : PSh i to be the type of categories in PSh i
+
+In : {i} → El Catᵢ → MetaTy
+_  : In C → Base               -- implicit coercion
+
+
+--------------------------------------------------------------------------------
+
+- PSh 1: universe of sets
+
+- Given C : Cat₁ and i : In C,
+    PSh i: universe of presheaves over C
+
+  Given D : Catᵢ and j : In D
+    PSh j: universe of presheaves over D internally to presheaves over C
+
+  ...
+
+
+2LTT-s and Yoneda
+--------------------------------------------------------------------------------
+
+Assuming
+- T is a SOGAT (externally)
+- U is some universe supporting ETT (MetaTy, or PSh i for some i)
+
+  Computed by induction on T:
+    FMod(T, U) : U     first-order models of T in U
+    SMod(T, U) : U     second-order models of T in U
+
+------------------------------------------------------------
+
+Example: pure LC
+
+  T := {
+    Tm         : Sortᵣₑₚ
+    (app, lam) : Tm ≃ (Tm → Tm)
+  }
+
+  SMod(T, PSh i) =
+      (Tm : PSh i)
+    × ((app, lam) : Tm ≃ (Tm → Tm))
+
+  FMod(T, PSh i) =
+    <unityped CwF + (app, lam)>
+
+    Con : PSh i
+    Sub : Con → Con → PSh i
+    ...
+    Tm  : Con → PSh i
+    _▶  : Con → Con
+    Sub Γ (Δ ▶) ≃ (σ : Sub Γ Δ) × Tm Γ
+    (app, lam)  ≃ Tm Γ ≃ Tm (Γ ▶)
+
+  FMod(T, U) always contains a category, so we
+  implicitly cast
+  _ : FMod(T, U) → Catᵤ
+
+
+Internalization
+------------------------------------------------------------
+
+-- whenever we have an external FMod, we have an internal SMod
+
+S : {M : FMod(T, PSh i)}{j : In M} → SMod(T, PSh j)
+
+Recovering 2LTT: work in a context containing (j : In M)
+
+Yoneda
+------------------------------------------------------------
+
+explicitly for T := pure LC
+assume M : FMod(T, PSh i)
+
+Y : M.Con        → {j : In M} → PSh j
+Y : M.Sub Γ Δ    → {j : In M} → Y Γ {j} → Y Δ {j}
+Y : M.Tm Γ       → {j : In M} → Y Γ {j} → (S {M}{j}).Tm
+
+such that
+  - Y is invertible on Sub and Tm
+  - Y preserves all Sub and Tm formers
+  - Y preserves empty Con and extended Con up to iso
+
+let's use "Λ" for the inverses of Y
+
+id : M.Sub Γ Γ
+id = Λ (? : {j : In M} → Y Γ {j} → Y Γ {j})
+   = Λ (λ {j} γ. γ)
+
+SUGAR: I only write "Λ γ" instead of "Λ (λ {j} γ"
+
+   = Λ γ. γ
+
+comp : M.Sub Δ Σ → M.Sub Γ Δ → M.Sub Γ Σ
+comp σ δ = Λ γ. Y σ (Y δ γ)
+
+-- Y action on contexts:
+Y ∙    ≃ ⊤
+Y (Γ▶) ≃ Y Γ × S.Tm
+
+var0 : M.Tm (Γ ▶)
+var0 = Λ (γ, x). x
+
+var1 : M.Tm (Γ ▶ ▶)
+var1 = Λ (γ, x, _). x
+
+-- let T := some type theory, M : FMod(T, PSh i)
+------------------------------------------------------------
+
+S.Ty : PSh j
+S.Tm : S.Ty → PSh j
+
+Y : M.Con      → {j : In M} → PSh j
+Y : M.Sub Γ Δ  → {j : In M} → Y Γ → Y Δ
+Y : M.Ty Γ     → {j : In M} → Y Γ → S.Ty
+Y : M.Tm Γ A   → {j : In M} → (γ : Y Γ) → S.Tm (Y A γ)
+
+SUGAR for contexts
+
+De Bruijn:
+  M.Tm (Γ, U, El q) (El q[p])
+
+Yoneda:
+M.Tm (Γ, (Λ γ. S.U), (Λ (γ,A). S.El A)) (Λ (γ,A,x). S.El A)
+
+Sugar:
+M.Tm (γ : Γ, A : S.U, x : S.El A) (S.El A)
+
+-- spec of Nat-Elimination
+
+NatElim :
+  (P : Ty (γ : Γ, n : ℕ))
+  (z : Tm (γ : Γ) (YP (γ, zero)))
+  (s : Tm (γ : Γ, n : ℕ, nᴾ : YP (γ, n)) (YP (γ, suc n)))
+  (n : Tm (γ : Γ) ℕ)
+  → Tm (γ : Γ) (YP (γ, n))
+
+NatElim :
+  (P : (γ : Γ, n : ℕ) => Ty)
+  (z : (γ : Γ) => Tm (YP (γ, zero)))
+  (s : (γ : Γ, n : ℕ, nᴾ : YP (γ, n)) => Tm (YP (γ, suc n)))
+  (n : (γ : Γ) => Tm ℕ)
+  → (γ : Γ) => Tm (YP (γ, n))
+
+NatElim :
+  ( γ : Γ
+  , P : ℕ → U
+  , z : El (P zero)
+  , s : (n : ℕ) → El (P n) → El (P (suc n))
+  , n : ℕ)
+  => Tm (El (P n))
+
+
+Semantics
+--------------------------------------------------------------------------------
+
+_▶_  : (C : Cat) → Fib C → Cat
+Disc : PSh C → Fib C
+
+data Tree (C : Cat) where
+  node : (Γ : PSh C)
+         (n : ℕ)
+         (D : Fin n → Fib (C ▶ Disc Γ))
+         (f : (i : Fin n) → Tree (C ▶ Disc Γ ▶ D i))
+       → Tree C
+
+data Hom (C~ : C → C') (node Γ n D f : Tree C) (node Γ' n' D' f' : Tree C') where
+  node~ :
+    (Γ~ : Tm (C ▶ El Γ) (El Γ'[C~ ∘ p]))
+    (n~ : Fin n' → Fin n)
+    (D~ : ∀ i. D (n~ i) = (D' i)[C~ ∘ p, Γ~])
+    (f~ : ∀ i. Hom (C~ ∘ p², Γ~[p], q) (f (n~ i)) (f' i))
+    → Hom C~ (node Γ n D f) (node Γ' n' D' f')
+
+_<_ : Tree C → Tree C' → Set
+t < node Γ' n' D' f' = (i : Fin n') × (t <= f' i)
+
+_<=_ : Tree C → Tree C' → Set
+t <= t' : ((C = C') × (t = t')) + (t < t')
+
+--------------------------------------------------------------------------------
+
+-- internal & external ℕ
+ℕᵢ ≃ (∀ j. ℕⱼ)
+
+
+A : (i : Base) → PSh i
+-- A is constant if for
+-- (i : Base)(M : Catᵢ)(j : In M)
+A i ≃ ((j : In M) → A j)
+
+-- (λ i. List (A i))  is constant if A is constant
+-- (λ i. (a : A i) → B a i) is constant if A, B are constant
+-- etc
+
+generally, information flows external->internal

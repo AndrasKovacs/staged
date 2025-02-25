@@ -1,4 +1,330 @@
 
+Logical frameworks, 2-level TTs
+
+single TT: metatheory + an object theory
+   - second-order view on the object theory
+
+ETT containing some Tarski-style universe, closed under type formers
+    of the object theory
+
+-- Set: meta-theoretic universe
+Ty : Set
+Tm : Ty → Set
+
+-- specification of a simple function arrow in an LF/2LTT
+_⇒_ : Ty → Ty → Ty
+Tm (A ⇒ B) ≃ (Tm A → Tm B)
+
+------------------------------------------------------------
+
+- multiple object theories?
+- *both* first-order and second-order views on object theories?
+                                           (models of object theories)
+
+standard semantics of 2LTT-s:
+
+presheaves over some underlying category of some model
+                     of some object theory
+
+"classic" 2LTT:
+
+- object theory: HoTT
+- we take any model of HoTT
+- contains an underlying category C
+- we take presheaves over C: standard model of a 2LTT
+
+We want to have presheaf categories over multiple/varying
+base categories.
+
+
+-- THE THEORY
+------------------------------------------------------------
+
+MetaTy -- universe, supports ETT (similar to meta-universe in 2LTT)
+
+Base : MetaTy
+1    : Base
+PSh  : Base → MetaTy    -- universe of presheaves over (i : Base)
+El   : PSh i → MetaTy
+
+(PSh i, El)  -- supports all ETT type formers
+
+-- definition: Catᵢ : PSh i
+--             the type of categories in PSh i
+
+In   : {i : Base} → El Catᵢ → MetaTy
+_    : In C → Base           -- implicit coercion
+
+------------------------------------------------------------
+
+PSh 1 -- presheaves over the terminal category
+      -- universe of sets
+
+define categories in PSh 1
+Cat₁ : PSh 1
+
+C : Cat₁
+In C : MetaTy
+
+if we have (i : In C) as assumption (in the context)
+then we have (PSh i) is the universe of presheaves over C
+
+C : Catᵢ
+PSh i -- the "external" setting
+
+((j : In C) → PSh j) -- corresponds to "internal" constructions
+
+
+Main way of interaction between PSh universes: Yoneda-embedding
+------------------------------------------------------------
+
+Concrete example: 2LTT over pure lambda calculus
+                  both second-order and first-order view
+
+specify first-order models: FMod(LC, i) : PSh i
+      second-order  models: SMod(LC, i) : PSh i
+
+SMod(LC, i) =
+
+   Tm  : PSh i
+   app : Tm → (Tm → Tm)
+   lam : (Tm → Tm) → Tm
+   app is the inverse of lam
+
+FMod(LC, i) =
+   unityped category with families
+   + the specification of (app, lam)
+
+   Con : PSh i
+   Sub : Con → Con → PSh i
+   Tm  : Con → PSh i
+   _▶  : Con → Con
+   ...
+   (app, lam) : Tm (Γ ▶) ≃ Tm Γ
+
+-- part of THEORY
+-- assume (M : FMod(LC, i))
+-     (implicit conversion from FMod(LC, i) to Catᵢ)
+
+S : {j : In M} → SMod(LC, j)
+
+(j : In M) in context
+     S.Tm : PSh j
+     S.lam : (S {j}.Tm → S {j}.Tm) → S {j}.Tm
+     S.app : S {j}.Tm → S {j}.Tm → S {j}.Tm
+
+-- Yoneda embedding (part of THEORY)
+
+
+Y : M.Con      → {j : In M} → PSh j
+Y : M.Sub Γ Δ  → {j : In M} → Y Γ → Y Δ
+Y : M.Tm Γ     → {j : In M} → Y Γ → S.Tm
+
+-- Y on M.Sub and M.Tm is invertible
+-- Λ : ({j : In M} → Y Γ → Y Δ) → M.Sub Γ Δ
+-- Λ : ({j : In M} → Y Γ → S.Tm) → M.Tm Γ
+
+-- on contexts: Y preserves empty and extended contexts
+
+Y M.∙   ≃ ⊤
+Y (Γ ▶) ≃ Y Γ × S.Tm
+-- otherwise: Y strictly preserves everything
+
+id : M.Sub Γ Γ
+id := Λ (λ {j} γ. γ)
+    SUGAR:
+     Λ γ. γ
+
+-- non handwavy explanation of "named"
+-- notation for any CwF, second-order GAT-s
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 A structural TT (SOGAT) such that
   - 2LTT-s are all syntactic fragments
   - supports
@@ -206,7 +532,6 @@ t <= t' : ((C = C') × (t = t')) + (t < t')
 
 -- internal & external ℕ
 ℕᵢ ≃ (∀ j. ℕⱼ)
-
 
 A : (i : Base) → PSh i
 -- A is constant if for

@@ -1,0 +1,225 @@
+
+I define a truncated version of the tree-based semantics, where we only have the
+first "level" of the tree, so we have a sort of sets and sorts of presheaves over
+categories in sets.
+
+I show that we have internalization/externalization:
+
+   ((i : In C) → PSh i) ≃ "presheaf over C in Sets"
+
+And that we do not have the following operation:
+
+   (i : In C) → PSh i → "presheaf over C in Sets"
+
+In do the truncation to make it simpler but I expect that everything stays the
+same in the full tree semantics.
+
+
+
+Notation for categories & presheaves
+------------------------------------------------------------
+
+-- We use the CwF of categories + fibrations
+
+TyC : Cat → Set
+TyC C := fibration over C
+
+TmC : (C : Cat) → TyC C → Set
+TmC C A  := section of A
+
+Setᵒᵖ : TyC C                  -- (doesn't depend on C)
+Disc  : TmC C Setᵒᵖ → TyC C    -- discrete fibration
+
+-- natural transformation
+Nat : TmC C Setᵒᵖ → TmC C Setᵒᵖ → Set
+Nat A B := TmC (C ▶ Disc A) (Disc B[p])
+
+
+Base category
+------------------------------------------------------------
+
+Con : Set
+Con :=
+  Γ : Set
+  n : ℕ
+  C : Fin n → Γ → Cat
+  Δ : ∀ i γ. TmC (C i γ) Setᵒᵖ
+
+Sub : Con → Con → Set
+Sub (Γ, n, C, Δ) (Γ', n', C', Δ') :=
+  Γ~ : Γ → Γ'
+  n~ : Fin n' → Fin n
+  C~ : ∀ i γ. C (n~ i) γ = C' i (Γ~ γ)
+  Δ~ : ∀ i γ. Nat (Δ (n~ i) γ) (Δ' i (Γ~ γ))
+
+
+Sort of sets
+------------------------------------------------------------
+
+TyS : Con → Set
+TyS (Γ, _, _, _) = Γ → Set
+
+TmS : (Γ : Con) → TyS Γ → Set
+TmS (Γ, _, _, _) A = (γ : Γ) → A γ
+
+_▶_ : (Γ : Con) → TyS Γ → Con
+(Γ, n, C, Δ) ▶ A = (Σ Γ A, n, (λ i. C i ∘ fst), (λ i. Δ i ∘ fst))
+
+
+Category variables
+------------------------------------------------------------
+In : (Γ : Con) → TmS Γ CatS → Set
+In (Γ, n, C, Δ) (D : Γ → Cat) := (i : Fin n) × (C i = D)
+
+_▶_ : (Γ : Con) → TmS Γ CatS → Con
+(Γ, n, C, Δ) ▶ D := (Γ, suc n, cons D C, cons (λ γ. ⊤) Δ)
+
+-- (using "cons" for (Fin n → A) as if for (Vec n A))
+
+p : Sub ((Γ,n,C,Δ) ▶ D) (Γ,n,C,Δ) :=
+  Γ~ : Γ → Γ
+  Γ~ := id
+
+  n~ : Fin n → Fin (suc n)
+  n~ := suc
+
+  C~ : ∀ i γ. (cons D C) (suc i) γ = C i γ
+  C~ := OK
+
+  Δ~ : ∀ i γ. Nat ((cons (λ _. ⊤) Δ) (suc i) γ) (Δ i γ)
+     : ∀ i γ. Nat (Δ i γ) (Δ i γ)
+  Δ~ i γ := q        -- q : TmC (C i γ ▶ Disc (Δ i γ)) (Disc (Δ i γ)[p])
+                     -- identity natural transformation
+
+
+q : In ((Γ,n,C,Δ)▶D) D[p] :=
+  (zero : Fin (suc n))
+
+_,_ : ((Γ~,n~,C~,Δ~) : Sub(Γ,n,C,Δ)(Γ',n',C',Δ'))(j : In (Γ,n,C,Δ) (D∘Γ~)) : Sub (Γ,n,C,Δ)((Γ',n',C',Δ')▶D)
+
+  Γ~ : Γ → Γ'
+  Γ~ := Γ~
+
+  n~ : Fin (suc n') → Fin n
+  n~ zero    := j
+  n~ (suc i) := n~ i
+
+  C~ : ∀ i γ. C (n~ i) γ = cons D C' i γ
+      if i == zero:  C j γ = D γ           -- OK by  C j = D
+      if i == suc i: C (n~ i) γ = C' i γ   -- OK by  C~
+
+  Δ~ : ∀ i γ. Nat (Δ (n~ i) γ) (cons (λ _. ⊤) Δ' i γ)
+  Δ~ zero γ : Nat (Δ j γ) ⊤
+            : TmC (D γ ▶ Disc (Δ j γ)) (Disc ⊤)
+	    := tt
+
+  Δ~ (suc i) γ : Nat (Δ (n~ i) γ) (Δ' i γ)
+               := Δ~ i γ
+
+computing components of (σ∘p, q)
+------------------------------------------------------------
+
+let (Γ~,n~,C~,Δ~) = σ
+in (σ∘p, q), we have
+  Γ~' = Γ~
+
+  n~' zero    = zero
+  n~' (suc i) = n~ (suc i)
+
+  Δ~' zero    γ = tt
+  Δ~' (suc i) γ = Δ~ i γ
+
+
+Sort of presheaves
+------------------------------------------------------------
+TyP : (Γ : Con) → In Γ C → Set
+TyP (Γ, n, C, Δ) i := (γ : Γ) → TmC (C i γ ▶ Disc (Δ i γ)) Setᵒᵖ
+
+-- TyP substitution
+(A : TyP (Γ', n', C', Δ') i) [ Γ~, n~, C~, Δ~] : TyP (Γ, n, C, Δ) (n~ i)
+
+  goal : (γ : Γ) → TmC (C (n~ i) γ ▶ Disc (Δ (n~ i) γ)) Setᵒᵖ
+       : (γ : Γ) → TmC (C' i (Γ~ γ) ▶ Disc (Δ (n~ i) γ)) Setᵒᵖ  -- by C~ i γ
+
+    Δ~ i γ : Nat (Δ (n~ i) γ) (Δ' i (Γ~ γ))
+           : TmC (C' i (Γ~ γ) ▶ Disc (Δ (n~ i) γ)) (Disc (Δ' i (Γ~ γ))[p])
+
+    A (Γ~ γ) : TmC (C' i (Γ~ γ) ▶ Disc (Δ' i (Γ~ γ))) Setᵒᵖ
+
+  A[Γ~, n~, C~, Δ~] γ := (A (Γ~ γ))[p, Δ~ i γ]
+
+
+TmP : (Γ : Con) → TyP Γ i → Set
+TmP (Γ, n, C, Δ) A := (γ : Γ) → TmC (C i γ ▶ Disc (Δ i γ)) (Disc (A γ))
+
+_▶_ : (Γ : Con) → TyP Γ i → Con
+(Γ, n, C, Δ) ▶ A :=
+  (Γ, n, C, (λ j. if j = i then (λ γ. Σ(Δ i γ)(A γ)) else Δ j))
+                                      ^-- the Σ in the (Setᵒᵖ, Disc) universe
+
+Internalization/externalization
+------------------------------------------------------------
+
+SOGAT rule
+
+  ext : ((i : In D) → TyP i) → TmS (PShS D)
+
+GAT rule
+
+  ext : TyP (Γ ▶ D) q → TmS Γ (PShS D)
+
+ext (A : TyP ((Γ, n, C, Δ) ▶ D) q) : (γ : Γ) → TmC (D γ) Setᵒᵖ
+
+  A : (γ : Γ) → TmC (cons D C γ q    ▶ Disc (cons (λ _. ⊤) Δ γ q   )) Setᵒᵖ
+    : (γ : Γ) → TmC (cons D C γ zero ▶ Disc (cons (λ _. ⊤) Δ γ zero)) Setᵒᵖ
+    : (γ : Γ) → TmC (D γ ▶ Disc ⊤) Setᵒᵖ
+
+  A γ           : TmC (D γ ▶ Disc ⊤) Setᵒᵖ
+  (A γ)[id, tt] : TmC (D γ) Setᵒᵖ
+
+  ext A γ := (A γ)[id, tt]
+
+
+stability under substitution:
+
+(ext A)[σ] = ext (A[σ∘p, q])
+
+  let (Γ~ : Γ → Γ', n~ : Fin n' → Fin n, C~ : _, Δ~ : _) := σ
+
+  (ext A)[σ] γ
+    = (ext A) (Γ~ γ)
+    = (A (Γ~ γ))[id, tt]
+
+  ext A[σ∘p, q] γ
+   = (A[σ∘p, q] γ)[id, tt]
+
+       (σ∘p,q).Γ~ = Γ~
+       (σ∘p,q).Δ~ zero γ = tt
+
+   = (A (Γ~ γ))[p, ((σ∘p,q).Δ~ zero γ)][id, tt]
+   = (A (Γ~ γ))[id, ((σ∘p,q).Δ~ zero γ)[id, tt]]
+   = (A (Γ~ γ))[id, tt[id, tt]]
+   = (A (Γ~ γ))[id, tt]
+   OK
+
+Internalization:
+
+int (A : TmS (Γ,n,C,Δ) (PShS D)) : TyP ((Γ,n,C,Δ) ▶ D) q
+                                 : (γ : Γ) → TmC (D γ ▶ Disc ⊤) Setᵒᵖ
+
+  A : (γ : Γ) → TmC (D γ) Setᵒᵖ
+  int A γ := (A γ)[p]
+
+ext (int A) γ = (int A γ)[id, tt] = (A γ)[p][id,tt] = A γ
+int (ext A) γ = (ext A γ)[p] = (A γ)[id, tt][p] = (A γ)[p, tt] = (A γ)[p, q] = A γ
+
+------------------------------------------------------------
+
+The following doesn't work:
+
+ext: (i : In (Γ,n,C,Δ) D)(A : TyP (Γ,n,C,Δ) i) : TmS (Γ,n,C,Δ) (PShS D)
+
+   A    : (γ : Γ) → TmC (D γ ▶ Disc (Δ i γ)) Setᵒᵖ
+   goal : (γ : Γ) → TmC (D γ) Setᵒᵖ
+
+------------------------------------------------------------

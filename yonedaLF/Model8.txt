@@ -121,28 +121,79 @@ El  : PSh i → MetaTy
 + Yoneda
 + Set→PSh Lift
 
+----------------------------------------------------------------------------------------------------
 
-Con := (Γ : Set, n : ℕ, C : Fin n → Γ → Cat, Δ : ∀ i γ. PSh (C i γ))
+Con : Set
+Con :=
+  Γ : Set
+  n : ℕ
+  C : Fin n → Γ → Cat
+  Δ : ∀ i γ. PSh (C i γ)
 
+Sub : Con → Con → Set
 Sub (Γ, n, C, Δ) (Γ', n', C', Δ') :=
   Γ~ : Γ → Γ'
   n~ : Fin n' → Fin n
   C~ : ∀ i γ. C (n~ i) γ = C' i (Γ~ γ)
-  Δ~ : ∀ i γ. Nat (Δ (n~ i) γ) (Δ' i (Γ~ γ))
+  Δ~ : ∀ i γ. Δ (n~ i) γ → Δ' i (Γ~ γ)
 
-TyS (Γ, _, _)    = Γ → Set
-TmS (Γ, _, _) A  = (γ : Γ) → A γ
-(Γ, n, C, Δ) ▶ A = (Σ Γ A, n, wk C, wk Δ)
+-- I view (Fin n → A) as (Vec n A), and use "nil", "cons", "head", "tail" and "map"
+-- for it.
+
+-- sort of sets
+TyS : Con → Set
+TyS (Γ, _, _, _) = Γ → Set
+
+TmS : (Γ : Con) → TyS Γ → Set
+TmS (Γ, _, _, _) A = (γ : Γ) → A γ
+
+_▶_ : (Γ : Con) → TyS Γ → Con
+(Γ, n, C, Δ) ▶ A = (Σ Γ A, n, (λ i. C i ∘ fst), (λ i. Δ i ∘ fst))
+
+-- category variables
+In : (Γ : Con) → TmS Γ CatS → Set
+In (Γ, n, C, Δ) (D : Γ → Cat) := (i : Fin n) × (C i = D)
+
+_▶_ : (Γ : Con) → TmS Γ CatS → Con
+(Γ, n, C, Δ) ▶ D := (Γ, suc n, cons D C, cons (λ γ. ⊤) Δ)
+
+  p : Sub (Γ ▶ D) Γ
+    := <take tail of C, Δ>
+
+  q : Var (Γ ▶ D) D[p]
+    := (zero : Fin (suc n))
+
+  (σ : Sub (Γ,n,C,D) (Γ',n',C',D')) , (i : Var Γ E[σ]) : Sub (Γ,n,C,D) (Γ', suc n', cons E C', cons (λ _. ⊤) D'))
+
+    Γ~ := σ.Γ~
+    n~ := cons i σ.n~
+    C~ := OK
+    Δ~ := cons (λ _. tt) σ.Δ~
+
+  OK
 
 
-Var (Γ, n, C, Δ) (C : Γ → Cat) := Σ (i : Fin n) × (fst ∘ f i) = C
+PSh (Γ, n, C, Δ) (i : Var Γ C) :=
+ (γ : Γ) → DispPSh (Δ i γ)
 
+ or
+ ∀ γ → C.Tm (C i γ ▶ Disc (D i γ)) Setᵒᵖ
 
-PSh (Γ, n, f) (i : Var Γ C) :=
- (γ : Γ) → PSh (∫(snd (f i γ))))
-
-TmP (Γ, n, f) (A : PSh (Γ, n, f) i) :=
+El (Γ, n, C, Δ) (A : PSh (Γ, n, C, Δ) i) :=
   (γ : Γ) → Section (A γ)
+
+(Γ, n, C, Δ) ▶ (A : PSh _ i) :=
+  (Γ, n, C, (λ j. if j = i then (λ γ. (Δ i γ ▶ A γ)) else Δ j))
+
+p, q, _,_ are inherited from the variable-i position in the PSh context Δ:
+
+  p : Sub (Γ ▶ A) Γ
+    := <first projection of PSh at index i>
+
+  q : PSh (Γ ▶ A) A[p]
+    := <second projection of PSh at index i>
+
+  _,_ := <pairing of PSh at index i>
 
 
 ------------------------------------------------------------
@@ -153,23 +204,154 @@ TmP Γ (Lift A) → TmS Γ A NOT OK
 -- oplax for simple ind types
 -- oplax for simply-typed function
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+Christian mail
 ----------------------------------------------------------------------------------------------------
+
+Let's check externalization of Nat first
+
+ext : ((j : In C) → El ℕⱼ) → (El C.Ob → El ℕₛₑₜ)
+
+ext : El (Γ ▶ (j : In C)) ℕⱼ → El (Γ ▶ D.Obj) ℕ₁
+
+ext (n : El ((Γ,n,C,Δ) ▶ D) ℕⱼ) (γ : Γ)(d : (D γ).Obj) : ℕ
+
+  n γ : D γ × 1 → ℕ
+
+  ext n γ d := n γ (d, tt) OK
+
+stability:
+
+(ext n)[σ] = ext (n[σ∘p, q])
+
+
+--------------------------------------------------------------------------------
+
+
+
+Con : Set
+Con :=
+  Γ : Set
+  n : ℕ
+  C : Fin n → Γ → Cat
+  Δ : ∀ i γ. PSh (C i γ)
+
+Sub : Con → Con → Set
+Sub (Γ, n, C, Δ) (Γ', n', C', Δ') :=
+  Γ~ : Γ → Γ'
+  n~ : Fin n' → Fin n
+  C~ : ∀ i γ. C (n~ i) γ = C' i (Γ~ γ)
+  Δ~ : ∀ i γ. Δ (n~ i) γ → Δ' i (Γ~ γ)
+
+Sort of sets
+------------------------------------------------------------
+
+TyS : Con → Set
+TyS (Γ, _, _, _) = Γ → Set
+
+TmS : (Γ : Con) → TyS Γ → Set
+TmS (Γ, _, _, _) A = (γ : Γ) → A γ
+
+_▶_ : (Γ : Con) → TyS Γ → Con
+(Γ, n, C, Δ) ▶ A = (Σ Γ A, n, (λ i. C i ∘ fst), (λ i. Δ i ∘ fst))
+
+
+Category variables
+------------------------------------------------------------
+In : (Γ : Con) → TmS Γ CatS → Set
+In (Γ, n, C, Δ) (D : Γ → Cat) := (i : Fin n) × (C i = D)
+
+_▶_ : (Γ : Con) → TmS Γ CatS → Con
+(Γ, n, C, Δ) ▶ D := (Γ, suc n, cons D C, cons (λ γ. ⊤) Δ)
+
+-- (using "cons" for (Fin n → A) as if for (Vec n A))
+
+
+Sort of presheaves
+------------------------------------------------------------
+TyP : (Γ : Con) → In Γ C → Set
+TyP (Γ, n, C, Δ) i := (γ : Γ) → DispPSh (Δ i γ)
+
+-- TyP substitution
+(A : TyP (Γ', n', C', Δ') i) [ Γ~, n~, C~, Δ~] : TyP (Γ, n, C, Δ) (n~ i)
+
+  goal : (γ : Γ ) → DispPSh (Δ (n~ i) γ))
+    C~             : C (n~ i) γ = C' i (Γ~ γ)
+    A (Γ~ γ)       : DispPSh (Δ' i (Γ~ γ))
+    (A (Γ~ γ))[Δ'] : DispPSh (Δ (n~ i) γ))
+
+  A[Γ~, n~, C~, Δ~] γ := (A (Γ~ γ))[Δ']
+
+
+TmP : (Γ : Con) → TyP Γ i → Set
+TmP (Γ, n, C, Δ) A := (γ : Γ) → Section (A γ)
+
+_▶_ : (Γ : Con) → TyP Γ i → Con
+(Γ, n, C, Δ) ▶ A :=
+  (Γ, n, C, (λ j. if j = i then (λ γ. (Δ i γ ▶ A γ)) else Δ j))
+
+
+Externalization for TyP
+------------------------------------------------------------
+
+In SOGATs
+
+  ext : ((i : In C) → TyP i) → TmS (PShS C)
+
+In GATs:
+
+  ext : TyP (Γ ▶ C) q → TmS Γ (PshS C)
+
+Let's unfold more.
+
+D : Γ → Cat
+i : Fin n
+_ : C i = D
+
+ext (A : TyP ((Γ, n, C, Δ) ▶ D) q) (γ : Γ) : PSh (D γ)
+
+  A : (γ : Γ) → DispPSh (cons (λ _. ⊤) Δ zero γ)  -- since (q : Fin (suc n)) = zero
+    : (γ : Γ) → DispPSh ⊤
+
+  hence
+  A γ : PSh (D γ × 1)
+  (id, tt) : D γ → (D γ × 1)
+
+  ext A γ := A γ ∘ (id, tt)
+
+
+stability under substitution:
+
+(ext A)[σ] = ext (A[σ∘p, q])
+
+  let (Γ~ : Γ → Γ', n~ : Fin n' → Fin n, C~ : _, Δ~ : _) := σ
+
+  (ext A)[σ] γ
+    = (ext A) (Γ~ γ)
+    = A (Γ~ γ) ∘ (id, tt)
+
+  A : (γ : Γ') → DispPSh (Δ' i γ)
+
+  A[σ∘p, q] γ = A (γ~ Γ)
+
+  (ext A[σ∘p, q]) γ
+
+  (A (Γ~ γ))[
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+------------------------------------------------------------

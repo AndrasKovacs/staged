@@ -67,9 +67,9 @@ describe an LF with the following features:
   time. By ``theory'' we mean a second-order generalized algebraic theory
   (SOGAT \cite{uemura,DBLP:conf/fscd/KaposiX24}); this includes all type theories and programming languages that
   only use structural binders.
-\item We have both an ``external'' first-order view and an ``internal'' second-order view on each model,
-      and we can freely switch between perspectives.
-\item Models of object theories are themselves internally defined in the LF.
+\item We have both an ``external'' first-order view and an ``internal''
+  second-order view on each model, and we can freely switch between
+  perspectives. All models of object theories are defined internally in the LF.
 \item The LF is fully structural as a type theory; no substructural modalities
   are used.
 \end{itemize}
@@ -83,7 +83,7 @@ hierarchy, but we shall omit ``sizing'' levels in this abstract.} closed under t
   \Base\} \to \PSh\,i \to \MetaTy$ such that each $\PSh\,i$ and $\El$ constitutes
   a Tarski-style universe closed under ETT type formers.
 \item Let us define $\Cat\,i : \PSh\,i$ as the type of categories internally to
-  $\PSh\,i$. Then, we have $\In : \{i : \Base\} \to \Cat\,i \to \MetaTy$ and $\msf{base} : \In\,C \to \Base$.
+  $\PSh\,i$. Then, we have $\In : \{i : \Base\} \to \El\,(\Cat\,i) \to \MetaTy$ and $\msf{base} : \In\,C \to \Base$.
 \end{itemize}
 We give some semantic intuition in the following. Each $\PSh\,i$ is a universe
 of presheaves over some base category. In the empty context, only $\PSh\,1$ is
@@ -95,7 +95,7 @@ as the universe of presheaves over $C$.
 \item Our semantics supports the isomorphism $\El\,(\msf{PShExt}\,C) \simeq ((i
   : \In\,C) \to \PSh\,(\base\,i))$.  In other words, external and internal
   notions of presheaves coincide. More generally, we have this isomorphism for
-  any $C : \Cat\,j$, i.e.\ starting from a category that's internal to any
+  any $C : \El\,(\Cat\,j)$, i.e.\ starting from a category that's internal to any
   previously defined presheaf universe.
 \end{enumerate}
 \textbf{Yoneda embeddings}. Our semantics actually supports a more general
@@ -120,7 +120,7 @@ implicitly take the underlying category of $M$ here.}, we have $\msf{S}_j$ as a
 \item Yoneda embedding has action on contexts, substitutions and terms:
   \begin{alignat*}{3}
     & \Y : \El\,\Con_M \to (\{j : \In\,M\} \to \PSh\,j)\\
-    & \Y : \El\,(\Sub_M\,\Gamma\,\Delta) \simeq (\{j : \In\,M\} \to \El\,(\Y\,\Gamma) \to \El\,(\Y\,\Delta))\\
+    & \Y : \El\,(\Sub_M\,\Gamma\,\Delta) \simeq (\{j : \In\,M\} \to \El\,(\Y\,\Gamma\,\{j\}) \to \El\,(\Y\,\Delta\,\{j\}))\\
     & \Y : \El\,(\Tm_M\,\Gamma) \simeq (\{j : \In\,M\} \to \El\,(\Y\,\Gamma) \to \El\,\Tm_{\S_j})
   \end{alignat*}
 \end{itemize}
@@ -149,15 +149,16 @@ layer. In the inner model, we start with an inductive definition of certain
 \end{alignat*}
 Here, $\PSh$ means presheaves in sets, $\Fib$ is cartesian fibrations, $\Disc$
 creates a discrete fibration from a presheaf and $\blank\!\ext\!\blank$ takes
-the total category of a fibration. Now, the objects of the semantic base
-category are elements of $\Tree\,1$, and morphisms between trees are level-wise
-natural transformations between the $\Gamma$ components together with $\Fin\,n
-\to \Fin\,m$ renamings of subtree indices. A semantic $\Base$ points to a
-subtree of a context, an $\In$ is a $\Fin\,n$ index pointing to a child of a
-given node, and a $\PSh$ is a dependent presheaf a $\Gamma$ inside a given node.
-This semantics can be viewed as a way of inductively carving out a subcategory
-of $\mbf{Cat}$ where ETT type formers in presheaf categories are strictly stable
-under substitution.
+the total category of a fibration. Now, the objects of
+the semantic base category are elements of $\Tree\,1$, and morphisms between
+trees are level-wise natural transformations between the $\Gamma$ components
+together with $\Fin\,n \to \Fin\,m$ renamings of subtree indices. The
+non-discrete $\Fib$ components are preserved by morphisms. A semantic $\Base$
+points to a subtree of a context, an $\In$ is a $\Fin\,n$ index pointing to a
+child of a given node, and a $\PSh$ is a dependent presheaf over a $\Gamma$ inside a
+given node. Extending a context with an $\In$ binding adds a new empty subtree
+to a given node. Extending with an $\El$ binding extends the $\Gamma$ presheaf
+in a node with a dependent presheaf.
 
 \bibliographystyle{plain}
 \bibliography{references}

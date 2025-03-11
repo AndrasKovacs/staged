@@ -1,0 +1,60 @@
+\begin{thebibliography}{1}
+
+\bibitem{twolevel}
+Danil Annenkov, Paolo Capriotti, Nicolai Kraus, and Christian Sattler.
+\newblock Two-level type theory and applications.
+\newblock {\em ArXiv e-prints}, may 2019.
+
+\bibitem{cwfs}
+Simon Castellan, Pierre Clairambault, and Peter Dybjer.
+\newblock Categories with families: Unityped, simply typed, and dependently
+  typed.
+\newblock {\em CoRR}, abs/1904.00827, 2019.
+
+\bibitem{Harper93lf}
+Robert Harper, Furio Honsell, and Gordon Plotkin.
+\newblock A framework for defining logics.
+\newblock {\em J. ACM}, 40(1):143--184, January 1993.
+
+\bibitem{DBLP:conf/lics/Hofmann99}
+Martin Hofmann.
+\newblock Semantical analysis of higher-order abstract syntax.
+\newblock In {\em 14th Annual {IEEE} Symposium on Logic in Computer Science,
+  Trento, Italy, July 2-5, 1999}, pages 204--213. {IEEE} Computer Society,
+  1999.
+
+\bibitem{DBLP:conf/fscd/KaposiX24}
+Ambrus Kaposi and Szumi Xie.
+\newblock Second-order generalised algebraic theories: Signatures and
+  first-order semantics.
+\newblock In Jakob Rehof, editor, {\em 9th International Conference on Formal
+  Structures for Computation and Deduction, {FSCD} 2024, July 10-13, 2024,
+  Tallinn, Estonia}, volume 299 of {\em LIPIcs}, pages 10:1--10:24. Schloss
+  Dagstuhl - Leibniz-Zentrum f{\"{u}}r Informatik, 2024.
+
+\bibitem{orton_et_al:LIPIcs:2016:6564}
+Ian Orton and Andrew~M. Pitts.
+\newblock {Axioms for Modelling Cubical Type Theory in a Topos}.
+\newblock In Jean-Marc Talbot and Laurent Regnier, editors, {\em 25th EACSL
+  Annual Conference on Computer Science Logic (CSL 2016)}, volume~62 of {\em
+  Leibniz International Proceedings in Informatics (LIPIcs)}, pages
+  24:1--24:19, Dagstuhl, Germany, 2016. Schloss Dagstuhl--Leibniz-Zentrum fuer
+  Informatik.
+
+\bibitem{DBLP:journals/corr/abs-1901-03378}
+Brigitte Pientka, Andreas Abel, Francisco Ferreira, David Thibodeau, and
+  R{\'{e}}becca Zucchini.
+\newblock Cocon: Computation in contextual type theory.
+\newblock {\em CoRR}, abs/1901.03378, 2019.
+
+\bibitem{sterlingthesis}
+Jonathan Sterling.
+\newblock {\em First Steps in Synthetic Tait Computability}.
+\newblock PhD thesis, Carnegie Mellon University Pittsburgh, PA, 2021.
+
+\bibitem{uemura}
+Taichi Uemura.
+\newblock A general framework for the semantics of type theory.
+\newblock {\em CoRR}, abs/1904.04097, 2019.
+
+\end{thebibliography}

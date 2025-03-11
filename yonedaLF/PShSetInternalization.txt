@@ -1,7 +1,7 @@
 
 I define a truncated version of the tree-based semantics, where we only have the
-first "level" of the tree, so we have a sort of sets and sorts of presheaves over
-categories in sets.
+first "level" of the tree, so we have a sort of sets and sorts of presheaves
+over categories in sets.
 
 I show that we have internalization/externalization:
 
@@ -11,9 +11,8 @@ And that we do not have the following operation:
 
    (i : In C) → PSh i → "presheaf over C in Sets"
 
-In do the truncation to make it simpler but I expect that everything stays the
+I do the truncation to make it simpler but I expect that everything stays the
 same in the full tree semantics.
-
 
 
 Notation for categories & presheaves

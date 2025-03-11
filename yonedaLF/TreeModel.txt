@@ -1,0 +1,115 @@
+
+A rephrasing of Christian's tree model for iterated internal presheaves, with an
+indexed inductive definition for contexts. It has the right strictness
+properties and I feel reasonably comfortable computing with it. The De Bruijn
+noise will be a bit annoying and I haven't yet tried to abstract away from it.
+
+-- SOGAT spec of the theory
+--------------------------------------------------------------------------------
+
+Base : Sort
+1    : Base
+
+PSh : Base → Sort
+El  : PSh i → Sort⁺
+
+- (PSh i, El) closed under ETT type formers
+- Catᵢ := type of categories in PSh i
+
+In  : {i : Base} → El Catᵢ → Sort⁺
+_   : In C → Base
+
+
+-- Notation for categories & presheaves
+--------------------------------------------------------------------------------
+
+-- We use the CwF operations for categories + fibrations
+
+Fib : Cat → Set
+Fib C := fibration over C
+
+Sec : (C : Cat) → Fib C → Set
+Sec C A := section of A
+
+Setᵒᵖ : Fib C                  -- (doesn't depend on C)
+Disc  : Sec C Setᵒᵖ → Fib C    -- discrete fibration
+
+(Setᵒᵖ, Disc) is closed under various type formers
+
+-- converting an internal category to a Fib:
+CatI    : Sec C Setᵒᵖ                -- internal type of categories
+cat2Fib : Sec C (Disc CatI) → Fib C
+
+
+-- Trees
+--------------------------------------------------------------------------------
+
+data Tree : (B : Cat) → Set where
+  node : (Γ : Sec B Setᵒᵖ)
+         (n : ℕ)
+         (C : Fin n → Fib (B ▶ Disc Γ))               -- list of child fibrations
+         (Δ : (i : Fin n) → Tree (B ▶ Disc Γ ▶ C i))  -- list of subtrees
+       → Tree B
+
+data Hom : (B~ : B → B') → Tree B → Tree B' → Set where
+  node~ :
+    (Γ~ : Sec (B ▶ Disc Γ) (Disc Γ'[B~ ∘ p]))              -- Nat Γ Γ'[B~]
+    (n~ : Fin n' → Fin n)
+    (C~ : ∀ i. C (n~ i) = (C' i)[B~ ∘ p, Γ~])
+    (Δ~ : ∀ i. Hom (B~ ∘ p², Γ~[p], q) (Δ (n~ i)) (Δ' i))
+    → Hom B~ (node Γ n C Δ) (node Γ' n' C' Δ')
+
+emptyTree : Tree B
+emptyTree := node ⊤ 0 () ()
+
+The subtree relation is defined recursively:
+
+  _<_ : Tree B → Tree B' → Set
+  t < node Γ' n' C' Δ' = (i : Fin n') × (t <= Δ' i)
+
+  _<=_ : Tree B → Tree B' → Set
+  t <= t' : ((B = B') × (t = t')) + (t < t')
+
+
+-- Sketch of the model
+--------------------------------------------------------------------------------
+
+Con : Set
+Con := Tree 1
+
+Sub : Con → Con → Set
+Sub Γ Δ := Hom id Γ Δ
+
+Base : Con → Set
+Base Γ := (C : Cat) × (Γ' : Tree C) × (Γ' <= Γ)
+
+*Notation*: if (i : Base Γ), we have
+  i.B                  : Cat
+  node i.Γ i.n i.C i.Δ : Tree i.B
+
+1 : Base Γ
+1 := Γ as a subtree of Γ
+
+PSh (Γ : Con) (i : Base Γ) : Set
+PSh Γ i := Sec (i.B ▶ Disc i.Γ) Setᵒᵖ
+
+El (Γ : Con) (A : PSh Γ i) : Set
+El Γ A := Sec (i.B ▶ Disc i.Γ) (Disc A)
+
+Γ ▶ (A : PSh Γ i) :=
+  update in Γ:
+    i.B  to  Σ i.B A
+    weaken i.C and i.Δ
+
+In Γ {i : Base Γ} (C : El Γ Catᵢ) : Set
+In Γ {i} C := (j : Fin i.n) × (i.C j = cat2Fib C)
+
+_ : In Γ {i} C → Base Γ
+_ j := get (i.Δ j) as a subtree of Γ
+
+
+Γ ▶ (C : El Γ Catᵢ) :=
+  update in Γ:
+    i.n  to  suc i.n
+    i.C  to  cons C i.C
+    i.Δ  to  cons emptyTree i.Δ

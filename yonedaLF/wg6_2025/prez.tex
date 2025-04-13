@@ -96,6 +96,8 @@
 \newcommand{\blank}{\mathord{\hspace{1pt}\text{--}\hspace{1pt}}}
 \newcommand{\ra}{\rightarrow}
 \newcommand{\Set}{\mathsf{Set}}
+\newcommand{\MetaTy}{\mathsf{MetaTy}}
+\newcommand{\bMetaTy}{\mathbf{MetaTy}}
 \newcommand{\Base}{\mathsf{Base}}
 \newcommand{\In}{\mathsf{In}}
 \newcommand{\PSh}{\mathsf{PSh}}
@@ -305,7 +307,7 @@
 \begin{block}{}
 \vspace{-1em}
 \begin{alignat*}{3}
-  & \bSet   &&           \hspace{8em}&& \text{An universe that supports ETT.}\\
+  & \bSet   &&           \hspace{8em}&& \text{A universe that supports ETT.}\\
   & \bBase  && : \bSet                 && \text{Sort of ``base categories''.} \\
   & \mbf{1} && : \bBase                && \text{The terminal category as a base category.} \\
   & \bPSh   && : \bBase \to \bSet      && \text{Universes of presheaves. Cumulativity: $\PSh_i \subseteq \Set$. Supports ETT.}\\

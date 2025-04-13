@@ -1,5 +1,5 @@
 # Fdb version 3
-["pdflatex"] 1744575708 "prez.tex" "prez.pdf" "prez" 1744575709
+["pdflatex"] 1744576104 "prez.tex" "prez.pdf" "prez" 1744576105
   "/etc/texmf/web2c/texmf.cnf" 1717363826 475 c0e671620eb5563b2130f56340a5fde8 ""
   "/usr/share/texlive/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmbsy5.tfm" 1246382020 1120 1e8878807317373affa7f7bba4cf2f6a ""
@@ -246,10 +246,10 @@
   "/usr/share/texmf/web2c/texmf.cnf" 1644012257 39432 7155514e09a3d69036fac785183a21c2 ""
   "/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map" 1717612401 4379155 98693266ff65f58d9f98aff394de12d2 ""
   "/var/lib/texmf/web2c/pdftex/pdflatex.fmt" 1717612422 2801241 f812bb69c6be5a35b82bc3666bd833db ""
-  "prez.aux" 1744575709 1893 ca5b5740a5cd226e2efa1951b691e516 "pdflatex"
-  "prez.nav" 1744575709 847 ff0b608bfe49fabb8ffd9f9356cee343 "pdflatex"
-  "prez.out" 1744575709 0 d41d8cd98f00b204e9800998ecf8427e "pdflatex"
-  "prez.tex" 1744575708 31532 80970b2b830a4a7bccb0f81b45ddc9a7 ""
+  "prez.aux" 1744576105 1893 ca5b5740a5cd226e2efa1951b691e516 "pdflatex"
+  "prez.nav" 1744576105 847 ff0b608bfe49fabb8ffd9f9356cee343 "pdflatex"
+  "prez.out" 1744576105 0 d41d8cd98f00b204e9800998ecf8427e "pdflatex"
+  "prez.tex" 1744576104 31608 6c56f6e28964b1a394b3017fc720e115 ""
   (generated)
   "prez.aux"
   "prez.log"

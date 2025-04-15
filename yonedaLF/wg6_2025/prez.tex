@@ -95,9 +95,9 @@
 \renewcommand{\tt}{\mathsf{tt}}
 \newcommand{\blank}{\mathord{\hspace{1pt}\text{--}\hspace{1pt}}}
 \newcommand{\ra}{\rightarrow}
+
+\newcommand{\Y}{\mathsf{Y}}
 \newcommand{\Set}{\mathsf{Set}}
-\newcommand{\MetaTy}{\mathsf{MetaTy}}
-\newcommand{\bMetaTy}{\mathbf{MetaTy}}
 \newcommand{\Base}{\mathsf{Base}}
 \newcommand{\In}{\mathsf{In}}
 \newcommand{\PSh}{\mathsf{PSh}}
@@ -266,7 +266,7 @@
   \inst{1}%
        {University of Gothenburg \& Chalmers University of Technology}
 }
-\date{17 Apr 2025, EuroProofNet WG6 meeting, Genoa}
+\date{18 Apr 2025, EuroProofNet WG6 meeting, Genoa}
 \begin{document}
 
 
@@ -281,14 +281,16 @@
     \pause
     \item the chosen model is defined \textbf{outside the system}.
     \pause
-    \item \textbf{only a second-order} view on the model.
+    \item \textbf{only a second-order (``internal'')} view on the model.
   \end{itemize}
 \pause
 \item Generalized logical framework (GLF):
   \begin{itemize}
-    \item metaprogramming over \textbf{any number of models} of \textbf{any number of type theories}.
-    \item models are defined \textbf{inside the system}.
-    \item both a \textbf{first-order} and a \textbf{second-order} view on each model.
+  \item metaprogramming over \textbf{any number of models} of \textbf{any number of type theories}.
+    \pause
+  \item models are defined \textbf{inside the system}.
+    \pause
+    \item both a \textbf{first-order/external} and a \textbf{second-order/internal} view on each model.
   \end{itemize}
 \end{enumerate}
 \pause
@@ -307,19 +309,19 @@
 \begin{block}{}
 \vspace{-1em}
 \begin{alignat*}{3}
-  & \bSet   &&           \hspace{8em}&& \text{A universe that supports ETT.}\\
-  & \bBase  && : \bSet                 && \text{Sort of ``base categories''.} \\
+  & \bU     && : \bU           \hspace{6em}&& \text{A universe of that supports ETT.}\\
+  & \bBase  && : \bU                 && \text{Type of ``base categories''.} \\
   & \mbf{1} && : \bBase                && \text{The terminal category as a base category.} \\
-  & \bPSh   && : \bBase \to \bSet      && \text{Universes of presheaves. Cumulativity: $\PSh_i \subseteq \Set$. Supports ETT.}\\
+  & \bPSh   && : \bBase \to \bU      && \text{Universes of presheaves. Cumulativity: $\PSh_i \subseteq \U$. Supports ETT.}\\
   &        &&                          && \text{We can only eliminate from $\PSh_i$ to $\PSh_i$.} \\
   & \bCat_i && : \bPSh_i               && := \text{\emph{type of categories in $\PSh_i$}} \\
-  & \bIn    &&: \bCat_i \to \bSet      && \text{``Permission token'' for working in presheaves over some $C : \Cat_i$.} \\
-  & \bbase  &&: \bIn\,C \to \bBase     && \text{``Using the permission''}.
+  & \bIn    &&: \bCat_i \to \bU      && \text{``Permission token'' for working in presheaves over some $\mbbC : \Cat_i$.} \\
+  & \bbase  &&: \bIn\,\mbbC \to \bBase     && \text{``Using the permission''}.
 \end{alignat*}
 \end{block}
 \vspace{1em}
 
-{\small We use type-in-type everywhere for simplicity, i.e.\ $\Set : \Set$ and $\PSh_i : \PSh_i$.}
+{\small We use type-in-type everywhere for simplicity, i.e.\ $\U : \U$ and $\PSh_i : \PSh_i$.}
 
 \end{frame}
 
@@ -327,21 +329,24 @@
 \begin{block}{}
 \vspace{-0.6em}
 {\footnotesize
-  \[ \Set : \Set \hspace{3em} \Base : \Set \hspace{3em} \mbf{1} : \Base \hspace{3em} \PSh : \Base \to \Set \]
-  \[ \Cat_i : \PSh_i := \text{\emph{type of cats in $\PSh_i$}} \hspace{3em} \In : \Cat_i \to \Set \hspace{3em} \base : \In\,\mbbC \to \Base \]
+  \[ \U : \U \hspace{1.5em} \Base : \U \hspace{1.5em} \mbf{1} : \Base \hspace{1.5em} \PSh : \Base \to \U \]
+  \[ \Cat_i : \PSh_i := \text{\emph{type of cats in $\PSh_i$}} \hspace{1.5em} \In : \Cat_i \to \U \hspace{1.5em} \base : \In\,\mbbC \to \Base \]
 }
 \end{block}
-\vspace{2em}
-
-$\PSh_1$ is a universe supporting ETT, semantically a universe of sets.
 \vspace{1em}
+
+$\PSh_1$ is a universe supporting ETT (semantically: universe of sets).
+\vspace{1em}
+\pause
 
 We can define some $\mbbC : \Cat_1$, where $\ms{Obj}(\mbbC) : \PSh_1$.
 \vspace{1em}
+\pause
 
 Now, \alert{under the assumption} of $i : \In\,\mbbC$, we can form the universe $\PSh_{(\base\,i)}$, which is semantically the universe of
 presheaves over $\mbbC$.
 \vspace{1em}
+\pause
 
 \emph{Syntax sugar:} we'll omit $\base$ in the following.
 \vspace{1em}
@@ -395,7 +400,7 @@ A \textbf{first-order model of pure LC} consists of:
 \item A category of contexts and substitutions with $\Con : \PSh_i$, $\Sub : \Con \to \Con \to \PSh_i$ and terminal
       object $\emptycon$.
 \item $\Tm : \Con \to \PSh_i$, plus a term substitution operation.
-\item A context extension operation $\blank\ext : \Con \to \Con$ such that $\Sub\,\Gamma\,(\Delta\,\ext) \simeq \Sub\,\Gamma \times \Tm\,\Gamma$.
+\item A context extension operation $\blank\ext : \Con \to \Con$ such that $\Sub\,\Gamma\,(\Delta\,\ext) \simeq \Sub\,\Gamma\,\Delta \times \Tm\,\Gamma$.
 \item A natural isomorphism $\Tm\,(\Gamma\,\ext) \simeq \Tm\,\Gamma$ whose components are $\lambda$ and application.
 \end{itemize}
 \vspace{1em}
@@ -408,7 +413,119 @@ $\FMod$ is mechanically derivable from $\SMod$.\footnote{Ambrus Kaposi \& Szumi 
 
 \begin{frame}{Example: embedding pure lambda calculus}
 
+\begin{block}{GLF Axiom 1}
+  Assuming $M : \FMod_i$ and $j : \In\,M$, we have $\S_j : \SMod_j$.
+
+  {\footnotesize (In ``$\In\,M$'' we implicitly convert $M$ to its underlying category.)}
+\end{block}
+\vspace{0.5em}
+
+Now we have 2LTT over $M$ inside $\PSh_j$:
+\begin{itemize}
+\item ETT type formers in $\PSh_j$ comprise the outer level.
+\item $S_j$ comprises the inner level.
+\end{itemize}
+\vspace{0.5em}
+
+Y-combinator as example:
+\begin{alignat*}{3}
+  & \ms{YC} : \Tm_{\S_j} \\
+  & \ms{YC} := (\lam_{\S_j} (\lambda x.\, x\,\$_{\S_j}\,x))\,\$_{\S_j}\,
+               (\lam_{\S_j} (\lambda f.\,\lam_{\S_j} (\lambda x.\, f \,\$_{\S_j}\, (x \,\$_{\S_j}\, x))))
+\end{alignat*}
+With a reasonable amount of sugar:
+\begin{alignat*}{3}
+  & \ms{YC} : \Tm_{\S_j} \\
+  & \ms{YC} := (\lam\,x.\,x\,x)\,(\lam\,f.\,\lam\,x.\,f\,(x\,x))
+\end{alignat*}
+
 \end{frame}
+
+\begin{frame}{}
+
+\begin{itemize}
+\item More generally, we have the previous axiom for every second-order generalized algebraic theory.
+\item Hence: all 2LTTs are syntactic fragments of GLF.
+\item Moreover, for each 2LTT, the semantics of GLF restricts to the standard presheaf semantics of the 2LTT.
+\end{itemize}
+
+
+\end{frame}
+
+\begin{frame}{Yoneda embedding}
+
+\begin{block}{GLF Axiom: Yoneda embedding for pure LC}
+Assuming $M : \FMod_i$, we have
+\begin{alignat*}{4}
+  & \Y && : \Con_M                 &&\to\,  &&((j : \In_M) \to \PSh_j) \\
+  & \Y && : \Sub_M\,\Gamma\,\Delta &&\simeq &&((j : \In_M) \to \Y\,\Gamma\,j \to \Y\,\Delta\,j)\\
+  & \Y && : \Tm_M\,\Gamma          &&\simeq &&((j : \In_M) \to \Y\,\Gamma\,j \to \Tm_{\S_j})
+\end{alignat*}
+such that $\Y$ preserves empty context and context extension up to iso:
+\begin{alignat*}{4}
+  & \Y\,\emptycon\,j &&\simeq \top \\
+  & \Y\,(\Gamma\,\ext)\,j &&\simeq \Y\,\Gamma\,j \times \Tm_{\S_j}
+\end{alignat*}
+and $\Y$ preserves all other structure strictly.
+\end{block}
+\emph{Notation}: we write $\Lambda$ for inverses of $\Y$.
+\end{frame}
+
+\begin{frame}{LC examples, sugar}
+
+$\Y$ and $\Lambda$ allow ad-hoc switching between first-order and second-order notation.
+Let's redefine some operations using second-order notation:
+\begin{alignat*}{6}
+  & \ms{id} : \Sub_M\,\Gamma\,\Gamma && \ms{comp} : \Sub_M\,\Delta\,\Theta \to \Sub_M\,\Gamma\,\Delta \to \Sub_M\,\Gamma\,\Theta\\
+  & \ms{id} := \Lambda\,(\lambda\,j\,\gamma.\,\gamma)\quad\quad && \ms{comp}\,\sigma\,\delta := \Lambda\,(\lambda\,j\,\gamma.\,\Y\,\sigma\,(\Y\,\delta\,\gamma\,j)\,j
+\end{alignat*}
+With reasonable amount of sugar:
+\begin{alignat*}{6}
+  & \ms{id} := \Lambda\,\gamma.\,\gamma\quad\quad && \ms{comp}\,\sigma\,\delta := \Lambda\,\gamma.\,\Y\,\sigma\,(\Y\,\delta\,\gamma)
+\end{alignat*}
+Or even:
+\begin{alignat*}{6}
+  &\ms{comp}\,\sigma\,\delta := \Lambda\,\gamma.\,\sigma\,(\delta\,\gamma)
+\end{alignat*}
+Example for ``pattern matching'' notation:
+\begin{alignat*}{3}
+  & \ms{wk} : \Sub_M\,(\Gamma\,\ext)\,\Gamma \\
+  & \ms{wk} := \Lambda\,(\gamma,\,\alpha).\,\gamma
+\end{alignat*}
+
+\end{frame}
+
+\begin{frame}{Second-order named notation}
+  \begin{itemize}
+  \item When working with CwF-s, De Bruijn indices and substitutions
+        can be hard to read.
+  \item Handwaved ``named'' binders in CwFs have been used a couple of times.
+  \item GLF provides a rigorous implementation of such notation.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Example: type theoretic gluing}
+This is a model construction which looks awful in explicit CwF notation.\footnote{Kaposi, Huber,
+Sattler: \emph{Gluing for Type Theory}.} We assume a weak CwF morphism $F : S \to M$ between two models of a type theory. We define a displayed model $P$ lying over $S$.
+
+%% \begin{alignat*}{5}
+%%   &\Con_P\,\Gamma && := \Ty\,(F\,\Gamma)\\
+%%   &\Ty_P\,\Gamma_P\,A && := \Ty\,(F\,\Gamma\,\ext\,\Gamma_P\,F\,A[\ms{wk}]\\
+%%   &\Sub_P\,\Gamma_P\,\Delta_P\,\sigma && :=
+%%       \Ty\,(F\,\Gamma\,\ext\,\Gamma_P\,F\,A[\ms{wk}]
+
+
+%% \end{alignat*}
+
+
+
+\end{frame}
+
+
+
+
+
+
 
 
 %% For each theory

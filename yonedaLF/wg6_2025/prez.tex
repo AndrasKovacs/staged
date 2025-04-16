@@ -493,8 +493,8 @@ Or even:
 \pause
 Example for ``pattern matching'' notation ($\Y$ preserves extended contexts):
 \begin{alignat*}{3}
-  & \ms{wk} : \Sub_M\,(\Gamma\,\ext)\,\Gamma \\
-  & \ms{wk} := \Lambda\,(\gamma,\,\alpha).\,\gamma
+  & \ms{p} : \Sub_M\,(\Gamma\,\ext)\,\Gamma \\
+  & \ms{p} := \Lambda\,(\gamma,\,\alpha).\,\gamma
 \end{alignat*}
 
 \end{frame}
@@ -508,7 +508,7 @@ Example for ``pattern matching'' notation ($\Y$ preserves extended contexts):
   \end{itemize}
 \end{frame}
 
-\begin{frame}{Example: embedding a type theory}
+\begin{frame}{Embedding a type theory}
 
 \begin{columns}
 \begin{column}{0.5\textwidth}
@@ -539,9 +539,57 @@ In a second order model, we have
 \[(\Gamma \ext A \ext B) : \Con_M \quad \text{is equal to}\quad  \Gamma \ext (\Lambda\,\gamma. \Y A\,\gamma) \ext (\Lambda\,(\gamma,\,\alpha). \Y B\,(\gamma,\,\alpha)) \]
 \pause
 This suggests the notation:
-\[(\gamma : \Gamma\,\ext\,\alpha : \Y A\,\gamma\,\ext\,\beta : \Y B\,(\gamma,\,\alpha)) : \Con_M\]
-Or:
-\[(\gamma : \Gamma\,\ext\,\alpha : A\,\gamma\,\ext\,\beta : B\,(\gamma,\,\alpha)) : \Con_M\]
+\[(\gamma : \Gamma,\,\alpha : \Y A\,\gamma,\,\beta : \Y B\,(\gamma,\,\alpha)) : \Con_M\]
+With implicit $\Y$:
+\[(\gamma : \Gamma,\,\alpha : A\,\gamma,\,\beta : B\,(\gamma,\,\alpha)) : \Con_M\]
+
+\end{frame}
+
+\begin{frame}{Embedding a type theory}
+
+More ``contextual'' Sugar for $\Tm_M$. We have
+\[  \Tm_M\,(\Gamma\,\ext\,A\,\ext\,B)\,C \,=\, \Tm_M\,(\Gamma\,\ext\,A\,\ext\,B)\,(\Lambda\,(\gamma,\,\alpha,\,\beta).\,B\,(\gamma,\,\alpha,\,\beta)) \]
+which suggests the notation
+\[  \Tm_M\,(\gamma : \Gamma,\,\alpha : A\,\gamma,\,\beta : B\,(\gamma,\,\alpha))\,(B\,(\gamma,\,\alpha,\,\beta)) \]
+
+\end{frame}
+
+\begin{frame}{Embedding a type theory}
+
+Example: a construction which looks kind of awful in explicit CwF notation.\footnote{Kaposi, Huber, Sattler: \emph{Gluing for Type Theory}}
+{\small
+\begin{alignat*}{5}
+  &\Con^{\circ}\,\Gamma && := \Ty\,(F\,\Gamma)\\
+  &\Ty^{\circ}\,\Gamma^{\circ}\,A && := \Ty\,(F\,\Gamma\,\ext\,\Gamma^{\circ}\,\ext\,F\,A[\ms{p}])\\
+  %% &\Sub^{\circ}\,\Gamma^{\circ}\,\Delta^{\circ}\,\sigma && :=
+  %% \Tm\,(F\,\Gamma\,\ext\,\Gamma^{\circ})\,(\Delta^{\circ}[F\,\sigma \circ \ms{p}])\\
+  &\Tm^{\circ}\,\Gamma^{\circ}\,A^{\circ}\,t && := \Tm\,(F\,\Gamma\,\ext\,\Gamma^{\circ})\,(A^{\circ}[\id,\,F\,t[\ms{p}]))\\
+  & \Gamma^{\circ}\,\ext^{\circ}\,A^{\circ} && := \Sigma(\Gamma^{\circ}[\ms{p}\circ F_{\ext.1}])(A^{\circ}[\ms{p} \circ F_{\ext.1} \circ \ms{p},\,0,\,\ms{q}[F_{\ext.1} \circ \ms{p}]])\\
+  & ... &&
+\end{alignat*}
+But is reasonable in sugary GLF notation:
+\begin{alignat*}{5}
+  &\Con^{\circ}\,\Gamma && := \Ty\,(\gamma : F\,\Gamma)\\
+  &\Ty^{\circ}\,\Gamma^{\circ}\,A && := \Ty\,(\gamma : F\,\Gamma,\,\gamma^{\circ} : \Gamma^{\circ}\,\gamma,\,\alpha : F\,A\,\gamma)\\
+  %% &\Sub^{\circ}\,\Gamma^{\circ}\,\Delta^{\circ}\,\sigma && :=
+  %% \Tm\,(\gamma : F\,\Gamma,\,\gamma^{\circ} : \Gamma^{\circ}\,\gamma)\,(\Delta^{\circ}\,(F\,\sigma\,\gamma)))\\
+  %% &\Tm^{\circ}\,\Gamma^{\circ}\,A^{\circ}\,t && := \Tm\,(\gamma : F\,\Gamma,\,\gamma^{\circ} : \Gamma^{\circ}\,\gamma)\,(A^{\circ}\,(\gamma,\,\gamma^{\circ},\,F\,t\,\gamma))\\
+  %% & \Gamma^{\circ}\,\ext^{\circ}\,A^{\circ} &&:= \Lambda\,\gamma.\, \Sigma(\gamma^{\circ} : \Gamma^{\circ}\,(\ms{fst}\,(F_{\ext.1}\,\gamma)) \times (A^{\circ}\,((\ms{fst}\,(F_{\ext.1}\,\gamma)),\,\gamma^{\circ},\,\ms{snd}\,(F_{\ext.1}\,\gamma)))   \\
+  & \Gamma^{\circ}\,\ext^{\circ}\,A^{\circ} &&:= \Lambda\,(F_{\ext.1}(\gamma,\,\alpha)).\, \Sigma(\gamma^{\circ} : \Gamma^{\circ}\,\gamma).\,(A^{\circ}\,(\gamma,\,\gamma^{\circ},\,\alpha))   \\
+  & ... &&
+\end{alignat*}
+}
+
+\end{frame}
+
+
+%% \begin{frame}{Embedding a type theory}
+
+
+
+
+
+%% \end{frame}
 
 
 
@@ -550,18 +598,6 @@ Or:
 %% This is a model construction which looks awful in explicit CwF notation.\footnote{Kaposi, Huber,
 %% Sattler: \emph{Gluing for Type Theory}.} We assume a weak CwF morphism $F : S \to M$ between two models of a type theory. We define a displayed model $P$ lying over $S$.
 
-%% \begin{alignat*}{5}
-%%   &\Con_P\,\Gamma && := \Ty\,(F\,\Gamma)\\
-%%   &\Ty_P\,\Gamma_P\,A && := \Ty\,(F\,\Gamma\,\ext\,\Gamma_P\,F\,A[\ms{wk}]\\
-%%   &\Sub_P\,\Gamma_P\,\Delta_P\,\sigma && :=
-%%       \Ty\,(F\,\Gamma\,\ext\,\Gamma_P\,F\,A[\ms{wk}]
-
-
-%% \end{alignat*}
-
-
-
-\end{frame}
 
 
 

@@ -1,5 +1,5 @@
 # Fdb version 3
-["pdflatex"] 1744791177 "prez.tex" "prez.pdf" "prez" 1744791178
+["pdflatex"] 1744798305 "prez.tex" "prez.pdf" "prez" 1744798307
   "/etc/texmf/web2c/texmf.cnf" 1699607946 475 c0e671620eb5563b2130f56340a5fde8 ""
   "/usr/share/texlive/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmbsy5.tfm" 1246382020 1120 1e8878807317373affa7f7bba4cf2f6a ""
@@ -59,6 +59,7 @@
   "/usr/share/texlive/texmf-dist/fonts/tfm/public/stmaryrd/stmary8.tfm" 1302307949 848 6125cdd3627e68d3db8013b98e587508 ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/public/stmaryrd/stmary9.tfm" 1302307949 848 594c171945930dfc7cc52fb30457c803 ""
   "/usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb" 1248133631 36299 5f9df58c2139e7edcf37c8fca4bd384d ""
+  "/usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb" 1248133631 36281 c355509802a035cadc5f15869451dcee ""
   "/usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmss10.pfb" 1248133631 24457 5cbb7bdf209d5d1ce9892a9b80a307cc ""
   "/usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmss12.pfb" 1248133631 24393 3b7eb51a67a0a62aec5849271bdb9c2e ""
   "/usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmss8.pfb" 1248133631 24420 52dbb8e8aa0069a1b987309557f8d303 ""
@@ -68,6 +69,7 @@
   "/usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmssi8.pfb" 1248133631 25168 33771b85f45c82138dd7745db7092d1c ""
   "/usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmssi9.pfb" 1248133631 25029 6f2cec9646ca278302ed7d604e506e3e ""
   "/usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb" 1248133631 32569 5e5ddc8df908dea60932f3c484a54c0d ""
+  "/usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb" 1248133631 32716 08e384dc442464e7285e891af9f45947 ""
   "/usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy9.pfb" 1248133631 32442 c975af247b6702f7ca0c299af3616b80 ""
   "/usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10.pfb" 1248133631 34694 ad62b13721ee8eda1dcc8993c8bd7041 ""
   "/usr/share/texlive/texmf-dist/tex/context/base/mkii/supp-pdf.mkii" 1461363279 71627 94eb9990bed73c364d7f53f960cc8c5b ""
@@ -246,10 +248,10 @@
   "/usr/share/texmf/web2c/texmf.cnf" 1644012257 39432 7155514e09a3d69036fac785183a21c2 ""
   "/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map" 1699607959 4379155 98693266ff65f58d9f98aff394de12d2 ""
   "/var/lib/texmf/web2c/pdftex/pdflatex.fmt" 1710580752 2799665 29983c3f4f222b983fa07592e708955e ""
-  "prez.aux" 1744791178 2543 b40827552005c13e65772c8f704d1823 "pdflatex"
-  "prez.nav" 1744791178 1317 66785a67d31cc891194dd1ec15f49ccb "pdflatex"
-  "prez.out" 1744791177 0 d41d8cd98f00b204e9800998ecf8427e "pdflatex"
-  "prez.tex" 1744791174 36644 8a5aac628834ae9cd9c80d510429a8e4 ""
+  "prez.aux" 1744798306 2801 ae286777b6dc826b2b373d8dbda99027 "pdflatex"
+  "prez.nav" 1744798306 1503 6b40a56213ba6f662e4de440ef193cdc "pdflatex"
+  "prez.out" 1744798306 0 d41d8cd98f00b204e9800998ecf8427e "pdflatex"
+  "prez.tex" 1744798305 38768 971f381c2b58caeb917af34a0f4c8ca6 ""
   (generated)
   "prez.aux"
   "prez.log"

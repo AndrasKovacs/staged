@@ -278,19 +278,17 @@
 \item Two-level type theories (2LTT):
   \begin{itemize}
     \item metaprogramming over a \textbf{single model} of a \textbf{single type theory}.
-    \pause
     \item the chosen model is defined \textbf{outside the system}.
-    \pause
     \item \textbf{only a second-order (``internal'')} view on the model.
   \end{itemize}
 \pause
 \item Generalized logical framework (GLF):
   \begin{itemize}
   \item metaprogramming over \textbf{any number of models} of \textbf{any number of type theories}.
-    \pause
   \item models are defined \textbf{inside the system}.
-    \pause
-    \item both a \textbf{first-order/external} and a \textbf{second-order/internal} view on each model.
+  \item both a \textbf{first-order/external} and a \textbf{second-order/internal} view on each model.
+  \pause
+  \item \emph{No substructural modalities}.
   \end{itemize}
 \end{enumerate}
 \pause
@@ -348,11 +346,13 @@ presheaves over $\mbbC$.
 \vspace{1em}
 \pause
 
-\emph{Syntax sugar:} we'll omit $\base$ in the following.
+At this point, we have no interesting interaction between $\PSh_1$ and $\PSh_i$.
 \vspace{1em}
 
-At this point, we have no interesting interaction between $\PSh_1$ and $\PSh_i$.
+{\small
+\emph{Syntactic sugar:} we'll omit ``$\base$'' in the following.
 \vspace{3em}
+}
 
 \end{frame}
 
@@ -420,23 +420,24 @@ $\FMod$ is mechanically derivable from $\SMod$.\footnote{Ambrus Kaposi \& Szumi 
 \end{block}
 \vspace{0.5em}
 
-Now we have 2LTT over $M$ inside $\PSh_j$:
+Now we have a 2LTT inside $\PSh_j$:
 \begin{itemize}
 \item ETT type formers in $\PSh_j$ comprise the outer level.
 \item $S_j$ comprises the inner level.
 \end{itemize}
 \vspace{0.5em}
-
+\pause
 Y-combinator as example:
 \begin{alignat*}{3}
   & \ms{YC} : \Tm_{\S_j} \\
-  & \ms{YC} := (\lam_{\S_j} (\lambda x.\, x\,\$_{\S_j}\,x))\,\$_{\S_j}\,
-               (\lam_{\S_j} (\lambda f.\,\lam_{\S_j} (\lambda x.\, f \,\$_{\S_j}\, (x \,\$_{\S_j}\, x))))
+  & \ms{YC} := \lam_{\S_j}(\lambda\,f.\,(\lam_{\S_j} (\lambda x.\, x\,\$_{\S_j}\,x))\,\$_{\S_j}\,
+               (\lam_{\S_j} (\lambda f.\,\lam_{\S_j} (\lambda x.\, f \,\$_{\S_j}\, (x \,\$_{\S_j}\, x)))))
 \end{alignat*}
+\pause
 With a reasonable amount of sugar:
 \begin{alignat*}{3}
   & \ms{YC} : \Tm_{\S_j} \\
-  & \ms{YC} := (\lam\,x.\,x\,x)\,(\lam\,f.\,\lam\,x.\,f\,(x\,x))
+  & \ms{YC} := \lam\,f.\,(\lam\,x.\,x\,x)\,(\lam\,f.\,\lam\,x.\,f\,(x\,x))
 \end{alignat*}
 
 \end{frame}
@@ -446,13 +447,13 @@ With a reasonable amount of sugar:
 \begin{itemize}
 \item More generally, we have the previous axiom for every second-order generalized algebraic theory.
 \item Hence: all 2LTTs are syntactic fragments of GLF.
-\item Moreover, for each 2LTT, the semantics of GLF restricts to the standard presheaf semantics of the 2LTT.
+\item For each 2LTT, the semantics of GLF restricts to the standard presheaf semantics of the 2LTT.
 \end{itemize}
 
 
 \end{frame}
 
-\begin{frame}{Yoneda embedding}
+\begin{frame}{Moving between internal \& external views}
 
 \begin{block}{GLF Axiom: Yoneda embedding for pure LC}
 Assuming $M : \FMod_i$, we have
@@ -468,7 +469,7 @@ such that $\Y$ preserves empty context and context extension up to iso:
 \end{alignat*}
 and $\Y$ preserves all other structure strictly.
 \end{block}
-\emph{Notation}: we write $\Lambda$ for inverses of $\Y$.
+\emph{Notation}: we write $\Lambda$ for inverse $\Y$.
 \end{frame}
 
 \begin{frame}{LC examples, sugar}
@@ -479,15 +480,18 @@ Let's redefine some operations using second-order notation:
   & \ms{id} : \Sub_M\,\Gamma\,\Gamma && \ms{comp} : \Sub_M\,\Delta\,\Theta \to \Sub_M\,\Gamma\,\Delta \to \Sub_M\,\Gamma\,\Theta\\
   & \ms{id} := \Lambda\,(\lambda\,j\,\gamma.\,\gamma)\quad\quad && \ms{comp}\,\sigma\,\delta := \Lambda\,(\lambda\,j\,\gamma.\,\Y\,\sigma\,(\Y\,\delta\,\gamma\,j)\,j
 \end{alignat*}
+\pause
 With reasonable amount of sugar:
 \begin{alignat*}{6}
   & \ms{id} := \Lambda\,\gamma.\,\gamma\quad\quad && \ms{comp}\,\sigma\,\delta := \Lambda\,\gamma.\,\Y\,\sigma\,(\Y\,\delta\,\gamma)
 \end{alignat*}
+\pause
 Or even:
 \begin{alignat*}{6}
   &\ms{comp}\,\sigma\,\delta := \Lambda\,\gamma.\,\sigma\,(\delta\,\gamma)
 \end{alignat*}
-Example for ``pattern matching'' notation:
+\pause
+Example for ``pattern matching'' notation ($\Y$ preserves extended contexts):
 \begin{alignat*}{3}
   & \ms{wk} : \Sub_M\,(\Gamma\,\ext)\,\Gamma \\
   & \ms{wk} := \Lambda\,(\gamma,\,\alpha).\,\gamma
@@ -504,9 +508,47 @@ Example for ``pattern matching'' notation:
   \end{itemize}
 \end{frame}
 
-\begin{frame}{Example: type theoretic gluing}
-This is a model construction which looks awful in explicit CwF notation.\footnote{Kaposi, Huber,
-Sattler: \emph{Gluing for Type Theory}.} We assume a weak CwF morphism $F : S \to M$ between two models of a type theory. We define a displayed model $P$ lying over $S$.
+\begin{frame}{Example: embedding a type theory}
+
+\begin{columns}
+\begin{column}{0.5\textwidth}
+In a first order model, we have:
+\begin{alignat*}{3}
+  &\Con &&: \PSh_i \\
+  &\Sub &&: \Con \to \Con \to \PSh_i \\
+  &\Ty  &&: \Con \to \PSh_i \\
+  &\Tm  &&: (\Gamma : \Con) \to \Ty\,\Gamma \to \PSh_i \\
+  & ... &&
+\end{alignat*}
+\end{column}
+\begin{column}{0.5\textwidth}
+In a second order model, we have
+\begin{alignat*}{3}
+  &\Ty  &&: \PSh_i \\
+  &\Tm  &&: \Ty \to \PSh_i \\
+  & ... && \\
+  & && \\
+  & &&
+\end{alignat*}
+\end{column}
+\end{columns}
+\vspace{0.5em}
+\pause
+
+\emph{Sugar for contexts \& sorts}.
+\[(\Gamma \ext A \ext B) : \Con_M \quad \text{is equal to}\quad  \Gamma \ext (\Lambda\,\gamma. \Y A\,\gamma) \ext (\Lambda\,(\gamma,\,\alpha). \Y B\,(\gamma,\,\alpha)) \]
+\pause
+This suggests the notation:
+\[(\gamma : \Gamma\,\ext\,\alpha : \Y A\,\gamma\,\ext\,\beta : \Y B\,(\gamma,\,\alpha)) : \Con_M\]
+Or:
+\[(\gamma : \Gamma\,\ext\,\alpha : A\,\gamma\,\ext\,\beta : B\,(\gamma,\,\alpha)) : \Con_M\]
+
+
+
+
+
+%% This is a model construction which looks awful in explicit CwF notation.\footnote{Kaposi, Huber,
+%% Sattler: \emph{Gluing for Type Theory}.} We assume a weak CwF morphism $F : S \to M$ between two models of a type theory. We define a displayed model $P$ lying over $S$.
 
 %% \begin{alignat*}{5}
 %%   &\Con_P\,\Gamma && := \Ty\,(F\,\Gamma)\\

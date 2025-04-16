@@ -98,6 +98,11 @@
 
 \newcommand{\Y}{\mathsf{Y}}
 \newcommand{\Set}{\mathsf{Set}}
+\newcommand{\CatTel}{\mathsf{CatTel}}
+\newcommand{\Fib}{\mathsf{Fib}}
+\newcommand{\Fin}{\mathsf{Fin}}
+\newcommand{\Tree}{\mathsf{Tree}}
+\newcommand{\Disc}{\mathsf{Disc}}
 \newcommand{\Base}{\mathsf{Base}}
 \newcommand{\In}{\mathsf{In}}
 \newcommand{\PSh}{\mathsf{PSh}}
@@ -447,7 +452,7 @@ With a reasonable amount of sugar:
 \begin{itemize}
 \item More generally, we have the previous axiom for every second-order generalized algebraic theory.
 \item Hence: all 2LTTs are syntactic fragments of GLF.
-\item For each 2LTT, the semantics of GLF restricts to the standard presheaf semantics of the 2LTT.
+\item (For each 2LTT, the semantics of GLF restricts to the standard presheaf semantics of the 2LTT.)
 \end{itemize}
 
 
@@ -508,7 +513,7 @@ Example for ``pattern matching'' notation ($\Y$ preserves extended contexts):
   \end{itemize}
 \end{frame}
 
-\begin{frame}{Embedding a type theory}
+\begin{frame}{Embedding type theories}
 
 \begin{columns}
 \begin{column}{0.5\textwidth}
@@ -545,7 +550,7 @@ With implicit $\Y$:
 
 \end{frame}
 
-\begin{frame}{Embedding a type theory}
+\begin{frame}{Embedding type theories}
 
 More ``contextual'' Sugar for $\Tm_M$. We have
 \[  \Tm_M\,(\Gamma\,\ext\,A\,\ext\,B)\,C \,=\, \Tm_M\,(\Gamma\,\ext\,A\,\ext\,B)\,(\Lambda\,(\gamma,\,\alpha,\,\beta).\,B\,(\gamma,\,\alpha,\,\beta)) \]
@@ -554,9 +559,9 @@ which suggests the notation
 
 \end{frame}
 
-\begin{frame}{Embedding a type theory}
+\begin{frame}{Embedding type theories}
 
-Example: a construction which looks kind of awful in explicit CwF notation.\footnote{Kaposi, Huber, Sattler: \emph{Gluing for Type Theory}}
+Example: a construction which looks awful in explicit CwF notation\footnote{Kaposi, Huber, Sattler: \emph{Gluing for Type Theory}, Section 5}
 {\small
 \begin{alignat*}{5}
   &\Con^{\circ}\,\Gamma && := \Ty\,(F\,\Gamma)\\
@@ -564,596 +569,104 @@ Example: a construction which looks kind of awful in explicit CwF notation.\foot
   %% &\Sub^{\circ}\,\Gamma^{\circ}\,\Delta^{\circ}\,\sigma && :=
   %% \Tm\,(F\,\Gamma\,\ext\,\Gamma^{\circ})\,(\Delta^{\circ}[F\,\sigma \circ \ms{p}])\\
   &\Tm^{\circ}\,\Gamma^{\circ}\,A^{\circ}\,t && := \Tm\,(F\,\Gamma\,\ext\,\Gamma^{\circ})\,(A^{\circ}[\id,\,F\,t[\ms{p}]))\\
-  & \Gamma^{\circ}\,\ext^{\circ}\,A^{\circ} && := \Sigma(\Gamma^{\circ}[\ms{p}\circ F_{\ext.1}])(A^{\circ}[\ms{p} \circ F_{\ext.1} \circ \ms{p},\,0,\,\ms{q}[F_{\ext.1} \circ \ms{p}]])\\
+  & \Gamma^{\circ}\,\ext^{\circ}\,A^{\circ} && := \Sigma(\Gamma^{\circ}[\ms{p}\circ F_{\ext.1}])(A^{\circ}[\ms{p} \circ F_{\ext.1} \circ \ms{p},\,\ms{q},\,\ms{q}[F_{\ext.1} \circ \ms{p}]])\\
   & ... &&
 \end{alignat*}
-But is reasonable in sugary GLF notation:
+{\normalsize but is reasonable in sugary GLF notation:}
 \begin{alignat*}{5}
   &\Con^{\circ}\,\Gamma && := \Ty\,(\gamma : F\,\Gamma)\\
   &\Ty^{\circ}\,\Gamma^{\circ}\,A && := \Ty\,(\gamma : F\,\Gamma,\,\gamma^{\circ} : \Gamma^{\circ}\,\gamma,\,\alpha : F\,A\,\gamma)\\
   %% &\Sub^{\circ}\,\Gamma^{\circ}\,\Delta^{\circ}\,\sigma && :=
   %% \Tm\,(\gamma : F\,\Gamma,\,\gamma^{\circ} : \Gamma^{\circ}\,\gamma)\,(\Delta^{\circ}\,(F\,\sigma\,\gamma)))\\
-  %% &\Tm^{\circ}\,\Gamma^{\circ}\,A^{\circ}\,t && := \Tm\,(\gamma : F\,\Gamma,\,\gamma^{\circ} : \Gamma^{\circ}\,\gamma)\,(A^{\circ}\,(\gamma,\,\gamma^{\circ},\,F\,t\,\gamma))\\
+  &\Tm^{\circ}\,\Gamma^{\circ}\,A^{\circ}\,t && := \Tm\,(\gamma : F\,\Gamma,\,\gamma^{\circ} : \Gamma^{\circ}\,\gamma)\,(A^{\circ}\,(\gamma,\,\gamma^{\circ},\,F\,t\,\gamma))\\
   %% & \Gamma^{\circ}\,\ext^{\circ}\,A^{\circ} &&:= \Lambda\,\gamma.\, \Sigma(\gamma^{\circ} : \Gamma^{\circ}\,(\ms{fst}\,(F_{\ext.1}\,\gamma)) \times (A^{\circ}\,((\ms{fst}\,(F_{\ext.1}\,\gamma)),\,\gamma^{\circ},\,\ms{snd}\,(F_{\ext.1}\,\gamma)))   \\
-  & \Gamma^{\circ}\,\ext^{\circ}\,A^{\circ} &&:= \Lambda\,(F_{\ext.1}(\gamma,\,\alpha)).\, \Sigma(\gamma^{\circ} : \Gamma^{\circ}\,\gamma).\,(A^{\circ}\,(\gamma,\,\gamma^{\circ},\,\alpha))   \\
+  & \Gamma^{\circ}\,\ext^{\circ}\,A^{\circ} &&:= \Lambda\,(F_{\ext.1}(\gamma,\,\alpha)).\, \Sigma(\gamma^{\circ} : \Gamma^{\circ}\,\gamma) \times A^{\circ}\,(\gamma,\,\gamma^{\circ},\,\alpha)   \\
   & ... &&
 \end{alignat*}
 }
 
 \end{frame}
 
-
-%% \begin{frame}{Embedding a type theory}
-
-
-
-
-
-%% \end{frame}
-
-
-
-
-
-%% This is a model construction which looks awful in explicit CwF notation.\footnote{Kaposi, Huber,
-%% Sattler: \emph{Gluing for Type Theory}.} We assume a weak CwF morphism $F : S \to M$ between two models of a type theory. We define a displayed model $P$ lying over $S$.
-
-
-
-
-
-
-
-
-
-%% For each theory
-
-%% Let's look at pure LC as an embedded theory. For each
-
-
-%% \end{frame}
-
-%% \section{Introduction}
-%% \begin{frame}
-%%   \frametitle{Outline}
-%%   \tableofcontents[currentsection]
-%% \end{frame}
-
-%% \begin{frame}{Introduction}
-
-%% ``Abstract'' algebraic signatures:
-%%   \begin{itemize}
-%%     \item Finite product/limit categories, contextual cats, representable map cats.
-%%     \item \emph{Far from proof assistant implementations}.
-%%   \end{itemize}
-%% \vspace{1em}
-
-%% Sketches:
-%%   \begin{itemize}
-%%     \item \emph{Still far from implementations.}
-%%   \end{itemize}
-%% \vspace{1em}
-
-%% ``Syntactic'' signatures:
-%% \begin{itemize}
-%%   \item CIC signatures, GATs.
-%%   \item \emph{Formally tedious and poorly structured.}
-%% \end{itemize}
-%% \vspace{1em}
-
-%% \end{frame}
-
-%% \begin{frame}{Introduction}
-
-%% A \textbf{theory of signatures (ToS)} is a type theory where algebraic signatures
-%% can be defined.
-%% \vspace{1em}
-
-%% The semantics of signatures is given by a model of a ToS.
-%% \vspace{1em}
-
-%% \begin{block}{Goals}
-%% \begin{enumerate}
-%%   \item Adequacy in implementation:
-%%     \begin{itemize}
-%%       \item Exact computation of induction principles and $\beta$-rules.
-%%       \item Low encoding overheads.
-%%       \item Amenable to elaboration, perhaps also metaprogramming.
-%%     \end{itemize}
-%%   \item The theory of signatures is itself algebraic (perhaps even self-describing).
-%%   \item Semantics in categories of algebras.
-%% \end{enumerate}
-%% \end{block}
-
-%% \end{frame}
-
-%% \section{High-Level Syntax}
-%% \begin{frame}
-%%   \frametitle{Outline}
-%%   \tableofcontents[currentsection]
-%% \end{frame}
-
-%% \begin{frame}{Framework}
-
-%% We work in a type theory with \textbf{four universes}:
-%% \begin{enumerate}
-%%  \item $\Set$: universe of metatheoretic types (in the sense of 2LTT).
-%%  \item $\Sig$: universe of signatures.
-%%  \item $\Sort$: universe of ``algebraic sorts''.
-%%  \item $\mbbC$: the category where semantic algebras live (internally).
-%% \end{enumerate}
-%% \vspace{1em}
-%% \textbf{Russell-style cumulative universes:}
-%% \begin{alignat*}{3}
-%%   & \Sort \subseteq \Sig \subseteq \Set \hspace{2em} && \Sort : \Sig : \Set\\
-%%   & \mbbC \subseteq \Set                             && \mbbC : \Set
-%% \end{alignat*}
-%% \textbf{Restriction on elimination:}
-%% \begin{itemize}
-%%   \item From $\mbbC$, only eliminate to $\mbbC$.
-%%   \item From $\Sig$ and $\Sort$, only eliminate to $\Sig$.
-%% \end{itemize}
-
-%% \end{frame}
-
-%% \begin{frame}{Framework - type formers}
-
-%% \begin{block}{}
-%%   \begin{itemize}
-%%   \item $\Sort \subseteq \Sig \subseteq \Set$
-%%   \item $\mbbC \subseteq \Set$
-%%   \item From $\mbbC$, only eliminate to $\mbbC$.
-%%   \item From $\Sig$ and $\Sort$, only eliminate to $\Sig$.
-%%   \end{itemize}
-%% \end{block}
-%% \begin{block}{General Assumptions}
-%%   \begin{itemize}
-%%   \item $\Set$ is closed under ETT type formers.
-%%   \item $\Sig$ is closed under $\top$ and $\Sigma$.
-%%   \end{itemize}
-%% \end{block}
-%% \vspace{1em}
-
-%% By varying type formers in $\Sig$ and $\Sort$, we can describe numerous
-%% classes of inductive signatures.
-%% \vspace{1em}
-
-%% We look at several of these in the following.
-%% \end{frame}
-
-%% \begin{frame}{Closed inductive-inductive signatures}
-%% \begin{block}{}
-%%   \begin{itemize}
-%%   \item $\Sort \subseteq \Sig \subseteq \Set$
-%%   \item $\mbbC \subseteq \Set$
-%%   \item From $\mbbC$, only eliminate to $\mbbC$.
-%%   \item From $\Sig$ and $\Sort$, only eliminate to $\Sig$.
-%%   \end{itemize}
-%% \end{block}
-%% Close $\Sig$ under dependent functions with $\Sort$ domains:
-%% \begin{mathpar}
-%%   \inferrule*{A : \Sort \\ B : A \to \Sig}
-%%              {(a : A) \to B\,a : \Sig}
-%% \end{mathpar}
-%% \small{(+ $\lambda$, application)}
-
-%% \small{\emph{Remark:} $A \to \Sig$ above is a metatheoretic function type in $\Set$}
-%% \begin{exampleblock}{}
-%%   \vspace{-1.3em}
-%%   \begin{alignat*}{3}
-%%     & \rlap{$\ms{ConTySig} : \Sig$} \\
-%%     & \ms{ConTySig} := && &&\,(\Con : \Sort) \times (\Ty : \Con \alert{\to} \Sort)\\
-%%     &           && \times &&\,(\blank\!\ext\!\blank : (\Gamma : \Con) \alert{\to} \Ty\,\Gamma \alert{\to} \Con) \times ...
-%%   \end{alignat*}
-%% \end{exampleblock}
-%% \end{frame}
-
-%% \begin{frame}{Open inductive-inductive signatures}
-
-%% Close $\Sig$ under dependent functions with $\mbbC$ domains:
-%% \begin{mathpar}
-%%   \inferrule*{A : \mbbC \\ B : A \to \Sig}
-%%              {(a : A) \to B\,a : \Sig}
-%% \end{mathpar}
-%% \small{(+ $\lambda$, application)}
-%% \vspace{1em}
-%% \begin{exampleblock}{}
-%%   \vspace{-1.3em}
-%%   \begin{alignat*}{3}
-%%     & \ms{ListSig} : \mbbC \to \Sig \\
-%%     & \ms{ListSig}\,A\,:= (\ms{List} : \Sort) \times (\ms{nil} : \ms{List}) \times (\ms{cons} : A \alert{\to} \ms{List} \to \ms{List})
-%%   \end{alignat*}
-%% \end{exampleblock}
-%% \vspace{1em}
-
-%% \small{
-%% Possible simple $\ms{ListSig}$ semantics:
-%% \vspace{1em}
-
-%% \emph{A function sending each object $A$ of a finite product category $\mbbC$ to
-%% the category of $A$-list algebras that are internal to $\mbbC$.}
-%% }
-
-%% \end{frame}
-
-%% \begin{frame}{Finitary quotient inductive-inductive signatures}
-
-%% Close $\Sig$ under extensional equality:
-%% \begin{mathpar}
-%%   \inferrule*{A : \Sig \\ x : A \\ y : A}
-%%              {x = y : \Sig}
-%% \end{mathpar}
-%% \small{(+ $\refl$, equality reflection)}
-%% \vspace{1em}
-
-%% \begin{exampleblock}{}
-%%   \vspace{-1.3em}
-%%   \begin{alignat*}{3}
-%%     & \ms{QuotientSig} : (A : \mbbC) \to (R : A \to A \to \mbbC) \to \Sig \\
-%%     & \ms{QuotientSig}\,A\,R := (A/R : \Sort) \times (|\blank| : A \to A/R) \times (\ms{quot} : R\,x\,y \to |x| \alert{=} |y|)
-%%   \end{alignat*}
-%% \end{exampleblock}
-%% \end{frame}
-
-
-%% \begin{frame}{Infinitary quotient inductive-inductive signatures}
-
-%% Drop extensional equality from $\Sig$, but add it to $\Sort$
-%% instead.\footnote{There's a semantic issue in mixing extensional $\Sig$ equality with infinitary branching.}
-%% \vspace{1em}
-
-%% Also close $\Sort$ under dependent functions with $\mbbC$ domains:
-%% \begin{mathpar}
-%%   \inferrule*{A : \mbbC \\ B : A \to \Sort}
-%%              {(x : A) \to B : \Sort}
-%% \end{mathpar}
-%% \small{(+ $\lambda$, application)}
-%% \vspace{1em}
-%% \begin{exampleblock}{}
-%%   \vspace{-1.3em}
-%%   \begin{alignat*}{3}
-%%     & \ms{WSig} : (A : \mbbC) \to (B : A \to \mbbC) \to \Sig \\
-%%     & \ms{WSig}\,A\,B\,:= (\ms{W} : \Sort) \times (\ms{sup} : (a : A) \to (B\,a \alert{\to} \ms{W}) \to \ms{W})
-%%   \end{alignat*}
-%% \end{exampleblock}
-%% \vspace{1em}
-%% At this point, we can specify every QII type from the HoTT book.
-
-%% \vspace{1em}
-%% E.g. Cauchy reals, surreals, the cumulative hierarchy of sets.
-
-%% \end{frame}
-
-%% \begin{frame}{Higher inductive-inductive signatures}
-
-%% We close $\Sig$ and $\Sort$ under \alert{intensional} identity.
-%% \vspace{1em}
-
-%% \begin{exampleblock}{}
-%%   \vspace{-1.3em}
-%%   \begin{alignat*}{3}
-%%     &\rlap{$\ms{TorusSig} : \Sig$} \\
-%%     & \ms{TorusSig} := && &&\,(\ms{T}^2 : \Sort) \times (\ms{b} : \ms{T}^2) \times (\p : \ms{b} = \ms{b}) \times (\q : \ms{b} = \ms{b}) \\
-%%     &  && \times &&\,(\ms{t} : \p \sqcdot \q = \q \sqcdot \p)
-%%   \end{alignat*}
-%% \end{exampleblock}
-%% \vspace{1em}
-%% Path composition $\blank\sqcdot\blank$ is definable from $\ms{J}$.
-
-%% \end{frame}
-
-
-%% \begin{frame}{Preliminary semantics}
-
-%% \begin{block}{}
-%%   \vspace{-1.3em}
-%%   \begin{alignat*}{4}
-%%     & \text{closed  }\,A : \Sig &&\,\,\Longrightarrow&& \text{ a finitely complete } \\
-%%     &  && &&\text{ category of algebras}\\
-%%     & \text{closed  }\,f : A \to B \text{ with } A,\,B : \Sig &&\,\,\Longrightarrow&& \text{ finitely continuous functor}
-%%   \end{alignat*}
-%% \end{block}
-%% \vspace{1em}
-%% We have a simple directed type theory.
-%% \vspace{1em}
-
-%% We can do more than just write signatures:
-%% \begin{itemize}
-%% \item The \emph{erasure map} $\ms{NatSig} \to \ms{ListSig}$ which forgets list elements
-%%       is an \alert{ornament} (see McBride, Dagand).
-%% \item Various \alert{model constructions} of type theories can be defined as $\Sig$
-%%       functions. Most \emph{syntactic models} can be rephrased in this way.
-%% \item $\Sig$ equivalences yield isomorphisms or equivalences of categories (depending
-%%       on the exact semantics).
-%% \end{itemize}
-%% \end{frame}
-
-
-%% \section{Lower-Level Syntax and Semantics}
-%% \begin{frame}
-%%   \frametitle{Outline}
-%%   \tableofcontents[currentsection]
-%% \end{frame}
-
-%% \begin{frame}{Setup \& overview}
-
-%% The high-level syntax is a \textbf{2LTT whose inner level is a theory of signatures}.
-%% \vspace{1em}
-
-%% We compile values in $\Sig$ and $\Sort$ to syntax in a formal ToS,
-%% using the ``standard'' presheaf model.
-%% \vspace{1em}
-
-%% The ToS syntax is an initial structured cwf:
-%% \begin{itemize}
-%%   \item Types as $\Ty\,\Gamma$, terms as $\Tm\,\Gamma\,A$.
-%%   \item Tarski-style universe $\Sort : \Ty\,\Gamma$ with
-%%         $\El : \Tm\,\Gamma\,\Sort \to \Ty\,\Gamma$.
-%%   \item $A : \Sig$ is compiled to a type.
-%%   \item $A : \Sort$ is compiled to a term with type $\Sort$.
-%%   \item $\Ty$ and $\Sort$ are closed under previous $\Sig$ and $\Sort$
-%%         type formers.
-%% \end{itemize}
-
-%% \end{frame}
-
-%% \begin{frame}{Setup \& overview}
-
-%% The ToS syntax lives in \textbf{yet another 2LTT}, where $\mbbC$ is
-%% the inner level.
-%% \vspace{1em}
-
-%% We have Tarski-style $\mbbC : \Set$ and $\El_\mbbC : \mbbC \to \Set$.
-%% \vspace{1em}
-
-%% ToS type formers may refer to this $\mbbC$, e.g.:
-%% \[ \Pi_{\mbbC\,\Ty} : (A : \mbbC) \to (\El_\mbbC\,A \to \Ty\,\Gamma) \to \Ty\,\Gamma \]
-%% \[ \Pi_{\mbbC\,\Sort} : (A : \mbbC) \to (\El_\mbbC\,A \to \Tm\,\Gamma\,\Sort) \to \Tm\,\Gamma\,\Sort \]
-
-%% We consider three ToS-es and their semantics.
-%% \begin{center}
-%% \begin{tabular}{|c|c|}
-%% \hline
-%%   \textbf{ToS} & \textbf{semantics of types} \\
-%% \hline
-%%   finitary QII & displayed cwf \\
-%% \hline
-%%   infinitary QII & cwf isofibration \\
-%% \hline
-%%   higher inductive-inductive & complete inner Reedy fibration\footnote{TYPES 2020, Capriotti \& Sattler: \emph{Higher categories of algebras for higher inductive definitions.}} \\
-%% \hline
-%% \end{tabular}
-%% \end{center}
-
-
-
-
-%% \end{frame}
-
-%% \begin{frame}{Finitary QII semantics}
-
-%% \begin{block}{Theory of signatures}
-%% \begin{itemize}
-%% \item $\Ty$ is closed under $\Sigma$, $\top$, extensional $\blank=\blank$, $\mbbC$-small products,
-%%   $\Sort$-small products
-%% \item $\Sort$ is closed under \textbf{no type formers}
-%% \end{itemize}
-%% \end{block}
-
-%% \textbf{Design choice:} semantic contexts are \emph{cwfs} + extra structure (not categories!)
-%% \vspace{1em}
-
-%% The notion of \textbf{induction} can be directly defined in a cwf $\mbbC$:
-%% \begin{alignat*}{3}
-%%   & \ms{Inductive} : \ms{Obj}_\mbbC \to \Set \\
-%%   & \ms{Inductive}\,\Gamma := (A : \Ty_\mbbC\,\Gamma) \to \Tm_\mbbC\,\Gamma\,A
-%% \end{alignat*}
-
-%% ``An algebra $\Gamma$ is inductive if every displayed algebra over it has a section.''
-
-%% \end{frame}
-
-%% \begin{frame}{Finitary QII semantics - finite limit cwfs}
-
-%% \begin{definition}{}
-%% \textbf{Finite limit cwf (flcwf)}: cwf + $\Sigma$ + extensional identity + constant families (``democracy'')
-%% \end{definition}
-%% \vspace{1em}
-
-%% Clairambault \& Dybjer: flcwfs are (bi)equivalent to finitely complete categories.
-%% \vspace{1em}
-
-%% We model ToS contexts as flcwfs.
-
-%% \begin{theorem}
-%% In any flcwf, induction is equivalent to initiality.
-%% \end{theorem}
-
-%% \end{frame}
-
-%% \begin{frame}{Finitary QII semantics - summary}
-
-%% We assume that $\mbbC$ is closed under $\top$, $\Sigma$ and extensional identity.
-%% \vspace{1em}
-
-%% (We can model $\mbbC$ using any finitely complete category)
-%% \begin{alignat*}{3}
-%%   & \text{contexts:}                  && \text{flcwfs}\\
-%%   & \text{types:}                     && \text{displayed flcwfs}\\
-%%   & \text{substitutions:}\hspace{2em} && \text{strictly structure-preserving flcwf morphisms}\\
-%%   & \text{terms:}                     && \text{strictly structure-preserving flcwf sections}\\
-%%   & \text{$\Sort$:}                   && \text{the flcwf of types in $\mbbC$}\\
-%%   & \text{$\El$:}                     && \text{discrete displayed flcwf formation}\\
-%%   & \blank\!=\blank\!:                && \text{pointwise equality of strict flcwf sections}\\
-%%   & \Pi_{\mbbC\,\Ty}                    && \text{$\mbbC$-small products}\\
-%%   & \Pi_{\Sort\,\Ty}                    && \text{products with discrete index domains}
-%% \end{alignat*}
-
-%% \end{frame}
-
-%% \begin{frame}{Infinitary QII semantics}
-
-%% \begin{block}{Theory of signatures}
-%%   \begin{itemize}
-%%     \item $\Ty$ is closed under $\Sigma$, $\top$, $\mbbC$-small products, $\Sort$-small products.
-%%     \item $\Sort$ is closed under $\Sigma$, $\top$, $\mbbC$-small products, extensional $\blank\!=\!\blank$.
-%%   \end{itemize}
-%% \end{block}
-
-%% The previous semantics doesn't work!
-%% \vspace{1em}
-
-%% The $\Sort$ type formers (e.g. $\top : \Tm\,\Gamma\,\Sort$)
-%% \text{don't preserve} limits strictly, only up to isos.
-%% \vspace{1em}
-
-%% We switch to weak limit-preservation everywhere. This is technically more complicated.
-%% \vspace{1em}
-
-%% \end{frame}
-
-%% \begin{frame}{Infinitary QII semantics - summary}
-
-%% We assume that $\mbbC$ is closed under $\top$, $\Sigma$, extensional identity
-%% and \alert{$\Pi$}.
-
-%% \vspace{1em}
-
-%% (We can model $\mbbC$ using any LCCC)
-%% \begin{alignat*}{3}
-%%   & \text{contexts:}                  && \text{flcwfs}\\
-%%   & \text{types:}                     && \text{flcwf isofibrations}\\
-%%   & \text{substitutions:}\hspace{2em} && \text{weak cwf morphisms}\\
-%%   & \text{terms:}                     && \text{weak cfw sections}\\
-%%   & \text{$\Sort$:}                   && \text{the flcwf of types in $\mbbC$}\\
-%%   & \text{$\El$:}                     && \text{discrete flcwf isofibration formation}\\
-%%   & \blank\!=\blank\!:                && \text{pointwise equality of weak sections}\\
-%%   & \Pi_{\mbbC\,\Ty}                    && \text{$\mbbC$-small indexed products}\\
-%%   & \Pi_{\Sort\,\Ty}                    && \text{products with discrete index domains}\\
-%%   & \Pi_{\mbbC\,\Sort}                  && \text{\alert{internal} $\mbbC$-small products}\\
-%% \end{alignat*}
-
-%% \end{frame}
-
-%% \begin{frame}{HII semantics (Capriotti \& Sattler)}
-
-%% \begin{block}{Theory of signatures}
-%%   \begin{itemize}
-%%   \item $\Ty$ is closed under $\Sigma$, $\top$, $\mbbC$-small products, $\Sort$-small products,
-%%         intensional $\blank\!=\!\blank$.
-%%     \item $\Sort$ is closed under $\Sigma$, $\top$, $\mbbC$-small products, intensional $\blank\!=\!\blank$.
-%%   \end{itemize}
-%% \end{block}
-
-%% We assume that $\mbbC$ models HoTT (we work in the ``original'' 2LTT).
-%% \begin{alignat*}{3}
-%%   & \text{contexts:}\hspace{2em}      && \text{marked semisimplicial types}\\
-%%   & \text{types:}                     && \text{complete inner Reedy fibrations}\\
-%%   & \text{$\Sort$:}                   && \text{universe of left fibrations}
-%% \end{alignat*}
-%% \vspace{-1.5em}
-%% \begin{itemize}
-%%   \item This also yields a \textbf{structure identity principle} for HII theories.
-%%   \item In an extra step we can add finite limits to categories of algebras.
-%%   \item In yet another step we can show equivalence of induction and initiality.
-%% \end{itemize}
-
-
-%% \end{frame}
-
-%% \section{Term Algebras}
-%% \begin{frame}
-%%   \frametitle{Outline}
-%%   \tableofcontents[currentsection]
-%% \end{frame}
-
-%% \begin{frame}{Term algebras}
-
-%% We'd like \emph{sufficient conditions} on $\mbbC$ to have initial algebras
-%% for each signature.
-%% \vspace{1em}
-
-%% In other words: construct initial algebras from simple ``type formers''.
-%% \vspace{1em}
-
-%% Idea:
-%% \begin{enumerate}
-%% \item If $\mbbC$ has an initial algebra for a ToS, we can use terms and types
-%%       to build initial algs.
-%% \item We construct the initial ToS model from simpler type formers.
-%% \end{enumerate}
-%% \vspace{1em}
-
-%% Currently this works only for some ToS-es \& semantics.
-
-%% \end{frame}
-
-%% \begin{frame}{Term algebras for (in)finitary QII signatures}
-
-%% \begin{block}{Assumptions}
-%% \begin{itemize}
-%% \item $\mbbC$ is a model of ETT.
-%% \item $\mbbC$ has an initial ToS model.
-%% \item We fix a syntactic ToS context $\Omega$ (as a signature).
-%% \end{itemize}
-%% \end{block}
-%% \vspace{1em}
-%% Each inductive sort in $\Omega$ is modeled as a set of terms.
-%% \vspace{1em}
-
-%% For example, if $\Omega = \ms{NatSig}$:
-%% \[  \Nat := \Tm\,(\emptycon\ext(N : \Sort)\ext(z : \El\,N)\ext(s: N \to \El\,N))\,(\El\,N) \]
-
-%% \end{frame}
-
-%% \begin{frame}{Term algebras for (in)finitary QII signatures}
-
-%% \begin{enumerate}
-%% \item An \textbf{internal algebra of $\Omega$} in a ToS model is a
-%%       morphism from the empty context to $\Omega$.
-%% \item By induction on ToS we show that any internal algebra yields
-%%       an $\Omega$-algebra in $\mbbC$ (the term algebra).
-%% \item In the slice model $\ms{ToS}/\Omega$ the identity morphism from $\Omega$ to $\Omega$
-%%       gets us an internal algebra, hence also a term algebra.
-%% \item By another induction on ToS, we can directly show that the term algebra
-%%       is initial.
-%% \end{enumerate}
-%% \vspace{1em}
-
-%% \begin{theorem}
-%% If a model of ETT supports syntax for (in)finitary QII signatures, it supports
-%% all (in)finitary QII types.
-%% \end{theorem}
-
-%% \end{frame}
-
-%% \begin{frame}{Reductions to simple type formers}
-
-%% The remaining job is construct ToS syntaxes from simple type formers.
-%% \vspace{0.5em}
-
-%% This is the \textbf{initiality construction} popularized by Voevodsky.
-%% \vspace{0.5em}
-
-%% Results so far:
-%% \begin{itemize}
-%% \item ToS for \textbf{finitary inductive-inductive signatures} is constructible
-%%       from just \textbf{W-types}.
-%% \item ToS for \textbf{closed QII signatures} was almost\footnote{The constructed theory is not exactly the same, but it can be plausibly adjusted to our use case.} constructed by
-%%       Brunerie and De Boer in Agda from \textbf{propositional extensionality, inductive types and
-%%         simple quotients by relations}.
-%% \end{itemize}
-
-
-%% Open problems:
-%% \begin{itemize}
-%% \item Fiore, Pitts, Steenkamp\footnote{arXiv:2101.02994: \emph{Quotients, inductive types, and quotient inductive types}}: a class of infinitary QITs is constructible from the WISC axiom.
-%%       Can we extend this to infinitary QIITs?
-%% \item The case for HIITs is open.
-%% \end{itemize}
-
-%% \end{frame}
-
+\begin{frame}{Semantics}
+
+Each $\PSh_i$ should be an universe of internal presheaves over an internal category.
+\vspace{1em}
+
+We should work with $\bCat$ somehow, but there are issues with that:
+\begin{itemize}
+\item There's no general $\Pi$.
+\item $\Pi$-types of presheaves and universes of presheaves are not stable under
+      reindexing by arbitrary functors.
+\end{itemize}
+\vspace{1em}
+
+In GLF, the categorical part ($\Base$, $\In$) is purely for bookkeeping, we can't do synthetic
+category theory. We can only do interesting things with presheaves.
+\vspace{1em}
+
+We use \emph{trees of categories} where tree morphisms only have interesting
+action on ``discrete'' parts of the tree.
+
+\end{frame}
+
+\begin{frame}{Semantics}
+
+\textbf{Notation}:
+\begin{itemize}
+\item For category $C$ and split fibration $A$ over it, we write $C \ext A$ for the total category.
+\item For presheaf $A$, we write $\Disc\,A$ for the discrete fibration.
+\end{itemize}
+\vspace{1em}
+
+\textbf{Definition}. A \emph{category telescope} is either the terminal category, or (inductively)
+of the form $C\,\ext\,\Disc\,A\,\ext\,B$ where $C$ is a category telescope. We write $C : \CatTel$
+for a category telescope.
+\vspace{1em}
+
+\textbf{Definition}. A tree of categories is inductively defined as:
+\begin{alignat*}{3}
+  & \mbf{data}\,\Tree\,(B : \CatTel) : \Set\,\mbf{where}\\
+  & \hspace{1em} \ms{node} : (\Gamma : \PSh\,B)\\
+  & \hspace{3.8em}      (n : \mbb{N})\\
+  & \hspace{3.8em}      (C : \Fin\,n \to \Fib\,(B \ext \Disc\,\Gamma))\\
+  & \hspace{2.2em} \to ((i : \Fin\,n) \to \Tree\,(B \ext \Disc\,\Gamma \ext C\,i))\\
+  & \hspace{2.2em} \to \Tree\,B
+\end{alignat*}
+
+\end{frame}
+
+\begin{frame}{Semantics}
+
+\begin{block}{}
+\vspace{-1em}
+{\small
+\begin{alignat*}{3}
+  & \ms{node} &&: (\Gamma : \PSh\,B)(n : \mbb{N})(C : \Fin\,n \to \Fib\,(B \ext \Disc\,\Gamma)) \to ((i : \Fin\,n) \to \Tree\,(B \ext \Disc\,\Gamma \ext C\,i)) \\
+  & &&\to \Tree\,B
+\end{alignat*}
+}
+\end{block}
+\vspace{0.5em}
+
+A GLF context is an element of $\Tree\,1$. Some examples for semantic contexts. We have $\mbb{N}_i : \PSh_i$. We use $\blank\ext\blank$ for ``context extension'' in presheaves as well.
+\begin{alignat*}{3}
+  & \emptycon &&:= \ms{node}\,1\,0\,[]\,[]\\
+  & (\emptycon\,\ext\,\mbb{N}_1) &&:= \ms{node}\,(1\,\ext\,\mbb{N})\,0\,[]\,[]\\
+  & (\emptycon\,\ext\,\mbb{N}_1\,\ext\,\In\,C) &&:= \ms{node}\,(1\,\ext\,\mbb{N})\,1\,[C]\,[\ms{node}\,1\,0\,[]\,[]]\\
+  & (\emptycon\,\ext\,\mbb{N}_1\,\ext\,i : \In\,C\,\ext\,\mbb{N}_{(\base\,i)}) &&:= \ms{node}\,(1\,\ext\,\mbb{N})\,1\,[C]\,[\ms{node}\,(1 \ext \mbb{N})\,0\,[]\,[]]
+\end{alignat*}
+\vspace{-1em}
+\pause
+
+\begin{itemize}
+\item A $\Base$ points to a node of the tree.
+\item An $\In$ points to a subtree of a node.
+\item Extending a context with $A : \PSh_i$ extends the presheaf in node $i$.
+\item Extending a context with $j : \In\,C$ for $C : \Cat_j$ adds a new subtree at node $j$.
+\end{itemize}
+
+
+\end{frame}
 
 
 \end{document}

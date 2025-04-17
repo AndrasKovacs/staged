@@ -307,7 +307,7 @@
 
 \end{frame}
 
-\begin{frame}{GLF basic universes \& type formers}
+\begin{frame}{GLF: basic rules}
 
 \begin{block}{}
 \vspace{-1em}
@@ -418,7 +418,7 @@ $\FMod$ is mechanically derivable from $\SMod$.\footnote{Ambrus Kaposi \& Szumi 
 
 \begin{frame}{Example: embedding pure lambda calculus}
 
-\begin{block}{GLF Axiom 1}
+\begin{block}{GLF rule}
   Assuming $M : \FMod_i$ and $j : \In\,M$, we have $\S_j : \SMod_j$.
 
   {\footnotesize (In ``$\In\,M$'' we implicitly convert $M$ to its underlying category.)}
@@ -450,7 +450,7 @@ With a reasonable amount of sugar:
 \begin{frame}{}
 
 \begin{itemize}
-\item More generally, we have the previous axiom for every second-order generalized algebraic theory.
+\item More generally, we have the previous rule for every second-order generalized algebraic theory.
 \item Hence: all 2LTTs are syntactic fragments of GLF.
 \item (For each 2LTT, the semantics of GLF restricts to the standard presheaf semantics of the 2LTT.)
 \end{itemize}
@@ -460,7 +460,7 @@ With a reasonable amount of sugar:
 
 \begin{frame}{Yoneda: conversion between internal \& external views}
 
-\begin{block}{GLF Axiom: Yoneda embedding for pure LC}
+\begin{block}{GLF rule: Yoneda embedding for pure LC}
 Assuming $M : \FMod_i$ and writing $\simeq$ for definitional isomorphism, we have
 \begin{alignat*}{4}
   & \Y && : \Con_M                 &&\to\,  &&((j : \In_M) \to \PSh_j) \\
@@ -483,7 +483,7 @@ $\Y$ and $\Lambda$ allow ad-hoc switching between first-order and second-order n
 Let's redefine some operations using second-order notation:
 \begin{alignat*}{6}
   & \ms{id} : \Sub_M\,\Gamma\,\Gamma && \ms{comp} : \Sub_M\,\Delta\,\Theta \to \Sub_M\,\Gamma\,\Delta \to \Sub_M\,\Gamma\,\Theta\\
-  & \ms{id} := \Lambda\,(\lambda\,j\,\gamma.\,\gamma)\quad\quad && \ms{comp}\,\sigma\,\delta := \Lambda\,(\lambda\,j\,\gamma.\,\Y\,\sigma\,(\Y\,\delta\,\gamma\,j)\,j
+  & \ms{id} := \Lambda\,(\lambda\,j\,\gamma.\,\gamma)\quad\quad && \ms{comp}\,\sigma\,\delta := \Lambda\,(\lambda\,j\,\gamma.\,\Y\,\sigma\,(\Y\,\delta\,\gamma\,j)\,j)
 \end{alignat*}
 \pause
 With reasonable amount of sugar:
@@ -504,11 +504,11 @@ Example for ``pattern matching'' notation:
 
 \end{frame}
 
-\begin{frame}{Second-order named notation}
+\begin{frame}{Second-order notation}
   \begin{itemize}
   \item When working with CwF-s, De Bruijn indices and substitutions
         can be hard to read.
-  \item Handwaved ``named'' binders in CwFs have been used a couple of times.
+  \item Handwaved ``named'' binders in CwFs have been used in literature (e.g.\ by me).
   \item GLF provides a rigorous implementation of such notation.
   \end{itemize}
 \end{frame}
@@ -590,7 +590,34 @@ Example: a construction which looks awful in explicit CwF notation\footnote{Kapo
 
 \end{frame}
 
-\begin{frame}{Sketch of semantics}
+\begin{frame}{General GLF rules}
+
+For every second-order generalized algebraic signature $\mbb{T}$:
+\begin{itemize}
+\item We compute (externally to GLF) $\FMod_{(\mbb{T},\,i)}$ and $\SMod_{(\mbb{T},\,i)}$.
+\item We specify that GLF has $\S_{(\mbb{T},\,i)}$.
+\item We specify that GLF has Yoneda embedding.
+\end{itemize}
+\vspace{1em}
+
+It's not simple compute the specification of Yoneda embedding from $\mbb{T}$!
+Doing this is part of future work.
+
+\pause
+\vspace{1em}
+Also, these are not all rules that we might want to have!
+\begin{itemize}
+\item \emph{For example:} conversion between internal and external natural numbers, i.e.\
+  $\mbb{N}_i \simeq ((j : \In_M) \to \mbb{N}_j)$ where $M : \Cat_i$.
+\item This can be broadly generalized to an isomorphism of ``external'' and ``internal''
+  2LTT models.
+\item But we're not sure yet which rules are the best to enshrine in GLF syntax.
+\end{itemize}
+
+
+\end{frame}
+
+\begin{frame}{Semantics}
 
 Each $\PSh_i$ should be an universe of internal presheaves over an internal category.
 \vspace{1em}
@@ -607,12 +634,12 @@ In GLF, the categorical part ($\Base$, $\In$) is purely for bookkeeping, we can'
 category theory. We can only do interesting things with presheaves.
 \vspace{1em}
 
-GLF contexts are \emph{trees of categories} where tree morphisms only have interesting
-action on ``discrete'' parts of the tree.
+Semantic contexts are certain \emph{trees of categories}, containing a mix of discrete and
+non-discrete fibrations, and tree morphisms only have nontrivial action on discrete parts of trees.
 
 \end{frame}
 
-\begin{frame}{Sketch of semantics}
+\begin{frame}{Semantics}
 
 \textbf{Notation}:
 \begin{itemize}
@@ -638,7 +665,7 @@ $C : \CatTel$ for a category telescope.
 
 \end{frame}
 
-\begin{frame}{Sketch of semantics}
+\begin{frame}{Semantics}
 
 \begin{block}{}
 \vspace{-1em}
@@ -662,11 +689,59 @@ A GLF context is an element of $\Tree\,1$. Some examples for semantic contexts. 
 \pause
 
 \begin{itemize}
-\item A $\Base$ points to a node of the tree.
-\item An $\In$ points to a subtree of a node.
+\item A $\Base$ in context $\Gamma$ points to a node in $\Gamma$.
+\item An $\In\,C$ in context $\Gamma$ points to a subtree of a node.
 \item Extending a context with $A : \PSh_i$ extends the presheaf in node $i$.
 \item Extending a context with $j : \In\,C$ for $C : \Cat_j$ adds a new subtree at node $j$.
 \end{itemize}
+\end{frame}
+
+\begin{frame}{Semantics}
+\begin{block}{}
+\vspace{-1em}
+{\small
+\begin{alignat*}{3}
+  & \ms{node} &&: (\Gamma : \PSh\,B)(n : \mbb{N})(C : \Fin\,n \to \Fib\,(B \ext \Disc\,\Gamma)) \to ((i : \Fin\,n) \to \Tree\,(B \ext \Disc\,\Gamma \ext C\,i)) \\
+  & &&\to \Tree\,B
+\end{alignat*}
+}
+\end{block}
+\vspace{2em}
+\textbf{Tree morphisms} are defined inductively \& levelwise, containing
+\begin{itemize}
+\item natural transformations between $\Gamma : \PSh\,B$ components
+\item functions for reindexing subtrees of type $\Fin\,n \to \Fin\,m$
+\end{itemize}
+such that the non-discrete fibrations are preserved.
+\vspace{1em}
+
+A semantic $\bs{\PSh_i}$ in context $\Gamma$ is a presheaf over the category given by the path from the root of $\Gamma$ to the node $i$.
+\vspace{6em}
+\end{frame}
+
+\begin{frame}{Further work}
+
+\begin{itemize}
+\item Decide on the exact rules of GLF.
+\item Compute the specification of Yoneda embedding from SOGAT signatures,
+      define semantics in this generality.
+\item Investigate syntactic metatheory.
+  \begin{itemize}
+    \item For computer implementation, we need to wean ourselves off extensional TT!
+    \item Definitional isos for $\Y$ are unusual in syntax.
+    \item Simpler syntactic fragments of GLF could be useful \& easier to implement.
+  \end{itemize}
+\end{itemize}
+\vspace{1em}
+
+\begin{center}
+  \Large{\textbf{Thank you!}}
+\end{center}
+\vspace{1em}
+
+\small
+{Shameless bonus advertisement: 40th Agda implementors' meeting, Budapest, May 26-31, free participation,
+\url{https://wiki.portal.chalmers.se/agda/Main/AIMXXXX}}
 
 
 \end{frame}

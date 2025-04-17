@@ -6,7 +6,7 @@
 %% kill footline
 \setbeamertemplate{footline}[frame number]{}
 \setbeamertemplate{navigation symbols}{}
-\setbeamertemplate{footline}{}
+%% \setbeamertemplate{footline}{}
 
 %% bibliography
 \bibliographystyle{alpha}
@@ -451,7 +451,9 @@ With a reasonable amount of sugar:
 
 \begin{itemize}
 \item More generally, we have the previous rule for every second-order generalized algebraic theory.
+\pause
 \item Hence: all 2LTTs are syntactic fragments of GLF.
+\pause
 \item (For each 2LTT, the semantics of GLF restricts to the standard presheaf semantics of the 2LTT.)
 \end{itemize}
 
@@ -510,6 +512,8 @@ Example for ``pattern matching'' notation:
         can be hard to read.
   \item Handwaved ``named'' binders in CwFs have been used in literature (e.g.\ by me).
   \item GLF provides a rigorous implementation of such notation.
+  \item For many use cases, we can use second-order notation and just forget about
+        the first-order combinators.
   \end{itemize}
 \end{frame}
 
@@ -577,7 +581,7 @@ Example: a construction which looks awful in explicit CwF notation\footnote{Kapo
   & \Gamma^{\circ}\,\ext^{\circ}\,A^{\circ} && := \Sigma(\Gamma^{\circ}[\ms{p}\circ F_{\ext.1}])(A^{\circ}[\ms{p} \circ F_{\ext.1} \circ \ms{p},\,\ms{q},\,\ms{q}[F_{\ext.1} \circ \ms{p}]])\\
   & ... &&
 \end{alignat*}
-\vspace{-0.5em}
+\vspace{-1.0em}
 {\normalsize but is reasonable in sugary GLF notation:}
 \begin{alignat*}{5}
   &\Con^{\circ}\,\Gamma && := \Ty\,(\gamma : F\,\Gamma)\\
@@ -728,11 +732,15 @@ A semantic $\bs{\PSh_i}$ in context $\Gamma$ is a presheaf over the category giv
 \item Investigate syntactic metatheory.
   \begin{itemize}
     \item For computer implementation, we need to wean ourselves off extensional TT!
+      \begin{itemize}
+        \item (but informal extensional GLF is already useful)
+      \end{itemize}
     \item Definitional isos for $\Y$ are unusual in syntax.
     \item Simpler syntactic fragments of GLF could be useful \& easier to implement.
   \end{itemize}
 \end{itemize}
-\vspace{1em}
+\vspace{0.6em}
+\pause
 
 \begin{center}
   \Large{\textbf{Thank you!}}

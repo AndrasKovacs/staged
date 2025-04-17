@@ -331,14 +331,14 @@
 \begin{frame}{Basic things we can do}
 \begin{block}{}
 \vspace{-0.6em}
-{\footnotesize
-  \[ \U : \U \hspace{1.5em} \Base : \U \hspace{1.5em} \mbf{1} : \Base \hspace{1.5em} \PSh : \Base \to \U \]
+{\small
+  \[ \U : \U \hspace{1.5em} \Base : \U \hspace{1.5em} 1 : \Base \hspace{1.5em} \PSh : \Base \to \U \]
   \[ \Cat_i : \PSh_i := \text{\emph{type of cats in $\PSh_i$}} \hspace{1.5em} \In : \Cat_i \to \U \hspace{1.5em} \base : \In\,\mbbC \to \Base \]
 }
 \end{block}
 \vspace{1em}
 
-$\PSh_1$ is a universe supporting ETT (semantically: universe of sets).
+$\PSh_1$ is a universe supporting ETT. Semantically, $\PSh_1$ is a universe of sets.
 \vspace{1em}
 \pause
 
@@ -458,23 +458,23 @@ With a reasonable amount of sugar:
 
 \end{frame}
 
-\begin{frame}{Moving between internal \& external views}
+\begin{frame}{Yoneda: conversion between internal \& external views}
 
 \begin{block}{GLF Axiom: Yoneda embedding for pure LC}
-Assuming $M : \FMod_i$, we have
+Assuming $M : \FMod_i$ and writing $\simeq$ for definitional isomorphism, we have
 \begin{alignat*}{4}
   & \Y && : \Con_M                 &&\to\,  &&((j : \In_M) \to \PSh_j) \\
   & \Y && : \Sub_M\,\Gamma\,\Delta &&\simeq &&((j : \In_M) \to \Y\,\Gamma\,j \to \Y\,\Delta\,j)\\
   & \Y && : \Tm_M\,\Gamma          &&\simeq &&((j : \In_M) \to \Y\,\Gamma\,j \to \Tm_{\S_j})
 \end{alignat*}
-such that $\Y$ preserves empty context and context extension up to iso:
+such that $\Y$ preserves empty context and context extension:
 \begin{alignat*}{4}
   & \Y\,\emptycon\,j &&\simeq \top \\
   & \Y\,(\Gamma\,\ext)\,j &&\simeq \Y\,\Gamma\,j \times \Tm_{\S_j}
 \end{alignat*}
 and $\Y$ preserves all other structure strictly.
 \end{block}
-\emph{Notation}: we write $\Lambda$ for inverse $\Y$.
+\textbf{Notation}: we write $\Lambda$ for inverses of $\Y$.
 \end{frame}
 
 \begin{frame}{LC examples, sugar}
@@ -496,10 +496,10 @@ Or even:
   &\ms{comp}\,\sigma\,\delta := \Lambda\,\gamma.\,\sigma\,(\delta\,\gamma)
 \end{alignat*}
 \pause
-Example for ``pattern matching'' notation ($\Y$ preserves extended contexts):
+Example for ``pattern matching'' notation:
 \begin{alignat*}{3}
   & \ms{p} : \Sub_M\,(\Gamma\,\ext)\,\Gamma \\
-  & \ms{p} := \Lambda\,(\gamma,\,\alpha).\,\gamma
+  & \ms{p} := \Lambda\,(\gamma,\,\alpha).\,\gamma \quad\quad \text{\emph{Note: $\Y\,(\Gamma\,\ext) \simeq \Y\,\Gamma \times \Tm_{\S_j}$}}
 \end{alignat*}
 
 \end{frame}
@@ -513,7 +513,7 @@ Example for ``pattern matching'' notation ($\Y$ preserves extended contexts):
   \end{itemize}
 \end{frame}
 
-\begin{frame}{Embedding type theories}
+\begin{frame}{Embedding dependent type theories}
 
 \begin{columns}
 \begin{column}{0.5\textwidth}
@@ -539,55 +539,58 @@ In a second order model, we have
 \end{columns}
 \vspace{0.5em}
 \pause
+Yoneda embedding:
+\begin{alignat*}{4}
+  & \Y : \Con_M &&\to\,&&((j : \In\,M) \to \PSh_j) \\
+  & \Y : \Sub_M\,\Gamma\,\Delta &&\simeq &&((j : \In\,M) \to \Y\,\Gamma\,j \to \Y\,\Delta\,j) \\
+  & \Y : \Ty_M\,\Gamma &&\simeq &&((j : \In\,M) \to \Y\,\Gamma\,j \to \Ty_{\S_j})\\
+  & \Y : \Tm_M\,\Gamma\,A &&\simeq &&((j : \In\,M) \to (\gamma : \Y\,\Gamma\,j) \to \Tm_{\S_j}\,(\Y\,A\,j\,\gamma))
+\end{alignat*}
 
-\emph{Sugar for contexts \& sorts}.
+\end{frame}
+
+\begin{frame}{Embedding dependent type theories}
+
+\textbf{Sugar for contexts}:
 \[(\Gamma \ext A \ext B) : \Con_M \quad \text{is equal to}\quad  \Gamma \ext (\Lambda\,\gamma. \Y A\,\gamma) \ext (\Lambda\,(\gamma,\,\alpha). \Y B\,(\gamma,\,\alpha)) \]
 \pause
 This suggests the notation:
 \[(\gamma : \Gamma,\,\alpha : \Y A\,\gamma,\,\beta : \Y B\,(\gamma,\,\alpha)) : \Con_M\]
 With implicit $\Y$:
 \[(\gamma : \Gamma,\,\alpha : A\,\gamma,\,\beta : B\,(\gamma,\,\alpha)) : \Con_M\]
-
-\end{frame}
-
-\begin{frame}{Embedding type theories}
-
-More ``contextual'' Sugar for $\Tm_M$. We have
+\pause
+\textbf{Sugar for $\bs{\Tm_M$}}. We have
 \[  \Tm_M\,(\Gamma\,\ext\,A\,\ext\,B)\,C \,=\, \Tm_M\,(\Gamma\,\ext\,A\,\ext\,B)\,(\Lambda\,(\gamma,\,\alpha,\,\beta).\,B\,(\gamma,\,\alpha,\,\beta)) \]
 which suggests the notation
 \[  \Tm_M\,(\gamma : \Gamma,\,\alpha : A\,\gamma,\,\beta : B\,(\gamma,\,\alpha))\,(B\,(\gamma,\,\alpha,\,\beta)) \]
 
 \end{frame}
 
-\begin{frame}{Embedding type theories}
+\begin{frame}{Embedding dependent type theories}
 
 Example: a construction which looks awful in explicit CwF notation\footnote{Kaposi, Huber, Sattler: \emph{Gluing for Type Theory}, Section 5}
 {\small
 \begin{alignat*}{5}
   &\Con^{\circ}\,\Gamma && := \Ty\,(F\,\Gamma)\\
   &\Ty^{\circ}\,\Gamma^{\circ}\,A && := \Ty\,(F\,\Gamma\,\ext\,\Gamma^{\circ}\,\ext\,F\,A[\ms{p}])\\
-  %% &\Sub^{\circ}\,\Gamma^{\circ}\,\Delta^{\circ}\,\sigma && :=
-  %% \Tm\,(F\,\Gamma\,\ext\,\Gamma^{\circ})\,(\Delta^{\circ}[F\,\sigma \circ \ms{p}])\\
   &\Tm^{\circ}\,\Gamma^{\circ}\,A^{\circ}\,t && := \Tm\,(F\,\Gamma\,\ext\,\Gamma^{\circ})\,(A^{\circ}[\id,\,F\,t[\ms{p}]))\\
   & \Gamma^{\circ}\,\ext^{\circ}\,A^{\circ} && := \Sigma(\Gamma^{\circ}[\ms{p}\circ F_{\ext.1}])(A^{\circ}[\ms{p} \circ F_{\ext.1} \circ \ms{p},\,\ms{q},\,\ms{q}[F_{\ext.1} \circ \ms{p}]])\\
   & ... &&
 \end{alignat*}
+\vspace{-0.5em}
 {\normalsize but is reasonable in sugary GLF notation:}
 \begin{alignat*}{5}
   &\Con^{\circ}\,\Gamma && := \Ty\,(\gamma : F\,\Gamma)\\
   &\Ty^{\circ}\,\Gamma^{\circ}\,A && := \Ty\,(\gamma : F\,\Gamma,\,\gamma^{\circ} : \Gamma^{\circ}\,\gamma,\,\alpha : F\,A\,\gamma)\\
-  %% &\Sub^{\circ}\,\Gamma^{\circ}\,\Delta^{\circ}\,\sigma && :=
-  %% \Tm\,(\gamma : F\,\Gamma,\,\gamma^{\circ} : \Gamma^{\circ}\,\gamma)\,(\Delta^{\circ}\,(F\,\sigma\,\gamma)))\\
   &\Tm^{\circ}\,\Gamma^{\circ}\,A^{\circ}\,t && := \Tm\,(\gamma : F\,\Gamma,\,\gamma^{\circ} : \Gamma^{\circ}\,\gamma)\,(A^{\circ}\,(\gamma,\,\gamma^{\circ},\,F\,t\,\gamma))\\
-  %% & \Gamma^{\circ}\,\ext^{\circ}\,A^{\circ} &&:= \Lambda\,\gamma.\, \Sigma(\gamma^{\circ} : \Gamma^{\circ}\,(\ms{fst}\,(F_{\ext.1}\,\gamma)) \times (A^{\circ}\,((\ms{fst}\,(F_{\ext.1}\,\gamma)),\,\gamma^{\circ},\,\ms{snd}\,(F_{\ext.1}\,\gamma)))   \\
-  & \Gamma^{\circ}\,\ext^{\circ}\,A^{\circ} &&:= \Lambda\,(F_{\ext.1}(\gamma,\,\alpha)).\, \Sigma(\gamma^{\circ} : \Gamma^{\circ}\,\gamma) \times A^{\circ}\,(\gamma,\,\gamma^{\circ},\,\alpha)   \\
-  & ... &&
+  & \Gamma^{\circ}\,\ext^{\circ}\,A^{\circ} &&:= \Lambda\,(F_{\ext.1}(\gamma,\,\alpha)).\, \Sigma(\gamma^{\circ} : \Gamma^{\circ}\,\gamma) \times A^{\circ}\,(\gamma,\,\gamma^{\circ},\,\alpha)
 \end{alignat*}
 }
+\emph{It's a fair amount of sugar, but we can always rigorously desugar when it doubt!}
 
 \end{frame}
 
-\begin{frame}{Semantics}
+\begin{frame}{Sketch of semantics}
 
 Each $\PSh_i$ should be an universe of internal presheaves over an internal category.
 \vspace{1em}
@@ -604,38 +607,38 @@ In GLF, the categorical part ($\Base$, $\In$) is purely for bookkeeping, we can'
 category theory. We can only do interesting things with presheaves.
 \vspace{1em}
 
-We use \emph{trees of categories} where tree morphisms only have interesting
+GLF contexts are \emph{trees of categories} where tree morphisms only have interesting
 action on ``discrete'' parts of the tree.
 
 \end{frame}
 
-\begin{frame}{Semantics}
+\begin{frame}{Sketch of semantics}
 
 \textbf{Notation}:
 \begin{itemize}
-\item For category $C$ and split fibration $A$ over it, we write $C \ext A$ for the total category.
-\item For presheaf $A$, we write $\Disc\,A$ for the discrete fibration.
+\item For a category $C$ and a split fibration $A$ over it, we write $C \ext A$ for the total category.
+\item For a presheaf $A$, we write $\Disc\,A$ for the derived discrete fibration.
 \end{itemize}
 \vspace{1em}
 
-\textbf{Definition}. A \emph{category telescope} is either the terminal category, or (inductively)
-of the form $C\,\ext\,\Disc\,A\,\ext\,B$ where $C$ is a category telescope. We write $C : \CatTel$
-for a category telescope.
+\textbf{Definition}. A \emph{category telescope} is either the terminal category, or it is
+(inductively) of the form $C\,\ext\,\Disc\,A\,\ext\,B$ where $C$ is a category telescope. We write
+$C : \CatTel$ for a category telescope.
 \vspace{1em}
 
 \textbf{Definition}. A tree of categories is inductively defined as:
 \begin{alignat*}{3}
   & \mbf{data}\,\Tree\,(B : \CatTel) : \Set\,\mbf{where}\\
   & \hspace{1em} \ms{node} : (\Gamma : \PSh\,B)\\
-  & \hspace{3.8em}      (n : \mbb{N})\\
-  & \hspace{3.8em}      (C : \Fin\,n \to \Fib\,(B \ext \Disc\,\Gamma))\\
+  & \hspace{2.2em} \to  (n : \mbb{N})\\
+  & \hspace{2.2em} \to  (C : \Fin\,n \to \Fib\,(B \ext \Disc\,\Gamma))\\
   & \hspace{2.2em} \to ((i : \Fin\,n) \to \Tree\,(B \ext \Disc\,\Gamma \ext C\,i))\\
   & \hspace{2.2em} \to \Tree\,B
 \end{alignat*}
 
 \end{frame}
 
-\begin{frame}{Semantics}
+\begin{frame}{Sketch of semantics}
 
 \begin{block}{}
 \vspace{-1em}

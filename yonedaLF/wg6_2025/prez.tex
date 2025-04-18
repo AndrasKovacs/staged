@@ -587,7 +587,7 @@ Example: a construction which looks awful in explicit CwF notation\footnote{Kapo
   &\Con^{\circ}\,\Gamma && := \Ty\,(\gamma : F\,\Gamma)\\
   &\Ty^{\circ}\,\Gamma^{\circ}\,A && := \Ty\,(\gamma : F\,\Gamma,\,\gamma^{\circ} : \Gamma^{\circ}\,\gamma,\,\alpha : F\,A\,\gamma)\\
   &\Tm^{\circ}\,\Gamma^{\circ}\,A^{\circ}\,t && := \Tm\,(\gamma : F\,\Gamma,\,\gamma^{\circ} : \Gamma^{\circ}\,\gamma)\,(A^{\circ}\,(\gamma,\,\gamma^{\circ},\,F\,t\,\gamma))\\
-  & \Gamma^{\circ}\,\ext^{\circ}\,A^{\circ} &&:= \Lambda\,(F_{\ext.1}(\gamma,\,\alpha)).\, \Sigma(\gamma^{\circ} : \Gamma^{\circ}\,\gamma) \times A^{\circ}\,(\gamma,\,\gamma^{\circ},\,\alpha)
+  & \Gamma^{\circ}\,\ext^{\circ}\,A^{\circ} &&:= \Lambda\,(F_{\ext.2}(\gamma,\,\alpha)).\, \Sigma(\gamma^{\circ} : \Gamma^{\circ}\,\gamma) \times A^{\circ}\,(\gamma,\,\gamma^{\circ},\,\alpha)
 \end{alignat*}
 }
 \emph{It's a fair amount of sugar, but we can always rigorously desugar when it doubt!}
@@ -625,6 +625,7 @@ Also, these are not all rules that we might want to have!
 
 Each $\PSh_i$ should be an universe of internal presheaves over an internal category.
 \vspace{1em}
+\pause
 
 We should work with $\bCat$ somehow, but there are issues with that:
 \begin{itemize}
@@ -633,13 +634,18 @@ We should work with $\bCat$ somehow, but there are issues with that:
       reindexing by arbitrary functors.
 \end{itemize}
 \vspace{1em}
+\pause
 
-In GLF, the categorical part ($\Base$, $\In$) is purely for bookkeeping, we can't do synthetic
-category theory. We can only do interesting things with presheaves.
+In GLF, we can't do any interesting categorical reasoning! $\Base$ and $\In$ are purely
+for managing internal/external languages.
 \vspace{1em}
 
-Semantic contexts are certain \emph{trees of categories}, containing a mix of discrete and
-non-discrete fibrations, and tree morphisms only have nontrivial action on discrete parts of trees.
+\pause
+GLF contexts are modeled as certain \emph{trees of categories}:
+\begin{itemize}
+\item Each node represents a presheaf universe, each edge represents an internal/external switch.
+\item Tree morphisms only have non-trivial action on discrete data in trees.
+\end{itemize}
 
 \end{frame}
 

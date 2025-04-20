@@ -1,6 +1,6 @@
 # Fdb version 3
-["pdflatex"] 1744963680 "prez.tex" "prez.pdf" "prez" 1744963683
-  "/etc/texmf/web2c/texmf.cnf" 1699607946 475 c0e671620eb5563b2130f56340a5fde8 ""
+["pdflatex"] 1745175884 "prez.tex" "prez.pdf" "prez" 1745175885
+  "/etc/texmf/web2c/texmf.cnf" 1717363826 475 c0e671620eb5563b2130f56340a5fde8 ""
   "/usr/share/texlive/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/jknappen/ec/ecso0800.tfm" 1136768653 3584 9d213a5e33aba09782ffab939fc38a6f ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmbsy5.tfm" 1246382020 1120 1e8878807317373affa7f7bba4cf2f6a ""
@@ -251,14 +251,14 @@
   "/usr/share/texlive/texmf-dist/tex/latex/xcolor/xcolor.sty" 1635798903 56029 3f7889dab51d620aa43177c391b7b190 ""
   "/usr/share/texlive/texmf-dist/web2c/texmf.cnf" 1644012257 39432 7155514e09a3d69036fac785183a21c2 ""
   "/usr/share/texmf/fonts/enc/dvips/cm-super/cm-super-t1.enc" 1636152094 2971 def0b6c1f0b107b3b936def894055589 ""
-  "/usr/share/texmf/fonts/type1/public/cm-super/sfso0800.pfb" 1699607953 162254 a40b2914ccb80b8e886013fce10222b8 ""
+  "/usr/share/texmf/fonts/type1/public/cm-super/sfso0800.pfb" 1717363830 162254 a40b2914ccb80b8e886013fce10222b8 ""
   "/usr/share/texmf/web2c/texmf.cnf" 1644012257 39432 7155514e09a3d69036fac785183a21c2 ""
-  "/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map" 1699607959 4379155 98693266ff65f58d9f98aff394de12d2 ""
-  "/var/lib/texmf/web2c/pdftex/pdflatex.fmt" 1710580752 2799665 29983c3f4f222b983fa07592e708955e ""
-  "prez.aux" 1744963682 3575 a64b792f7cffd0f4d6499e2737b20e01 "pdflatex"
-  "prez.nav" 1744963682 2061 43b93d2c4a964ffaba862d58987d4a90 "pdflatex"
-  "prez.out" 1744963681 0 d41d8cd98f00b204e9800998ecf8427e "pdflatex"
-  "prez.tex" 1744963676 25959 bc198e8dae8ba41fe982d1db3095c11a ""
+  "/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map" 1717612401 4379155 98693266ff65f58d9f98aff394de12d2 ""
+  "/var/lib/texmf/web2c/pdftex/pdflatex.fmt" 1717612422 2801241 f812bb69c6be5a35b82bc3666bd833db ""
+  "prez.aux" 1745175885 3575 8a158481a39c4b4d7fb7800806182873 "pdflatex"
+  "prez.nav" 1745175885 2061 772ca0f507045ad5eea09ff6944c1bf8 "pdflatex"
+  "prez.out" 1745175885 0 d41d8cd98f00b204e9800998ecf8427e "pdflatex"
+  "prez.tex" 1745175882 25945 fc455b473ac186a0afae841534eae522 ""
   (generated)
   "prez.aux"
   "prez.log"

@@ -424,6 +424,7 @@ $\FMod$ is mechanically derivable from $\SMod$.\footnote{Ambrus Kaposi \& Szumi 
   {\footnotesize (In ``$\In\,M$'' we implicitly convert $M$ to its underlying category.)}
 \end{block}
 \vspace{0.5em}
+\pause
 
 Now we have a 2LTT inside $\PSh_j$:
 \begin{itemize}
@@ -436,13 +437,13 @@ Y-combinator as example:
 \begin{alignat*}{3}
   & \ms{YC} : \Tm_{\S_j} \\
   & \ms{YC} := \lam_{\S_j}(\lambda\,f.\,(\lam_{\S_j} (\lambda x.\, x\,\$_{\S_j}\,x))\,\$_{\S_j}\,
-               (\lam_{\S_j} (\lambda f.\,\lam_{\S_j} (\lambda x.\, f \,\$_{\S_j}\, (x \,\$_{\S_j}\, x)))))
+               (\lam_{\S_j} (\lambda x.\, f \,\$_{\S_j}\, (x \,\$_{\S_j}\, x))))
 \end{alignat*}
 \pause
 With a reasonable amount of sugar:
 \begin{alignat*}{3}
   & \ms{YC} : \Tm_{\S_j} \\
-  & \ms{YC} := \lam\,f.\,(\lam\,x.\,x\,x)\,(\lam\,f.\,\lam\,x.\,f\,(x\,x))
+  & \ms{YC} := \lam\,f.\,(\lam\,x.\,x\,x)\,(\lam\,x.\,f\,(x\,x))
 \end{alignat*}
 
 \end{frame}
@@ -450,7 +451,7 @@ With a reasonable amount of sugar:
 \begin{frame}{}
 
 \begin{itemize}
-\item More generally, we have the previous rule for every second-order generalized algebraic theory.
+\item More generally, we have the previous GLF rule for every second-order generalized algebraic theory.
 \pause
 \item Hence: all 2LTTs are syntactic fragments of GLF.
 \pause
@@ -564,9 +565,9 @@ With implicit $\Y$:
 \[(\gamma : \Gamma,\,\alpha : A\,\gamma,\,\beta : B\,(\gamma,\,\alpha)) : \Con_M\]
 \pause
 \textbf{Sugar for $\bs{\Tm_M$}}. We have
-\[  \Tm_M\,(\Gamma\,\ext\,A\,\ext\,B)\,C \,=\, \Tm_M\,(\Gamma\,\ext\,A\,\ext\,B)\,(\Lambda\,(\gamma,\,\alpha,\,\beta).\,B\,(\gamma,\,\alpha,\,\beta)) \]
+\[  \Tm_M\,(\Gamma\,\ext\,A\,\ext\,B)\,C \,=\, \Tm_M\,(\Gamma\,\ext\,A\,\ext\,B)\,(\Lambda\,(\gamma,\,\alpha,\,\beta).\,C\,(\gamma,\,\alpha,\,\beta)) \]
 which suggests the notation
-\[  \Tm_M\,(\gamma : \Gamma,\,\alpha : A\,\gamma,\,\beta : B\,(\gamma,\,\alpha))\,(B\,(\gamma,\,\alpha,\,\beta)) \]
+\[  \Tm_M\,(\gamma : \Gamma,\,\alpha : A\,\gamma,\,\beta : B\,(\gamma,\,\alpha))\,(C\,(\gamma,\,\alpha,\,\beta)) \]
 
 \end{frame}
 
@@ -590,7 +591,7 @@ Example: a construction which looks awful in explicit CwF notation\footnote{Kapo
   & \Gamma^{\circ}\,\ext^{\circ}\,A^{\circ} &&:= \Lambda\,(F_{\ext.2}(\gamma,\,\alpha)).\, \Sigma(\gamma^{\circ} : \Gamma^{\circ}\,\gamma) \times A^{\circ}\,(\gamma,\,\gamma^{\circ},\,\alpha)
 \end{alignat*}
 }
-\emph{It's a fair amount of sugar, but we can always rigorously desugar when it doubt!}
+\emph{It's a fair amount of sugar, but we can always rigorously desugar when in doubt!}
 
 \end{frame}
 
@@ -604,7 +605,7 @@ For every second-order generalized algebraic signature $\mbb{T}$:
 \end{itemize}
 \vspace{1em}
 
-It's not simple compute the specification of Yoneda embedding from $\mbb{T}$!
+It's not simple to compute the specification of Yoneda embedding from $\mbb{T}$!
 Doing this is part of future work.
 
 \pause
@@ -688,7 +689,7 @@ $C : \CatTel$ for a category telescope.
 \end{block}
 \vspace{0.5em}
 
-A GLF context is an element of $\Tree\,1$. Some examples for semantic contexts. We have $\mbb{N}_i : \PSh_i$. We use $\blank\ext\blank$ for ``context extension'' in presheaves as well.
+A GLF context is an element of $\Tree\,1$. We give some examples for semantic contexts. We have $\mbb{N}_i : \PSh_i$. We use $\blank\ext\blank$ for ``context extension'' in presheaves as well.
 \begin{alignat*}{3}
   & \emptycon &&:= \ms{node}\,1\,0\,[]\,[]\\
   & (\emptycon\,\ext\,\mbb{N}_1) &&:= \ms{node}\,(1\,\ext\,\mbb{N})\,0\,[]\,[]\\
@@ -702,7 +703,7 @@ A GLF context is an element of $\Tree\,1$. Some examples for semantic contexts. 
 \item A $\Base$ in context $\Gamma$ points to a node in $\Gamma$.
 \item An $\In\,C$ in context $\Gamma$ points to a subtree of a node.
 \item Extending a context with $A : \PSh_i$ extends the presheaf in node $i$.
-\item Extending a context with $j : \In\,C$ for $C : \Cat_j$ adds a new subtree at node $j$.
+\item Extending a context with $j : \In\,C$ for $C : \Cat_i$ adds a new subtree at node $i$.
 \end{itemize}
 \end{frame}
 

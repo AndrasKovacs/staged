@@ -1,0 +1,438 @@
+
+-- Experiment on
+--------------------------------------------------------------------------------
+
+What happens if I weaken pure LC so that Tm isn't locally representable?
+
+Con : Cat with terminal object
+
+_+     : Con → Con
+p      : Sub (Γ+) Γ
+q      : Tm (Γ+)
+id+    = id
+(σ∘δ)+ = σ+ ∘ δ+
+p∘(σ+) = σ∘p
+q[σ+]  = q
+
+lam  : Tm (Γ+) → Tm Γ
+_app : Tm Γ → Tm (Γ+)
+
+(lam t) app = t
+lam (t app) = t
+
+- what syntax is being presented?
+
+λ x. x
+lam q
+
+λ x y. x
+lam (lam q[p])
+
+λ x y. y
+lam (lam q)
+
+λ f x. f x
+lam (lam (q app))
+
+λ f x y. f y
+lam (lam (lam (q[p] app)))
+
+λ f x y. f x
+lam (lam (lam (q app [p])))
+
+λ f g x. g x
+lam (lam (lam (q app)))
+
+λ f x y. f x y
+lam (lam (lam (q app app)))
+
+λ y. (λ x. x) y = λ y. y
+lam ((lam q) app) = lam q    OK
+
+λ f x. f x = λ f. f
+lam (lam (q app)) = lam q    OK
+
+
+- variable-ful notation:
+
+x ∈ Γ
+──────
+Γ ⊢ x
+
+ Γ,x ⊢ t
+──────────
+Γ ⊢ λ x. t
+
+Γ ⊢ t   x ∈ Γ   "x is to the right of all FVs in t"    -- "ordered freshness"
+──────────────────────────────────────────────────
+                  Γ ⊢ t x
+
+
++ specify variable renamings
+
+λ x. t x = t         -- without freshness condition!
+(λ x. t) y = t[x↦y]  -- without shadowing condition!
+
+
+
+
+Metaprogramming in presheaves over weakenings
+--------------------------------------------------------------------------------
+
+Object theory:
+
+data Tm : ℕ → Set
+  var : Fin Γ → Tm Γ
+  app : Tm Γ → Tm Γ → Tm Γ
+  lam : Tm (Γ+) → Tm Γ
+
+data Wk Γ Δ where
+  id   : Wk Γ Γ                   -- ε : Wk ∙ ∙
+  drop : Wk Γ Δ → Wk (Γ+) Δ
+  keep : Wk Γ Δ → Wk (Γ+) (Δ+)
+
+σ      ∘ id     = σ
+σ      ∘ drop δ = drop (σ ∘ δ)
+id     ∘ keep δ = keep δ
+drop σ ∘ keep δ = drop (σ ∘ δ)
+keep σ ∘ keep δ = keep (σ ∘ δ)
+
++ functorial action of Wk on Fin, Tm
+
+Presheaf model of ETT over Wk is assumed, we use Con, Sub, Ty and Tm to denote its sorts.
+
+We want to faithfully represent object binders.
+
+A sort of "primitive" variables, which is *not* locally representable, but instead "weakly
+representable", mimicking the specification of Wk:
+
+  Var# : Con → Set
+  _+   : Con → Con
+  _+   : Sub Γ Δ → Sub Γ+ Δ+
+  id+    = id
+  (σ∘δ)+ = σ+ ∘ δ+
+
+  p : Sub Γ+ Γ
+  q : Var# Γ+
+  p ∘ σ+ = σ∘p
+  q[σ+]  = q
+
+A type of "boxed" variables, which is just the presheaf of variables
+
+   Var : Ty Γ
+
++ embedding from Var# to Var
+   _  : Var# Γ → Tm Γ Var
+
+A function type for Var# abstraction
+
+  Bind : Ty Γ+ → Ty Γ
+  (Bind A)[σ] = Bind A[σ+]
+
+  (lam,app) : Tm Γ+ A ≃ Tm Γ (Bind A)             -- kinda like dependent right adjunction, but in general cxt-dependent
+
+  t : Tm Γ+ A
+  lam t : Tm Γ (Bind A)
+  σ : Δ → Γ
+
+  σ+ : Δ+ → Γ+
+  t[σ+] : Tm Δ+ A[σ+]
+
+  lam t[σ+] : Tm Δ (Bind A[σ+])
+  (lam t)[σ] : Tm Δ (Bind A[σ+])  OK
+
+
+
+Embedding of LC
+
+  LC  : Ty Γ
+  var : Tm Γ Var → Tm Γ LC
+  lam : Tm Γ (Bind LC) → Tm Γ LC
+  app : Tm Γ LC → Tm Γ LC → Tm Γ LC
+
+induction for LC, as external primitive:
+    (P : Ty (Γ,LC))
+  → Tm (Γ, Var) (P[p, var q])
+  → Tm (Γ, Bind LC, Bind (P[p², app q])) (P[p², lam q[p]])
+  → (t : Tm Γ LC)
+  → Tm Γ P[id, t]
+
+induction in internal notation:
+
+      (P : LC → Set)
+    → ((x : Var) → P (var x))
+    → ((t : Bind x. LC) → (Bind x. P (t $ x)) → P (lam t))   -- the application is Good because "x" is fresh in "t"
+    → (t : LC)
+    → P t
+
+
+-- INTERLUDE
+--------------------------------------------------------------------------------
+
+If we have a base C + sort which only supports weak binding
+we get a presentation of it in Ĉ as well!
+
+Algebraic definition of LC with weakenings
+
+Con : Cat + terminal object
+
+Tm : Con → Set  + functorial subst, *no comprehension*
+Var : Con → Set + functorial subst, *weak comprehension*
+
+_+ : Con → Con  endofunctor
+p  : Sub Γ+ Γ
+q  : Var Γ+
+p ∘ σ+ = σ ∘ p
+
+App : Tm Γ → Tm Γ → Tm Γ
+Lam : Tm Γ+ → Tm Γ           -- no equations!
+var : Var Γ → Tm Γ
+
+(Abs, Inst) : Tm Γ+ ≃ Tm Γ   -- order-preserving abstraction with equations!
+
+- notation: Λ for abstraction, _$_ for instantiation
+
+
+Λ y. (Λ x. x) $ y = Λ y. y
+λ f x y. (var f) (var x) (var y)
+
+-- I can mix together weak and vanilla comprehension in the same system
+
+Simply-typed categorical version
+
+C : Cat
+for each A : C, we have _×A : C → C  endofunctor
+p : Γ×A → Γ
+q : Γ×A → A
+p ∘ (σ ×A) = σ ∘ p
+q ∘ (σ ×A) = q
+
+
+Tm  : SortRep
+Var : SortWRep
+lam : (Var → Tm) → Tm
+app : Tm → Tm → Tm
+var : Var → Tm
+
+in presheaves over renamings:
+
+Tm  : Set
+Var : Set⁺
+lam : (Var → Tm) → Tm
+app : Tm → Tm → Tm
+var : Var → Tm
+
+in presheaves over weakenings (SOGAT-s with weakenings)
+
+
+Ty : Sort
+Tm : Ty → SortRep
+...
+
+LC  : Sort
+Var : SortWRep
+var : Var → LC
+lam : (Var → LC) → LC       -- second-order arrows with SortWRep domain are substructural!
+app : LC → LC → LC
+
+-- internal binder Π
+Var→       : (Var → Ty) → Ty
+(lam, app) : Var→ B ≃ ((x : Var) → Tm (B x))
+
+ind :  (P : LC → Ty)
+     → (∀ x → Tm (P (var x)))
+     → (∀ f → Tm ((x : Var) → P (f x)) → Tm (P (lam f)))
+     → (∀ t u → Tm (P t) → Tm (P (app t u)))
+     → ∀ t → Tm (P t)
+
+THIS IS NO GOOD BC THERE'S NO TYPE OF LC-s, again
+
+
+Ty : Sort
+Tm : Ty → SortRep
+...
+
+LC  : Ty
+Var : SortWRep
+var : Var → Tm LC
+
+(x:Var)→  : (Var → Ty) → Ty
+_         : Tm ((x : Var) → B x) ≃ ((x : Var) → Tm (B x))
+
+app : Tm LC → Tm LC → Tm LC
+lam : Tm (Var → Tm LC) → Tm LC
+
+ind : (P : Tm LC → Ty)
+    → (∀ x → Tm (P (var x)))
+    → (∀ f → Tm ((x : Var) → P (f x)) → Tm (P (lam f)))
+    → (∀ t u → Tm (P t) → Tm (P u) → Tm (P (app t u)))
+    → ∀ t → Tm (P t)
+
+BUT THERE SHOULD BE A BOXED TY REPRESENTATION OF VAR AS WELL? YES
+
+
+
+
+
+--------------------------------------------------------------------------------
+
+_+ : Con → Con
+Γ+ 0    = ⊥
+Γ+ (i+) = Γ i
+
+(γ : Γ i)<drop (f : j → i+)> : Γ j = γ<drop id ∘ f>
+(γ : Γ i)<keep (f : j → i)>  : Γ j = γ<f>
+
+γ<keep id> = γ<id> = γ OK
+
+γ<drop f><drop g> = γ<drop id ∘ f ∘ drop id ∘ g> = γ<drop id ∘ drop f ∘ g>
+  γ<drop (drop f ∘ g)> = γ<drop id ∘ drop f ∘ g> OK
+
+γ<drop f><keep g> = γ<drop id ∘ f ∘ g>
+  γ<drop (f ∘ g)> = γ<drop id ∘ f ∘ g> OK
+
+γ<keep f><drop g> = γ<f ∘ drop id ∘ g> = γ<drop f ∘ g>
+  γ<drop (keep f ∘ g)> = γ<drop id ∘ keep f ∘ g> = γ<drop f ∘ g> OK
+
+γ<keep f><keep g> = γ<f ∘ g>
+  γ<keep (f ∘ g)> = γ<f ∘ g> OK
+
+--------------------------------------------------------------------------------
+
+p : Sub Γ+ Γ
+p {i+} γ = γ<drop id>
+
+p γ<drop f> = p γ<drop id ∘ f> = γ<drop id ∘ f ∘ drop id> = γ<drop id ∘ drop f>
+  (p γ)<drop f> = γ<drop id ∘ drop f> OK
+
+p γ<keep f> = p γ<f> = γ<f ∘ drop id> = γ<drop f>
+  (p γ)<keep f> = γ<drop id ∘ keep f> = γ<drop f> OK
+
+_+ : Sub Γ Δ → Sub Γ+ Δ+
+σ+ {i+} (γ : Γ i) : Δ i = σ γ
+
+p∘(σ+) = σ ∘ p
+  p (σ+ γ) = σ (p γ)
+  p (σ γ)  = σ (p γ)
+  (σ γ)<drop id> = σ (γ<drop id>) OK
+
+Bind : Ty Γ+ → Ty Γ
+Bind A {i} (γ : Γ i) = A {i+} γ
+
+_<_> : Bind A i γ → (f : j → i) → Bind A j γ<f>
+     : A i+ γ → (f : j → i) → A j+ γ<f>
+
+  A._<_> : ∀ i (γ : Γ+ i). A i γ → (f : j → i) → A j γ<f>
+  γ : Γ i
+  α : A i+ γ   f : j → i
+  A._<_> i+ : (γ : Γ+ i+) → A i+ γ → ∀ j. (f : j → i+) → A j γ<f>
+  A._<_> i+ γ α : ∀ j. (f : j → i+) → A j γ<f>
+  A._<_> i+ γ α j+ : (f : j+ → i+) → A j+ γ<f>
+  A._<_> i+ γ α j+ (keep f) : A j+ γ<keep f>
+                            : A j+ γ<f> OK
+
+α<f> = α<keep f>
+
+
+(Bind A)[σ] = Bind A[σ+]
+  A {i+} (σ (γ<drop id>)) = A[σ+] {i+} γ<drop id>
+    A[σ+] {i+} γ<drop id> =
+    A {i+} (σ+ (γ<drop id>)) =
+    A {i+} (σ (γ<drop id>)) OK
+
+lam : Tm Γ+ A → Tm Γ (Bind A)
+lam t {i} (γ : Γ i) : Bind A {i} γ
+                    : A i+ γ
+
+   t : ∀ i (γ : Γ+ i) → A i γ
+   t i+ γ : A {i+} γ
+   t i+ γ : A {i+} γ
+
+   := t {i+} γ
+
+app : Tm Γ (Bind A) → Tm Γ+ A
+app t {i+} (γ : Γ+ i+) : A {i+} γ
+
+  t : ∀ i (γ : Γ i) → A {i+} γ
+  t i γ : A {i+} γ
+
+  := t i γ
+
+lam (app t) i γ = t i γ
+  lam (app t) i γ =
+  (app t) i+ γ =
+  t i γ OK
+
+app (lam t) i+ γ = t i+ γ
+  app (lam t) i+ γ =
+  (lam t) i γ
+  t i+ γ OK
+
+(lam t)[σ] i γ = (lam t[σ+]) i γ
+  (lam t)[σ] i γ =
+  lam t i (σ γ) =
+  t i+ (σ γ)
+
+  (lam t[σ+]) i γ
+  t[σ+] i+ γ
+  t i+ (σ+ γ)
+  t i+ (σ γ)
+  OK
+
+LC : Ty Γ
+LC {i} γ    LCTm
+
+Var : Ty Γ
+Var
+
+-- Var : Ty Γ
+-- Var {Γ} {i} γ = Fin i
+-- (x : Var i γ)<f : j → i> : Var j γ<f>
+-- (x : Fin i  )<f : j → i> : Fin j
+-- x<f> = x[f]
+
+-- box : Tm Γ+ Var              -- Tm Γ (Bind Var)
+-- box {i+} (γ : Γ i) : Fin i+
+-- box {i+} γ = zero
+
+-- {σ : Δ → Γ} → box {Γ} [σ+] = box {Δ}
+
+--   (box[σ+]) {i+} γ = box {i+} (σ γ) = zero
+--   (box {Δ} {i+} γ) = zero
+
+-- lam (lam (box[p]))           p{+}  : ++ → +      Λ x. Λ y. box # x
+-- lam (lam (box[p+]))          p{∙}+ : ++ → +      Λ x. Λ y. box # y
+
+
+-- LC : Ty Γ
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+--------------------------------------------------------------------------------

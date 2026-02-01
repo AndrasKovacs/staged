@@ -1,4 +1,4 @@
-\begin{thebibliography}{1}
+\begin{thebibliography}{10}
 
 \bibitem{twolevel}
 Danil Annenkov, Paolo Capriotti, Nicolai Kraus, and Christian Sattler.
@@ -22,6 +22,14 @@ Martin Hofmann.
 \newblock In {\em 14th Annual {IEEE} Symposium on Logic in Computer Science,
   Trento, Italy, July 2-5, 1999}, pages 204--213. {IEEE} Computer Society,
   1999.
+
+\bibitem{gluing}
+Ambrus Kaposi, Simon Huber, and Christian Sattler.
+\newblock Gluing for type theory.
+\newblock In Herman Geuvers, editor, {\em 4th International Conference on
+  Formal Structures for Computation and Deduction, {FSCD} 2019, June 24-30,
+  2019, Dortmund, Germany}, volume 131 of {\em LIPIcs}, pages 25:1--25:19.
+  Schloss Dagstuhl - Leibniz-Zentrum f{\"{u}}r Informatik, 2019.
 
 \bibitem{DBLP:conf/fscd/KaposiX24}
 Ambrus Kaposi and Szumi Xie.

@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.36.0.
+-- This file has been generated from package.yaml by hpack version 0.39.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -19,6 +19,7 @@ library
       CFTT.Gen
       CFTT.Improve
       CFTT.Join
+      CFTT.MutualBuilder
       CFTT.Pull
       CFTT.SOP
       CFTT.Split

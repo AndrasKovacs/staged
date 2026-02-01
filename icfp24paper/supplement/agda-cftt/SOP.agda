@@ -169,12 +169,43 @@ unpairₛ {a ∷ A}{B} x = either (eitherₛ {a *ₚₛ B} {A *ₛ B} x)
 ... | left y  | hide eq rewrite *ₚₛη {a}{B} y = leftₛη x y eq ⁻¹
 ... | right y | hide eq rewrite *ₛη  {A}{B} y = rightₛη x y eq ⁻¹
 
--- Closure under Σ
+-- Generativity
 --------------------------------------------------------------------------------
 
+Ty* = List Ty
+
+data Tm* : Ty* → Set where
+  []  : Tm* []
+  _∷_ : ∀ {a A} → ↑ a → Tm* A → Tm* (a ∷ A)
+
+ElV* : Uₚ → Ty*
+ElV* []      = []
+ElV* (a ∷ A) = V a ∷ ElV* A
+
+Tm*→Elₚ : ∀ {A} → Tm*  (ElV* A) → Elₚ A
+Tm*→Elₚ {[]}    xs       = []
+Tm*→Elₚ {a ∷ A} (x ∷ xs) = x ∷ Tm*→Elₚ xs
+
+Elₚ→Tm* : ∀ {A} → Elₚ A → Tm*  (ElV* A)
+Elₚ→Tm* {[]} xs = []
+Elₚ→Tm* {a ∷ A} (x ∷ xs) = x ∷ Elₚ→Tm* xs
+
+Tm*→Elₚ-l : ∀ {A} (x : Elₚ A) → Tm*→Elₚ (Elₚ→Tm* {A} x) ≡ x
+Tm*→Elₚ-l {[]} [] = refl
+Tm*→Elₚ-l {a ∷ A} (x ∷ xs) = ap (x ∷_) (Tm*→Elₚ-l xs)
+
 -- POSTULATE
-generative : ∀ {A} → (f : Elₚ A → Uₛ) → ∀ x y → f x ≡ f y
+generative : ∀ {A} → (f : Tm* A → Uₛ) → ∀ x y → f x ≡ f y
 generative f x y = primTrustMe
+
+generativeV : ∀ {A} → (f : Elₚ A → Uₛ) → ∀ x y → f x ≡ f y
+generativeV f x y =
+    ap f (Tm*→Elₚ-l x ⁻¹)
+  ◼ generative (f ∘ Tm*→Elₚ) (Elₚ→Tm* x) (Elₚ→Tm* y)
+  ◼ ap f (Tm*→Elₚ-l y)
+
+-- Closure under Σ
+--------------------------------------------------------------------------------
 
 Σₛ : (A : Uₛ) → (Elₛ A → Uₛ) → Uₛ
 Σₛ []      B = []
@@ -183,13 +214,13 @@ generative f x y = primTrustMe
 pairΣₛ : ∀ {A B} (a : Elₛ A) → Elₛ (B a) → Elₛ (Σₛ A B)
 pairΣₛ {a ∷ A} {B} (here x)  y =
   leftₛ {a *ₚₛ B (here loopₚ)} {Σₛ A (B ∘ there)}
-        (tr (λ x → Elₛ (a *ₚₛ x)) (generative (B ∘ here) _ _) (pairₚₛ x y))
+        (tr (λ x → Elₛ (a *ₚₛ x)) (generativeV (B ∘ here) _ _) (pairₚₛ x y))
 pairΣₛ {a ∷ A} {B} (there x) y =
   rightₛ {a *ₚₛ B (here loopₚ)} {Σₛ A (B ∘ there)} (pairΣₛ x y)
 
 unpairΣₛ : ∀ {A B} → Elₛ (Σₛ A B) → Σ (Elₛ A) (Elₛ ∘ B)
 unpairΣₛ {a ∷ A} {B} x = either (eitherₛ {a *ₚₛ B (here loopₚ)}{Σₛ A (B ∘ there)} x)
-  (λ x → case× (unpairₚₛ x)  λ x y → here x , tr Elₛ (generative (B ∘ here) _ _) y)
+  (λ x → case× (unpairₚₛ x)  λ x y → here x , tr Elₛ (generativeV (B ∘ here) _ _) y)
   (λ x → let x , y = unpairΣₛ {A}{B ∘ there} x in there x , y)
 
 tr-pairₚₛ : {A : Uₚ}{B B' : Uₛ}(e : B ≡ B')(x : Elₚ A)(y : Elₛ B)
@@ -202,10 +233,10 @@ tr-tr-UIP refl refl b = refl
 Σₛβ : ∀ {A}{B : Elₛ A → Uₛ}(x : Elₛ A)(y : Elₛ (B x)) → unpairΣₛ (pairΣₛ {A}{B} x y) ≡ (x , y)
 Σₛβ {a ∷ A} {B} (here x) y rewrite
     leftₛβ {a *ₚₛ B (here loopₚ)} {Σₛ A (B ∘ there)}
-           ((tr (λ x₁ → Elₛ (a *ₚₛ x₁)) (generative (B ∘ here) _ _) (pairₚₛ x y)))
-  | tr-pairₚₛ (generative (B ∘ here) _ loopₚ) x y
-  | *ₚₛβ x (tr Elₛ (generative (B ∘ here)_ loopₚ) y)
-   = ap (here x ,_) (tr-tr-UIP (generative (B ∘ here) _ _) (generative (B ∘ here) _ _) y)
+           ((tr (λ x₁ → Elₛ (a *ₚₛ x₁)) (generativeV (B ∘ here) _ _) (pairₚₛ x y)))
+  | tr-pairₚₛ (generativeV (B ∘ here) _ loopₚ) x y
+  | *ₚₛβ x (tr Elₛ (generativeV (B ∘ here)_ loopₚ) y)
+   = ap (here x ,_) (tr-tr-UIP (generativeV (B ∘ here) _ _) (generativeV (B ∘ here) _ _) y)
 
 Σₛβ {a ∷ A} {B} (there x) y rewrite
   rightₛβ {a *ₚₛ B (here loopₚ)}{Σₛ A (B ∘ there)} (pairΣₛ x y)
@@ -217,11 +248,11 @@ tr-tr-UIP refl refl b = refl
   with eitherₛ {a *ₚₛ B (here (loopₚ))} {Σₛ A (B ∘ there)} x
   | inspect (eitherₛ {a *ₚₛ B (here (loopₚ))} {Σₛ A (B ∘ there)}) x
 ... | left y  | hide eq rewrite
-  tr-pairₚₛ (generative (B ∘ here) (unpairₚₛ y .₁) loopₚ) (₁ (unpairₚₛ y))
-            (tr Elₛ (generative (λ x₁ → B (here x₁)) _ _) (₂ (unpairₚₛ y)))
+  tr-pairₚₛ (generativeV (B ∘ here) (unpairₚₛ y .₁) loopₚ) (₁ (unpairₚₛ y))
+            (tr Elₛ (generativeV (λ x₁ → B (here x₁)) _ _) (₂ (unpairₚₛ y)))
   | tr-tr-UIP {Uₛ}{Elₛ}{B (here loopₚ)}{B (here (unpairₚₛ y .₁))}
-                (generative (B ∘ here) loopₚ (unpairₚₛ y .₁))
-                (generative (B ∘ here) (unpairₚₛ y .₁) loopₚ)
+                (generativeV (B ∘ here) loopₚ (unpairₚₛ y .₁))
+                (generativeV (B ∘ here) (unpairₚₛ y .₁) loopₚ)
                 (unpairₚₛ y .₂)
   | *ₚₛη {a}{B (here loopₚ)} y
   = leftₛη x y eq ⁻¹

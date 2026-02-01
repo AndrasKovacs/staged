@@ -58,13 +58,13 @@ add = LetRec
   (λ go → Λ λ n → Λ λ m → caseBool∘ (n ==∘ 0) m (1 +∘ go ∙ (n -∘ 1) ∙ m))
   λ go → go
 
-{-
-map f as =
-  <letrec go as := case as of
-             Nil       → Nil
-             Cons a as → Cons ~(f <a>) (go as);
-   go ~as>
--}
+  {-
+  map f as =
+    <letrec go as := case as of
+               Nil       → Nil
+               Cons a as → Cons ~(f <a>) (go as);
+     go ~as>
+  -}
 map∘ : {A B : VTy} → (↑V A → ↑V B) → ↑V (List∘ A) → ↑V (List∘ B)
 map∘ f as = LetRec
   _
@@ -163,11 +163,59 @@ filterM f = DefRec λ rec → Λ λ as → down $ caseM as λ where
       true  → pure (cons∘ a as)
       false → pure as
 
+filterM' : ∀ {F M A}⦃ _ : Improve F M ⦄ → (↑V A → M Bool) → ↑C (List∘ A ⇒ F (List∘ A))
+filterM' f = DefRec λ go → Λ λ as → down $ caseM as λ where
+  nil         → pure nil∘
+  (cons a as) → f a >>= λ where
+      true  → cons∘ a <$> up (go ∙ as)
+      false → up (go ∙ as)
+
 exM5 : ↑C (List∘ ℕ∘ ⇒ StateT∘ ℕ∘ (MaybeT∘ Identity∘) (List∘ ℕ∘))
 exM5 = filterM λ n → caseM (n ==∘ 0) λ where
   true  → fail
   false → split (n <∘ 20)
 
+{-
+
+.. that can be eta-reduced. This is especially important
+in the case of staged monadic code, where the handling of *tail calls* requires
+either complicated machinery in metaprogramming, or a simplification of
+redundant case splits in the compiler. For example, consider the following function
+in CFTT, which filters a list of numbers in an arbitrary "fusible" monad. For brevity,
+we omit the inferable staging annotations but still include the up/down conversions.
+
+filterM : Improve F M => (A → M Bool) → List A → M (List A)
+filterM f as =
+  letrec go as := down $ case as of
+    Nil → pure Nil
+    Cons a as → do
+      b ← f a
+      case b of
+        True → do
+          as' ← up (go as)
+          pure (Cons a as')
+        False → up (go as)
+  in go as
+
+The details are beyond
+
+
+
+
+
+    filterM : Improve F M => (↑A → M Bool) → ↑(List A → F (List A))
+    filterM f =
+      <let go as = ~(down $ case <as> of
+         nil       → pure <nil>
+         cons a as → do
+           b ← f a
+           case b of
+             true → do
+               as' ← up <go ~as>
+               pure <cons ~a ~as>
+             false → up <go ~as>);
+      go>
+    -}
 
 -- Streams
 --------------------------------------------------------------------------------

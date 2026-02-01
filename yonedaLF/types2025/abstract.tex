@@ -27,6 +27,7 @@
 \newcommand{\In}{\msf{In}}
 \newcommand{\base}{\msf{base}}
 \newcommand{\Tm}{\msf{Tm}}
+\newcommand{\Ty}{\mathsf{Ty}}
 \newcommand{\U}{\msf{U}}
 \newcommand{\Con}{\msf{Con}}
 \newcommand{\Sub}{\msf{Sub}}
@@ -36,6 +37,11 @@
 \newcommand{\Fin}{\msf{Fin}}
 \newcommand{\Tree}{\msf{Tree}}
 \newcommand{\Disc}{\msf{Disc}}
+\newcommand{\app}{\mathsf{app}}
+\newcommand{\lam}{\mathsf{lam}}
+\newcommand{\emptycon}{\scaleobj{.75}{\bullet}}
+\newcommand{\id}{\mathsf{id}}
+\newcommand{\bCat}{\mathbf{Cat}}
 
 \title{A Generalized Logical Framework}
 \author{Andr\'as Kov\'acs$^{1}$ \and Christian Sattler$^{2}$}
@@ -74,91 +80,201 @@ describe an LF with the following features:
   are used.
 \end{itemize}
 
-\noindent\textbf{The Logical Framework.} The basic structure is as follows.
+\noindent\textbf{The Generalized Logical Framework (GLF).} The basic structure is as follows.
 \begin{itemize}
-\item We have a universe $\MetaTy$\footnote{More precisely, a $\mbb{N}$-indexed universe
-hierarchy, but we shall omit ``sizing'' levels in this abstract.} closed under the type formers
-  of extensional type theory.
-\item We have $\Base : \MetaTy$, $1 : \Base$, $\PSh : \Base \to \MetaTy$ and $\El : \{i :
-  \Base\} \to \PSh\,i \to \MetaTy$ such that each $\PSh\,i$ and $\El$ constitutes
-  a Tarski-style universe closed under ETT type formers.
-\item Let us define $\Cat\,i : \PSh\,i$ as the type of categories internally to
-  $\PSh\,i$. Then, we have $\In : \{i : \Base\} \to \El\,(\Cat\,i) \to \MetaTy$ and $\msf{base} : \In\,C \to \Base$.
+\item We have a universe $\U$ closed under the type formers of extensional type theory.
+\item We have $\Base : \U$, $1 : \Base$ and $\PSh : \Base \to \U$, such that
+  each $\PSh_i$ is a universe that supports ETT. We have cumulativity: $\PSh_i \subseteq \U$.
+  We can only eliminate from $\PSh_i$ to $\PSh_i$. \emph{Semantically, each $\PSh_i$ is a universe
+  of presheaves over some base category represented by $i$. The terminal category is $1$.}
+\item For convenience, we assume type-in-type everywhere, so that $\U : \U$ and $\PSh_i : \PSh_i$.
+\item We define $\Cat_i : \PSh_i$ as the type of categories internally to $\PSh_i$, where types
+  of objects and morphisms are in $\PSh_i$. We have $\In : \{i : \Base\} \to \Cat_i \to \U$ and
+  $\msf{base} : \In\,C \to \Base$. \emph{Informally, $\In\,C$ is a type of ``permission tokens''
+  for working in a presheaf universe.}
 \end{itemize}
-We give some semantic intuition in the following. Each $\PSh\,i$ is a universe
-of presheaves over some base category. In the empty context, only $\PSh\,1$ is
-available, which is the universe of sets. Internally to $\PSh\,1$, we can define
-some $C : \El\,(\Cat\,1)$. Now, if we have $i : \In\,C$, we can form $\PSh\,(\base\,i)$
-as the universe of presheaves over $C$.
-\begin{enumerate}
-\item We can define $\msf{PShExt\,C} : \PSh\,1$ as the \emph{external} type of presheaves over $C$.
-\item Our semantics supports the isomorphism $\El\,(\msf{PShExt}\,C) \simeq ((i
-  : \In\,C) \to \PSh\,(\base\,i))$.  In other words, external and internal
-  notions of presheaves coincide. More generally, we have this isomorphism for
-  any $C : \El\,(\Cat\,j)$, i.e.\ starting from a category that's internal to any
-  previously defined presheaf universe.
-\end{enumerate}
-\textbf{Yoneda embeddings}. Our semantics actually supports a more general
-notion of internalization than the above one, which we don't describe here. We
-have not yet finalized which operations to enshrine in the LF's syntax, but the
-special case of \emph{Yoneda embeddings} seems to be especially useful. This
-works in the generality of SOGATs but we shall focus on the example of pure
-lambda calculus. A second-order model of pure LC in some universe $\U$ is simply
-$\Tm : \U$ together with an isomorphism $\Tm \simeq (\Tm \to \Tm)$. A
-first-order model is a unityped category with families \cite{cwfs}, where we
-write $\msf{Con} : \U$ for the type of contexts, $\Tm : \Con \to \U$ for the
-type of terms, $\Gamma+ : \Con$ for the extension of $\Gamma : \Con$ with a
-binding, and we have a natural isomorphism $\Tm\,\Gamma \simeq \Tm\,(\Gamma+)$.
-\begin{itemize}
-\item For each $M$ a first-order model in $\PSh\,i$ and $j : \In\,M$\footnote{We
-implicitly take the underlying category of $M$ here.}, we have $\msf{S}_j$ as a
-  second-order model in $\PSh\,j$. In other words, internally to presheaves over
-  a model of lambda calculus, we have a second-order model of lambda
-  calculus. In fact, this is the standard semantics of traditional LFs/2LTTs,
-  and we get all such LFs/2LTTs as syntactic fragments of our generalized LF, by
-  working under an assumption of $j : \In\,M$.
-\item Yoneda embedding has action on contexts, substitutions and terms:
-  \begin{alignat*}{3}
-    & \Y : \El\,\Con_M \to (\{j : \In\,M\} \to \PSh\,j)\\
-    & \Y : \El\,(\Sub_M\,\Gamma\,\Delta) \simeq (\{j : \In\,M\} \to \El\,(\Y\,\Gamma\,\{j\}) \to \El\,(\Y\,\Delta\,\{j\}))\\
-    & \Y : \El\,(\Tm_M\,\Gamma) \simeq (\{j : \In\,M\} \to \El\,(\Y\,\Gamma) \to \El\,\Tm_{\S_j})
-  \end{alignat*}
-\end{itemize}
-Additionally, $\Y$ preserves empty contexts and extended contexts up to
-isomorphism and preserves all other structure strictly. $\Y$ allows ad-hoc
-switching between first-order and second-order syntax. For example, the identity
-substitution $\msf{id} : \El\,(\Sub_M\,\Gamma\,\Gamma)$ can be alternatively defined as
-$\Y^{-1}(\lambda\,\gamma.\,\gamma)$, where we use $\Y^{-1}$ to externalize
-$(\lambda\,\gamma.\,\gamma) : (\{j : \In\,M\} \to \El\,(\Y\,\Gamma) \to
-\El\,(\Y\,\Gamma))$. More generally, by using a modest amount of syntactic sugar
-and elaboration, we can develop $\Y$ and $\Y^{-1}$ into a ``second-order
-notation'' for any SOGAT, which constitutes a rigorous and nicely readable
-alternative to De Bruijn indices and explicit substitution operations.
-\\
+Let us look at a basic scenario in GLF. In the empty context, we have $\PSh_1$
+as a universe of sets. Internally to $\PSh_1$, we can define some $C : \Cat_1$.
+Now, under the assumption of $i : \In\,C$, we can form $\PSh_{(\base\,i)}$ as
+the universe of presheaves over $C$. Then, we may define another category $D$
+inside $\PSh_{(\base\,i)}$, and get a new universe $\PSh_j$ under the assumption
+of $j : \In\,D$. Hence, GLF at its heart is a type theory for \emph{iterated internal
+categories and presheaves}.
 
-\noindent \textbf{Sketch of the semantics}. The model of LF is constructed in
-two steps. First, we give a model for the theory that has $\PSh$, $\Base$ and
-$\In$ as sorts but does not support $\MetaTy$, and then take presheaves over
-that model to obtain a model of a 2LTT where $\MetaTy$ represents the outer
-layer. In the inner model, we start with an inductive definition of certain
-``trees in categories'':
+At this point there is no interesting interaction between presheaf universes, so we proceed to
+specify some. Recall that the standard semantics of 2LTTs is in presheaves over a chosen model of an
+object theory, where a model consists of a category of contexts plus extra structure. In GLF, if we
+define a model $M$ of a theory in some $\PSh_i$ universe, we would like to have a ``view'' on that
+model internally to presheaves over $M$, and also a way to move between the internal view and the
+external $M$. Hence we specify that for any first-order model $M$ of a second-order
+generalized algebraic theory $T$, we have
+\begin{enumerate}
+\item A second-order model of $T$ internally to $\PSh_i$, assuming $i : \In\,M$\footnote{Here we implicitly cast $M$ to its underlying category.}.
+      We write this second-order model as $\S_i$.
+\item \emph{Yoneda embedding} as a certain family of maps from $M$ to $\S_j$.
+\end{enumerate}
+We look at the example where $T$ is pure lambda calculus. A second-order model of pure LC in
+$\PSh_i$ is simply $\Tm : \PSh_i$ together with an isomorphism $\Tm \simeq (\Tm \to \Tm)$ for
+abstraction and application. We write $\lam$ for the former and $\blank\!\$\!\blank$ for the
+latter. A first-order model is a unityped category with families \cite{cwfs}, where we write
+$\msf{Con} : \PSh_i$ for the type of contexts, $\msf{Sub} : \Con \to \Con \to \PSh_i$ for substitutions, $\Tm : \Con \to \PSh_i$ for terms,
+$\Gamma\,\ext : \Con$ for the extension of $\Gamma : \Con$ with a binding, and we have a natural
+isomorphism $\Tm\,\Gamma \simeq \Tm\,(\Gamma\,\ext)$ to represent abstraction and application. Now,
+assuming a first-order model $M$ in $\PSh_i$ and $j : \PSh_{(\base\,i)}$, we can use the second-order
+view when working inside $\PSh_j$. Let us define the $\msf{Y}$-combinator as an example:
+\begin{alignat*}{3}
+  & \msf{YC} : \Tm_{\S_j} \\
+  & \msf{YC} := \lam_{\S_j}(\lambda\,f.\,(\lam_{\S_j} (\lambda x.\, x\,\$_{\S_j}\,x))\,\$_{\S_j}\,
+               (\lam_{\S_j} (\lambda x.\, f \,\$_{\S_j}\, (x \,\$_{\S_j}\, x))))
+\end{alignat*}
+With a reasonable amount of sugar, we may write $\msf{YC} := \lam\,f.\,(\lam\,x.\,x\,x)\,(\lam\,x.\,f\,(x\,x))$.
+In other words, $\PSh_j$ now is effectively a presentation of a two-level type theory over pure LC
+where $\S_j$ constitutes the inner level and the ETT type formers in $\PSh_j$ constitute the outer
+level. Since we specify $\S$ for every second-order algebraic theory, all 2LTTs are syntactic
+fragments of GLF. Next, Yoneda embedding for pure LC is as follows:
+\begin{alignat*}{4}
+  & \Y && : \Con_M                 &&\to\,  &&((j : \In_M) \to \PSh_j) \\
+  & \Y && : \Sub_M\,\Gamma\,\Delta &&\simeq &&((j : \In_M) \to \Y\,\Gamma\,j \to \Y\,\Delta\,j)\\
+  & \Y && : \Tm_M\,\Gamma          &&\simeq &&((j : \In_M) \to \Y\,\Gamma\,j \to \Tm_{\S_j})
+\end{alignat*}
+such that $\Y$ preserves empty context and context extension, so $\Y\,\emptycon\,j \simeq \top$ and
+$\Y\,(\Gamma\,\ext)\,j \simeq \Y\,\Gamma\,j \times \Tm_{\S_j}$, and $\Y$ preserves all other
+structure strictly. \emph{Notation:} we write $\Lambda$ for inverses of $\Y$. Now, $\Y$ and
+$\Lambda$ allow ad-hoc switching between perspectives. Let's redefine some
+operations in $M$:
+\begin{alignat*}{6}
+  & \msf{id} : \Sub_M\,\Gamma\,\Gamma && \msf{comp} : \Sub_M\,\Delta\,\Theta \to \Sub_M\,\Gamma\,\Delta \to \Sub_M\,\Gamma\,\Theta\\
+  & \msf{id} := \Lambda\,(\lambda\,j\,\gamma.\,\gamma)\quad\quad && \msf{comp}\,\sigma\,\delta := \Lambda\,(\lambda\,j\,\gamma.\,\Y\,\sigma\,(\Y\,\delta\,\gamma\,j)\,j)
+\end{alignat*}
+With reasonable amount of sugar, this might look like
+\begin{alignat*}{6}
+  & \msf{id} := \Lambda\,\gamma.\,\gamma\quad\quad && \msf{comp}\,\sigma\,\delta := \Lambda\,\gamma.\,\Y\,\sigma\,(\Y\,\delta\,\gamma)
+\end{alignat*}
+Or, making $\Y$ implicit, we may even write $\msf{comp}\,\sigma\,\delta :=
+\Lambda\,\gamma.\,\sigma\,(\delta\,\gamma)$. We can develop this into a ``second-order notation'' for
+object theories, which is nicely readable and can be rigorously elaborated into annotated GLF
+operations. We only give here a glimpse of what this notation could look like.  The example below
+comes from a model construction involving models of MLTT as CwFs, which looks fairly obtuse with
+explicit substitutions and De Bruijn indices \cite[Section 5]{gluing}:
+\begin{alignat*}{5}
+  &\Con^{\circ}\,\Gamma && := \Ty\,(F\,\Gamma)\\
+  &\Ty^{\circ}\,\Gamma^{\circ}\,A && := \Ty\,(F\,\Gamma\,\ext\,\Gamma^{\circ}\,\ext\,F\,A[\msf{p}])\\
+  &\Tm^{\circ}\,\Gamma^{\circ}\,A^{\circ}\,t && := \Tm\,(F\,\Gamma\,\ext\,\Gamma^{\circ})\,(A^{\circ}[\id,\,F\,t[\msf{p}]))\\
+  & \Gamma^{\circ}\,\ext^{\circ}\,A^{\circ} && := \Sigma(\Gamma^{\circ}[\msf{p}\circ F_{\ext.1}])(A^{\circ}[\msf{p} \circ F_{\ext.1} \circ \msf{p},\,\msf{q},\,\msf{q}[F_{\ext.1} \circ \msf{p}]])\\
+  & ... &&
+\end{alignat*}
+but which looks reasonable in sugary GLF notation:
+\begin{alignat*}{5}
+  &\Con^{\circ}\,\Gamma && := \Ty\,(\gamma : F\,\Gamma)\\
+  &\Ty^{\circ}\,\Gamma^{\circ}\,A && := \Ty\,(\gamma : F\,\Gamma,\,\gamma^{\circ} : \Gamma^{\circ}\,\gamma,\,\alpha : F\,A\,\gamma)\\
+  &\Tm^{\circ}\,\Gamma^{\circ}\,A^{\circ}\,t && := \Tm\,(\gamma : F\,\Gamma,\,\gamma^{\circ} : \Gamma^{\circ}\,\gamma)\,(A^{\circ}\,(\gamma,\,\gamma^{\circ},\,F\,t\,\gamma))\\
+  & \Gamma^{\circ}\,\ext^{\circ}\,A^{\circ} &&:= \Lambda\,(F_{\ext.2}(\gamma,\,\alpha)).\, \Sigma(\gamma^{\circ} : \Gamma^{\circ}\,\gamma) \times A^{\circ}\,(\gamma,\,\gamma^{\circ},\,\alpha)\\
+  & ... &&
+\end{alignat*}
+\noindent \textbf{Sketch of the semantics}. First, we give a short motivation. In the semantics,
+each $\PSh_i$ should be an universe of internal presheaves over an internal category. Clearly the
+semantics should involve categories, but there are well-known complications with the category of categories: a) there is
+no general $\Pi$ type b) $\Pi$-types of presheaves and universes of presheaves are not stable
+under reindexing by arbitrary functors. The former issue could be addressed by having a ``directed
+type theory'', while the latter could be addressed with modalities. In the case of GLF we don't need
+either of these solutions. The reason is that we can't do any interesting categorical reasoning in
+GLF, and $\Base$ and $\In$ are used purely for managing internal/external languages, and it suffices
+to have enough semantic structure to represent the internal/external shifts.
+
+The model of GLF is constructed in two steps. First, we give a model for the theory that has $\PSh$,
+$\Base$ and $\In$ as sorts but does not support $\U$, and then take presheaves over that model
+to obtain a model of a 2LTT where $\U$ represents the outer layer. In the inner model, we start
+with an inductive definition of certain \emph{trees of categories}:
 \begin{alignat*}{3}
   & \mbf{data}\,\Tree\,(B : \Cat) : \msf{Set}\,\mbf{where}\\
   & \hspace{1em} \msf{node} : (\Gamma : \PSh\,B)(n : \mbb{N})(C : \Fin\,n \to \Fib\,(B \ext \Disc\,\Gamma))\\
-  & \hspace{3.8em} ((i : \Fin\,n) \to \Tree\,(B \ext \Disc\,\Gamma \ext C\,i)) \to \Tree\,B
+  & \hspace{3.8em} \to ((i : \Fin\,n) \to \Tree\,(B \ext \Disc\,\Gamma \ext C\,i))\\
+  & \hspace{3.8em} \to \Tree\,B
 \end{alignat*}
-Here, $\PSh$ means presheaves in sets, $\Fib$ is cartesian fibrations, $\Disc$
-creates a discrete fibration from a presheaf and $\blank\!\ext\!\blank$ takes
-the total category of a fibration. Now, the objects of
-the semantic base category are elements of $\Tree\,1$, and morphisms between
-trees are level-wise natural transformations between the $\Gamma$ components
-together with $\Fin\,n \to \Fin\,m$ renamings of subtree indices. The
-non-discrete $\Fib$ components are preserved by morphisms. A semantic $\Base$
-points to a subtree of a context, an $\In$ is a $\Fin\,n$ index pointing to a
-child of a given node, and a $\PSh$ is a dependent presheaf over a $\Gamma$ inside a
-given node. Extending a context with an $\In$ binding adds a new empty subtree
-to a given node. Extending with an $\El$ binding extends the $\Gamma$ presheaf
-in a node with a dependent presheaf.
+Here, $\PSh$ means presheaves in sets, $\Fib$ is cartesian fibrations, $\Disc$ creates a discrete
+fibration from a presheaf and $\blank\!\ext\!\blank$ takes the total category of a fibration. Now,
+the objects of the semantic base category are elements of $\Tree\,1$, and morphisms between trees
+are level-wise natural transformations between the $\Gamma$ components together with $\Fin\,n \to
+\Fin\,m$ renamings of subtree indices. The non-discrete $\Fib$ components are preserved by
+morphisms.
+
+In a nutshell, each node represents a presheaf universe and each edge represents an
+internal/external switch. A semantic element of $\Base$ selects a node of a tree, while an $\In$ is
+an index that points to a subtree of a node. A semantic $\PSh$ is a dependent presheaf over a
+$\Gamma$ in a given node. Extending a context with an $\In$ binding adds a new empty subtree to a
+given node, and extending a context with a presheaf variable extends the $\Gamma$ presheaf in a node
+with a dependent presheaf.
+
+
+%% \begin{enumerate}
+%% \item We can define $\msf{PShExt\,C} : \PSh\,1$ as the \emph{external} type of presheaves over $C$.
+%% \item Our semantics supports the isomorphism $\El\,(\msf{PShExt}\,C) \simeq ((i
+%%   : \In\,C) \to \PSh\,(\base\,i))$.  In other words, external and internal
+%%   notions of presheaves coincide. More generally, we have this isomorphism for
+%%   any $C : \El\,(\Cat\,j)$, i.e.\ starting from a category that's internal to any
+%%   previously defined presheaf universe.
+%% \end{enumerate}
+%% \textbf{Yoneda embeddings}. Our semantics actually supports a more general
+%% notion of internalization than the above one, which we don't describe here. We
+%% have not yet finalized which operations to enshrine in the LF's syntax, but the
+%% special case of \emph{Yoneda embeddings} seems to be especially useful. This
+%% works in the generality of SOGATs but we shall focus on the example of pure
+%% lambda calculus. A second-order model of pure LC in some universe $\U$ is simply
+%% $\Tm : \U$ together with an isomorphism $\Tm \simeq (\Tm \to \Tm)$. A
+%% first-order model is a unityped category with families \cite{cwfs}, where we
+%% write $\msf{Con} : \U$ for the type of contexts, $\Tm : \Con \to \U$ for the
+%% type of terms, $\Gamma+ : \Con$ for the extension of $\Gamma : \Con$ with a
+%% binding, and we have a natural isomorphism $\Tm\,\Gamma \simeq \Tm\,(\Gamma+)$.
+%% \begin{itemize}
+%% \item For each $M$ a first-order model in $\PSh\,i$ and $j : \In\,M$\footnote{We
+%% implicitly take the underlying category of $M$ here.}, we have $\msf{S}_j$ as a
+%%   second-order model in $\PSh\,j$. In other words, internally to presheaves over
+%%   a model of lambda calculus, we have a second-order model of lambda
+%%   calculus. In fact, this is the standard semantics of traditional LFs/2LTTs,
+%%   and we get all such LFs/2LTTs as syntactic fragments of our generalized LF, by
+%%   working under an assumption of $j : \In\,M$.
+%% \item Yoneda embedding has action on contexts, substitutions and terms:
+%%   \begin{alignat*}{3}
+%%     & \Y : \El\,\Con_M \to (\{j : \In\,M\} \to \PSh\,j)\\
+%%     & \Y : \El\,(\Sub_M\,\Gamma\,\Delta) \simeq (\{j : \In\,M\} \to \El\,(\Y\,\Gamma\,\{j\}) \to \El\,(\Y\,\Delta\,\{j\}))\\
+%%     & \Y : \El\,(\Tm_M\,\Gamma) \simeq (\{j : \In\,M\} \to \El\,(\Y\,\Gamma) \to \El\,\Tm_{\S_j})
+%%   \end{alignat*}
+%% \end{itemize}
+%% Additionally, $\Y$ preserves empty contexts and extended contexts up to
+%% isomorphism and preserves all other structure strictly. $\Y$ allows ad-hoc
+%% switching between first-order and second-order syntax. For example, the identity
+%% substitution $\msf{id} : \El\,(\Sub_M\,\Gamma\,\Gamma)$ can be alternatively defined as
+%% $\Y^{-1}(\lambda\,\gamma.\,\gamma)$, where we use $\Y^{-1}$ to externalize
+%% $(\lambda\,\gamma.\,\gamma) : (\{j : \In\,M\} \to \El\,(\Y\,\Gamma) \to
+%% \El\,(\Y\,\Gamma))$. More generally, by using a modest amount of syntactic sugar
+%% and elaboration, we can develop $\Y$ and $\Y^{-1}$ into a ``second-order
+%% notation'' for any SOGAT, which constitutes a rigorous and nicely readable
+%% alternative to De Bruijn indices and explicit substitution operations.
+%% \\
+
+%% \noindent \textbf{Sketch of the semantics}. The model of LF is constructed in
+%% two steps. First, we give a model for the theory that has $\PSh$, $\Base$ and
+%% $\In$ as sorts but does not support $\MetaTy$, and then take presheaves over
+%% that model to obtain a model of a 2LTT where $\MetaTy$ represents the outer
+%% layer. In the inner model, we start with an inductive definition of certain
+%% ``trees in categories'':
+%% \begin{alignat*}{3}
+%%   & \mbf{data}\,\Tree\,(B : \Cat) : \msf{Set}\,\mbf{where}\\
+%%   & \hspace{1em} \msf{node} : (\Gamma : \PSh\,B)(n : \mbb{N})(C : \Fin\,n \to \Fib\,(B \ext \Disc\,\Gamma))\\
+%%   & \hspace{3.8em} ((i : \Fin\,n) \to \Tree\,(B \ext \Disc\,\Gamma \ext C\,i)) \to \Tree\,B
+%% \end{alignat*}
+%% Here, $\PSh$ means presheaves in sets, $\Fib$ is cartesian fibrations, $\Disc$
+%% creates a discrete fibration from a presheaf and $\blank\!\ext\!\blank$ takes
+%% the total category of a fibration. Now, the objects of
+%% the semantic base category are elements of $\Tree\,1$, and morphisms between
+%% trees are level-wise natural transformations between the $\Gamma$ components
+%% together with $\Fin\,n \to \Fin\,m$ renamings of subtree indices. The
+%% non-discrete $\Fib$ components are preserved by morphisms. A semantic $\Base$
+%% points to a subtree of a context, an $\In$ is a $\Fin\,n$ index pointing to a
+%% child of a given node, and a $\PSh$ is a dependent presheaf over a $\Gamma$ inside a
+%% given node. Extending a context with an $\In$ binding adds a new empty subtree
+%% to a given node. Extending with an $\El$ binding extends the $\Gamma$ presheaf
+%% in a node with a dependent presheaf.
 
 \bibliographystyle{plain}
 \bibliography{references}

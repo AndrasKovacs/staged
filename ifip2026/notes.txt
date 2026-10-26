@@ -1,0 +1,359 @@
+
+"A Dependent Type Theory with Abstractable Names" Pitts, Matthiesen, Derikx
+"Names and Binding in Type Theory" Ulrich Schöpp
+
+
+data Ty : Type where
+  ι   : Ty
+  _⇒_ : Ty → Ty → Ty
+
+data Tm : Ty → NomType where
+  app : {A B : Ty} → Tm (A ⇒ B) → Tm A → Tm B
+  lam : {A B : Ty} → (@ Tm A → Tm B) → Tm (A ⇒ B)
+
+
+Γ context   Γ ⊢ A : NomType     Γ ⊢ A : NomType    Γ, x @ A ⊢ B : Type
+───────────────────────────     ──────────────────────────────────────
+     Γ, x @ A context                  Γ ⊢ (x @ A) → B : Type
+
+
+    Γ, x @ A ⊢ t : B          Γ ⊢ t : (x @ A) → B
+ ────────────────────────    ─────────────────────
+ Γ ⊢ λ x. t : (x @ A) → B    Γ,x @ A,Δ ⊢ t x : B x
+
+
+   Γ ⊢ A : NomType
+  ────────────────    ────────────────────────
+  Γ ⊢ Var A : Type    Γ, x @ A, Δ ⊢ #x : Var A
+
+
+
+
+lam' : (Tm A → Tm B) → Tm (A ⇒ B)
+lam' f = lam λ x. f (var #x)
+
+
+no flipping
+
+flip : (A @ → B @ → C) → (B @ → A @ → C)
+flip λ f b a. f a b
+
+no duplication
+
+dup : (A @ → A @ → B) → A @ → B
+dup = λ f a. f a a
+
+
+
+Fresh  : {A : NomType} → Type → @ A → Type
+fresh  : ((x @ A) → Fresh B x) → B
+<_,_>  : B → (x @ A) → Fresh B x
+
+
+rebind : ((@ A → B) → @ A → C) → (@ A → B → C)
+
+rebind :
+    ((a : (x @ A) → B x) → (x @ A) → C x (a x))
+  → ((x @ A) → (a : B x) → C x a)
+
+extractBool : (@ A → Bool) → Bool
+extractBool = λ f. fresh λ x. case f x of
+  True  → <True, x>
+  False → <False, x>
+
+
+
+split : (@ A → Either B C) → Either (@ A → B) (@ A → C)
+split f = fresh λ x. case f x of
+  Left b  → rebind (λ b x. <Left b, x>) x b
+  Right c → rebind (λ c x. <Right c, x>) x c
+
+forget : {A : NomType}{B : Type} → (x @ A) → Fresh B x → B
+forget x fr = rebind (λ (fr : (x @ A) → Fresh B x) _. fresh fr) x fr
+
+map : (B → C) → (x @ A) → Fresh B x → Fresh C x
+map f x b = rebind (λ b x. <f (fresh b), x>) x b
+
+bind : (x @ A) → Fresh B x → (B → Fresh C x) → Fresh C x
+bind x b k = k (forget x b)
+
+Fresh' : {A : NomType}{B : Type} → B → @ A → Type
+Fresh' b x = (b' : Fresh B x) × (forget b' = b)
+
+
+SAP : binders commute with Type formers
+
+   (@ A → ⊤)             ≃ ⊤
+   (@ A → ⊥)             ≃ ⊥
+   (@ A → (B + C))       ≃ ((@ A → B) + (@ A → C))
+   (@ A → (B × C))       ≃ ((@ A → B) × (@ A → C))
+   (@ A → B → C)         ≃ ((@ A → B) → (@ A → C))
+   (@ A → List B)        ≃ List (@ A → B)
+   ((x @ A) → f x = g x) ≃ (f = g)
+   ((x @ A) → Fresh B x) ≃ B
+
+   ((x @ A) → Fresh (B x) y) ≃ Fresh ((x @ A) → B x) y
+
+binder extensionality is the SAP for the identity type:
+
+  ((x : @ A) → f x = g x) → f = g
+
+(derivable without any fuss!)
+
+
+SAP-Nat : (@ A → Nat) → Nat
+SAP-Nat f = fresh λ x.
+   let go : Nat → Fresh Nat x
+       go Zero    = <Zero, x>
+       go (Suc n) = map Suc x (go n)
+   go (f x)
+
+numVars : Exp A → Nat
+numVars (var _)   = 1
+numVars (app t u) = numVars t + numVars u
+numVars (lam f)   = SAP-NAT (λ x. numVars (f x))
+
+
+
+Scope : Type
+Scope = List ((A : Ty) × Var (Tm A))
+
+inScope : (Γ : Scope) → {A : Ty} → Tm A → Type
+inScope Γ (var A x) = (A, x) ∈ Γ
+inScope Γ (app t u) = inScope Γ t × inScope Γ u
+inScope Γ (lam f)   = (x @ Tm A) → inScope (Cons (A, #x) Γ) (f x)
+
+⟦_⟧ : Ty → Type
+⟦ ι       = Nat
+⟦ A ⇒ B ⟧ = ⟦A⟧ ⇒ ⟦B⟧
+
+SAP-⟦Ty⟧ : {B : Ty} → (@ A → ⟦B⟧) → ⟦B⟧
+SAP-⟦Ty⟧ = ...
+
+⟦_⟧ : Scope → Type
+⟦ Nil           ⟧ = Unit
+⟦ Cons (A, _) Γ ⟧ = ⟦A⟧ × ⟦Γ⟧
+
+⟦_⟧ : {Γ A} → (t : Tm A) → inScope Γ t → ⟦Γ⟧ → ⟦A⟧
+⟦ var A x ⟧ x-in-Γ           γ = lookup x x-in-Γ γ
+⟦ app t u ⟧ (t-in-Γ, u-in-Γ) γ = (⟦ t ⟧ t-in-Γ γ) (⟦ u ⟧ u-in-Γ γ)
+⟦ lam f   ⟧ f-in-Γ           γ = SAP-⟦Ty⟧ (λ (x @ Tm A) (α : ⟦A⟧). ⟦ f x ⟧ (f-in-Γ x) (α, γ))
+
+
+compare a raw var and a Var
+   (x @ A) → (y : Var A)
+ → (y = #x) + (DoesntHaveAsFV y x) + (∀ y' → DoesntHaveAsFV y' x → y ≠ y')
+
+
+- SAP for Fresh
+
+   ((x @ A) → Fresh A x) ≃ A
+   ((x' @ A) → Fresh (B x') x) ≃ Fresh ((x' @ A) → B x') x
+
+-- PROBLEM: requires swapping
+SAP-Fresh : (x @ C) → ((x' @ A) → Fresh (B x') x) → Fresh ((x' @ A) → B x') x
+SAP-Fresh = rebind λ (f : (x @ C)(x' @ A) → Fresh (B x') x) x.
+                   <(λ x'. fresh λ x''. f x'' x'), x>
+
+(a : @A)(b : @B a)(c : @C a b) → D a b c
+
+-- We need generalized fresh to work around the lack of swapping
+
+ungN : (A : Ty)
+       (B₁ : Ty) (B₂ : @B₁ ⊸ Ty) … (Bₙ : (y₁:@B₁) ⊸ … ⊸ Ty)
+       (C : (y₁:@B₁) ⊸ … ⊸ (yₙ:@Bₙ y₁…) ⊸ 𝒰)
+     → ((x:@A) ⊸ (y₁:@B₁) ⊸ … ⊸ Gel (C y₁ … yₙ) x)
+     → (y₁:@B₁) ⊸ … ⊸ C y₁ … yₙ
+
+
+_⊸*Type : List Ty → Type₁
+Nil      ⊸*Type = Type
+Cons A Γ ⊸*Type = @A ⊸ (Γ ⊸*Type)
+
+_⊸_ : (Γ : List Ty) → (Γ ⊸*Type) → Type
+Nil      ⊸ B = B
+Cons A Γ ⊸ B =
+
+
+
+-- Tys : ℕ → Type
+-- Tms : ∀ {n} → Tys ℕ → Type
+
+-- Tys zero    = ⊤
+-- Tys (suc n) = (Γ : Tys n) × (Tms Γ → Ty)
+
+-- Tms {zero}  _      = ⊤
+-- Tms {suc n} (Γ, A) = (γ : Tms Γ) × Tms (A γ)
+
+
+-- Tel : ℕ → (A : Type) × (A → Type)
+-- Tel zero    = ⊤ × λ _. ⊤
+-- Tel (suc n) = ((Γ : fst (Tel n)) × (snd (Tel n) Γ → Ty), λ (Γ, α).
+
+Tel zero    = ⊤
+Tel (suc n) = (δ : Tel n) ×
+
+
+
+-- Tel : Nat → Type
+-- Tel zero    = ⊤
+-- Tel (suc n) =
+
+-- ung ((x :@ A) → Tel
+
+strengthen : (x @ Tm A) → Tm B → Maybe (Fresh (Tm B) x)
+strengthen x (var x') = test
+strengthen x (app t u) = case strengthen x t of
+  Nothing -> Nothing
+  Just t  -> case strengthen x u of
+    Nothing -> Nothing
+    Just u  -> Just <app (forget t) (forget u), x>
+strengthen x (lam f) = fresh λ x'. case strengthen x (f x') of
+  Nothing -> <Nothing, x'>
+  Just (t : Fresh (Tm B) x) ->
+    rebind (λ t x'. <Just (map lam (SAP-Fresh x t), x'>) x' t
+
+         t                       : @ Tm A → Fresh (Tm B) x
+         SAP-Fresh x t           : Fresh (@ Tm A → Tm B) x
+         map lam (SAP-Fresh x t) : Fresh (Tm (A ⇒ B)) x
+
+isInScope : (Γ : Scope) → (t : Tm A) → Maybe (inScope Γ t)
+isInScope Γ (var A x) = (A,x) ∈? Γ
+isInScope Γ (app t u) = do
+  p <- isInScope Γ t
+  q <- isInScope Γ u
+  Just (p, q)
+isInScope Γ (lam{A}{B} f) = fresh λ x. case isInScope (Cons (A, #x) Γ) (f x) of
+  Nothing -> <Nothing, x>
+  Just (p : isInScope (Cons (A, #x) Γ) (f x)) ->
+    rebind (λ p x. <Just p, x>) x p
+
+--------------------------------------------------------------------------------
+
+f : Code A → Code B
+
+⟦f⟧ : ∀ Γ. Code Γ A → Code Γ B
+       s.t.
+      ∀ Δ Γ (σ : Sub Δ Γ)(a : Code Γ A). ⟦f⟧ (a[σ]) = (⟦f⟧ a)[σ]
+
+
+      Code A → Code B  ≃ Code (Γ,A) B
+      @ (Code A) → Code B
+
+--------------------------------------------------------------------------------
+
+_,_ is a "cartesian" or "structural" binder
+
+Sub Γ (Δ,A) ≃ ((σ : Sub Γ Δ) × Tm Γ A[σ])
+
+
+Sub Γ (Δ, @A)
+
+wk   : Sub (Γ, @A) Γ
+lift : (σ : Sub Γ Δ) → Sub (Γ, @A[σ]) (Δ, @A)
+
++ equations
+
+"Nuyts, Muylder, Devriese: Nominal type theory by nullary internal parametricity"
+
+Structure abstraction principle (SAP) :  ((@ A → B) → (@ A → C)) ≃ (@ A → (B → C))
+SAP
+
+  (@ A → B + C) ~ (@ A → B) + (@ A → C)
+  (x @ A → f x = g x) ~ (f = g)                     (funext for binder (bindext))
+
+
+
+Thinning-stable metaprogramming:
+
+  Design 1: what we have here (nullary parametricity)
+
+  Design 2: "ordered higher observational type theory"
+            Narya: nullary parametricity flag + disable symmetries
+
+
+Define in GLF:
+  - something which looks like layered modal TT
+
+data Ty : Type where
+  ι : Ty
+  _⇒_ : Ty → Ty → Ty
+
+-- Scopes of the object language
+Cxt : Type
+∙   : Cxt
+_,_ : Cxt → Ty → Cxt
+
+
+-- First-order syntax (later we can possibly eliminate this thing)
+-- (by defining first-order terms as the contextualization of
+-- HOAS terms)
+------------------------------------------------------------
+
+Exp : Cxt → Ty → Type
+var : ...
+lam : ...
+app : ...
+Sub : Cxt → Cxt → Type
+_[_] : Sub Γ Δ → Exp Δ A → Exp Γ A
+
+(all Sub rules should be definitional)
+
+------------------------------------------------------------
+
+
+OType is indexed over "markers"
+
+OType is closed under all usual type formers (Pi, Sigma, inductive types, etc..)
+
+OExp : Ty → OType
+app : OExp (A ⇒ B) → OExp A → OExp B
+lam : (OExp A → OExp B) → OExp (A ⇒ B)
+
+------------------------------------------------------------
+
+y : Cxt → ∀ m. OType m
+y ∙     ≃ ⊤
+y (Γ,A) ≃ y Γ × OExp A
+
+y : Ty → ∀ m. OTy
+y ι       = ι
+y (A ⇒ B) = y A ⇒ y B
+
+y : Exp Γ A → (
+
+A : Type
+a : A
+
+∃ set of names s.t. a only depends on names in the set
+------------------------------------------------------------
+
+strict Prop:
+  if P : Prop
+  then any t, u : P are definitionally equal
+
+Rocq: both impredicative Prop and predicative strict Prop
+Lean: only Prop which is impredicative and defn irrelevant
+Agda: Prop which is predicative and defn irrelevant
+
+
+record STCLTheory               in a type theory (with strict Prop)
+  Con
+  Ty
+  Sub
+  Tm
+  ...
+  ...
+  ...
+  ...
+  ...
+
+
+for any
+  M : STLCTheory
+
+Ambrus & Loic:
+
+  exists M' : STLCTheory
+    s.t.       M is isomorphic to M'
+           and all substitution equlity proofs in M' are refl

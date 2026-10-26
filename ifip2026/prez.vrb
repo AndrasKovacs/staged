@@ -1,0 +1,16 @@
+\frametitle{Conclusions}
+
+\begin{itemize}
+\item We can do a lot in ThinLF, but I don't necessarily know how to do it efficiently and concisely.
+\item I'm hoping that we can build nice machinery on top of the primitives.
+\item Features like \emph{pattern matching under binders} could be elaborated to ThinLF.
+\item I'm not quite sure about the set of primitives, or even the basic setup. Can we use ``observational'' binder types instead of manual SAP plugging?
+
+
+
+
+
+
+\end{itemize}
+
+

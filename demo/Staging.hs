@@ -1,3 +1,5 @@
+{-# options_ghc -funbox-strict-fields -Wno-unused-top-binds -Wno-unused-imports #-}
+{-# language ConstraintKinds, ImplicitParams, RankNTypes #-}
 
 module Staging (stage) where
 
@@ -5,27 +7,44 @@ import Common
 import Syntax
 import Evaluation (lvl2Ix)
 
-data Env = Nil | Def0 Env Val0 | Def1 Env Val1
+data Env = Nil | Def0 Env Lvl | Def1 Env Val1
+  deriving (Eq, Show)
+
+type LvlArg = (?lvl :: Lvl)
+
+data Cl1
+  = CEval1 Env Tm
+  | CSuc
+  | CNatElim0
+  | CNatElim1
+  | CNatElim2 Val1
+  | CNatElim3 Val1 Val1
+  deriving (Eq, Show)
 
 data Val1
-  = VLam1 (Val1 -> Val1)
+  = VLam1 Cl1
   | VQuote Val0
   | VSomeU1 -- ^ Meta-level types are irrelevant during staging, we evaluate them to this
             --   dummy value.
   | VZero1
   | VSuc1 Val1
+  deriving (Eq, Show)
+
+data EWk = EWk Lvl Val0
+  deriving (Eq, Show)
 
 data Val0
   = VVar0 Lvl
   | VApp0 Val0 Val0 Icit Verbosity
-  | VPi0 Name Icit Val0 (Val0 -> Val0)
-  | VLam0 Name Icit Val0 (Val0 -> Val0) Verbosity
-  | VLet0 Name Val0 Val0 (Val0 -> Val0) Verbosity
+  | VPi0 Name Icit Val0 EWk
+  | VLam0 Name Icit Val0 EWk Verbosity
+  | VLet0 Name Val0 Val0 EWk Verbosity
   | VU0
   | VNat0
   | VZero0
   | VSuc0
   | VNatElim0
+  deriving (Eq, Show)
 
 vVar1 :: Env -> Ix -> Val1
 vVar1 (Def1 _ v) 0 = v
@@ -33,8 +52,17 @@ vVar1 (Def1 e v) x = vVar1 e (x - 1)
 vVar1 (Def0 e v) x = vVar1 e (x - 1)
 vVar1 _          _ = impossible
 
-vApp1 :: Val1 -> Val1 -> Val1
-vApp1 (VLam1 t) ~u = t u
+capp :: LvlArg => Cl1 -> Val1 -> Val1
+capp c ~u = case c of
+  CEval1 e t    -> eval1 (Def1 e u) t
+  CSuc          -> VSuc1 u
+  CNatElim0     -> VLam1 CNatElim1
+  CNatElim1     -> VLam1 (CNatElim2 u)
+  CNatElim2 s   -> VLam1 (CNatElim3 s u)
+  CNatElim3 s z -> vNatElim1 s z u
+
+vApp1 :: LvlArg => Val1 -> Val1 -> Val1
+vApp1 (VLam1 t) ~u = capp t u
 vApp1 _          _ = impossible
 
 envTail :: Env -> Env
@@ -47,19 +75,16 @@ metaError m = error (
     "Unsolved metavariable during staging: ?" ++ show m
   ++ "\nHint: look at elab-verbose output to find the offending metavariable")
 
-vNatElim1 :: Val1 -> Val1 -> Val1 -> Val1
+vNatElim1 :: LvlArg => Val1 -> Val1 -> Val1 -> Val1
 vNatElim1 s z t = case t of
   VZero1  -> z
   VSuc1 t -> s `vApp1` t `vApp1` vNatElim1 s z t
   _       -> impossible
 
-eval1Bind :: Env -> Tm -> Val1 -> Val1
-eval1Bind env t u = eval1 (Def1 env u) t
-
-eval1 :: Env -> Tm -> Val1
+eval1 :: LvlArg => Env -> Tm -> Val1
 eval1 env = \case
   Var x             -> vVar1 env x
-  Lam x i a t o     -> VLam1 (eval1Bind env t)
+  Lam x i a t o     -> VLam1 (CEval1 env t)
   App t u i o       -> vApp1 (eval1 env t) (eval1 env u)
   Pi{}              -> VSomeU1
   Let _ _ _ t u _   -> eval1 (Def1 env (eval1 env t)) u
@@ -69,15 +94,15 @@ eval1 env = \case
   Wk t              -> eval1 (envTail env) t
   Nat _             -> VSomeU1
   Zero _            -> VZero1
-  Suc _             -> VLam1 VSuc1
-  NatElim _         -> VLam1 \_ -> VLam1 \s -> VLam1 \z -> VLam1 \t -> vNatElim1 s z t
+  Suc _             -> VLam1 CSuc
+  NatElim _         -> VLam1 CNatElim0
   InsertedMeta m _  -> metaError m
   Meta m            -> metaError m
   AppPruning{}      -> impossible
   Splice{}          -> impossible
 
 vVar0 :: Env -> Ix -> Val0
-vVar0 (Def0 _ v) 0 = v
+vVar0 (Def0 _ v) 0 = VVar0 v
 vVar0 (Def0 e v) x = vVar0 e (x - 1)
 vVar0 (Def1 e v) x = vVar0 e (x - 1)
 vVar0 _          _ = impossible
@@ -86,10 +111,17 @@ vSplice :: Val1 -> Val0
 vSplice (VQuote v) = v
 vSplice _          = impossible
 
-eval0Bind :: Env -> Tm -> Val0 -> Val0
-eval0Bind env t u = eval0 (Def0 env u) t
+fresh :: (LvlArg => Lvl -> a) -> (LvlArg => a)
+fresh act = let x = ?lvl in
+            let ?lvl = x + 1 in
+            act x
 
-eval0 :: Env -> Tm -> Val0
+eval0Bind :: LvlArg => Env -> Tm -> EWk
+eval0Bind env t =
+  -- traceShow ("MKEWK", ?lvl, t)
+  EWk ?lvl $ fresh \x -> eval0 (Def0 env x) t
+
+eval0 :: LvlArg => Env -> Tm -> Val0
 eval0 env = \case
   Var x            -> vVar0 env x
   Lam x i a t o    -> VLam0 x i (eval0 env a) (eval0Bind env t) o
@@ -109,13 +141,29 @@ eval0 env = \case
   Lift{}           -> impossible
   AppPruning{}     -> impossible
 
-quote0 :: Lvl -> Val0 -> Tm
-quote0 l = \case
-  VVar0 x         -> Var (lvl2Ix l x)
-  VApp0 t u i o   -> App (quote0 l t) (quote0 l u) i o
-  VPi0 x i a b    -> Pi x i (quote0 l a) (quote0 (l + 1) (b $ VVar0 l))
-  VLam0 x i a t o -> Lam x i (quote0 l a) (quote0 (l + 1) (t $ VVar0 l)) o
-  VLet0 x a t u v -> Let S0 x (quote0 l a) (quote0 l t) (quote0 (l + 1) (u $ VVar0 l)) v
+type RenArg = (?ren :: [Lvl])
+
+-- | Trim list to given length.
+trim :: Int -> [a] -> [a]
+trim l as = drop (length as - l) as
+
+quote0EWk :: LvlArg => RenArg => EWk -> Tm
+quote0EWk (EWk l t) = fresh \x ->
+  let ?ren = x : trim (coerce l) ?ren
+  in quote0 t
+
+applyRen :: RenArg => Lvl -> Lvl
+applyRen x =
+  -- traceShow ("APPLYREN", ?ren, x) $
+  ?ren !! (length ?ren - coerce x - 1)
+
+quote0 :: LvlArg => RenArg => Val0 -> Tm
+quote0 = \case
+  VVar0 x         -> Var (lvl2Ix ?lvl (applyRen x))
+  VApp0 t u i o   -> App (quote0 t) (quote0 u) i o
+  VPi0 x i a b    -> Pi x i (quote0 a) (quote0EWk b)
+  VLam0 x i a t v -> Lam x i (quote0 a) (quote0EWk t) v
+  VLet0 x a t u v -> Let S0 x (quote0 a) (quote0 t) (quote0EWk u) v
   VU0             -> U S0
   VNat0           -> Nat S0
   VZero0          -> Zero S0
@@ -123,4 +171,50 @@ quote0 l = \case
   VNatElim0       -> NatElim S0
 
 stage :: Tm -> Tm
-stage t = quote0 0 $ eval0 Nil t
+stage t =
+  let ?lvl = 0
+      ?ren = []
+  in quote0 $ eval0 Nil t
+
+
+{-
+
+Caching:
+
+The explicit wk setup is more efficient and precise w.r.t caching.
+
+How to cache?
+
+Let's say we want to cache metafunctions that return comp exprs
+
+Every *cached call* should yield a variable in local scope, which is (or will be)
+let-defined as the resulting expr of the call.
+
+This is not so easy!
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-}

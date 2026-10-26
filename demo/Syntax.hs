@@ -55,7 +55,7 @@ data Tm
   | Zero Stage
   | Suc Stage
   | NatElim Stage
-  deriving Show
+  deriving (Eq, Show)
 
 tQuote :: Tm -> Tm
 tQuote (Splice t) = t

@@ -1,0 +1,723 @@
+%% build: latexmk -pdf -pvc -xelatex prez.tex
+
+\documentclass[dvipsnames,aspectratio=169]{beamer}
+\usetheme{Madrid}
+
+
+%% kill footline
+\setbeamertemplate{footline}[frame number]{}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}{}
+
+%% bibliography
+\bibliographystyle{alpha}
+\setbeamerfont{bibliography item}{size=\footnotesize}
+\setbeamerfont{bibliography entry author}{size=\footnotesize}
+\setbeamerfont{bibliography entry title}{size=\footnotesize}
+\setbeamerfont{bibliography entry location}{size=\footnotesize}
+\setbeamerfont{bibliography entry note}{size=\footnotesize}
+\setbeamertemplate{bibliography item}{}
+
+%% kill ball enumeration
+\setbeamertemplate{enumerate items}[circle]
+\setbeamertemplate{section in toc}[circle]
+
+%% kill block shadows
+\setbeamertemplate{blocks}[rounded][shadow=false]
+\setbeamertemplate{title page}[default][colsep=-4bp,rounded=true]
+
+%% kill ball itemize
+\setbeamertemplate{itemize items}[circle]
+
+%% --------------------------------------------------------------------------------
+
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{cite}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{amsfonts}
+\usepackage{mathpartir}
+\usepackage{scalerel}
+\usepackage{stmaryrd}
+\usepackage{bm}
+\usepackage{graphicx}
+\usepackage{fontspec}
+\usepackage{textcomp}
+\usepackage{fancyvrb}
+\usepackage{tikz-cd}
+
+\tikzcdset{scale cd/.style={every label/.append style={scale=#1},
+    cells={nodes={scale=#1}}}}
+
+\setmonofont[Scale=0.8]{DejaVu Sans Mono Bold}
+
+%% --------------------------------------------------------------------------------
+
+%% HoTT style composition
+\makeatletter
+\DeclareRobustCommand{\sqcdot}{\mathbin{\mathpalette\morphic@sqcdot\relax}}
+\newcommand{\morphic@sqcdot}[2]{%
+  \sbox\z@{$\m@th#1\centerdot$}%
+  \ht\z@=.33333\ht\z@
+  \vcenter{\box\z@}%
+}
+\makeatother
+
+\renewcommand{\mit}[1]{{\mathit{#1}}}
+\newcommand{\ttt}[1]{{\texttt{#1}}}
+\newcommand{\msf}[1]{{\mathsf{#1}}}
+\newcommand{\mbf}[1]{{\mathbf{#1}}}
+\newcommand{\mbb}[1]{\mathbb{#1}}
+\newcommand{\vsp}{\vspace{1em}}
+\newcommand{\vsph}{\vspace{0.5em}}
+
+%% \newcommand{\U}{\mathsf{U}}
+%% \newcommand{\code}{\mathsf{code}}
+%% \newcommand{\bs}[1]{\boldsymbol{#1}}
+%% \newcommand{\wh}[1]{\widehat{#1}}
+%% \newcommand{\mdo}{\mbf{do}\,}
+%% \newcommand{\ind}{\hspace{1em}}
+%% \newcommand{\bif}{\mbf{if}\,}
+%% \newcommand{\bthen}{\mbf{then}\,}
+%% \newcommand{\belse}{\mbf{else}\,}
+%% \newcommand{\return}{\mbf{return}\,}
+%% \newcommand{\pure}{\mbf{pure}\,}
+%% \newcommand{\lam}{\lambda\,}
+%% \newcommand{\data}{\mbf{data}\,}
+%% \newcommand{\where}{\mbf{where}}
+%% \newcommand{\M}{\msf{M}}
+%% \newcommand{\letrec}{\mbf{letrec}\,}
+%% \newcommand{\of}{\mbf{of}\,}
+%% \newcommand{\go}{\mit{go}}
+%% \newcommand{\add}{\mit{add}}
+%% \newcommand{\letdef}{\mbf{let\,}}
+%% \newcommand{\map}{\mit{map}}
+%% \newcommand{\emptycon}{\scaleobj{.75}\bullet}
+%% \newcommand{\Tyo}{\msf{Ty}_{\mbbo}}
+%% \newcommand{\Tmo}{\msf{Tm}_{\mbbo}}
+%% \newcommand{\whset}{\wh{\Set}}
+%% \newcommand{\ev}{\mbb{E}}
+%% \newcommand{\re}{\mbb{R}}
+
+
+%% \newcommand{\mbbc}{\mbb{C}}
+%% \newcommand{\mbbo}{\mbb{O}}
+
+%% \newcommand{\vas}{\mathsf{as}}
+%% \newcommand{\vbs}{\mathsf{bs}}
+%% \newcommand{\vcs}{\mathsf{cs}}
+%% \newcommand{\vxs}{\mathsf{xs}}
+%% \newcommand{\vys}{\mathsf{ys}}
+%% \newcommand{\vsp}{\mathsf{sp}}
+%% \newcommand{\vma}{\mathsf{ma}}
+%% \newcommand{\vga}{\mathsf{ga}}
+%% \newcommand{\vm}{\mathsf{m}}
+%% \newcommand{\vn}{\mathsf{n}}
+%% \newcommand{\vk}{\mathsf{k}}
+%% \newcommand{\vA}{\mathsf{A}}
+%% \newcommand{\vB}{\mathsf{B}}
+%% \newcommand{\vC}{\mathsf{C}}
+%% \newcommand{\vS}{\mathsf{S}}
+%% \newcommand{\vF}{\mathsf{F}}
+%% \newcommand{\vR}{\mathsf{R}}
+%% \newcommand{\vM}{\mathsf{M}}
+%% \newcommand{\vmb}{\mathsf{mb}}
+%% \newcommand{\mAs}{\mathsf{As}}
+%% \newcommand{\va}{\mathsf{a}}
+%% \newcommand{\vb}{\mathsf{b}}
+%% \newcommand{\vc}{\mathsf{c}}
+%% \newcommand{\vd}{\mathsf{d}}
+%% \newcommand{\vx}{\mathsf{x}}
+%% \newcommand{\vy}{\mathsf{y}}
+%% \newcommand{\vz}{\mathsf{z}}
+%% \newcommand{\vf}{\mathsf{f}}
+%% \newcommand{\vfs}{\mathsf{fs}}
+%% \newcommand{\vg}{\mathsf{g}}
+%% \newcommand{\vh}{\mathsf{h}}
+%% \newcommand{\vt}{\mathsf{t}}
+%% \newcommand{\vs}{\mathsf{s}}
+%% \newcommand{\vr}{\mathsf{r}}
+%% \newcommand{\vu}{\mathsf{u}}
+%% \newcommand{\vl}{\mathsf{l}}
+%% \newcommand{\vns}{\mathsf{ns}}
+%% \newcommand{\vW}{\mathsf{W}}
+%% \newcommand{\vsup}{\mathsf{sup}}
+%% \newcommand{\vid}{\mathsf{id}}
+%% \newcommand{\whW}{\wh{\vW}}
+
+
+%% \newcommand{\SOP}{\msf{SOP}}
+%% \newcommand{\El}{\msf{El}}
+%% \newcommand{\USOP}{\msf{U}_{\msf{SOP}}}
+%% \newcommand{\Uprod}{\msf{U_P}}
+%% \newcommand{\Elprod}{\msf{El_{P}}}
+%% \newcommand{\IsSOP}{\msf{IsSOP}}
+%% \newcommand{\forEach}{\msf{forEach}}
+%% \newcommand{\single}{\msf{single}}
+%% \newcommand{\msplit}{\msf{split}}
+%% \newcommand{\mapGen}{\msf{mapGen}}
+%% \newcommand{\genPull}{\msf{gen_{Pull}}}
+%% \newcommand{\Set}{\msf{Set}}
+%% \newcommand{\casePull}{\msf{case_{Pull}}}
+%% \newcommand{\appull}{\ap_{\Pull}}
+
+%% \newcommand{\Con}{\msf{Con}}
+%% \newcommand{\Sub}{\msf{Sub}}
+%% \newcommand{\Tm}{\msf{Tm}}
+%% \newcommand{\Mor}{\msf{Tm}}
+
+%% \newcommand{\ext}{\triangleright}
+
+%% \newcommand{\Int}{\msf{Int}}
+%% \newcommand{\List}{\msf{List}}
+%% \newcommand{\Tree}{\msf{Tree}}
+%% \newcommand{\Node}{\msf{Node}}
+%% \newcommand{\Leaf}{\msf{Leaf}}
+%% \newcommand{\Nil}{\msf{Nil}}
+%% \newcommand{\Cons}{\msf{Cons}}
+%% \newcommand{\Reader}{\msf{Reader}}
+%% \newcommand{\ReaderT}{\msf{ReaderT}}
+%% \newcommand{\Monad}{\msf{Monad}}
+%% \newcommand{\Applicative}{\msf{Applicative}}
+%% \newcommand{\class}{\msf{class}}
+%% \newcommand{\Functor}{\msf{Functor}}
+%% \newcommand{\Bool}{\msf{Bool}}
+%% \newcommand{\Statel}{\msf{State}}
+%% \newcommand{\fro}{\leftarrow}
+%% \newcommand{\case}{\mbf{case\,}}
+%% \newcommand{\foldr}{\msf{foldr}}
+%% \newcommand{\foldl}{\msf{foldl}}
+%% \newcommand{\rep}{\msf{rep}}
+%% \newcommand{\concatMap}{\msf{concatMap}}
+
+%% \newcommand{\Lift}{{\Uparrow}}
+%% \newcommand{\Up}{{\Uparrow}}
+%% \newcommand{\spl}{{\bs{\sim}}}
+%% \newcommand{\ql}{{\bs{\langle}}}
+%% \newcommand{\qr}{{\bs{\rangle}}}
+%% \newcommand{\bind}{\mathbin{>\!\!>\mkern-6.7mu=}}
+
+%% \newcommand{\MTy}{\msf{MetaTy}}
+%% \newcommand{\MTm}{\msf{MetaTm}}
+%% \newcommand{\VTy}{\msf{ValTy}}
+%% \newcommand{\Ty}{\msf{Ty}}
+%% \newcommand{\CTy}{\msf{CompTy}}
+%% \newcommand{\True}{\msf{True}}
+%% \newcommand{\False}{\msf{False}}
+%% \newcommand{\fst}{\msf{fst}}
+%% \newcommand{\snd}{\msf{snd}}
+
+\newcommand{\blank}{{\mathord{\hspace{1pt}\text{--}\hspace{1pt}}}}
+
+%% \newcommand{\Nat}{\msf{Nat}}
+%% \newcommand{\Zero}{\msf{Zero}}
+%% \newcommand{\Suc}{\msf{Suc}}
+%% \newcommand{\Maybe}{\msf{Maybe}}
+%% \newcommand{\MaybeT}{\msf{MaybeT}}
+%% \newcommand{\Nothing}{\msf{Nothing}}
+%% \newcommand{\Just}{\msf{Just}}
+
+\theoremstyle{remark}
+\newtheorem{notation}{Notation}
+\newtheorem*{axiom}{Axiom}
+
+%% \newcommand{\id}{\mit{id}}
+%% \newcommand{\mup}{\mbf{up}}
+%% \newcommand{\mdown}{\mbf{down}}
+%% \newcommand{\tyclass}{\mbf{class}}
+%% \newcommand{\instance}{\mbf{instance}\,}
+%% \newcommand{\Improve}{\msf{Improve}}
+%% \newcommand{\Gen}{\msf{Gen}}
+%% \newcommand{\unGen}{\mit{unGen}}
+%% \renewcommand{\Vec}{\msf{Vec}}
+%% \newcommand{\gen}{\mit{gen}}
+%% \newcommand{\genRec}{\mit{genRec}}
+%% \newcommand{\fmap}{<\!\!\$\!\!>}
+%% \newcommand{\ap}{{<\!\!*\!\!>}}
+%% \newcommand{\runGen}{\mit{runGen}}
+%% \newcommand{\qt}[1]{\ql#1\qr}
+%% \newcommand{\lift}{\mit{lift}}
+%% \newcommand{\liftGen}{\mit{liftGen}}
+%% \newcommand{\MonadGen}{\msf{MonadGen}}
+%% \newcommand{\MonadState}{\msf{MonadState}}
+%% \newcommand{\MonadReader}{\msf{MonadReader}}
+%% \newcommand{\RA}{\Rightarrow}
+%% \newcommand{\EitherT}{\msf{EitherT}}
+%% \newcommand{\Either}{\msf{Either}}
+%% \newcommand{\Left}{\msf{Left}}
+%% \newcommand{\Right}{\msf{Right}}
+%% \newcommand{\StateT}{\msf{StateT}}
+%% \newcommand{\Identity}{\msf{Identity}}
+
+%% \newcommand{\Stop}{\msf{Stop}}
+%% \newcommand{\Skip}{\msf{Skip}}
+%% \newcommand{\Yield}{\msf{Yield}}
+
+%% \newcommand{\runIdentity}{\mit{runIdentity}}
+%% \newcommand{\runReaderT}{\mit{runReaderT}}
+%% \newcommand{\newtype}{\mbf{newtype}\,}
+%% \newcommand{\runMaybeT}{\mit{runMaybeT}}
+%% \newcommand{\runStateT}{\mit{runStateT}}
+%% \newcommand{\runState}{\mit{runState}}
+%% \newcommand{\dlr}{\,\$\,}
+%% \newcommand{\ImproveF}{\msf{ImproveF}}
+%% \newcommand{\ExceptT}{\msf{ExceptT}}
+%% \newcommand{\State}{\msf{State}}
+%% \newcommand{\SumVS}{\msf{SumVS}}
+%% \newcommand{\ProdCS}{\msf{ProdCS}}
+%% \newcommand{\Here}{\msf{Here}}
+%% \newcommand{\There}{\msf{There}}
+%% \newcommand{\IsSumVS}{\msf{IsSumVS}}
+%% \newcommand{\MonadJoin}{\msf{MonadJoin}}
+%% \newcommand{\Stream}{\msf{Stream}}
+%% \newcommand{\join}{\mit{join}}
+%% \newcommand{\modify}{\mit{modify}}
+%% \newcommand{\get}{\mit{get}}
+%% \newcommand{\mput}{\mit{put}}
+%% \newcommand{\Rep}{\mit{Rep}}
+%% \newcommand{\encode}{\mit{encode}}
+%% \newcommand{\decode}{\mit{decode}}
+%% \newcommand{\mindex}{\mit{index}}
+%% \newcommand{\mtabulate}{\mit{tabulate}}
+%% \newcommand{\States}{\mit{States}}
+%% \newcommand{\seed}{\mit{seed}}
+%% \newcommand{\step}{\mit{step}}
+%% \newcommand{\Step}{\msf{Step}}
+%% \newcommand{\Pull}{\msf{Pull}}
+%% \newcommand{\MkPull}{\msf{MkPull}}
+
+\newcommand{\RED}[1]{{\color{BrickRed} #1}}
+\newcommand{\GRN}[1]{{\color{OliveGreen} #1}}
+\newcommand{\RBL}[1]{{\color{RoyalBlue} #1}}
+\newcommand{\BLU}[1]{{\color{Blue} #1}}
+
+%% \newcommand{\bsl}{\textbackslash}
+%% \newcommand{\brl}{\textbraceleft}
+%% \newcommand{\brr}{\textbraceright}
+
+%% --------------------------------------------------------------------------------
+
+\title{Thinning-Stable Metaprogramming}
+\author{András Kovács}
+\institute{University of Cambridge}
+\date{13rd Oct 2026, IFIP WG 2.11 meeting, Niagara-on-the-Lake}
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}[fragile]{Stability}
+
+\vsp
+In metaprogramming, it's nice if we don't have to explicitly handle
+object-language scopes.
+\vsp
+
+\begin{Verbatim}[commandchars=\\\{\}]
+  f : Exp A -> Exp A
+\end{Verbatim}
+\vsp
+We'd like \texttt{f} to work on expressions containing arbitrary free variables.
+\vsp
+
+At least, we'd like a closed such \texttt{f} to have the following semantics
+\vsp
+\begin{Verbatim}[commandchars=\\\{\}]
+  ⟦f⟧ : ∀ Γ. Exp Γ A -> Exp Γ A
+\end{Verbatim}
+\vsp
+
+\end{frame}
+
+\begin{frame}[fragile]{Stability}
+
+Just having \texttt{⟦f⟧ : ∀ Γ. Exp Γ A -> Exp Γ A} is not enough.
+\vsp
+
+
+\textbf{First}, there's no \emph{hygiene}. \texttt{f} could inspect \texttt{Γ} in arbitrary ways,
+and e.g.\ return different expressions in empty and non-empty scopes.
+
+\end{frame}
+
+
+\begin{frame}[fragile]{Stability}
+
+\textbf{Second}, There's not even an obvious way to have \emph{binders}. With STLC as an object language,
+we'd like at least
+\vsph
+\begin{Verbatim}[commandchars=\\\{\}]
+  lam : (Exp A -> Exp B) -> Exp (A ⇒ B)
+\end{Verbatim}
+\vsph
+However, the standard indexed-set semantics demands
+\vsph
+\begin{Verbatim}[commandchars=\\\{\}]
+  ⟦lam⟧ : ∀ Γ. (Exp Γ A -> Exp Γ B) -> Exp Γ (A ⇒ B)
+\end{Verbatim}
+\vsph
+where we can't conjure a fresh variable to apply the inner function to.
+
+\end{frame}
+
+
+\begin{frame}[fragile]{Explicit contexts}
+
+One approach: have explicit contexts in user-facing language.
+\vsp
+\begin{Verbatim}[commandchars=\\\{\}]
+  f : ∀ Γ. Exp Γ A → Exp Γ A
+\end{Verbatim}
+\vsp
+For example: Moebius, Cocon, layered modal TT, typed FOAS.
+\vsp
+
+\begin{itemize}
+\item We can do \emph{arbitrary} intensional analysis.
+\item A lot of bureaucracy; ergonomics is a challenge.
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}[fragile]{Stability under substitution}
+
+\begin{Verbatim}[commandchars=\\\{\}]
+  ⟦f⟧ : ∀ Γ. Exp Γ A → Exp Γ A
+    such that
+  ∀ (Δ : Scope) (σ : Sub Δ Γ) (a : Exp Γ A). ⟦f⟧ (a[σ]) = (⟦f⟧ a)[σ]
+\end{Verbatim}
+\vsp
+A standard semantics for HOAS, logical frameworks \& two-level calculi.
+\vsp
+
+\emph{Barely any intensional analysis}: no expression can be distinguished from
+a variable.
+
+\vsp
+Easy faithful representation of object binders:
+\begin{Verbatim}[commandchars=\\\{\}]
+  lam   : (Exp A -> Exp B) -> Exp (A ⇒ B)
+  ⟦lam⟧ : ∀ Γ. (∀ Δ. Sub Δ Γ -> Exp Δ A → Exp Δ B) -> Exp Γ (A ⇒ B)
+\end{Verbatim}
+
+\end{frame}
+
+\begin{frame}[fragile]{Stability under variable renaming}
+
+A renaming from \texttt{Γ} to \texttt{Δ} maps every \texttt{Δ}-variable to
+a \texttt{Γ}-variable.
+\vsp
+
+To faithfully represent binders, we need an extra \emph{type of variables}, and e.g.\ have
+\vsp
+\begin{Verbatim}[commandchars=\\\{\}]
+  lam : (Var A -> Exp B) -> Exp (A ⇒ B)
+\end{Verbatim}
+\vsp
+
+Metaprograms can distinguish variables and non-variables, but e.g.\ can't decide equality
+of expressions...
+
+\vsp
+... because two distinct variables can become equal by renaming.
+
+\vsp
+Used in metatheory of TTs, but rarely in metaprogramming (?)
+
+\end{frame}
+
+\begin{frame}[fragile]{Stability under injective variable renaming}
+
+Equality of expressions can be decided.
+\vsp
+
+But binders are much more fiddly: it's a \emph{sub-structural} function type.
+\vsp
+
+Example: \emph{nominal sets}.
+\vsp
+
+\textbf{Example:} the nullary parametric type theory (NPTT) of Muylder, Nuyts and Devriese\footnote{Muylder, Nuyts, Devriese: \emph{Nominal Type Theory by Nullary Internal Parametricity}}.
+
+\end{frame}
+
+
+\begin{frame}[fragile]{Stability under thinning}
+
+A thinning from \texttt{Γ} to \texttt{Δ} deletes zero of more binders from \texttt{Γ},
+resulting in \texttt{Δ}.
+\vsp
+
+Contravariant action: if \texttt{σ : Thinning Γ Δ} and \texttt{e : Exp Δ A},
+then \texttt{e[σ] : Exp Γ A}.
+
+\vsp It's the \emph{weakest} stability requirement that makes sense for hygienic
+metaprogramming.
+
+\end{frame}
+
+
+\begin{frame}[fragile]{ThinLF}
+
+A mostly hypothetical language. Agda/Idris syntax with extra nominal
+features. Based on NPTT by Muylder, Nuyts \& Devriese.
+
+\vsp
+
+\begin{Verbatim}[commandchars=\\\{\}]
+  data Ty : Type where
+    ι   : Ty
+    _⇒_ : Ty → Ty → Ty
+
+  data Exp : Ty → NomType where
+    var : Var (Exp A) → Exp A
+    lam : (@ (Exp A) → Exp B) → Exp (A ⇒ B)
+    app : Exp (A ⇒ B) → Exp A → Exp B
+\end{Verbatim} 
+
+\end{frame}
+
+\begin{frame}[fragile]{ThinLF}
+We can declare an inductive type to be nominal, and use \texttt{Var} and
+the nominal function type in the definition.
+\vsp
+\begin{Verbatim}[commandchars=\\\{\}]
+    Γ context   Γ ⊢ A : NomType     Γ ⊢ A : NomType    Γ, x @ A ⊢ B : Type
+    ───────────────────────────     ──────────────────────────────────────
+         Γ, x @ A context                  Γ ⊢ (x @ A) → B : Type
+
+
+              Γ, x @ A ⊢ t : B           Γ ⊢ t : (x @ A) → B
+           ────────────────────────    ────────────────────────
+           Γ ⊢ λ x. t : (x @ A) → B    Γ,y @ A,Δ ⊢ t y : B[y/x]
+
+             Γ ⊢ A : NomType
+             ────────────────    ────────────────────────
+             Γ ⊢ Var A : Type    Γ, x @ A, Δ ⊢ #x : Var A
+\end{Verbatim}
+\vsp
+
+\end{frame}
+
+\begin{frame}[fragile]{ThinLF}
+
+Ordinary HOAS/LF programming is still available:
+\begin{Verbatim}[commandchars=\\\{\}]
+  lam' : (Exp A → Exp B) → Exp (A ⇒ B)
+  lam' f = lam λ x. f (var #x)
+\end{Verbatim}
+\vsp
+No flipping:
+\begin{Verbatim}[commandchars=\\\{\}]
+  flip : (@ A → @ B → C) → (@ B → @ A → C)
+  flip = λ f b a. f a b   \RED{-- ill-typed}
+\end{Verbatim}
+\vsp
+No duplication:
+\begin{Verbatim}[commandchars=\\\{\}]
+  dup : (@ A → @ A → B) → @ A → B
+  dup = λ f a. f a a   \RED{-- ill-typed}
+\end{Verbatim}
+\end{frame}
+
+\begin{frame}[fragile]{Freshness}
+
+\texttt{Fresh A x}: the type of \texttt{A}-values that
+don't depend on \texttt{x}.
+\vsp
+
+\begin{Verbatim}[commandchars=\\\{\}]
+  Fresh : \{A : NomType\} → Type → @ A → Type
+  fresh : ((x @ A) → Fresh B x) → B
+  <\_,\_> : B → (x @ A) → Fresh B x
+  \GRN{ -- fresh and <\_,\_> are definitional inverses}
+\end{Verbatim}
+\vsp
+
+We can match under a binder to extract a \texttt{Bool}:
+\begin{Verbatim}[commandchars=\\\{\}]
+  extractBool : (@ A → Bool) → Bool
+  extractBool f = fresh λ x. case f x of
+    True  → <True, x>
+    False → <False, x>
+\end{Verbatim} 
+\end{frame}
+
+\begin{frame}[fragile]{Abstracting over free variables}
+
+Another primitive operation:
+\begin{Verbatim}[commandchars=\\\{\}]
+  rebind : ((@ A → B) → @ A → C) → (@ A → B → C)
+\end{Verbatim}
+(I only show the non-dependently typed version here).
+\vsp
+
+We can use it to match on \texttt{Either} under a binder:
+\vsp
+\begin{Verbatim}[commandchars=\\\{\}]
+  split : (@ A → Either B C) → Either (@ A → B) (@ A → C)
+  split f = fresh λ x. case f x of
+    Left b  → rebind (λ b x. <Left b, x>) x b
+    Right c → rebind (λ c x. <Right c, x>) x c
+\end{Verbatim}
+\vsp
+
+\end{frame}
+\begin{frame}[fragile]{Some useful definitions}
+
+\begin{Verbatim}[commandchars=\\\{\}]
+  forget : \{A : NomType\}\{B : Type\} → (x @ A) → Fresh B x → B
+  forget = rebind (λ fr _. fresh fr)
+
+  map : (B → C) → (x @ A) → Fresh B x → Fresh C x
+  map f = rebind (λ b x. <f (fresh b), x>)
+
+  bind : (x @ A) → Fresh B x → (B → Fresh C x) → Fresh C x
+  bind x b k = k (forget x b)
+
+  Fresh' : \{A : NomType\}\{B : Type\} → B → @ A → Type
+  Fresh' b x = (b' : Fresh B x) × (forget b' = b)
+\end{Verbatim}
+\end{frame}
+
+\begin{frame}[fragile]{Structure abstraction principles (SAP)}
+
+Most SAP-s from Muylder et al.\ work fine:
+\begin{Verbatim}[commandchars=\\\{\}]
+  (@ A → ⊤)             ≃ ⊤
+  (@ A → ⊥)             ≃ ⊥
+  (@ A → (B + C))       ≃ ((@ A → B) + (@ A → C))
+  (@ A → (B × C))       ≃ ((@ A → B) × (@ A → C))
+  (@ A → B → C)         ≃ ((@ A → B) → (@ A → C))
+  (@ A → List B)        ≃ List (@ A → B)
+  ((x @ A) → f x = g x) ≃ (f = g)
+  ((x @ A) → Fresh B x) ≃ B
+\end{Verbatim}
+
+\vsp
+This one requires name swapping, so we need to make it primitive (or generalize \texttt{fresh}):
+
+\begin{Verbatim}[commandchars=\\\{\}]
+  ((x @ A) → Fresh (B x) y) ≃ Fresh ((x @ A) → B x) y
+\end{Verbatim}
+\end{frame}
+
+\begin{frame}[fragile]{Example: counting variables}
+
+\begin{Verbatim}[commandchars=\\\{\}]
+  SAP-Nat : (@ A → Nat) → Nat
+  SAP-Nat f = fresh λ x.
+     let go : Nat → Fresh Nat x
+         go Zero    = <Zero, x>
+         go (Suc n) = map Suc x (go n)
+     go (f x)
+
+  countVars : Exp A → Nat
+  countVars (var _)   = 1
+  countVars (app t u) = countVars t + countVars u
+  countVars (lam f)   = SAP-Nat (λ x. countVars (f x))
+\end{Verbatim}
+
+\end{frame}
+
+\begin{frame}[fragile]{Example: recovering scoped syntax}
+
+\begin{Verbatim}[commandchars=\\\{\}]
+  Scope : Type
+  Scope = List ((A : Ty) × Var (Exp A))
+
+  inScope : (Γ : Scope) → \{A : Ty\} → Exp A → Type
+  inScope Γ (var \{A\} x) = (A, x) ∈ Γ
+  inScope Γ (app t u)   = inScope Γ t × inScope Γ u
+  inScope Γ (lam f)     = (x @ Exp A) → inScope (Cons (A, #x) Γ) (f x)
+\end{Verbatim}
+\vsp
+
+Note: \texttt{inScope} is decidable if we have decidable equality for \texttt{Var}.
+
+\end{frame}
+
+
+\begin{frame}[fragile]{Example: well-typed interpreter on scoped syntax}
+
+\begin{Verbatim}[commandchars=\\\{\}]
+  ⟦_⟧ : Ty → Type
+  ⟦ι⟧     = Nat
+  ⟦A ⇒ B⟧ = ⟦A⟧ → ⟦B⟧
+
+  SAP-⟦⟧-Ty : (@ A → ⟦B⟧) → ⟦B⟧
+  SAP-⟦⟧-Ty = ...
+
+  ⟦_⟧ : Scope → Type
+  ⟦Nil          ⟧ = ⊤
+  ⟦Cons (A, _) Γ⟧ = ⟦A⟧ × ⟦Γ⟧
+
+  ⟦_⟧ : \{Γ A\} → (t : Exp A) → inScope Γ t → ⟦Γ⟧ → ⟦A⟧
+  ⟦var x  ⟧ xsc        γ = lookup x xsc γ
+  ⟦app t u⟧ (tsc, usc) γ = (⟦t⟧ tsc γ) (⟦u⟧ usc γ)
+  ⟦lam f  ⟧ fsc        γ = SAP-⟦⟧-Ty (λ x α. ⟦ f x ⟧ (fsc x) (α, γ))
+\end{Verbatim}
+
+\end{frame}
+
+\begin{frame}[fragile]{Extra assumptions on variables}
+
+The semantics supports
+\begin{itemize}
+  \item Decidable ordering on \texttt{Var}.
+  \item Decidable comparison of a raw variable and a \texttt{Var}.
+\end{itemize}
+\vsp
+
+If we have these, we can define
+\begin{itemize}
+ \item Decidable ordering (and equality) for \texttt{Exp}.
+ \item General variable renaming as a recursive operation on \texttt{Exp}.
+ \item Substitution as a recursive operation on \texttt{Exp}.
+ \item Strengthening on \texttt{Exp} w.r.t.\ a raw variable, returning
+       \texttt{Decide (Fresh (Exp A) x)}.
+\end{itemize}
+\vsp
+
+I'm not sure about the exact specification of variable operations.
+
+\end{frame}
+
+\begin{frame}[fragile]{ThinLF compared to Nullary Parametric TT}
+
+ThinLF has a lot of overlap with NPTT. What are the
+differences?
+\vsp
+
+\begin{itemize}
+\item ThinLF supports \emph{indexed nominal datatypes}, where the indexing types are ordinary ThinLF
+  types. NPTT only supports untyped nominal types in a straightforward way, and trying to have
+  first-class indexing types seems rather complicated.
+\item NPTT supports swapping raw variables in instantiations, ThinLF doesn't.
+\item ThinLF supports decidable ordering of variables, NPTT is only compatible with decidable equality.
+\end{itemize}
+
+
+\end{frame}
+
+\begin{frame}[fragile]{Conclusions}
+
+\begin{itemize}
+\item We can do a lot in ThinLF, but I don't necessarily know how to do it efficiently and concisely.
+\item I'm hoping that we can build nice machinery on top of the primitives.
+\item Features like \emph{pattern matching under binders} could be elaborated to ThinLF.
+\item I'm not quite sure about the set of primitives, or even the basic setup. Can we use ``observational'' binder types instead of manual SAP plugging?
+
+
+
+
+
+
+\end{itemize}
+
+
+\end{frame}
+
+
+\end{document}

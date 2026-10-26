@@ -22,6 +22,10 @@ type Dbg :: Constraint
 -- type Dbg = HasCallStack
 type Dbg = ()
 
+tail' :: [a] -> [a]
+tail' (_:xs) = xs
+tail' []     = impossible
+
 impossible :: Dbg => a
 impossible = error "impossible"
 

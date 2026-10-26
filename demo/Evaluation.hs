@@ -86,7 +86,7 @@ eval env = \case
   Quote t           -> vQuote (eval env t)
   Splice t          -> vSplice (eval env t)
   Lift t            -> VLift (eval env t)
-  Wk t              -> eval (tail env) t
+  Wk t              -> eval (tail' env) t
   Nat s             -> VNat s
   Zero s            -> VZero s
   Suc s             -> vlamE0 "n" (VNat s) (VSuc s)
@@ -154,7 +154,7 @@ zonk vs l t = go t where
                            Right t -> App t (go u) i vr
     Lam x i a t vr    -> Lam x i (go a) (goBind t) vr
     Let s x a t u vr  -> Let s x (go a) (go t) (goBind u) vr
-    Wk t              -> Wk (zonk (tail vs) (l-1) t)
+    Wk t              -> Wk (zonk (tail' vs) (l-1) t)
 
     AppPruning t pr   -> AppPruning (go t) pr
     InsertedMeta m pr -> case lookupMeta m of

@@ -1,9 +1,18 @@
 
+{-# language MultilineStrings #-}
+
 -- | Ad-hoc tests.
 
 module Tests where
 
 import MainInteraction
+
+stageTest = main' "stage"
+  """
+  let Nat = (N : U1) → (N → N) → N → N;
+  let n5 : Nat = λ N s z. s (s (s z));
+  n5 U0 (λ A. A → A) U0
+  """
 
 verbosityTest = main' "elab-verbose" $ unlines [
   "let id : {A : U0} → A → A := λ x. x;",
